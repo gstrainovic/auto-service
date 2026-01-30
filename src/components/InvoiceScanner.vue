@@ -13,7 +13,7 @@ function onFileSelected(f: File | null) {
   reader.onload = (e) => {
     const result = e.target?.result as string
     preview.value = result
-    const base64 = result.split(',')[1]
+    const base64 = result.split(',')[1] ?? ''
     emit('captured', base64)
   }
   reader.readAsDataURL(f)

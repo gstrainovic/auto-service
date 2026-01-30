@@ -19,14 +19,26 @@ const invoiceSchema = z.object({
 
 export type ParsedInvoice = z.infer<typeof invoiceSchema>
 
-function getModel(provider: AiProvider, apiKey: string) {
-  switch (provider) {
+interface ModelOptions {
+  provider: AiProvider
+  apiKey: string
+  ollamaUrl?: string
+  ollamaModel?: string
+}
+
+function getModel(opts: ModelOptions) {
+  switch (opts.provider) {
     case 'google':
-      return createGoogleGenerativeAI({ apiKey })('gemini-2.0-flash')
+      return createGoogleGenerativeAI({ apiKey: opts.apiKey })('gemini-2.0-flash')
     case 'anthropic':
-      return createAnthropic({ apiKey })('claude-sonnet-4-20250514')
+      return createAnthropic({ apiKey: opts.apiKey })('claude-sonnet-4-20250514')
     case 'openai':
-      return createOpenAI({ apiKey })('gpt-4o-mini')
+      return createOpenAI({ apiKey: opts.apiKey })('gpt-4o-mini')
+    case 'ollama':
+      return createOpenAI({
+        baseURL: `${opts.ollamaUrl || 'http://localhost:11434'}/v1`,
+        apiKey: 'ollama',
+      })(opts.ollamaModel || 'qwen2-vl')
   }
 }
 
@@ -34,8 +46,10 @@ export async function parseInvoice(
   imageBase64: string,
   provider: AiProvider,
   apiKey: string,
+  ollamaUrl?: string,
+  ollamaModel?: string,
 ): Promise<ParsedInvoice> {
-  const model = getModel(provider, apiKey)
+  const model = getModel({ provider, apiKey, ollamaUrl, ollamaModel })
 
   const { object } = await generateObject({
     model,

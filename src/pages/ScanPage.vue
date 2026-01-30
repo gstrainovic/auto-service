@@ -40,6 +40,8 @@ async function onCaptured(base64: string) {
       base64,
       settingsStore.aiProvider,
       settingsStore.aiApiKey,
+      settingsStore.ollamaUrl,
+      settingsStore.ollamaModel,
     )
   }
   catch (e: any) {

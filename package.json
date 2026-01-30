@@ -36,6 +36,7 @@
     "@types/node": "^24.10.9",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.8.1",
+    "dotenv": "^17.2.3",
     "eslint": "^9.39.2",
     "sass-embedded": "^1.97.3",
     "typescript": "~5.9.3",

@@ -95,6 +95,21 @@ export function getModel(opts: ModelOptions) {
         baseURL: `${opts.ollamaUrl || 'http://localhost:11434'}/v1`,
         apiKey: 'ollama',
       })(opts.ollamaModel || 'qwen2-vl')
+    case 'groq':
+      return createOpenAI({
+        baseURL: 'https://api.groq.com/openai/v1',
+        apiKey: opts.apiKey,
+      })(opts.ollamaModel || 'llama-3.3-70b-versatile')
+    case 'openrouter':
+      return createOpenAI({
+        baseURL: 'https://openrouter.ai/api/v1',
+        apiKey: opts.apiKey,
+      })(opts.ollamaModel || 'google/gemini-2.0-flash-exp:free')
+    case 'mistral':
+      return createOpenAI({
+        baseURL: 'https://api.mistral.ai/v1',
+        apiKey: opts.apiKey,
+      })(opts.ollamaModel || 'mistral-small-latest')
   }
 }
 

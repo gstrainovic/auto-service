@@ -280,13 +280,12 @@ export async function sendChatMessage(
   imageBase64?: string,
 ): Promise<string> {
   // For Ollama, use qwen3 for chat/tool-calling (not the vision model)
-  const chatModelName = opts.provider === 'ollama' ? 'qwen3' : undefined
-
+  // For other providers, don't pass ollamaModel so getModel uses its default
   const model = getModel({
     provider: opts.provider,
     apiKey: opts.apiKey,
     ollamaUrl: opts.ollamaUrl,
-    ollamaModel: chatModelName || opts.ollamaModel,
+    ollamaModel: opts.provider === 'ollama' ? 'qwen3' : undefined,
   })
 
   const tools = createTools(db, opts.provider, opts.apiKey, opts.ollamaUrl, opts.ollamaModel)
@@ -306,13 +305,26 @@ export async function sendChatMessage(
       return { role: m.role as 'user' | 'assistant', content: m.content }
     })
 
-  const { text } = await generateText({
+  const result = await generateText({
     model,
     system: SYSTEM_PROMPT,
     messages: aiMessages,
     tools,
-    stopWhen: stepCountIs(5),
+    stopWhen: stepCountIs(2),
   })
 
-  return text
+  // Some models return empty text after tool calls - extract tool result message
+  if (result.text)
+    return result.text
+
+  const lastToolResult = result.steps
+    ?.flatMap(s => s.toolResults ?? [])
+    ?.pop() as any
+  if (lastToolResult?.result && typeof lastToolResult.result === 'object') {
+    const r = lastToolResult.result as Record<string, unknown>
+    if (r.message)
+      return String(r.message)
+  }
+
+  return 'Erledigt.'
 }

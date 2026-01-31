@@ -1,18 +1,20 @@
 import path from 'node:path'
+import process from 'node:process'
 import { expect, test } from '@playwright/test'
 
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
+
 test.describe('Invoice Scan Flow', () => {
-  // Local AI on CPU can take several minutes for vision models
-  test.setTimeout(600_000)
+  test.setTimeout(120_000)
+  test.skip(!OPENROUTER_API_KEY, 'OPENROUTER_API_KEY not set')
 
   test('scan a workshop invoice with AI and save results', async ({ page }) => {
-    // Step 1: Configure Ollama local AI provider (no API key, no rate limits)
+    // Step 1: Configure OpenRouter
     await page.goto('/')
-    await page.evaluate(() => {
-      localStorage.setItem('ai_provider', 'ollama')
-      localStorage.setItem('ollama_url', 'http://localhost:11434')
-      localStorage.setItem('ollama_model', 'minicpm-v')
-    })
+    await page.evaluate((key) => {
+      localStorage.setItem('ai_provider', 'openrouter')
+      localStorage.setItem('ai_api_key', key)
+    }, OPENROUTER_API_KEY!)
 
     // Step 2: Add a vehicle
     await page.goto('/vehicles')
@@ -41,7 +43,7 @@ test.describe('Invoice Scan Flow', () => {
 
     // Step 5: Wait for AI parsing
     await expect(page.getByText('KI analysiert Rechnung...')).toBeVisible({ timeout: 10_000 })
-    await expect(page.getByText('Erkannte Daten')).toBeVisible({ timeout: 540_000 })
+    await expect(page.getByText('Erkannte Daten')).toBeVisible({ timeout: 60_000 })
 
     // Step 6: Verify parsed data
     const resultCard = page.locator('.q-card', { hasText: 'Erkannte Daten' })
@@ -66,11 +68,8 @@ test.describe('Invoice Scan Flow', () => {
     await page.goto('/')
     await expect(page.getByText('BMW 320d')).toBeVisible()
 
-    // Dashboard should have maintenance schedule items
     const mainSection = page.locator('main')
     await expect(mainSection.getByText('Ölwechsel')).toBeVisible({ timeout: 10_000 })
-
-    // At least one item should have "Zuletzt:" info (matched from scanned invoice)
     await expect(mainSection.getByText(/Zuletzt:/).first()).toBeVisible()
   })
 })

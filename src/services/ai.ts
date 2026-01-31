@@ -1,6 +1,5 @@
 import type { AiProvider } from '../stores/settings'
 import { createAnthropic } from '@ai-sdk/anthropic'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { z } from 'zod'
@@ -78,38 +77,19 @@ export type ParsedServiceBook = z.infer<typeof serviceBookSchema>
 interface ModelOptions {
   provider: AiProvider
   apiKey: string
-  ollamaUrl?: string
-  ollamaModel?: string
 }
 
 export function getModel(opts: ModelOptions) {
   switch (opts.provider) {
-    case 'google':
-      return createGoogleGenerativeAI({ apiKey: opts.apiKey })('gemini-2.0-flash')
     case 'anthropic':
       return createAnthropic({ apiKey: opts.apiKey })('claude-sonnet-4-20250514')
     case 'openai':
       return createOpenAI({ apiKey: opts.apiKey })('gpt-4o-mini')
-    case 'ollama':
-      return createOpenAI({
-        baseURL: `${opts.ollamaUrl || 'http://localhost:11434'}/v1`,
-        apiKey: 'ollama',
-      })(opts.ollamaModel || 'qwen2-vl')
-    case 'groq':
-      return createOpenAI({
-        baseURL: 'https://api.groq.com/openai/v1',
-        apiKey: opts.apiKey,
-      })(opts.ollamaModel || 'llama-3.3-70b-versatile')
     case 'openrouter':
       return createOpenAI({
         baseURL: 'https://openrouter.ai/api/v1',
         apiKey: opts.apiKey,
-      })(opts.ollamaModel || 'google/gemini-2.0-flash-exp:free')
-    case 'mistral':
-      return createOpenAI({
-        baseURL: 'https://api.mistral.ai/v1',
-        apiKey: opts.apiKey,
-      })(opts.ollamaModel || 'mistral-small-latest')
+      })('google/gemini-2.0-flash-001')
   }
 }
 
@@ -125,7 +105,6 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 5): Promise<T> {
       const isRateLimit = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || e.statusCode === 429
       if (!isRateLimit || attempt === maxRetries)
         break
-      // Wait 60s+ to respect per-minute quota windows
       const waitMs = Math.max(60_000, 4000 * 2 ** attempt)
       await new Promise(r => setTimeout(r, waitMs))
     }
@@ -137,10 +116,8 @@ export async function parseInvoice(
   imageBase64: string,
   provider: AiProvider,
   apiKey: string,
-  ollamaUrl?: string,
-  ollamaModel?: string,
 ): Promise<ParsedInvoice> {
-  const model = getModel({ provider, apiKey, ollamaUrl, ollamaModel })
+  const model = getModel({ provider, apiKey })
 
   const { object } = await withRetry(() => generateObject({
     model,
@@ -167,10 +144,8 @@ export async function parseVehicleDocument(
   imageBase64: string,
   provider: AiProvider,
   apiKey: string,
-  ollamaUrl?: string,
-  ollamaModel?: string,
 ): Promise<ParsedVehicleDocument> {
-  const model = getModel({ provider, apiKey, ollamaUrl, ollamaModel })
+  const model = getModel({ provider, apiKey })
 
   const { object } = await withRetry(() => generateObject({
     model,
@@ -197,10 +172,8 @@ export async function parseServiceBook(
   imageBase64: string,
   provider: AiProvider,
   apiKey: string,
-  ollamaUrl?: string,
-  ollamaModel?: string,
 ): Promise<ParsedServiceBook> {
-  const model = getModel({ provider, apiKey, ollamaUrl, ollamaModel })
+  const model = getModel({ provider, apiKey })
 
   const { object } = await withRetry(() => generateObject({
     model,

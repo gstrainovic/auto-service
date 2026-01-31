@@ -58,8 +58,6 @@ async function onCaptured(base64: string) {
         base64,
         settingsStore.aiProvider,
         settingsStore.aiApiKey,
-        settingsStore.ollamaUrl,
-        settingsStore.ollamaModel,
       )
     }
     else if (scanTab.value === 'fahrzeug') {
@@ -67,8 +65,6 @@ async function onCaptured(base64: string) {
         base64,
         settingsStore.aiProvider,
         settingsStore.aiApiKey,
-        settingsStore.ollamaUrl,
-        settingsStore.ollamaModel,
       )
     }
     else if (scanTab.value === 'serviceheft') {
@@ -76,8 +72,6 @@ async function onCaptured(base64: string) {
         base64,
         settingsStore.aiProvider,
         settingsStore.aiApiKey,
-        settingsStore.ollamaUrl,
-        settingsStore.ollamaModel,
       )
     }
   }

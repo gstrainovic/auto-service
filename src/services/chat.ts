@@ -36,7 +36,7 @@ export const WELCOME_MESSAGE: ChatMessage = {
 Schick mir einfach eine Nachricht oder ein Foto!`,
 }
 
-function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, ollamaUrl?: string, ollamaModel?: string) {
+function createTools(db: RxDatabase, provider: AiProvider, apiKey: string) {
   return {
     list_vehicles: tool({
       description: 'Listet alle Fahrzeuge auf',
@@ -248,17 +248,16 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, ollam
         vehicleId: z.string().optional().describe('Fahrzeug-ID falls bekannt (nötig für Rechnungen und Service-Hefte)'),
       }),
       execute: async ({ imageBase64, documentType }) => {
-        const visionModel = ollamaModel || undefined
         if (documentType === 'rechnung') {
-          const result = await parseInvoice(imageBase64, provider, apiKey, ollamaUrl, visionModel)
+          const result = await parseInvoice(imageBase64, provider, apiKey)
           return { type: 'rechnung', data: result }
         }
         else if (documentType === 'serviceheft') {
-          const result = await parseServiceBook(imageBase64, provider, apiKey, ollamaUrl, visionModel)
+          const result = await parseServiceBook(imageBase64, provider, apiKey)
           return { type: 'serviceheft', data: result }
         }
         else {
-          const result = await parseVehicleDocument(imageBase64, provider, apiKey, ollamaUrl, visionModel)
+          const result = await parseVehicleDocument(imageBase64, provider, apiKey)
           return { type: 'fahrzeugdokument', data: result }
         }
       },
@@ -269,8 +268,6 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, ollam
 export interface ChatOptions {
   provider: AiProvider
   apiKey: string
-  ollamaUrl?: string
-  ollamaModel?: string
 }
 
 export async function sendChatMessage(
@@ -279,16 +276,12 @@ export async function sendChatMessage(
   opts: ChatOptions,
   imageBase64?: string,
 ): Promise<string> {
-  // For Ollama, use qwen3 for chat/tool-calling (not the vision model)
-  // For other providers, don't pass ollamaModel so getModel uses its default
   const model = getModel({
     provider: opts.provider,
     apiKey: opts.apiKey,
-    ollamaUrl: opts.ollamaUrl,
-    ollamaModel: opts.provider === 'ollama' ? 'qwen3' : undefined,
   })
 
-  const tools = createTools(db, opts.provider, opts.apiKey, opts.ollamaUrl, opts.ollamaModel)
+  const tools = createTools(db, opts.provider, opts.apiKey)
 
   const aiMessages = messages
     .filter(m => m.id !== 'welcome')
@@ -313,7 +306,6 @@ export async function sendChatMessage(
     stopWhen: stepCountIs(2),
   })
 
-  // Some models return empty text after tool calls - extract tool result message
   if (result.text)
     return result.text
 

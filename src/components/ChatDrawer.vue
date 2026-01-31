@@ -83,8 +83,6 @@ async function send() {
     const response = await sendChatMessage(db, messages.value, {
       provider: settings.aiProvider,
       apiKey: settings.aiApiKey,
-      ollamaUrl: settings.ollamaUrl,
-      ollamaModel: settings.ollamaModel,
     }, imageBase64)
 
     messages.value.push({

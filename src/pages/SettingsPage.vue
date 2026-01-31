@@ -6,8 +6,7 @@ const settings = useSettingsStore()
 const showKey = ref(false)
 
 const providerOptions = [
-  { label: 'Ollama (lokal, kostenlos)', value: 'ollama' },
-  { label: 'Google Gemini (kostenlos)', value: 'google' },
+  { label: 'OpenRouter (Gemini 2.0 Flash)', value: 'openrouter' },
   { label: 'Anthropic Claude', value: 'anthropic' },
   { label: 'OpenAI', value: 'openai' },
 ]
@@ -48,33 +47,7 @@ const providerOptions = [
           </template>
         </q-input>
         <div class="text-caption q-mt-sm text-grey">
-          Google Gemini hat ein kostenloses Free Tier (15 Anfragen/Minute).
-        </div>
-      </q-card-section>
-    </q-card>
-
-    <q-card v-if="settings.aiProvider === 'ollama'" class="q-mb-md">
-      <q-card-section>
-        <div class="text-h6">
-          Ollama (Lokal)
-        </div>
-      </q-card-section>
-      <q-card-section>
-        <q-input
-          v-model="settings.ollamaUrl"
-          label="Ollama URL"
-          outlined
-          hint="Standard: http://localhost:11434"
-        />
-        <q-input
-          v-model="settings.ollamaModel"
-          label="Modell"
-          outlined
-          hint="z.B. qwen2-vl, moondream, llama3.2-vision"
-          class="q-mt-md"
-        />
-        <div class="text-caption q-mt-sm text-grey">
-          Installiere Ollama und lade ein Vision-Modell: ollama pull qwen2-vl
+          OpenRouter nutzt Gemini 2.0 Flash — schnell, Vision + Chat, kein Quota-Limit.
         </div>
       </q-card-section>
     </q-card>

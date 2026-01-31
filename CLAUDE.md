@@ -23,12 +23,13 @@ e2e/              # Playwright tests + fixtures/
 scripts/          # compare-ai.ts
 
 ## AI Providers
-Multi-provider via Vercel AI SDK v6 + @ai-sdk/openai (OpenAI-compatible):
-- google (Gemini 2.0 Flash) — default, quota limits on free tier
-- openrouter (gemini-2.0-flash-001) — best for vision/scan, no quota issues
-- groq (llama-3.3-70b-versatile) — fast text/tool-calling only, NO vision
-- mistral, anthropic, openai
-- ollama (qwen3 chat, minicpm-v vision) — local, very slow on CPU
+Three providers via Vercel AI SDK v6 + @ai-sdk/openai (OpenAI-compatible):
+- **openrouter** (gemini-2.0-flash-001) — primary, best for vision+chat, no quota issues
+- **anthropic** (claude-sonnet-4-20250514)
+- **openai** (gpt-4o-mini)
+
+Removed providers (2025-01 comparison): Google direct (quota limits), Groq (vision decommissioned),
+Mistral (model not found), Ollama (very slow, inaccurate on CPU).
 
 Provider + API key in localStorage (Settings page). .env only for E2E tests.
 
@@ -42,7 +43,7 @@ Provider + API key in localStorage (Settings page). .env only for E2E tests.
 ## E2E Testing
 - Quasar icon-only buttons need CSS class selectors (.chat-fab), not getByRole
 - .env loaded by playwright.config.ts, keys injected via page.evaluate → localStorage
-- Vision tests use Ollama minicpm-v (slow ~18s, inaccurate) — prefer OpenRouter for CI
+- All AI tests use OpenRouter (fast, accurate, ~3s for vision)
 - Use .first() for assertions that may match multiple elements (AI can create duplicates)
 
 ## Code Style
@@ -52,6 +53,4 @@ Provider + API key in localStorage (Settings page). .env only for E2E tests.
 
 ## Gotchas
 - Lint errors in docs/plans/*.md are false positives (code blocks parsed as JS)
-- Groq: all vision models decommissioned — text/tool-calling only
-- Gemini free tier: strict per-minute quota — use OpenRouter as fallback
-- ollamaModel field is overloaded as generic model name for non-Ollama providers
+- OpenRouter is the only provider tested for vision/scan — others may need model adjustments

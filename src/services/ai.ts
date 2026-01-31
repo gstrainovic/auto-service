@@ -29,8 +29,8 @@ const invoiceSchema = z.object({
   mileageAtService: z.number().optional().describe('Kilometerstand falls angegeben'),
   items: z.array(z.object({
     description: z.string().describe('Beschreibung der Arbeit'),
-    category: z.string().describe(
-      'Kategorie der Arbeit. Erlaubte Werte: oelwechsel, bremsen, reifen, inspektion, luftfilter, zahnriemen, bremsflüssigkeit, klimaanlage, tuev, karosserie, elektrik, sonstiges',
+    category: z.enum(MAINTENANCE_CATEGORIES).describe(
+      'Kategorie der Arbeit: oelwechsel, bremsen, reifen, inspektion, luftfilter, zahnriemen, bremsflüssigkeit, klimaanlage, tuev, karosserie, elektrik, sonstiges',
     ),
     amount: z.number().describe('Betrag in Euro'),
   })),
@@ -61,8 +61,8 @@ const serviceBookSchema = z.object({
     workshopName: z.string().optional().describe('Name der Werkstatt'),
     items: z.array(z.object({
       description: z.string().describe('Beschreibung der Arbeit'),
-      category: z.string().describe(
-        'Kategorie. Erlaubte Werte: oelwechsel, bremsen, reifen, inspektion, luftfilter, zahnriemen, bremsflüssigkeit, klimaanlage, tuev, karosserie, elektrik, sonstiges',
+      category: z.enum(MAINTENANCE_CATEGORIES).describe(
+        'Kategorie: oelwechsel, bremsen, reifen, inspektion, luftfilter, zahnriemen, bremsflüssigkeit, klimaanlage, tuev, karosserie, elektrik, sonstiges',
       ),
     })),
   })),

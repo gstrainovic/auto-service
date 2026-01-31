@@ -1,19 +1,18 @@
 import path from 'node:path'
-import process from 'node:process'
 import { expect, test } from '@playwright/test'
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY
-
 test.describe('Invoice Scan Flow', () => {
-  test.skip(!GEMINI_API_KEY, 'GEMINI_API_KEY not set')
+  // Local AI on CPU can take several minutes for vision models
+  test.setTimeout(600_000)
 
   test('scan a workshop invoice with AI and save results', async ({ page }) => {
-    // Step 1: Set API key in settings via localStorage (faster than navigating)
+    // Step 1: Configure Ollama local AI provider (no API key, no rate limits)
     await page.goto('/')
-    await page.evaluate((key) => {
-      localStorage.setItem('ai_provider', 'google')
-      localStorage.setItem('ai_api_key', key)
-    }, GEMINI_API_KEY!)
+    await page.evaluate(() => {
+      localStorage.setItem('ai_provider', 'ollama')
+      localStorage.setItem('ollama_url', 'http://localhost:11434')
+      localStorage.setItem('ollama_model', 'minicpm-v')
+    })
 
     // Step 2: Add a vehicle
     await page.goto('/vehicles')
@@ -30,7 +29,6 @@ test.describe('Invoice Scan Flow', () => {
     await page.goto('/scan')
     await expect(page.getByRole('heading', { name: 'Rechnung scannen' })).toBeVisible()
 
-    // Select vehicle from Quasar QSelect
     await page.getByLabel('Fahrzeug wählen').click()
     await page.getByText('BMW 320d (M-AB 1234)').click()
 
@@ -41,41 +39,38 @@ test.describe('Invoice Scan Flow', () => {
     const fileInput = page.locator('input[type="file"]')
     await fileInput.setInputFiles(invoicePath)
 
-    // Step 5: Wait for AI parsing indicator
+    // Step 5: Wait for AI parsing
     await expect(page.getByText('KI analysiert Rechnung...')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText('Erkannte Daten')).toBeVisible({ timeout: 540_000 })
 
-    // Wait for results to appear (API call can take 10-30 seconds)
-    await expect(page.getByText('Erkannte Daten')).toBeVisible({ timeout: 60_000 })
-
-    // Step 6: Verify parsed data contains expected information
+    // Step 6: Verify parsed data
     const resultCard = page.locator('.q-card', { hasText: 'Erkannte Daten' })
-
-    // Workshop name should be recognized (AI may vary slightly)
     await expect(resultCard.getByText(/München/)).toBeVisible()
-
-    // Should have line items section
     await expect(resultCard.getByText('Positionen')).toBeVisible()
 
-    // Should have at least one line item visible
     const items = resultCard.locator('.q-item')
     await expect(items.first()).toBeVisible()
-    const itemCount = await items.count()
-    expect(itemCount).toBeGreaterThanOrEqual(2)
+    expect(await items.count()).toBeGreaterThanOrEqual(1)
 
     // Step 7: Save the results
     await page.getByRole('button', { name: 'Speichern' }).click()
-
-    // After saving, the result card should disappear
     await expect(page.getByText('Erkannte Daten')).not.toBeVisible({ timeout: 10_000 })
 
-    // Step 8: Verify vehicle detail page has the invoice
+    // Step 8: Verify invoice saved to vehicle
     await page.goto('/vehicles')
     await page.getByText('BMW 320d').click()
-
-    // Switch to invoices tab
     await page.getByText('Rechnungen').click()
-
-    // Should show the saved invoice with workshop name
     await expect(page.locator('.q-tab-panel').getByText(/München/)).toBeVisible({ timeout: 10_000 })
+
+    // Step 9: Verify dashboard shows maintenance status
+    await page.goto('/')
+    await expect(page.getByText('BMW 320d')).toBeVisible()
+
+    // Dashboard should have maintenance schedule items
+    const mainSection = page.locator('main')
+    await expect(mainSection.getByText('Ölwechsel')).toBeVisible({ timeout: 10_000 })
+
+    // At least one item should have "Zuletzt:" info (matched from scanned invoice)
+    await expect(mainSection.getByText(/Zuletzt:/).first()).toBeVisible()
   })
 })

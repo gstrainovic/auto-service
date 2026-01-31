@@ -3,7 +3,7 @@ import type { ParsedInvoice } from '../services/ai'
 import { computed, onMounted, ref } from 'vue'
 import InvoiceResult from '../components/InvoiceResult.vue'
 import InvoiceScanner from '../components/InvoiceScanner.vue'
-import { parseInvoice } from '../services/ai'
+import { MAINTENANCE_CATEGORIES, parseInvoice } from '../services/ai'
 import { useInvoicesStore } from '../stores/invoices'
 import { useMaintenancesStore } from '../stores/maintenances'
 import { useSettingsStore } from '../stores/settings'
@@ -73,10 +73,15 @@ async function onSave() {
   }
 
   for (const item of inv.items || []) {
+    const normalized = item.category.toLowerCase().trim()
+    const category = (MAINTENANCE_CATEGORIES as readonly string[]).includes(normalized)
+      ? normalized
+      : 'sonstiges'
+
     await maintenancesStore.add({
       vehicleId: selectedVehicleId.value,
       invoiceId: '',
-      type: item.category,
+      type: category,
       description: item.description,
       doneAt: inv.date,
       mileageAtService: inv.mileageAtService || 0,

@@ -2,6 +2,13 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useDatabase } from '../composables/useDatabase'
 
+export interface VehicleScheduleItem {
+  type: string
+  label: string
+  intervalKm: number
+  intervalMonths: number
+}
+
 export interface Vehicle {
   id: string
   make: string
@@ -10,6 +17,7 @@ export interface Vehicle {
   mileage: number
   vin: string
   licensePlate: string
+  customSchedule?: VehicleScheduleItem[]
   createdAt: string
   updatedAt: string
 }

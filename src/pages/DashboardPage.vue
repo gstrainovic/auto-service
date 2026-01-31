@@ -19,7 +19,7 @@ watch(() => vehiclesStore.vehicles, computeDue, { deep: true })
 async function computeDue() {
   const db = await dbPromise
   for (const vehicle of vehiclesStore.vehicles) {
-    const schedule = getMaintenanceSchedule(vehicle.make, vehicle.model)
+    const schedule = getMaintenanceSchedule(vehicle.make, vehicle.model, vehicle.customSchedule as any)
     const mDocs = await (db as any).maintenances.find({ selector: { vehicleId: vehicle.id } }).exec()
     const lastMaintenances = mDocs.map((d: any) => ({
       type: d.type,

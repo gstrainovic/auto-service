@@ -49,7 +49,9 @@ const BRAND_SCHEDULES: Record<string, ScheduleItem[]> = {
   ],
 }
 
-export function getMaintenanceSchedule(make: string, _model: string): ScheduleItem[] {
+export function getMaintenanceSchedule(make: string, _model: string, customSchedule?: ScheduleItem[]): ScheduleItem[] {
+  if (customSchedule?.length)
+    return customSchedule
   return BRAND_SCHEDULES[make] || DEFAULT_SCHEDULE
 }
 

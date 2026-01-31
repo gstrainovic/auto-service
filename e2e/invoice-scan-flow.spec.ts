@@ -27,7 +27,7 @@ test.describe('Invoice Scan Flow', () => {
 
     // Step 3: Go to scan page and select the vehicle
     await page.goto('/scan')
-    await expect(page.getByRole('heading', { name: 'Rechnung scannen' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Dokument scannen' })).toBeVisible()
 
     await page.getByLabel('Fahrzeug wählen').click()
     await page.getByText('BMW 320d (M-AB 1234)').click()

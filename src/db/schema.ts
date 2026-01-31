@@ -12,6 +12,18 @@ export const vehicleSchema: RxJsonSchema<any> = {
     mileage: { type: 'integer' },
     vin: { type: 'string' },
     licensePlate: { type: 'string' },
+    customSchedule: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          type: { type: 'string' },
+          label: { type: 'string' },
+          intervalKm: { type: 'number' },
+          intervalMonths: { type: 'number' },
+        },
+      },
+    },
     createdAt: { type: 'string', format: 'date-time' },
     updatedAt: { type: 'string', format: 'date-time' },
   },

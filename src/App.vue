@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import ChatDrawer from './components/ChatDrawer.vue'
 
 const drawer = ref(false)
+const chatOpen = ref(false)
 </script>
 
 <template>
@@ -31,7 +33,7 @@ const drawer = ref(false)
           <q-item-section avatar>
             <q-icon name="document_scanner" />
           </q-item-section>
-          <q-item-section>Rechnung scannen</q-item-section>
+          <q-item-section>Dokument scannen</q-item-section>
         </q-item>
         <q-item clickable to="/settings">
           <q-item-section avatar>
@@ -45,5 +47,7 @@ const drawer = ref(false)
     <q-page-container>
       <router-view />
     </q-page-container>
+
+    <ChatDrawer v-model="chatOpen" />
   </q-layout>
 </template>

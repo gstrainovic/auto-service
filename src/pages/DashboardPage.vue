@@ -8,6 +8,7 @@ import { useVehiclesStore } from '../stores/vehicles'
 const vehiclesStore = useVehiclesStore()
 const dueMap = ref<Record<string, DueResult[]>>({})
 const { dbPromise } = useDatabase()
+const confirmDelete = ref<{ vehicleId: string, type: string, label: string } | null>(null)
 
 onMounted(async () => {
   await vehiclesStore.load()
@@ -33,6 +34,17 @@ async function computeDue() {
       schedule,
     })
   }
+}
+
+async function deleteMaintenance(vehicleId: string, type: string) {
+  const db = await dbPromise
+  const docs = await (db as any).maintenances.find({
+    selector: { vehicleId, type },
+  }).exec()
+  for (const doc of docs)
+    await doc.remove()
+  confirmDelete.value = null
+  await computeDue()
 }
 </script>
 
@@ -71,12 +83,46 @@ async function computeDue() {
             </q-item-label>
           </q-item-section>
           <q-item-section side>
-            <q-badge :color="item.status === 'overdue' ? 'negative' : item.status === 'due' ? 'warning' : 'positive'">
-              {{ item.status === 'overdue' ? 'Überfällig' : item.status === 'due' ? 'Fällig' : 'OK' }}
-            </q-badge>
+            <div class="row items-center q-gutter-xs">
+              <q-badge :color="item.status === 'overdue' ? 'negative' : item.status === 'due' ? 'warning' : 'positive'">
+                {{ item.status === 'overdue' ? 'Überfällig' : item.status === 'due' ? 'Fällig' : 'OK' }}
+              </q-badge>
+              <q-btn
+                v-if="item.lastDoneAt"
+                flat
+                round
+                dense
+                size="sm"
+                icon="delete"
+                color="grey"
+                @click="confirmDelete = { vehicleId: vehicle.id, type: item.type, label: item.label }"
+              />
+            </div>
           </q-item-section>
         </q-item>
       </q-list>
     </div>
+
+    <q-dialog :model-value="!!confirmDelete" @update:model-value="confirmDelete = null">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">
+            Wartungseintrag löschen?
+          </div>
+        </q-card-section>
+        <q-card-section>
+          Alle Einträge für <strong>{{ confirmDelete?.label }}</strong> werden gelöscht.
+          Diese Aktion kann nicht rückgängig gemacht werden.
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Abbrechen" @click="confirmDelete = null" />
+          <q-btn
+            color="negative"
+            label="Löschen"
+            @click="confirmDelete && deleteMaintenance(confirmDelete.vehicleId, confirmDelete.type)"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>

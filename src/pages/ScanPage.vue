@@ -179,6 +179,16 @@ async function onSaveServiceBook() {
     }
   }
 
+  if (book.manufacturerIntervals?.length) {
+    const schedule = book.manufacturerIntervals.map(i => ({
+      type: i.type.toLowerCase().trim(),
+      label: i.type,
+      intervalKm: i.intervalKm,
+      intervalMonths: i.intervalMonths,
+    }))
+    await vehiclesStore.updateCustomSchedule(selectedVehicleId.value, schedule)
+  }
+
   parsedServiceBook.value = null
 }
 

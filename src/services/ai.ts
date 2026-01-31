@@ -90,6 +90,21 @@ export function getModel(opts: ModelOptions) {
         baseURL: 'https://openrouter.ai/api/v1',
         apiKey: opts.apiKey,
       })('google/gemini-2.0-flash-001')
+    case 'mistral':
+      return createOpenAI({
+        baseURL: 'https://openrouter.ai/api/v1',
+        apiKey: opts.apiKey,
+      })('mistralai/pixtral-large-2411')
+    case 'meta-llama':
+      return createOpenAI({
+        baseURL: 'https://openrouter.ai/api/v1',
+        apiKey: opts.apiKey,
+      })('meta-llama/llama-4-maverick')
+    case 'ollama':
+      return createOpenAI({
+        baseURL: 'http://localhost:11434/v1',
+        apiKey: 'ollama',
+      })('qwen3-vl:2b')
   }
 }
 

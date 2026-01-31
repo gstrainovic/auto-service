@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 
-export type AiProvider = 'openrouter' | 'anthropic' | 'openai'
+export type AiProvider = 'openrouter' | 'anthropic' | 'openai' | 'mistral' | 'meta-llama' | 'ollama'
 
 export const useSettingsStore = defineStore('settings', () => {
   const aiProvider = ref<AiProvider>(

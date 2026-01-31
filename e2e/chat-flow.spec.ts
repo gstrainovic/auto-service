@@ -28,7 +28,7 @@ test.describe('Chat Flow', () => {
     await input.fill('Trage bitte einen Audi A4 Baujahr 2019 mit 62000 km und Kennzeichen B-CD 5678 ein.')
     await page.locator('.q-dialog button.bg-primary').last().click()
 
-    // Step 4: Wait for AI response
+    // Step 4: Wait for AI response (at least 3 messages: welcome + user + assistant)
     await expect(page.locator('.q-message')).toHaveCount(3, { timeout: 60_000 })
 
     // Step 5: Verify the assistant responded

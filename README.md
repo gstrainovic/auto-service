@@ -8,7 +8,7 @@ Offline-fähige PWA zur Verwaltung von Fahrzeugen, Wartungen und Werkstattrechnu
 - **KI-Dokumenten-Scanner** — Rechnungen, Kaufverträge, Fahrzeugscheine und Service-Hefte per Foto analysieren
 - **Wartungs-Dashboard** — Übersicht über fällige, überfällige und erledigte Wartungen pro Fahrzeug
 - **KI-Chat-Assistent** — Floating Chat mit Tool-Calling: Fahrzeuge verwalten, Dokumente scannen, Wartungsstatus abfragen
-- **Multi-Provider AI** — OpenRouter (Gemini 2.0 Flash), Anthropic Claude, OpenAI
+- **Multi-Provider AI** — OpenRouter (Gemini), Anthropic Claude, OpenAI, Mistral (Pixtral), Meta Llama
 - **Offline-First** — RxDB als lokale Datenbank, funktioniert ohne Server
 - **PWA** — Installierbar auf Smartphone und Desktop
 
@@ -65,15 +65,49 @@ scripts/          AI-Provider-Vergleichsskript
 
 ## AI-Provider
 
-| Provider | Modell | Eignung |
-|----------|--------|---------|
-| **OpenRouter** | gemini-2.0-flash-001 | Vision + Chat, empfohlen (**3.2s**, akkurat) |
-| Anthropic | claude-sonnet-4 | Chat |
-| OpenAI | gpt-4o-mini | Chat |
+| Provider | Modell | Vision | Chat | Tool Calling | Kosten |
+|----------|--------|--------|------|-------------|--------|
+| **OpenRouter** | Gemini 2.0 Flash | Ja | Ja | Ja | Free Tier |
+| Anthropic | Claude Sonnet | Ja | Ja | Ja | Bezahlt |
+| OpenAI | GPT-4o Mini | Ja | Ja | Ja | Bezahlt |
+| Mistral | Pixtral Large (via OpenRouter) | Ja | Ja | Ja | Free Tier |
+| Meta Llama | Llama 4 Maverick (via OpenRouter) | Ja | Ja | Ja | Free Tier |
 
-> **Vergleich (Jan 2026):** OpenRouter war der einzige Provider mit zuverlässiger Vision-Erkennung.
-> Google direkt hatte Quota-Limits, Groq hat Vision-Modelle deaktiviert, Mistral-Modelle nicht gefunden,
-> Ollama (lokal) war extrem langsam (~18s) und ungenau.
+### Datenschutz-Warnung
+
+**Bei kostenlosen API-Tiers bezahlt man mit seinen Daten:**
+
+| Provider | Trainiert mit Daten? | EU-konform? |
+|----------|---------------------|-------------|
+| OpenRouter + Gemini Free | **Ja** — Google trainiert mit Free-Tier-Daten | **Nein** — Free Tier in EU nicht erlaubt |
+| Mistral Free (Experiment) | **Ja** — Standard ist Training, Opt-out möglich | Ja |
+| Meta Llama API | Nein | **Eingeschränkt** — Vision-Modelle in EU limitiert |
+| Anthropic API (bezahlt) | Nein | Ja |
+| OpenAI API (bezahlt) | Nein (seit März 2023) | Ja |
+| Ollama (lokal) | **Nein** — 100% privat, keine Daten verlassen den Rechner | Ja |
+
+> **Empfehlung:** Für maximale Privatsphäre Ollama lokal nutzen (GPU erforderlich) oder bezahlte APIs (Anthropic, OpenAI).
+
+### Ollama (lokaler Provider)
+
+Getestet mit Ollama 0.15.2, `qwen3-vl:2b`, NVIDIA Quadro P1000 (4 GB VRAM):
+
+| Test | Ergebnis | Zeit |
+|------|----------|------|
+| Vision (Rechnungsscan) | Korrekt | ~13s |
+| Tool Calling | Korrekt | ~7s |
+
+```bash
+# Installation
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull qwen3-vl:2b
+
+# Testen
+ollama run qwen3-vl:2b "Beschreibe dieses Bild" bild.png
+```
+
+> **Hinweis:** Bei GPUs mit wenig VRAM (<8 GB) nutzt Ollama den "low VRAM mode" (GPU+CPU Mix).
+> Das 4B-Modell hängt auf 4 GB VRAM — das 2B-Modell wird empfohlen.
 
 ## E2E-Tests
 

@@ -1,19 +1,20 @@
 import process from 'node:process'
 import { expect, test } from '@playwright/test'
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
+const AI_PROVIDER = process.env.AI_PROVIDER || 'openrouter'
+const AI_API_KEY = process.env.OPENROUTER_API_KEY || ''
 
 test.describe('Chat Flow', () => {
   test.setTimeout(120_000)
-  test.skip(!OPENROUTER_API_KEY, 'OPENROUTER_API_KEY not set')
+  test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
 
   test('open chat and create a vehicle via tool-calling', async ({ page }) => {
-    // Configure OpenRouter
+    // Configure AI provider
     await page.goto('/')
-    await page.evaluate((key) => {
-      localStorage.setItem('ai_provider', 'openrouter')
+    await page.evaluate(({ provider, key }) => {
+      localStorage.setItem('ai_provider', provider)
       localStorage.setItem('ai_api_key', key)
-    }, OPENROUTER_API_KEY!)
+    }, { provider: AI_PROVIDER, key: AI_API_KEY })
     await page.reload()
 
     // Step 1: Open chat via FAB

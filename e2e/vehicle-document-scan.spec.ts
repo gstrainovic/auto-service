@@ -2,20 +2,20 @@ import path from 'node:path'
 import process from 'node:process'
 import { expect, test } from '@playwright/test'
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
+const AI_PROVIDER = process.env.AI_PROVIDER || 'openrouter'
+const AI_API_KEY = process.env.OPENROUTER_API_KEY || ''
 
 test.describe('Vehicle Document Scan', () => {
   test.setTimeout(120_000)
-  test.skip(!OPENROUTER_API_KEY, 'OPENROUTER_API_KEY not set')
+  test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
 
   test('scan a Kaufvertrag and create vehicle', async ({ page }) => {
-    // Configure OpenRouter
+    // Configure AI provider
     await page.goto('/')
-    await page.evaluate((key) => {
-      localStorage.setItem('ai_provider', 'openrouter')
+    await page.evaluate(({ provider, key }) => {
+      localStorage.setItem('ai_provider', provider)
       localStorage.setItem('ai_api_key', key)
-      localStorage.setItem('ollama_model', 'google/gemini-2.0-flash-001')
-    }, OPENROUTER_API_KEY!)
+    }, { provider: AI_PROVIDER, key: AI_API_KEY })
     await page.reload()
 
     // Go to scan page, select Kaufvertrag tab
@@ -46,13 +46,12 @@ test.describe('Vehicle Document Scan', () => {
   })
 
   test('scan a Service-Heft and add to vehicle', async ({ page }) => {
-    // Configure OpenRouter
+    // Configure AI provider
     await page.goto('/')
-    await page.evaluate((key) => {
-      localStorage.setItem('ai_provider', 'openrouter')
+    await page.evaluate(({ provider, key }) => {
+      localStorage.setItem('ai_provider', provider)
       localStorage.setItem('ai_api_key', key)
-      localStorage.setItem('ollama_model', 'google/gemini-2.0-flash-001')
-    }, OPENROUTER_API_KEY!)
+    }, { provider: AI_PROVIDER, key: AI_API_KEY })
 
     // First create a vehicle
     await page.goto('/vehicles')

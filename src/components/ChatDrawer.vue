@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { ChatMessage } from '../services/chat'
+import DOMPurify from 'dompurify'
+import { marked } from 'marked'
 import { Notify } from 'quasar'
 import { nextTick, onMounted, ref, watch } from 'vue'
 import { useDatabase } from '../composables/useDatabase'
@@ -8,6 +10,12 @@ import { sendChatMessage, WELCOME_MESSAGE } from '../services/chat'
 import { useSettingsStore } from '../stores/settings'
 
 const MAX_PDF_SIZE = 50 * 1024 * 1024 // 50 MB (Mistral OCR Limit)
+
+marked.setOptions({ breaks: true })
+
+function renderMarkdown(text: string): string {
+  return DOMPurify.sanitize(marked.parse(text) as string)
+}
 
 const open = defineModel<boolean>({ default: false })
 
@@ -237,7 +245,7 @@ async function clearChat() {
                   {{ msg.attachment.name }}
                 </div>
               </template>
-              <div style="white-space: pre-wrap" v-text="msg.content" />
+              <div class="chat-markdown" v-html="renderMarkdown(msg.content)" />
             </div>
           </q-chat-message>
 
@@ -296,5 +304,68 @@ async function clearChat() {
   bottom: 24px;
   right: 24px;
   z-index: 1000;
+}
+</style>
+
+<style>
+.chat-markdown {
+  line-height: 1.5;
+}
+.chat-markdown p {
+  margin: 0 0 0.5em;
+}
+.chat-markdown p:last-child {
+  margin-bottom: 0;
+}
+.chat-markdown ul,
+.chat-markdown ol {
+  margin: 0 0 0.5em;
+  padding-left: 1.5em;
+}
+.chat-markdown li {
+  margin-bottom: 0.2em;
+}
+.chat-markdown strong {
+  font-weight: 600;
+}
+.chat-markdown h1,
+.chat-markdown h2,
+.chat-markdown h3 {
+  margin: 0.5em 0 0.3em;
+  font-size: 1em;
+  font-weight: 600;
+}
+.chat-markdown code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+.chat-markdown pre {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 0.5em;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+.chat-markdown pre code {
+  background: none;
+  padding: 0;
+}
+.chat-markdown table {
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  width: 100%;
+}
+.chat-markdown th,
+.chat-markdown td {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  padding: 0.3em 0.5em;
+  text-align: left;
+}
+.chat-markdown hr {
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  margin: 0.5em 0;
 }
 </style>

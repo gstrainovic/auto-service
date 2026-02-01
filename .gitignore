@@ -33,3 +33,7 @@ test-results/
 .env.local
 
 tmp/
+.playwright-mcp/
+
+# Tesseract.js cached language data
+*.traineddata

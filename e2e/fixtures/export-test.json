@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exportedAt": "2026-02-01T19:10:30.635Z",
+  "exportedAt": "2026-02-01T20:36:07.277Z",
   "vehicles": [
     {
       "id": "test-export-vehicle",
@@ -10,8 +10,8 @@
       "mileage": 12345,
       "licensePlate": "EX-123",
       "vin": "",
-      "createdAt": "2026-02-01T19:10:30.518Z",
-      "updatedAt": "2026-02-01T19:10:30.519Z"
+      "createdAt": "2026-02-01T20:36:07.149Z",
+      "updatedAt": "2026-02-01T20:36:07.149Z"
     }
   ],
   "invoices": [],

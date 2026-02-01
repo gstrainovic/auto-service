@@ -22,6 +22,7 @@ Deine Fähigkeiten:
 - Fragen zu Wartungsintervallen beantworten
 
 Antworte immer auf Deutsch. Benutze IMMER die verfügbaren Tools um Aktionen auszuführen — beschreibe nicht was du tun würdest, sondern tu es direkt.
+Wenn der Benutzer ein Bild schickt, analysiere es SOFORT und gib die Ergebnisse direkt aus (Werkstatt, Datum, Betrag, Arbeiten). Sage NICHT "ich werde analysieren" — analysiere es einfach.
 Halte deine Antworten kurz und hilfreich.`
 
 export const WELCOME_MESSAGE: ChatMessage = {
@@ -314,7 +315,11 @@ export async function sendChatMessage(
     model: opts.model,
   })
 
-  const tools = createTools(db, opts.provider, opts.apiKey, opts.model)
+  const allTools = createTools(db, opts.provider, opts.apiKey, opts.model)
+
+  // Bilder sind bereits im Message-Content — scan_document nicht anbieten
+  const { scan_document: _, ...toolsWithoutScan } = allTools
+  const tools = imagesBase64?.length ? toolsWithoutScan : allTools
 
   // Alle Bilder in einem Request (Mistral erlaubt bis zu 8 pro Request)
   const aiMessages = buildAiMessages(messages, imagesBase64)

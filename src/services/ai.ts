@@ -111,7 +111,7 @@ export function getModel(opts: ModelOptions) {
   }
 }
 
-async function withRetry<T>(fn: () => Promise<T>, maxRetries = 5): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, maxRetries = 4): Promise<T> {
   let lastError: any
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -120,14 +120,15 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 5): Promise<T> {
     catch (e: any) {
       lastError = e
       const msg = e.message || ''
-      const isRateLimit = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || e.statusCode === 429
+      const isRateLimit = msg.includes('429') || msg.includes('Rate limit') || msg.includes('RESOURCE_EXHAUSTED') || e.statusCode === 429
       if (!isRateLimit || attempt === maxRetries)
         break
-      const waitMs = Math.max(60_000, 4000 * 2 ** attempt)
+      const waitMs = [5000, 15000, 30000, 60000][attempt] ?? 60000
+      console.warn(`Rate limit — warte ${waitMs / 1000}s (Versuch ${attempt + 1}/${maxRetries})`)
       await new Promise(r => setTimeout(r, waitMs))
     }
   }
-  throw new Error(`Failed after ${maxRetries + 1} attempts. Last error: ${lastError?.message || lastError}`)
+  throw lastError
 }
 
 export async function parseInvoice(

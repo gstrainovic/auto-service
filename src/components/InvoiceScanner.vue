@@ -1,22 +1,18 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { resizeImage } from '../composables/useImageResize'
 
 const emit = defineEmits<{ captured: [base64: string] }>()
 const file = ref<File | null>(null)
 const preview = ref('')
 const useCamera = ref(true)
 
-function onFileSelected(f: File | null) {
+async function onFileSelected(f: File | null) {
   if (!f)
     return
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    const result = e.target?.result as string
-    preview.value = result
-    const base64 = result.split(',')[1] ?? ''
-    emit('captured', base64)
-  }
-  reader.readAsDataURL(f)
+  const { dataUrl, base64 } = await resizeImage(f)
+  preview.value = dataUrl
+  emit('captured', base64)
 }
 </script>
 

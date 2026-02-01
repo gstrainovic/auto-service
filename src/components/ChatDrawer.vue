@@ -2,6 +2,7 @@
 import type { ChatMessage } from '../services/chat'
 import { nextTick, ref, watch } from 'vue'
 import { useDatabase } from '../composables/useDatabase'
+import { resizeImage } from '../composables/useImageResize'
 import { sendChatMessage, WELCOME_MESSAGE } from '../services/chat'
 import { useSettingsStore } from '../stores/settings'
 
@@ -44,12 +45,10 @@ function onFileChange(event: Event) {
     const isImage = file.type.startsWith('image/')
     if (!isImage) {
       pendingFiles.value = []
-    }
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string
-      const base64 = dataUrl.split(',')[1] ?? ''
-      if (!isImage) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string
+        const base64 = dataUrl.split(',')[1] ?? ''
         pendingFiles.value = [{
           file,
           type: 'pdf',
@@ -58,7 +57,10 @@ function onFileChange(event: Event) {
           base64,
         }]
       }
-      else {
+      reader.readAsDataURL(file)
+    }
+    else {
+      resizeImage(file).then(({ dataUrl, base64 }) => {
         pendingFiles.value.push({
           file,
           type: 'image',
@@ -66,9 +68,8 @@ function onFileChange(event: Event) {
           preview: dataUrl,
           base64,
         })
-      }
+      })
     }
-    reader.readAsDataURL(file)
   }
   target.value = ''
 }

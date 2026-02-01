@@ -2,7 +2,7 @@ import type { RxDatabase } from 'rxdb'
 import type { AiProvider } from '../stores/settings'
 import { generateText, stepCountIs, tool } from 'ai'
 import { z } from 'zod'
-import { getModel, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument } from './ai'
+import { getModel, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument, withRetry } from './ai'
 import { checkDueMaintenances, getMaintenanceSchedule } from './maintenance-schedule'
 
 export interface ChatMessage {
@@ -272,6 +272,36 @@ export interface ChatOptions {
   model?: string
 }
 
+function buildMessages(messages: ChatMessage[], imageBase64?: string) {
+  return messages
+    .filter(m => m.id !== 'welcome')
+    .map((m) => {
+      if (m.role === 'user' && m === messages[messages.length - 1] && imageBase64) {
+        return {
+          role: 'user' as const,
+          content: [
+            { type: 'text' as const, text: m.content || 'Analysiere dieses Bild.' },
+            { type: 'image' as const, image: imageBase64 },
+          ],
+        }
+      }
+      return { role: m.role as 'user' | 'assistant', content: m.content }
+    })
+}
+
+function extractResponse(result: any): string | undefined {
+  if (result.text)
+    return result.text
+  const lastToolResult = result.steps
+    ?.flatMap((s: any) => s.toolResults ?? [])
+    ?.pop() as any
+  if (lastToolResult?.result && typeof lastToolResult.result === 'object') {
+    const r = lastToolResult.result as Record<string, unknown>
+    if (r.message)
+      return String(r.message)
+  }
+}
+
 export async function sendChatMessage(
   db: RxDatabase,
   messages: ChatMessage[],
@@ -286,40 +316,43 @@ export async function sendChatMessage(
 
   const tools = createTools(db, opts.provider, opts.apiKey, opts.model)
 
-  const aiMessages = messages
-    .filter(m => m.id !== 'welcome')
-    .map((m) => {
-      if (m.role === 'user' && m === messages[messages.length - 1] && imagesBase64?.length) {
-        return {
-          role: 'user' as const,
-          content: [
-            { type: 'text' as const, text: m.content || 'Analysiere dieses Bild.' },
-            ...imagesBase64.map(img => ({ type: 'image' as const, image: img })),
-          ],
-        }
-      }
-      return { role: m.role as 'user' | 'assistant', content: m.content }
-    })
+  // Mehrere Bilder sequentiell verarbeiten (eins nach dem anderen)
+  if (imagesBase64 && imagesBase64.length > 1) {
+    const responses: string[] = []
+    for (let i = 0; i < imagesBase64.length; i++) {
+      const textForImage = i === 0
+        ? messages[messages.length - 1]?.content || `Analysiere Bild ${i + 1}.`
+        : `Analysiere Bild ${i + 1}.`
 
-  const result = await generateText({
+      const messagesForCall = i === 0
+        ? messages
+        : [...messages, ...responses.flatMap((r, j) => [
+            { id: `img-q-${j}`, role: 'user' as const, content: `Analysiere Bild ${j + 1}.` },
+            { id: `img-a-${j}`, role: 'assistant' as const, content: r },
+          ]), { id: `img-q-${i}`, role: 'user' as const, content: textForImage }]
+
+      const aiMessages = buildMessages(messagesForCall, imagesBase64[i])
+      const result = await withRetry(() => generateText({
+        model,
+        system: SYSTEM_PROMPT,
+        messages: aiMessages,
+        tools,
+        stopWhen: stepCountIs(2),
+      }))
+      responses.push(extractResponse(result) || `Bild ${i + 1} analysiert.`)
+    }
+    return responses.join('\n\n')
+  }
+
+  // Ein Bild oder kein Bild
+  const aiMessages = buildMessages(messages, imagesBase64?.[0])
+  const result = await withRetry(() => generateText({
     model,
     system: SYSTEM_PROMPT,
     messages: aiMessages,
     tools,
     stopWhen: stepCountIs(2),
-  })
+  }))
 
-  if (result.text)
-    return result.text
-
-  const lastToolResult = result.steps
-    ?.flatMap(s => s.toolResults ?? [])
-    ?.pop() as any
-  if (lastToolResult?.result && typeof lastToolResult.result === 'object') {
-    const r = lastToolResult.result as Record<string, unknown>
-    if (r.message)
-      return String(r.message)
-  }
-
-  return 'Erledigt.'
+  return extractResponse(result) || 'Erledigt.'
 }

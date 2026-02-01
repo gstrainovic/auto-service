@@ -50,7 +50,7 @@ Getestetes Setup (Jan 2026): Ollama 0.15.2, qwen3-vl:2b, Quadro P1000 (4 GB VRAM
 - qwen3-vl:4b (3.3 GB) hängt bei Vision auf 4 GB VRAM — 2b empfohlen
 - Ollama API: http://localhost:11434, OpenAI-kompatibel via /v1/chat/completions
 
-## Mistral Vision Limits
+## Mistral Vision Limits (Chat-Modell: mistral-small-latest)
 Quelle: docs.mistral.ai/capabilities/vision
 - Max **8 Bilder** pro API-Request
 - Max **10 MB** pro Bild, max **10.000×10.000 px**
@@ -58,6 +58,21 @@ Quelle: docs.mistral.ai/capabilities/vision
 - Mistral Small: intern auf **1540×1540** skaliert → client-seitig auf 1540px resizen spart Bandbreite
 - Tokens pro Bild: `(W × H) / 784` ≈ max 3.025 bei 1540×1540
 - Client-Resize: `useImageResize.ts` → JPEG 80%, max 1540px longest side
+
+## Mistral OCR Limits (OCR-Modell: mistral-ocr-latest)
+Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
+- Max **50 MB** Dateigröße, max **1.000 Seiten** pro Request
+- **Bilder**: PNG, JPEG/JPG, AVIF (per URL oder Base64)
+- **Dokumente**: PDF, PPTX, DOCX (per URL, Base64 oder Cloud-Upload)
+- Verarbeitung bei **200 DPI** (intern)
+- Page-Selection möglich: einzelne Seite, Range, oder Liste (0-basiert)
+- Tabellen: `table_format` = `null` | `markdown` | `html`
+- Header/Footer-Extraktion optional (`extract_header`, `extract_footer`)
+- **Kein** Character-Formatting (bold, italic, underline) — aber Fußnoten (Superscript)
+- Pricing: ~$0.001 pro Seite ($1/1.000 Seiten)
+- Rate-Limit: 2.000 Seiten/Minute (Scale-Tier)
+- Azure/Foundry: max 30 MB, max 30 Seiten
+- Zwei-Stufen-Pipeline (OCR → Chat) ist zuverlässiger als Document Annotation (Ein-Stufe halluziniert)
 
 ## Mistral API Tiers & Rate-Limits
 - **Experiment (Free)**: 50K Tokens/Min, 4M Tokens/Monat, 1 RPS — verstecktes Vision-Rate-Limit
@@ -69,7 +84,11 @@ Quelle: docs.mistral.ai/capabilities/vision
 ## Key Patterns
 - AI SDK v6: `inputSchema` (not `parameters`), `stopWhen: stepCountIs(n)` (not maxSteps)
 - Chat tools write directly to RxDB — no REST API layer
-- Chat stepCount=2 to prevent duplicate tool calls
+- Chat stepCount=5 (Phase 2), dynamisch höher für PDF mit vielen Seiten
+- Chat-Verlauf wird in RxDB `chatmessages` Collection persistiert
+- >8 Bilder: OCR-Text wird verwendet, Bilder nicht an Vision-Modell gesendet
+- Regelbasierte Kategorie-Korrektur: Keywords überschreiben AI-Zuordnung (z.B. "Auspuff" → auspuff)
+- PDF-Upload: max 50 MB, OCR pro Seite, Duplikat-Erkennung bei identischen Seiten
 - `scan_document` Tool wird ausgeblendet wenn Bilder im Message sind (Modell sieht Bilder direkt)
 - z.enum(MAINTENANCE_CATEGORIES) enforces valid categories in AI schemas
 - RxDB: optional fields can be added without schema version bump

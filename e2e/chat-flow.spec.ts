@@ -41,7 +41,7 @@ test.describe('Chat Flow', () => {
 
     // Check if model created directly or asked for confirmation
     const lastMsgText = await lastMsg.textContent() || ''
-    if (!/angelegt|eingetragen|erstellt|hinzugefügt|gespeichert|erledigt/i.test(lastMsgText)) {
+    if (!/angelegt|eingetragen|erstellt|hinzugefügt|gespeichert|erfasst|erledigt/i.test(lastMsgText)) {
       // Model asked for confirmation — send "Ja, bitte eintragen"
       const chatInput = page.locator('.q-dialog input[placeholder="Nachricht..."]')
       await chatInput.fill('Ja, bitte eintragen')

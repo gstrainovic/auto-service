@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "exportedAt": "2026-02-01T19:10:30.635Z",
+  "vehicles": [
+    {
+      "id": "test-export-vehicle",
+      "make": "ExportTest",
+      "model": "Roundtrip",
+      "year": 2025,
+      "mileage": 12345,
+      "licensePlate": "EX-123",
+      "vin": "",
+      "createdAt": "2026-02-01T19:10:30.518Z",
+      "updatedAt": "2026-02-01T19:10:30.519Z"
+    }
+  ],
+  "invoices": [],
+  "maintenances": [],
+  "ocrCache": []
+}

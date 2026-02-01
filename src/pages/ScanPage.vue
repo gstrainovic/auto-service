@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import InvoiceResult from '../components/InvoiceResult.vue'
 import InvoiceScanner from '../components/InvoiceScanner.vue'
+import { autoRotateForDocument } from '../composables/useImageResize'
 import { MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument } from '../services/ai'
 import { useInvoicesStore } from '../stores/invoices'
 import { useMaintenancesStore } from '../stores/maintenances'
@@ -97,7 +98,7 @@ async function onSaveInvoice() {
     date: inv.date,
     totalAmount: inv.totalAmount || 0,
     mileageAtService: inv.mileageAtService || 0,
-    imageData: imageBase64.value,
+    imageData: await autoRotateForDocument(imageBase64.value),
     rawText: '',
     items: inv.items || [],
   })

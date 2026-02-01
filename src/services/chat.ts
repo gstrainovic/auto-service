@@ -2,8 +2,41 @@ import type { RxDatabase } from 'rxdb'
 import type { AiProvider } from '../stores/settings'
 import { generateText, stepCountIs, tool } from 'ai'
 import { z } from 'zod'
-import { callMistralOcr, getModel, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument, withRetry } from './ai'
+import { autoRotateForDocument } from '../composables/useImageResize'
+import { callMistralOcr, callMistralOcrPdf, getModel, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument, withRetry } from './ai'
 import { checkDueMaintenances, getMaintenanceSchedule } from './maintenance-schedule'
+
+/**
+ * Regelbasierte Kategorie-Korrektur: Überschreibt die AI-Zuordnung wenn
+ * eindeutige Keywords in der Beschreibung gefunden werden.
+ * Löst das Problem dass z.B. "Auspuff reparieren" → sonstiges statt auspuff.
+ */
+const CATEGORY_KEYWORDS: [RegExp, string][] = [
+  [/auspuff|katalysator|kr[üu]mmer|abgasanlage|endtopf|mitteltopf/i, 'auspuff'],
+  [/k[üu]hl(wasser|er|mittel|fl[üu]ssigkeit)|frostschutz|thermostat|unterdruck/i, 'kuehlung'],
+  [/windschutzscheibe|frontscheibe|heckscheibe|autoglas|scheibenwischer/i, 'autoglas'],
+  [/[öo]lwechsel|[öo]lfilter|motor[öo]l|[öo]lablassschraube/i, 'oelwechsel'],
+  [/bremsbe[lä]|bremsscheib|bremss[aä]ttel|bremstrommel|bremsbacke/i, 'bremsen'],
+  [/\breifen\b|reifenmontage|reifenwechsel|auswuchten|winterreifen|sommerreifen/i, 'reifen'],
+  [/feder(bein)?|sto[ßs]d[äa]mpfer|radlager|achse|lenkung|querlenker|spurstange|traggelenk/i, 'fahrwerk'],
+  [/batterie|lichtmaschine|starter|z[üu]ndkerze|z[üu]ndspule/i, 'elektrik'],
+  [/lack|karosserie|rost|delle|unfallschaden|blech/i, 'karosserie'],
+  [/inspektion|service(?!.*heft)|durchsicht|hu.vorbereitung/i, 'inspektion'],
+  [/klimaanlage|klima.service|k[äa]ltemittel/i, 'klimaanlage'],
+  [/zahnriemen|steuerriemen|steuerkette/i, 'zahnriemen'],
+  [/bremsfl[üu]ssigkeit/i, 'bremsflüssigkeit'],
+  [/luftfilter|pollenfilter|innenraumfilter/i, 'luftfilter'],
+  [/t[üu]v\b|hauptuntersuchung|\bhu\b|\bau\b/i, 'tuev'],
+]
+
+function correctCategory(description: string, aiCategory: string): string {
+  const desc = description.toLowerCase()
+  for (const [pattern, category] of CATEGORY_KEYWORDS) {
+    if (pattern.test(desc))
+      return category
+  }
+  return aiCategory
+}
 
 export interface ChatMessage {
   id: string
@@ -36,6 +69,24 @@ WICHTIGE REGELN:
 3. Führe KEINE Tools aus bevor der Benutzer die Daten bestätigt hat.
 4. Wenn du unsicher bist über ein Feld, zeige was du erkannt hast und frage nach.
 5. Bei einfachen Änderungen (z.B. "ändere Baujahr auf 2008") ist keine Bestätigung nötig — führe es direkt aus.
+
+RECHNUNGSPOSITIONEN:
+- MwSt./MWST/USt. Zeilen sind KEINE eigenen Positionen — nicht eintragen!
+- "Summe Arbeiten", "Summe Teile", "Nettobetrag", "Zwischensumme" sind KEINE Positionen — nicht eintragen!
+- Nur tatsächliche Arbeiten und Teile sind Positionen.
+
+KATEGORIEN bei add_invoice — wähle die passendste:
+- oelwechsel: Ölwechsel, Ölfilter, Motoröl, Ölablassschraube
+- bremsen: Bremsbeläge, Bremsscheiben, Bremssättel
+- reifen: Reifenmontage, Reifenwechsel, Auswuchten, Winterreifen, Sommerreifen
+- fahrwerk: Federn, Stoßdämpfer, Federbeine, Achse, Lenkung, Radlager
+- auspuff: Auspuff, Krümmer, Katalysator, Abgasanlage
+- kuehlung: Kühlwasser, Kühler, Thermostat, Frostschutz, Unterdruckleitung, Kühlmittel
+- autoglas: Windschutzscheibe, Autoglas, Scheibenwischer, Frontscheibe, Heckscheibe
+- elektrik: Batterie, Lichtmaschine, Starter, Kabel, Sicherungen
+- karosserie: Blech, Lack, Rost, Delle, Unfallschaden
+- inspektion: Inspektion, Service, Durchsicht, HU-Vorbereitung
+- sonstiges: NUR wenn keine andere Kategorie passt (z.B. Lieferspesen, Reinigungsmaterial)
 
 FEEDBACK NACH AKTIONEN:
 Wenn du ein Tool erfolgreich ausgeführt hast, fasse IMMER zusammen was du getan hast:
@@ -233,7 +284,7 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         items: z.array(z.object({
           description: z.string().describe('Beschreibung der Arbeit oder des Teils'),
           category: z.enum(MAINTENANCE_CATEGORIES).describe(
-            'Kategorie: oelwechsel, bremsen, reifen, inspektion, fahrwerk, auspuff, kuehlung, autoglas, elektrik, karosserie, sonstiges',
+            'Kategorie — oelwechsel: Öl/Ölfilter | bremsen: Bremsbeläge/Scheiben | reifen: Reifen/Auswuchten | fahrwerk: Federn/Stoßdämpfer/Achse | auspuff: Auspuff/Katalysator | kuehlung: Kühlwasser/Kühler/Frostschutz/Thermostat | autoglas: Windschutzscheibe/Scheibenwischer | elektrik: Batterie/Kabel | karosserie: Lack/Blech | inspektion: Service/Durchsicht | sonstiges: nur wenn nichts anderes passt',
           ),
           amount: z.number().describe('Einzelbetrag dieser Position'),
         })).describe('Positionen der Rechnung'),
@@ -262,7 +313,14 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
           totalAmount,
           mileageAtService: mileageAtService || 0,
           currency: currency || 'EUR',
-          imageData: (imagesBase64 && imageIndex !== undefined) ? imagesBase64[imageIndex] ?? '' : '',
+          imageData: await (async () => {
+            if (!imagesBase64 || imageIndex === undefined)
+              return ''
+            const raw = imagesBase64[imageIndex] ?? ''
+            if (!raw)
+              return ''
+            return autoRotateForDocument(raw)
+          })(),
           rawText: '',
           items,
           createdAt: now,
@@ -270,7 +328,8 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         })
         for (const item of items) {
           const normalized = item.category.toLowerCase().trim()
-          const category = (MAINTENANCE_CATEGORIES as readonly string[]).includes(normalized) ? normalized : 'sonstiges'
+          const aiCategory = (MAINTENANCE_CATEGORIES as readonly string[]).includes(normalized) ? normalized : 'sonstiges'
+          const category = correctCategory(item.description, aiCategory)
           await (db as any).maintenances.insert({
             id: crypto.randomUUID(),
             vehicleId,
@@ -288,7 +347,7 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         }
         if (mileageAtService) {
           const vDoc = await (db as any).vehicles.findOne({ selector: { id: vehicleId } }).exec()
-          if (vDoc)
+          if (vDoc && mileageAtService > (vDoc.mileage || 0))
             await vDoc.patch({ mileage: mileageAtService, updatedAt: now })
         }
         return {
@@ -418,14 +477,16 @@ function extractResult(result: any): string | undefined {
   return messages.length ? messages.join('\n') : undefined
 }
 
-// Zwischenspeicher für Bilder zwischen Phase 1 (Analyse) und Phase 2 (Tool-Calls)
+// Zwischenspeicher für Bilder/PDF-OCR zwischen Phase 1 (Analyse) und Phase 2 (Tool-Calls)
 let pendingImages: string[] = []
+let pendingPdfOcrTexts: string[] = []
 
 export async function sendChatMessage(
   db: RxDatabase,
   messages: ChatMessage[],
   opts: ChatOptions,
   imagesBase64?: string[],
+  pdfBase64?: string,
 ): Promise<string> {
   const model = getModel({
     provider: opts.provider,
@@ -433,9 +494,46 @@ export async function sendChatMessage(
     model: opts.model,
   })
 
+  if (pdfBase64) {
+    // Phase 1 für PDF: OCR alle Seiten, dann Ergebnisse anzeigen
+    pendingPdfOcrTexts = []
+    pendingImages = []
+
+    const ocrPages = await withRetry(() => callMistralOcrPdf(pdfBase64, opts.apiKey))
+    pendingPdfOcrTexts = ocrPages
+
+    const ocrContext = ocrPages
+      .map((t, i) => `--- Seite ${i + 1} ---\n${t}`)
+      .join('\n\n')
+
+    const phase1System = `${SYSTEM_PROMPT}
+
+Der Benutzer hat ein PDF-Dokument mit ${ocrPages.length} Seite(n) hochgeladen.
+Jede Seite kann eine separate Rechnung oder ein separates Dokument sein.
+Wenn zwei Seiten identisch oder sehr ähnlich sind, weise darauf hin (Duplikat).
+
+--- OCR-ERGEBNIS (exakter Text vom Dokument) ---
+${ocrContext}
+--- ENDE OCR ---
+
+Der OCR-Text oben ist maschinengelesen und daher bei Zahlen, Tabellen und Beträgen GENAUER als deine eigene Bilderkennung. Verwende die Werte aus dem OCR-Text.
+
+Analysiere jede Seite einzeln. Zeige die erkannten Daten pro Seite strukturiert an — getrennt nach Fahrzeug-Daten und Rechnungs-Daten. Frage den Benutzer ob die Daten korrekt sind bevor du fortfährst.`
+
+    const phase1 = await withRetry(() => generateText({
+      model,
+      maxRetries: 0,
+      system: phase1System,
+      messages: buildAiMessages(messages),
+      stopWhen: stepCountIs(1),
+    }))
+    return phase1.text || 'Keine Ergebnisse.'
+  }
+
   if (imagesBase64?.length) {
     // Phase 1: Bilder analysieren — nur Text zurückgeben, NICHTS speichern
     pendingImages = imagesBase64
+    pendingPdfOcrTexts = []
 
     // Mistral: OCR-Vorverarbeitung für perfekte Texterkennung (Tabellen, Spalten, Beträge)
     let ocrTexts: string[] = []
@@ -472,24 +570,30 @@ ${ocrContext}
 
 Zeige die erkannten Daten strukturiert an — getrennt nach Fahrzeug-Daten und Rechnungs-Daten. Frage den Benutzer ob die Daten korrekt sind bevor du fortfährst.`
 
+    // Vision-Modell: max 8 Bilder. Bei >8 nur OCR-Text verwenden (kein Bild im Request)
+    const visionImages = imagesBase64.length <= 8 ? imagesBase64 : undefined
+
     const phase1 = await withRetry(() => generateText({
       model,
       maxRetries: 0,
       system: phase1System,
-      messages: buildAiMessages(messages, imagesBase64),
+      messages: buildAiMessages(messages, visionImages),
       stopWhen: stepCountIs(1),
     }))
     return phase1.text || 'Keine Ergebnisse.'
   }
 
-  // Phase 2: Wenn Bilder aus vorheriger Nachricht zwischengespeichert sind
+  // Phase 2: Wenn Bilder oder PDF-OCR aus vorheriger Nachricht zwischengespeichert sind
   const storedImages = pendingImages.length ? [...pendingImages] : undefined
+  const storedPdfOcr = pendingPdfOcrTexts.length ? [...pendingPdfOcrTexts] : undefined
   if (storedImages?.length)
     pendingImages = []
+  if (storedPdfOcr?.length)
+    pendingPdfOcrTexts = []
 
   const allTools = createTools(db, opts.provider, opts.apiKey, opts.model, storedImages)
   const { scan_document: _, ...toolsWithoutScan } = allTools
-  const tools = storedImages?.length ? toolsWithoutScan : allTools
+  const tools = (storedImages?.length || storedPdfOcr?.length) ? toolsWithoutScan : allTools
 
   // Fahrzeugliste für Kontext — IMMER injizieren, nicht nur bei Bildern
   const vehicleDocs = await (db as any).vehicles.find().exec()
@@ -505,7 +609,16 @@ Zeige die erkannten Daten strukturiert an — getrennt nach Fahrzeug-Daten und R
   const aiMessages = buildAiMessages(messages)
 
   // Kontext immer anhängen, damit das Modell Fahrzeuge ohne ID-Nachfrage zuordnen kann
-  if (storedImages?.length) {
+  if (storedPdfOcr?.length) {
+    const pdfContext = storedPdfOcr
+      .map((t, i) => `--- Seite ${i + 1} ---\n${t}`)
+      .join('\n\n')
+    aiMessages.push({
+      role: 'user' as any,
+      content: `Kontext: PDF mit ${storedPdfOcr.length} Seite(n) wurde analysiert. Jede Seite kann eine separate Rechnung sein. Trage jede Rechnung einzeln ein.\n\n--- OCR-TEXT ---\n${pdfContext}\n--- ENDE ---\n\n${vehicleContext}\n\nWICHTIG: Verwende NUR die exakten Fahrzeug-IDs aus der Liste oben oder aus dem Ergebnis von add_vehicle. Erfinde KEINE IDs.`,
+    })
+  }
+  else if (storedImages?.length) {
     aiMessages.push({
       role: 'user' as any,
       content: `Kontext: Es wurden ${storedImages.length} Bilder gesendet (Index 0–${storedImages.length - 1}). Nutze imageIndex bei add_invoice um das Bild zu speichern.\n\n${vehicleContext}\n\nWICHTIG: Verwende NUR die exakten Fahrzeug-IDs aus der Liste oben oder aus dem Ergebnis von add_vehicle. Erfinde KEINE IDs.`,
@@ -518,13 +631,16 @@ Zeige die erkannten Daten strukturiert an — getrennt nach Fahrzeug-Daten und R
     })
   }
 
+  // Mehr Steps für PDF mit vielen Seiten (jede Seite = mind. 1 add_invoice + 1 add_vehicle)
+  const maxSteps = storedPdfOcr?.length ? Math.max(5, storedPdfOcr.length * 2 + 2) : 5
+
   const result = await withRetry(() => generateText({
     model,
     maxRetries: 0,
     system: SYSTEM_PROMPT,
     messages: aiMessages,
     tools,
-    stopWhen: stepCountIs(5),
+    stopWhen: stepCountIs(maxSteps),
   }))
   return extractResult(result) || 'Erledigt.'
 }

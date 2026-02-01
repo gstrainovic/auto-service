@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import type { ChatMessage } from '../services/chat'
-import { nextTick, ref, watch } from 'vue'
+import { Notify } from 'quasar'
+import { nextTick, onMounted, ref, watch } from 'vue'
 import { useDatabase } from '../composables/useDatabase'
 import { resizeImage } from '../composables/useImageResize'
 import { sendChatMessage, WELCOME_MESSAGE } from '../services/chat'
 import { useSettingsStore } from '../stores/settings'
+
+const MAX_PDF_SIZE = 50 * 1024 * 1024 // 50 MB (Mistral OCR Limit)
 
 const open = defineModel<boolean>({ default: false })
 
@@ -17,6 +20,37 @@ const loading = ref(false)
 const pendingFiles = ref<{ file: File, type: 'image' | 'pdf', name: string, preview: string, base64: string }[]>([])
 const scrollArea = ref<any>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
+
+// Chat-Verlauf aus RxDB laden
+onMounted(async () => {
+  const db = await dbPromise
+  const docs = await (db as any).chatmessages.find({ sort: [{ createdAt: 'asc' }] }).exec()
+  if (docs.length) {
+    messages.value = [
+      WELCOME_MESSAGE,
+      ...docs.map((d: any) => ({
+        id: d.id,
+        role: d.role,
+        content: d.content,
+        attachments: d.attachments?.length ? d.attachments : undefined,
+      })),
+    ]
+  }
+})
+
+async function saveMessage(msg: ChatMessage) {
+  const db = await dbPromise
+  try {
+    await (db as any).chatmessages.insert({
+      id: msg.id,
+      role: msg.role,
+      content: msg.content,
+      attachments: msg.attachments || [],
+      createdAt: new Date().toISOString(),
+    })
+  }
+  catch {}
+}
 
 function scrollToBottom() {
   nextTick(() => {
@@ -44,6 +78,10 @@ function onFileChange(event: Event) {
   for (const file of Array.from(files)) {
     const isImage = file.type.startsWith('image/')
     if (!isImage) {
+      if (file.size > MAX_PDF_SIZE) {
+        Notify.create({ type: 'negative', message: `PDF zu groß (${(file.size / 1024 / 1024).toFixed(0)} MB). Maximum: 50 MB.` })
+        break
+      }
       pendingFiles.value = []
       const reader = new FileReader()
       reader.onload = (e) => {
@@ -60,11 +98,7 @@ function onFileChange(event: Event) {
       reader.readAsDataURL(file)
     }
     else {
-      if (pendingFiles.value.filter(f => f.type === 'image').length >= 8)
-        break
       resizeImage(file).then(({ dataUrl, base64 }) => {
-        if (pendingFiles.value.filter(f => f.type === 'image').length >= 8)
-          return
         pendingFiles.value.push({
           file,
           type: 'image',
@@ -99,8 +133,10 @@ async function send() {
   }
 
   const imagesBase64 = files.filter(f => f.type === 'image').map(f => f.base64)
+  const pdfFile = files.find(f => f.type === 'pdf')
 
   messages.value.push(userMsg)
+  await saveMessage(userMsg)
   input.value = ''
   pendingFiles.value = []
   loading.value = true
@@ -111,24 +147,34 @@ async function send() {
       provider: settings.aiProvider,
       apiKey: settings.aiApiKey,
       model: settings.aiModel || undefined,
-    }, imagesBase64.length ? imagesBase64 : undefined)
+    }, imagesBase64.length ? imagesBase64 : undefined, pdfFile?.base64)
 
-    messages.value.push({
+    const assistantMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'assistant',
       content: response || 'Erledigt.',
-    })
+    }
+    messages.value.push(assistantMsg)
+    await saveMessage(assistantMsg)
   }
   catch (e: any) {
-    messages.value.push({
+    const errorMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'assistant',
       content: `Fehler: ${e.message}`,
-    })
+    }
+    messages.value.push(errorMsg)
+    await saveMessage(errorMsg)
   }
   finally {
     loading.value = false
   }
+}
+
+async function clearChat() {
+  const db = await dbPromise
+  await (db as any).chatmessages.find().remove()
+  messages.value = [WELCOME_MESSAGE]
 }
 </script>
 
@@ -147,6 +193,9 @@ async function send() {
         <q-toolbar-title class="text-subtitle1">
           KI-Assistent
         </q-toolbar-title>
+        <q-btn flat round dense icon="delete_sweep" @click="clearChat">
+          <q-tooltip>Chat löschen</q-tooltip>
+        </q-btn>
         <q-btn flat round dense icon="close" @click="open = false" />
       </q-toolbar>
 
@@ -224,7 +273,7 @@ async function send() {
           @change="onFileChange"
         >
         <q-btn flat round dense icon="attach_file" @click="pickFile">
-          <q-tooltip>Fotos (max. 8) oder PDF anhängen</q-tooltip>
+          <q-tooltip>Fotos oder PDF anhängen (max. 50 MB)</q-tooltip>
         </q-btn>
         <q-input
           v-model="input"

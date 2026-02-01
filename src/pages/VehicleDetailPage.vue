@@ -222,7 +222,7 @@ async function saveMaintenanceEdit() {
 
         <q-card-section v-if="selectedInvoice.imageData">
           <q-img
-            :src="`data:image/png;base64,${selectedInvoice.imageData}`"
+            :src="`data:image/jpeg;base64,${selectedInvoice.imageData}`"
             style="max-height: 400px"
             fit="contain"
           />

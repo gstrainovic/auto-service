@@ -228,6 +228,44 @@ export async function callMistralOcr(imageBase64: string, apiKey: string, db?: R
 }
 
 /**
+ * Ruft die Mistral OCR API für ein PDF-Dokument auf.
+ * Gibt ein Array von Markdown-Texten zurück (einer pro Seite).
+ * Mistral OCR: max 50 MB Dateigröße, max 1000 Seiten.
+ */
+export async function callMistralOcrPdf(pdfBase64: string, apiKey: string): Promise<string[]> {
+  const resp = await fetch('https://api.mistral.ai/v1/ocr', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'mistral-ocr-latest',
+      document: {
+        type: 'document_url',
+        document_url: `data:application/pdf;base64,${pdfBase64}`,
+      },
+      table_format: 'markdown',
+    }),
+  })
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}))
+    throw new Error(`Mistral OCR PDF error ${resp.status}: ${(err as any).error?.message || resp.statusText}`)
+  }
+
+  const data = await resp.json() as { pages?: OcrPage[] }
+  return (data.pages || []).map((p) => {
+    let md = p.markdown || ''
+    if (p.tables?.length) {
+      for (const tbl of p.tables)
+        md = md.replace(`[${tbl.id}](${tbl.id})`, tbl.content)
+    }
+    return md
+  })
+}
+
+/**
  * Zwei-Stufen-Pipeline für Mistral: OCR → Chat
  * Stufe 1: mistral-ocr-latest extrahiert Text perfekt (inkl. Tabellen)
  * Stufe 2: Chat-Modell parst den OCR-Text in strukturiertes JSON (ohne Bild)

@@ -82,6 +82,30 @@ export const maintenanceSchema: RxJsonSchema<any> = {
   required: ['id', 'vehicleId', 'type', 'status', 'createdAt', 'updatedAt'],
 }
 
+export const chatMessageSchema: RxJsonSchema<any> = {
+  version: 0,
+  primaryKey: 'id',
+  type: 'object',
+  properties: {
+    id: { type: 'string', maxLength: 100 },
+    role: { type: 'string', enum: ['user', 'assistant'] },
+    content: { type: 'string' },
+    attachments: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          type: { type: 'string' },
+          name: { type: 'string' },
+          preview: { type: 'string' },
+        },
+      },
+    },
+    createdAt: { type: 'string', format: 'date-time' },
+  },
+  required: ['id', 'role', 'content', 'createdAt'],
+}
+
 export const ocrCacheSchema: RxJsonSchema<any> = {
   version: 0,
   primaryKey: 'id',

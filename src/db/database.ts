@@ -1,8 +1,8 @@
-import { createRxDatabase } from 'rxdb'
+import { createRxDatabase, removeRxDatabase } from 'rxdb'
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie'
 import { invoiceSchema, maintenanceSchema, vehicleSchema } from './schema'
 
-export async function createDatabase(name = 'autoservice') {
+async function initDatabase(name: string) {
   const db = await createRxDatabase({
     name,
     storage: getRxStorageDexie(),
@@ -15,4 +15,18 @@ export async function createDatabase(name = 'autoservice') {
   })
 
   return db
+}
+
+export async function createDatabase(name = 'autoservice') {
+  try {
+    return await initDatabase(name)
+  }
+  catch (e: any) {
+    if (e?.code === 'DB6') {
+      console.warn('Schema geändert — Datenbank wird zurückgesetzt.')
+      await removeRxDatabase(name, getRxStorageDexie())
+      return await initDatabase(name)
+    }
+    throw e
+  }
 }

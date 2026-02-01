@@ -18,6 +18,10 @@ export const MAINTENANCE_CATEGORIES = [
   'tuev',
   'karosserie',
   'elektrik',
+  'fahrwerk',
+  'auspuff',
+  'kuehlung',
+  'autoglas',
   'sonstiges',
 ] as const
 
@@ -28,13 +32,13 @@ const invoiceSchema = z.object({
   date: z.string().describe('Rechnungsdatum im Format YYYY-MM-DD'),
   totalAmount: z.number().describe('Gesamtbetrag (brutto, inkl. MwSt.)'),
   currency: z.string().describe('Währung: CHF, EUR, USD etc.'),
-  mileageAtService: z.number().optional().describe('Kilometerstand bei Reparatur falls angegeben'),
-  licensePlate: z.string().optional().describe('Kennzeichen des Fahrzeugs (z.B. SG 218574, M-AB 1234). NICHT die Fahrgestellnummer/VIN.'),
-  vin: z.string().optional().describe('Fahrgestellnummer/VIN (17-stellig, beginnt meist mit W, V, oder ähnlich)'),
+  mileageAtService: z.number().nullable().optional().describe('Kilometerstand bei Reparatur falls angegeben, null wenn nicht vorhanden'),
+  licensePlate: z.string().nullable().optional().describe('Kennzeichen des Fahrzeugs (z.B. SG 218574, M-AB 1234). NICHT die Fahrgestellnummer/VIN.'),
+  vin: z.string().nullable().optional().describe('Fahrgestellnummer/VIN (17-stellig, beginnt meist mit W, V, oder ähnlich)'),
   items: z.array(z.object({
     description: z.string().describe('Beschreibung der Arbeit oder des Teils'),
     category: z.enum(MAINTENANCE_CATEGORIES).describe(
-      'Kategorie: oelwechsel, bremsen, reifen, inspektion, luftfilter, zahnriemen, bremsflüssigkeit, klimaanlage, tuev, karosserie, elektrik, sonstiges',
+      'Kategorie: oelwechsel, bremsen, reifen, inspektion, luftfilter, zahnriemen, bremsflüssigkeit, klimaanlage, tuev, karosserie, fahrwerk, auspuff, kuehlung, autoglas, elektrik, sonstiges',
     ),
     amount: z.number().describe('Einzelbetrag dieser Position (nicht die Zwischensumme oder Gesamtsumme)'),
   })),
@@ -47,13 +51,13 @@ const vehicleDocumentSchema = z.object({
   make: z.string().describe('Marke des Fahrzeugs'),
   model: z.string().describe('Modell des Fahrzeugs'),
   year: z.number().describe('Baujahr oder Erstzulassung'),
-  vin: z.string().optional().describe('Fahrgestellnummer (VIN) falls sichtbar'),
-  plate: z.string().optional().describe('Kennzeichen falls sichtbar'),
-  mileage: z.number().optional().describe('Kilometerstand falls angegeben'),
-  engineType: z.string().optional().describe('Motortyp: Diesel, Benzin, Elektro, Hybrid'),
-  enginePower: z.string().optional().describe('Leistung z.B. 140 kW / 190 PS'),
-  purchaseDate: z.string().optional().describe('Kaufdatum im Format YYYY-MM-DD'),
-  purchasePrice: z.number().optional().describe('Kaufpreis in Euro'),
+  vin: z.string().nullable().optional().describe('Fahrgestellnummer (VIN) falls sichtbar'),
+  plate: z.string().nullable().optional().describe('Kennzeichen falls sichtbar'),
+  mileage: z.number().nullable().optional().describe('Kilometerstand falls angegeben'),
+  engineType: z.string().nullable().optional().describe('Motortyp: Diesel, Benzin, Elektro, Hybrid'),
+  enginePower: z.string().nullable().optional().describe('Leistung z.B. 140 kW / 190 PS'),
+  purchaseDate: z.string().nullable().optional().describe('Kaufdatum im Format YYYY-MM-DD'),
+  purchasePrice: z.number().nullable().optional().describe('Kaufpreis in Euro'),
 })
 
 export type ParsedVehicleDocument = z.infer<typeof vehicleDocumentSchema>
@@ -270,6 +274,21 @@ WICHTIG — Positionen extrahieren:
 WICHTIG — Währung:
 - "CHF" oder "Totalbetrag CHF" → Währung ist CHF
 - "€" oder "EUR" oder "inkl. MwSt." ohne CHF → Währung ist EUR
+
+WICHTIG — Kategorien richtig zuordnen:
+- Federn, Stoßdämpfer, Federbeine, Achse, Lenkung, Radlager → fahrwerk
+- Auspuff, Krümmer, Katalysator, Abgasanlage → auspuff
+- Kühlwasser, Kühler, Thermostat, Frostschutz, Unterdruckleitung → kuehlung
+- Windschutzscheibe, Autoglas, Scheibenwischer → autoglas
+- Ölwechsel, Ölfilter, Motoröl → oelwechsel
+- Bremsen, Bremsbeläge, Bremsscheiben → bremsen
+- Reifen montieren, Reifenwechsel, Auswuchten → reifen
+- Karosserie, Blech, Lack, Rost → karosserie
+
+WICHTIG — Beträge als Zahlen:
+- "1 014.80" → 1014.80 (Leerzeichen entfernen)
+- "540,00" → 540.00 (Komma als Dezimaltrenner bei EUR)
+- Felder die nicht auf der Rechnung stehen → weglassen (nicht null setzen)
 
 Extrahiere alle Daten. Antworte auf Deutsch.`
 

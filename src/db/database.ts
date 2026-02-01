@@ -1,6 +1,6 @@
 import { createRxDatabase, removeRxDatabase } from 'rxdb'
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie'
-import { invoiceSchema, maintenanceSchema, vehicleSchema } from './schema'
+import { invoiceSchema, maintenanceSchema, ocrCacheSchema, vehicleSchema } from './schema'
 
 export async function createDatabase(name = 'autoservice') {
   const storage = getRxStorageDexie()
@@ -11,6 +11,7 @@ export async function createDatabase(name = 'autoservice') {
       vehicles: { schema: vehicleSchema },
       invoices: { schema: invoiceSchema },
       maintenances: { schema: maintenanceSchema },
+      ocrcache: { schema: ocrCacheSchema },
     })
     return db
   }

@@ -81,3 +81,15 @@ export const maintenanceSchema: RxJsonSchema<any> = {
   },
   required: ['id', 'vehicleId', 'type', 'status', 'createdAt', 'updatedAt'],
 }
+
+export const ocrCacheSchema: RxJsonSchema<any> = {
+  version: 0,
+  primaryKey: 'id',
+  type: 'object',
+  properties: {
+    id: { type: 'string', maxLength: 64 },
+    markdown: { type: 'string' },
+    createdAt: { type: 'string', format: 'date-time' },
+  },
+  required: ['id', 'markdown', 'createdAt'],
+}

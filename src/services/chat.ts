@@ -2,7 +2,7 @@ import type { RxDatabase } from 'rxdb'
 import type { AiProvider } from '../stores/settings'
 import { generateText, stepCountIs, tool } from 'ai'
 import { z } from 'zod'
-import { getModel, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument, withRetry } from './ai'
+import { callMistralOcr, getModel, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument, withRetry } from './ai'
 import { checkDueMaintenances, getMaintenanceSchedule } from './maintenance-schedule'
 
 export interface ChatMessage {
@@ -21,6 +21,13 @@ Deine Fähigkeiten:
 - Wartungsstatus prüfen und Empfehlungen geben
 - Fragen zu Wartungsintervallen beantworten
 
+FAHRZEUG-ERKENNUNG:
+- Der Benutzer kennt KEINE IDs. Er sagt z.B. "mein BMW", "der Golf", "das Fahrzeug".
+- Du bekommst die Fahrzeugliste automatisch als Kontext. Nutze sie um das richtige Fahrzeug zu identifizieren.
+- Wenn nur EIN Fahrzeug existiert, verwende es automatisch ohne nachzufragen.
+- Wenn MEHRERE Fahrzeuge passen könnten, frage kurz nach: "Meinst du den BMW 320d oder den BMW X3?"
+- Rufe NIEMALS den Benutzer auf eine ID zu nennen.
+
 WICHTIGE REGELN:
 1. Bevor du ein Fahrzeug anlegst, zeige ALLE Felder dem Benutzer und warte auf Bestätigung:
    - Marke, Modell, Baujahr, Kilometerstand, Kennzeichen, Fahrgestellnummer
@@ -28,6 +35,16 @@ WICHTIGE REGELN:
    - Werkstatt, Datum, Gesamtbetrag, Währung, Kilometerstand, alle Positionen (Beschreibung, Kategorie, Betrag)
 3. Führe KEINE Tools aus bevor der Benutzer die Daten bestätigt hat.
 4. Wenn du unsicher bist über ein Feld, zeige was du erkannt hast und frage nach.
+5. Bei einfachen Änderungen (z.B. "ändere Baujahr auf 2008") ist keine Bestätigung nötig — führe es direkt aus.
+
+FEEDBACK NACH AKTIONEN:
+Wenn du ein Tool erfolgreich ausgeführt hast, fasse IMMER zusammen was du getan hast:
+- **Fahrzeug angelegt**: Liste alle eingetragenen Felder auf (Marke, Modell, Baujahr, km, Kennzeichen)
+- **Rechnung erfasst**: Liste Werkstatt, Datum, Betrag und alle Positionen auf
+- **Wartung eingetragen**: Liste Typ, Beschreibung, Datum, km auf
+- **Änderung**: Zeige Vorher → Nachher für jedes geänderte Feld
+- **Löschung**: Nenne was genau gelöscht wurde
+- **Duplikat erkannt**: Erkläre welcher existierende Eintrag gefunden wurde
 
 Antworte immer auf Deutsch.
 Wenn der Benutzer ein Bild schickt, analysiere es und gib die Ergebnisse strukturiert aus.
@@ -84,28 +101,48 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
           createdAt: now,
           updatedAt: now,
         })
-        return { success: true, vehicleId: id, message: `${make} ${model} (${year}) wurde angelegt. Fahrzeug-ID: ${id}` }
+        return {
+          success: true,
+          vehicleId: id,
+          message: `Fahrzeug angelegt`,
+          data: { make, model, year, mileage: mileage || 0, licensePlate: licensePlate || '', vin: vin || '' },
+        }
       },
     }),
 
     update_vehicle: tool({
-      description: 'Aktualisiert Fahrzeug-Daten (z.B. Kilometerstand, Kennzeichen)',
+      description: 'Aktualisiert Fahrzeug-Daten. Nur die übergebenen Felder werden geändert.',
       inputSchema: z.object({
         vehicleId: z.string().describe('Fahrzeug-ID'),
+        make: z.string().optional().describe('Neue Marke'),
+        model: z.string().optional().describe('Neues Modell'),
+        year: z.number().optional().describe('Neues Baujahr'),
         mileage: z.number().optional().describe('Neuer Kilometerstand'),
         licensePlate: z.string().optional().describe('Neues Kennzeichen'),
+        vin: z.string().optional().describe('Neue Fahrgestellnummer'),
       }),
-      execute: async ({ vehicleId, mileage, licensePlate }) => {
+      execute: async ({ vehicleId, make, model, year, mileage, licensePlate, vin }) => {
         const doc = await (db as any).vehicles.findOne({ selector: { id: vehicleId } }).exec()
         if (!doc)
           return { success: false, message: 'Fahrzeug nicht gefunden' }
+        const before: Record<string, any> = {}
+        const after: Record<string, any> = {}
         const patch: Record<string, any> = { updatedAt: new Date().toISOString() }
-        if (mileage !== undefined)
-          patch.mileage = mileage
-        if (licensePlate !== undefined)
-          patch.licensePlate = licensePlate
+        const fields = { make, model, year, mileage, licensePlate, vin } as Record<string, any>
+        for (const [key, value] of Object.entries(fields)) {
+          if (value !== undefined) {
+            before[key] = (doc as any)[key]
+            after[key] = value
+            patch[key] = value
+          }
+        }
         await doc.patch(patch)
-        return { success: true, message: 'Fahrzeug aktualisiert.' }
+        return {
+          success: true,
+          message: `${after.make || doc.make} ${after.model || doc.model} aktualisiert`,
+          vehicle: `${doc.make} ${doc.model} (${doc.year})`,
+          changes: { before, after },
+        }
       },
     }),
 
@@ -124,7 +161,11 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         const maintenances = await (db as any).maintenances.find({ selector: { vehicleId } }).exec()
         for (const m of maintenances) await m.remove()
         await doc.remove()
-        return { success: true, message: `${name} und alle zugehörigen Daten wurden gelöscht.` }
+        return {
+          success: true,
+          message: `Fahrzeug gelöscht`,
+          deleted: { vehicle: name, invoices: invoices.length, maintenances: maintenances.length },
+        }
       },
     }),
 
@@ -248,7 +289,18 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
           if (vDoc)
             await vDoc.patch({ mileage: mileageAtService, updatedAt: now })
         }
-        return { success: true, message: `Rechnung von ${workshopName} gespeichert.` }
+        return {
+          success: true,
+          message: `Rechnung erfasst`,
+          data: {
+            workshopName,
+            date,
+            totalAmount,
+            currency: currency || 'EUR',
+            mileageAtService: mileageAtService || 0,
+            items: items.map(i => ({ description: i.description, category: i.category, amount: i.amount })),
+          },
+        }
       },
     }),
 
@@ -264,7 +316,12 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         const maintenances = await (db as any).maintenances.find({ selector: { invoiceId } }).exec()
         for (const m of maintenances) await m.remove()
         await doc.remove()
-        return { success: true, message: 'Rechnung gelöscht.' }
+        const inv = doc.toJSON()
+        return {
+          success: true,
+          message: `Rechnung gelöscht`,
+          deleted: { workshopName: inv.workshopName, date: inv.date, totalAmount: inv.totalAmount, maintenances: maintenances.length },
+        }
       },
     }),
 
@@ -277,15 +334,15 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
       }),
       execute: async ({ imageBase64, documentType }) => {
         if (documentType === 'rechnung') {
-          const result = await parseInvoice(imageBase64, provider, apiKey, modelId)
+          const result = await parseInvoice(imageBase64, provider, apiKey, modelId, db)
           return { type: 'rechnung', data: result }
         }
         else if (documentType === 'serviceheft') {
-          const result = await parseServiceBook(imageBase64, provider, apiKey, modelId)
+          const result = await parseServiceBook(imageBase64, provider, apiKey, modelId, db)
           return { type: 'serviceheft', data: result }
         }
         else {
-          const result = await parseVehicleDocument(imageBase64, provider, apiKey, modelId)
+          const result = await parseVehicleDocument(imageBase64, provider, apiKey, modelId, db)
           return { type: 'fahrzeugdokument', data: result }
         }
       },
@@ -316,6 +373,36 @@ function buildAiMessages(messages: ChatMessage[], imagesBase64?: string[]) {
     })
 }
 
+function formatToolResult(r: any): string | undefined {
+  if (!r || typeof r !== 'object')
+    return undefined
+  const parts: string[] = []
+  if (r.message)
+    parts.push(String(r.message))
+  if (r.data) {
+    const d = r.data
+    if (d.make)
+      parts.push(`Marke: ${d.make}, Modell: ${d.model}, Baujahr: ${d.year}, km: ${d.mileage}${d.licensePlate ? `, Kennzeichen: ${d.licensePlate}` : ''}`)
+    if (d.workshopName)
+      parts.push(`Werkstatt: ${d.workshopName}, Datum: ${d.date}, Betrag: ${d.totalAmount} ${d.currency}`)
+    if (d.items?.length)
+      parts.push(`Positionen: ${d.items.map((i: any) => `${i.description} (${i.amount})`).join(', ')}`)
+  }
+  if (r.changes) {
+    const entries = Object.keys(r.changes.before || {})
+    for (const key of entries)
+      parts.push(`${key}: ${r.changes.before[key]} → ${r.changes.after[key]}`)
+  }
+  if (r.deleted) {
+    const d = r.deleted
+    if (d.vehicle)
+      parts.push(`Gelöscht: ${d.vehicle}${d.invoices ? ` (${d.invoices} Rechnungen, ${d.maintenances} Wartungen)` : ''}`)
+    if (d.workshopName)
+      parts.push(`Gelöscht: Rechnung von ${d.workshopName} (${d.date}, ${d.totalAmount})`)
+  }
+  return parts.length ? parts.join('\n') : undefined
+}
+
 function extractResult(result: any): string | undefined {
   if (result.text)
     return result.text
@@ -324,12 +411,7 @@ function extractResult(result: any): string | undefined {
   if (!allResults?.length)
     return undefined
   const messages = allResults
-    .map((tr: any) => {
-      const r = tr?.result
-      if (r && typeof r === 'object' && (r as any).message)
-        return String((r as any).message)
-      return undefined
-    })
+    .map((tr: any) => formatToolResult(tr?.result))
     .filter(Boolean)
   return messages.length ? messages.join('\n') : undefined
 }
@@ -352,10 +434,46 @@ export async function sendChatMessage(
   if (imagesBase64?.length) {
     // Phase 1: Bilder analysieren — nur Text zurückgeben, NICHTS speichern
     pendingImages = imagesBase64
+
+    // Mistral: OCR-Vorverarbeitung für perfekte Texterkennung (Tabellen, Spalten, Beträge)
+    let ocrTexts: string[] = []
+    if (opts.provider === 'mistral') {
+      ocrTexts = await Promise.all(
+        imagesBase64.map(img => withRetry(() => callMistralOcr(img, opts.apiKey, db)).catch(() => '')),
+      )
+    }
+
+    const ocrContext = ocrTexts.filter(Boolean).length
+      ? `\n\n--- OCR-ERGEBNIS (exakter Text vom Dokument) ---\n${ocrTexts.map((t, i) => `Bild ${i + 1}:\n${t}`).join('\n\n')}\n--- ENDE OCR ---\n\nDer OCR-Text oben ist maschinengelesen und daher bei Zahlen, Tabellen und Beträgen GENAUER als deine eigene Bilderkennung. Verwende die Werte aus dem OCR-Text.`
+      : ''
+
+    const phase1System = `${SYSTEM_PROMPT}
+
+Analysiere das Bild sorgfältig. Das Bild kann gedreht sein (90° oder 180°) — lies den Text in der richtigen Leserichtung.
+
+KENNZEICHEN vs. FAHRGESTELLNUMMER:
+- Kennzeichen (license plate): Kürzel + Zahlen, z.B. "SG 218574" (Schweizer Kanton St. Gallen), "M-AB 1234". Steht oft neben dem Fahrzeugnamen auf der Rechnung.
+- Fahrgestellnummer/VIN: Genau 17 Zeichen, beginnt mit W, V, etc. z.B. "WP1ZZZ9PZ8LA14872"
+- "SG 218574" ist ein SCHWEIZER KENNZEICHEN, NICHT eine Fahrgestellnummer!
+
+POSITIONEN KORREKT LESEN:
+- Lies die Tabellenspalten sorgfältig: Beschreibung | Menge | Einheit | Einzelpreis | Betrag
+- Betrag pro Position = Menge × Einzelpreis. Wenn es nicht aufgeht, hast du falsch gelesen.
+- "Summe Arbeiten" und "Summe Teile" sind Zwischensummen — KEINE eigenen Positionen
+- Kontrolliere: Summe aller Positions-Beträge ≈ Netto-Gesamtbetrag (vor MwSt.)
+- Wenn die Summe nicht stimmt, lies die Tabelle nochmal und korrigiere.
+
+WÄHRUNG:
+- "CHF" oder "Totalbetrag CHF" → CHF (Schweizer Franken)
+- "€" oder "EUR" → EUR
+${ocrContext}
+
+Zeige die erkannten Daten strukturiert an — getrennt nach Fahrzeug-Daten und Rechnungs-Daten. Frage den Benutzer ob die Daten korrekt sind bevor du fortfährst.`
+
     const phase1 = await withRetry(() => generateText({
       model,
       maxRetries: 0,
-      system: `${SYSTEM_PROMPT}\n\nBeschreibe detailliert was du auf dem Bild/den Bildern siehst. Zeige die erkannten Daten strukturiert an — getrennt nach Fahrzeug-Daten und Rechnungs-Daten, so wie sie eingetragen werden würden. Frage den Benutzer ob die Daten korrekt sind bevor du fortfährst.`,
+      system: phase1System,
       messages: buildAiMessages(messages, imagesBase64),
       stopWhen: stepCountIs(1),
     }))
@@ -371,20 +489,30 @@ export async function sendChatMessage(
   const { scan_document: _, ...toolsWithoutScan } = allTools
   const tools = storedImages?.length ? toolsWithoutScan : allTools
 
-  // Fahrzeugliste für Kontext
+  // Fahrzeugliste für Kontext — IMMER injizieren, nicht nur bei Bildern
   const vehicleDocs = await (db as any).vehicles.find().exec()
   const vehicleList = vehicleDocs.map((d: any) => {
     const v = d.toJSON()
-    return `- ${v.make} ${v.model} (${v.year}): ID=${v.id}`
+    return `- ${v.make} ${v.model} (${v.year}), ${v.mileage} km${v.licensePlate ? `, ${v.licensePlate}` : ''}: ID=${v.id}`
   }).join('\n')
+
+  const vehicleContext = vehicleList
+    ? `Verfügbare Fahrzeuge:\n${vehicleList}`
+    : '(keine Fahrzeuge vorhanden — lege zuerst eins an mit add_vehicle)'
 
   const aiMessages = buildAiMessages(messages)
 
-  // Kontext-Hinweis für Tool-Calls anhängen
+  // Kontext immer anhängen, damit das Modell Fahrzeuge ohne ID-Nachfrage zuordnen kann
   if (storedImages?.length) {
     aiMessages.push({
       role: 'user' as any,
-      content: `Kontext: Es wurden ${storedImages.length} Bilder gesendet (Index 0–${storedImages.length - 1}). Nutze imageIndex bei add_invoice um das Bild zu speichern.\n\nVerfügbare Fahrzeuge:\n${vehicleList || '(keine — lege zuerst ein Fahrzeug an mit add_vehicle, dann nutze die zurückgegebene vehicleId für add_invoice)'}\n\nWICHTIG: Verwende NUR die exakten Fahrzeug-IDs aus der Liste oben oder aus dem Ergebnis von add_vehicle. Erfinde KEINE IDs.`,
+      content: `Kontext: Es wurden ${storedImages.length} Bilder gesendet (Index 0–${storedImages.length - 1}). Nutze imageIndex bei add_invoice um das Bild zu speichern.\n\n${vehicleContext}\n\nWICHTIG: Verwende NUR die exakten Fahrzeug-IDs aus der Liste oben oder aus dem Ergebnis von add_vehicle. Erfinde KEINE IDs.`,
+    })
+  }
+  else {
+    aiMessages.push({
+      role: 'user' as any,
+      content: `[System-Kontext] ${vehicleContext}`,
     })
   }
 

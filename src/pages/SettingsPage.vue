@@ -1,9 +1,66 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { useQuasar } from 'quasar'
+import { computed, onMounted, ref } from 'vue'
+import { useDatabase } from '../composables/useDatabase'
+import { exportDatabase, importDatabase } from '../services/db-export'
 import { useSettingsStore } from '../stores/settings'
 
 const settings = useSettingsStore()
+const $q = useQuasar()
+const { db } = useDatabase()
 const showKey = ref(false)
+const ocrCacheCount = ref(0)
+
+async function refreshCacheCount() {
+  if (!db.value)
+    return
+  const docs = await (db.value as any).ocrcache.find().exec()
+  ocrCacheCount.value = docs.length
+}
+
+onMounted(() => refreshCacheCount())
+
+async function handleExport() {
+  if (!db.value)
+    return
+  const json = await exportDatabase(db.value)
+  const blob = new Blob([json], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `auto-service-backup-${new Date().toISOString().slice(0, 10)}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+  $q.notify({ type: 'positive', message: 'Daten exportiert' })
+}
+
+async function handleImport(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file || !db.value)
+    return
+  try {
+    const json = await file.text()
+    const result = await importDatabase(db.value, json)
+    const summary = Object.entries(result.imported)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(', ')
+    $q.notify({ type: 'positive', message: `Import erfolgreich — ${summary}` })
+    await refreshCacheCount()
+  }
+  catch (e: any) {
+    $q.notify({ type: 'negative', message: `Import fehlgeschlagen: ${e.message}` })
+  }
+  input.value = ''
+}
+
+async function clearOcrCache() {
+  if (!db.value)
+    return
+  await (db.value as any).ocrcache.find().remove()
+  ocrCacheCount.value = 0
+  $q.notify({ type: 'positive', message: 'OCR-Cache geleert' })
+}
 
 const defaultModels: Record<string, string> = {
   'mistral': 'mistral-small-latest',
@@ -99,6 +156,55 @@ const providerInfo = computed(() => {
           </template>
           {{ providerInfo.warnText }}
         </q-banner>
+      </q-card-section>
+    </q-card>
+
+    <q-card class="q-mb-md">
+      <q-card-section>
+        <div class="text-h6">
+          Daten
+        </div>
+      </q-card-section>
+      <q-card-section>
+        <div class="q-gutter-sm">
+          <q-btn
+            label="Daten exportieren"
+            icon="download"
+            color="primary"
+            outline
+            class="export-btn"
+            @click="handleExport"
+          />
+          <q-btn
+            label="Daten importieren"
+            icon="upload"
+            color="primary"
+            outline
+            class="import-btn"
+            @click="($refs.importInput as HTMLInputElement).click()"
+          />
+          <input
+            ref="importInput"
+            type="file"
+            accept=".json"
+            style="display: none"
+            @change="handleImport"
+          >
+        </div>
+        <div class="q-mt-md">
+          <q-btn
+            label="OCR-Cache leeren"
+            icon="delete_sweep"
+            color="negative"
+            outline
+            size="sm"
+            class="clear-cache-btn"
+            @click="clearOcrCache"
+          />
+          <span class="text-caption q-ml-sm text-grey">
+            {{ ocrCacheCount }} Einträge im Cache
+          </span>
+        </div>
       </q-card-section>
     </q-card>
   </q-page>

@@ -5,25 +5,32 @@ import { useSettingsStore } from '../stores/settings'
 const settings = useSettingsStore()
 const showKey = ref(false)
 
+const defaultModels: Record<string, string> = {
+  'mistral': 'mistral-small-latest',
+  'anthropic': 'claude-sonnet-4-20250514',
+  'openai': 'gpt-4o-mini',
+  'meta-llama': 'meta-llama/llama-4-maverick',
+  'ollama': 'qwen3-vl:2b',
+}
+
+const defaultModel = computed(() => defaultModels[settings.aiProvider] || '')
+
 const providerOptions = [
-  { label: 'OpenRouter (Gemini 2.0 Flash)', value: 'openrouter' },
+  { label: 'Mistral (mistral-small-latest)', value: 'mistral' },
   { label: 'Anthropic Claude', value: 'anthropic' },
   { label: 'OpenAI', value: 'openai' },
-  { label: 'Mistral Pixtral Large (via OpenRouter)', value: 'mistral' },
   { label: 'Meta Llama 4 Maverick (via OpenRouter)', value: 'meta-llama' },
   { label: 'Ollama lokal (qwen3-vl:2b) — 100% privat', value: 'ollama' },
 ]
 
 const providerInfo = computed(() => {
   switch (settings.aiProvider) {
-    case 'openrouter':
-      return { text: 'Gemini 2.0 Flash — schnell, Vision + Chat, kein Quota-Limit.', warn: true, warnText: 'Google Free Tier: Deine Daten werden für Modell-Training verwendet. In der EU ohne Paid Tier nicht erlaubt.' }
+    case 'mistral':
+      return { text: 'Mistral Small — schnell, Chat + Tool Calling. Direkte Mistral-API.', warn: true, warnText: 'Mistral Free Tier (Experiment Plan): Deine Daten werden standardmäßig für Modell-Training verwendet. Opt-out in den Mistral-Kontoeinstellungen möglich.' }
     case 'anthropic':
       return { text: 'Claude Sonnet — Vision + Chat + Tool Calling. API-Daten werden nicht für Training verwendet.', warn: false, warnText: '' }
     case 'openai':
       return { text: 'GPT-4o Mini — Chat + Tool Calling. API-Daten werden seit März 2023 nicht für Training verwendet.', warn: false, warnText: '' }
-    case 'mistral':
-      return { text: 'Pixtral Large — Vision + Chat + Tool Calling (via OpenRouter).', warn: true, warnText: 'Mistral Free Tier (Experiment Plan): Deine Daten werden standardmäßig für Modell-Training verwendet. Opt-out in den Mistral-Kontoeinstellungen möglich.' }
     case 'meta-llama':
       return { text: 'Llama 4 Maverick — Vision + Chat + Tool Calling (via OpenRouter).', warn: true, warnText: 'Meta Llama: API-Daten werden nicht für Training verwendet, aber multimodale Modelle (Vision) sind in der EU rechtlich eingeschränkt.' }
     case 'ollama':
@@ -68,6 +75,13 @@ const providerInfo = computed(() => {
             />
           </template>
         </q-input>
+        <q-input
+          v-model="settings.aiModel"
+          label="Model (leer = Standard)"
+          outlined
+          class="q-mt-md"
+          :placeholder="defaultModel"
+        />
         <div class="text-caption q-mt-sm text-grey">
           {{ providerInfo.text }}
         </div>

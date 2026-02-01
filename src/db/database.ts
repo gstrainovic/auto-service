@@ -2,30 +2,30 @@ import { createRxDatabase, removeRxDatabase } from 'rxdb'
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie'
 import { invoiceSchema, maintenanceSchema, vehicleSchema } from './schema'
 
-async function initDatabase(name: string) {
-  const db = await createRxDatabase({
-    name,
-    storage: getRxStorageDexie(),
-  })
-
-  await db.addCollections({
-    vehicles: { schema: vehicleSchema },
-    invoices: { schema: invoiceSchema },
-    maintenances: { schema: maintenanceSchema },
-  })
-
-  return db
-}
-
 export async function createDatabase(name = 'autoservice') {
+  const storage = getRxStorageDexie()
+  const db = await createRxDatabase({ name, storage })
+
   try {
-    return await initDatabase(name)
+    await db.addCollections({
+      vehicles: { schema: vehicleSchema },
+      invoices: { schema: invoiceSchema },
+      maintenances: { schema: maintenanceSchema },
+    })
+    return db
   }
   catch (e: any) {
     if (e?.code === 'DB6') {
       console.warn('Schema geändert — Datenbank wird zurückgesetzt.')
-      await removeRxDatabase(name, getRxStorageDexie())
-      return await initDatabase(name)
+      await db.destroy()
+      await removeRxDatabase(name, storage)
+      const freshDb = await createRxDatabase({ name, storage })
+      await freshDb.addCollections({
+        vehicles: { schema: vehicleSchema },
+        invoices: { schema: invoiceSchema },
+        maintenances: { schema: maintenanceSchema },
+      })
+      return freshDb
     }
     throw e
   }

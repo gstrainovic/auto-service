@@ -75,34 +75,39 @@ const serviceBookSchema = z.object({
 
 export type ParsedServiceBook = z.infer<typeof serviceBookSchema>
 
+const DEFAULT_MODELS: Record<AiProvider, string> = {
+  'mistral': 'mistral-small-latest',
+  'anthropic': 'claude-sonnet-4-20250514',
+  'openai': 'gpt-4o-mini',
+  'meta-llama': 'meta-llama/llama-4-maverick',
+  'ollama': 'qwen3-vl:2b',
+}
+
 interface ModelOptions {
   provider: AiProvider
   apiKey: string
+  model?: string
 }
 
 export function getModel(opts: ModelOptions) {
+  const modelId = opts.model || DEFAULT_MODELS[opts.provider]
   switch (opts.provider) {
     case 'anthropic':
-      return createAnthropic({ apiKey: opts.apiKey })('claude-sonnet-4-20250514')
+      return createAnthropic({ apiKey: opts.apiKey })(modelId)
     case 'openai':
-      return createOpenAI({ apiKey: opts.apiKey })('gpt-4o-mini')
-    case 'openrouter':
-      return createOpenAI({
-        baseURL: 'https://openrouter.ai/api/v1',
-        apiKey: opts.apiKey,
-      })('google/gemini-2.0-flash-001')
+      return createOpenAI({ apiKey: opts.apiKey })(modelId)
     case 'mistral':
-      return createMistral({ apiKey: opts.apiKey })('mistral-small-latest')
+      return createMistral({ apiKey: opts.apiKey })(modelId)
     case 'meta-llama':
       return createOpenAI({
         baseURL: 'https://openrouter.ai/api/v1',
         apiKey: opts.apiKey,
-      })('meta-llama/llama-4-maverick')
+      })(modelId)
     case 'ollama':
       return createOpenAI({
         baseURL: 'http://localhost:11434/v1',
         apiKey: 'ollama',
-      })('qwen3-vl:2b')
+      })(modelId)
   }
 }
 
@@ -129,8 +134,9 @@ export async function parseInvoice(
   imageBase64: string,
   provider: AiProvider,
   apiKey: string,
+  modelId?: string,
 ): Promise<ParsedInvoice> {
-  const model = getModel({ provider, apiKey })
+  const model = getModel({ provider, apiKey, model: modelId })
 
   const { object } = await withRetry(() => generateObject({
     model,
@@ -157,8 +163,9 @@ export async function parseVehicleDocument(
   imageBase64: string,
   provider: AiProvider,
   apiKey: string,
+  modelId?: string,
 ): Promise<ParsedVehicleDocument> {
-  const model = getModel({ provider, apiKey })
+  const model = getModel({ provider, apiKey, model: modelId })
 
   const { object } = await withRetry(() => generateObject({
     model,
@@ -185,8 +192,9 @@ export async function parseServiceBook(
   imageBase64: string,
   provider: AiProvider,
   apiKey: string,
+  modelId?: string,
 ): Promise<ParsedServiceBook> {
-  const model = getModel({ provider, apiKey })
+  const model = getModel({ provider, apiKey, model: modelId })
 
   const { object } = await withRetry(() => generateObject({
     model,

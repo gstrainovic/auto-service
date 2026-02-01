@@ -37,7 +37,7 @@ export const WELCOME_MESSAGE: ChatMessage = {
 Schick mir einfach eine Nachricht oder ein Foto!`,
 }
 
-function createTools(db: RxDatabase, provider: AiProvider, apiKey: string) {
+function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, modelId?: string) {
   return {
     list_vehicles: tool({
       description: 'Listet alle Fahrzeuge auf',
@@ -250,15 +250,15 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string) {
       }),
       execute: async ({ imageBase64, documentType }) => {
         if (documentType === 'rechnung') {
-          const result = await parseInvoice(imageBase64, provider, apiKey)
+          const result = await parseInvoice(imageBase64, provider, apiKey, modelId)
           return { type: 'rechnung', data: result }
         }
         else if (documentType === 'serviceheft') {
-          const result = await parseServiceBook(imageBase64, provider, apiKey)
+          const result = await parseServiceBook(imageBase64, provider, apiKey, modelId)
           return { type: 'serviceheft', data: result }
         }
         else {
-          const result = await parseVehicleDocument(imageBase64, provider, apiKey)
+          const result = await parseVehicleDocument(imageBase64, provider, apiKey, modelId)
           return { type: 'fahrzeugdokument', data: result }
         }
       },
@@ -269,6 +269,7 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string) {
 export interface ChatOptions {
   provider: AiProvider
   apiKey: string
+  model?: string
 }
 
 export async function sendChatMessage(
@@ -280,9 +281,10 @@ export async function sendChatMessage(
   const model = getModel({
     provider: opts.provider,
     apiKey: opts.apiKey,
+    model: opts.model,
   })
 
-  const tools = createTools(db, opts.provider, opts.apiKey)
+  const tools = createTools(db, opts.provider, opts.apiKey, opts.model)
 
   const aiMessages = messages
     .filter(m => m.id !== 'welcome')

@@ -105,6 +105,7 @@ async function send() {
     const response = await sendChatMessage(db, messages.value, {
       provider: settings.aiProvider,
       apiKey: settings.aiApiKey,
+      model: settings.aiModel || undefined,
     }, imagesBase64.length ? imagesBase64 : undefined)
 
     messages.value.push({

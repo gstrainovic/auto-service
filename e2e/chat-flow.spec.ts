@@ -2,9 +2,8 @@ import path from 'node:path'
 import process from 'node:process'
 import { expect, test } from '@playwright/test'
 
-const AI_PROVIDER = process.env.AI_PROVIDER || 'mistral'
-const AI_API_KEY = process.env[`${AI_PROVIDER.toUpperCase().replace('-', '_')}_API_KEY`]
-  || process.env.MISTRAL_API_KEY || ''
+const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
+const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
 
 const fixturesDir = path.join(import.meta.dirname, 'fixtures')
 

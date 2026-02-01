@@ -1,9 +1,12 @@
+import path from 'node:path'
 import process from 'node:process'
 import { expect, test } from '@playwright/test'
 
 const AI_PROVIDER = process.env.AI_PROVIDER || 'openrouter'
 const AI_API_KEY = process.env[`${AI_PROVIDER.toUpperCase().replace('-', '_')}_API_KEY`]
   || process.env.OPENROUTER_API_KEY || ''
+
+const fixturesDir = path.join(import.meta.dirname, 'fixtures')
 
 test.describe('Chat Flow', () => {
   test.setTimeout(120_000)
@@ -42,5 +45,79 @@ test.describe('Chat Flow', () => {
     await page.goto('/vehicles')
     await expect(page.getByText('Audi A4').first()).toBeVisible({ timeout: 10_000 })
     await expect(page.getByText('B-CD 5678').first()).toBeVisible()
+  })
+
+  test('attach multiple images and see pending chips', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.chat-fab').click()
+    await expect(page.getByText('KI-Assistent')).toBeVisible()
+
+    // Attach two images at once
+    const fileInput = page.locator('.q-dialog input[type="file"]')
+    await fileInput.setInputFiles([
+      path.join(fixturesDir, 'test-invoice.png'),
+      path.join(fixturesDir, 'test-kaufvertrag.png'),
+    ])
+
+    // Both chips should appear
+    await expect(page.locator('.q-chip')).toHaveCount(2)
+    await expect(page.getByText('test-invoice.png')).toBeVisible()
+    await expect(page.getByText('test-kaufvertrag.png')).toBeVisible()
+  })
+
+  test('remove individual pending file via chip', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.chat-fab').click()
+    await expect(page.getByText('KI-Assistent')).toBeVisible()
+
+    // Attach two images
+    const fileInput = page.locator('.q-dialog input[type="file"]')
+    await fileInput.setInputFiles([
+      path.join(fixturesDir, 'test-invoice.png'),
+      path.join(fixturesDir, 'test-kaufvertrag.png'),
+    ])
+    await expect(page.locator('.q-chip')).toHaveCount(2)
+
+    // Remove the first chip
+    await page.locator('.q-chip').first().getByRole('button').click()
+    await expect(page.locator('.q-chip')).toHaveCount(1)
+    await expect(page.getByText('test-kaufvertrag.png')).toBeVisible()
+  })
+
+  test('send multiple images shows thumbnail grid in message', async ({ page }) => {
+    await page.goto('/')
+    await page.evaluate(({ provider, key }) => {
+      localStorage.setItem('ai_provider', provider)
+      localStorage.setItem('ai_api_key', key)
+    }, { provider: AI_PROVIDER, key: AI_API_KEY })
+    await page.reload()
+
+    await page.locator('.chat-fab').click()
+    await expect(page.getByText('KI-Assistent')).toBeVisible()
+
+    // Attach two images
+    const fileInput = page.locator('.q-dialog input[type="file"]')
+    await fileInput.setInputFiles([
+      path.join(fixturesDir, 'test-invoice.png'),
+      path.join(fixturesDir, 'test-kaufvertrag.png'),
+    ])
+    await expect(page.locator('.q-chip')).toHaveCount(2)
+
+    // Type a message and send
+    const input = page.locator('input[placeholder="Nachricht..."]')
+    await input.fill('Was siehst du auf diesen beiden Bildern?')
+    await page.locator('.q-dialog button.bg-primary').last().click()
+
+    // Pending chips should be gone after sending
+    await expect(page.locator('.q-chip')).toHaveCount(0)
+
+    // User message should show two thumbnail images (120px grid)
+    const userMsg = page.locator('.q-message', { hasText: 'Was siehst du' })
+    await expect(userMsg.locator('img')).toHaveCount(2)
+
+    // Wait for AI response
+    await expect(page.locator('.q-message')).toHaveCount(3, { timeout: 60_000 })
+    const assistantMsg = page.locator('.q-message').last()
+    await expect(assistantMsg).toContainText(/.+/, { timeout: 10_000 })
   })
 })

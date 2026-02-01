@@ -10,6 +10,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   attachment?: { type: 'image' | 'pdf', name: string, preview?: string }
+  attachments?: { type: 'image' | 'pdf', name: string, preview?: string }[]
 }
 
 const SYSTEM_PROMPT = `Du bist der Auto-Service Assistent. Du hilfst beim Verwalten von Fahrzeugen und Wartungen.
@@ -274,7 +275,7 @@ export async function sendChatMessage(
   db: RxDatabase,
   messages: ChatMessage[],
   opts: ChatOptions,
-  imageBase64?: string,
+  imagesBase64?: string[],
 ): Promise<string> {
   const model = getModel({
     provider: opts.provider,
@@ -286,12 +287,12 @@ export async function sendChatMessage(
   const aiMessages = messages
     .filter(m => m.id !== 'welcome')
     .map((m) => {
-      if (m.role === 'user' && m.attachment?.type === 'image' && imageBase64 && m === messages[messages.length - 1]) {
+      if (m.role === 'user' && m === messages[messages.length - 1] && imagesBase64?.length) {
         return {
           role: 'user' as const,
           content: [
             { type: 'text' as const, text: m.content || 'Analysiere dieses Bild.' },
-            { type: 'image' as const, image: imageBase64 },
+            ...imagesBase64.map(img => ({ type: 'image' as const, image: img })),
           ],
         }
       }

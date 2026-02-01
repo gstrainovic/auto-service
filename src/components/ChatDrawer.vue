@@ -13,7 +13,7 @@ const { dbPromise } = useDatabase()
 const messages = ref<ChatMessage[]>([WELCOME_MESSAGE])
 const input = ref('')
 const loading = ref(false)
-const pendingFile = ref<{ file: File, type: 'image' | 'pdf', name: string, preview: string, base64: string } | null>(null)
+const pendingFiles = ref<{ file: File, type: 'image' | 'pdf', name: string, preview: string, base64: string }[]>([])
 const scrollArea = ref<any>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 
@@ -36,46 +36,68 @@ function pickFile() {
 
 function onFileChange(event: Event) {
   const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  if (!file)
+  const files = target.files
+  if (!files?.length)
     return
 
-  const isImage = file.type.startsWith('image/')
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    const dataUrl = e.target?.result as string
-    const base64 = dataUrl.split(',')[1] ?? ''
-    pendingFile.value = {
-      file,
-      type: isImage ? 'image' : 'pdf',
-      name: file.name,
-      preview: isImage ? dataUrl : '',
-      base64,
+  for (const file of Array.from(files)) {
+    const isImage = file.type.startsWith('image/')
+    if (!isImage) {
+      pendingFiles.value = []
     }
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string
+      const base64 = dataUrl.split(',')[1] ?? ''
+      if (!isImage) {
+        pendingFiles.value = [{
+          file,
+          type: 'pdf',
+          name: file.name,
+          preview: '',
+          base64,
+        }]
+      }
+      else {
+        pendingFiles.value.push({
+          file,
+          type: 'image',
+          name: file.name,
+          preview: dataUrl,
+          base64,
+        })
+      }
+    }
+    reader.readAsDataURL(file)
   }
-  reader.readAsDataURL(file)
   target.value = ''
+}
+
+function removePendingFile(index: number) {
+  pendingFiles.value.splice(index, 1)
 }
 
 async function send() {
   const text = input.value.trim()
-  if (!text && !pendingFile.value)
+  if (!text && !pendingFiles.value.length)
     return
+
+  const files = pendingFiles.value
+  const attachments = files.map(f => ({ type: f.type, name: f.name, preview: f.preview }))
 
   const userMsg: ChatMessage = {
     id: crypto.randomUUID(),
     role: 'user',
-    content: text || (pendingFile.value ? `[${pendingFile.value.name}]` : ''),
-    attachment: pendingFile.value
-      ? { type: pendingFile.value.type, name: pendingFile.value.name, preview: pendingFile.value.preview }
-      : undefined,
+    content: text || files.map(f => `[${f.name}]`).join(' '),
+    attachment: attachments[0],
+    attachments: attachments.length ? attachments : undefined,
   }
 
-  const imageBase64 = pendingFile.value?.type === 'image' ? pendingFile.value.base64 : undefined
+  const imagesBase64 = files.filter(f => f.type === 'image').map(f => f.base64)
 
   messages.value.push(userMsg)
   input.value = ''
-  pendingFile.value = null
+  pendingFiles.value = []
   loading.value = true
 
   try {
@@ -83,7 +105,7 @@ async function send() {
     const response = await sendChatMessage(db, messages.value, {
       provider: settings.aiProvider,
       apiKey: settings.aiApiKey,
-    }, imageBase64)
+    }, imagesBase64.length ? imagesBase64 : undefined)
 
     messages.value.push({
       id: crypto.randomUUID(),
@@ -133,16 +155,33 @@ async function send() {
             :text-color="msg.role === 'user' ? 'white' : 'dark'"
           >
             <div>
-              <img
-                v-if="msg.attachment?.type === 'image' && msg.attachment.preview"
-                :src="msg.attachment.preview"
-                style="max-width: 200px; max-height: 150px; border-radius: 8px"
-                class="q-mb-xs"
-              >
-              <div v-if="msg.attachment?.type === 'pdf'" class="q-mb-xs">
-                <q-icon name="picture_as_pdf" size="sm" />
-                {{ msg.attachment.name }}
-              </div>
+              <template v-if="msg.attachments?.length">
+                <div class="row q-gutter-xs q-mb-xs" style="flex-wrap: wrap">
+                  <template v-for="(att, i) in msg.attachments" :key="i">
+                    <img
+                      v-if="att.type === 'image' && att.preview"
+                      :src="att.preview"
+                      style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px"
+                    >
+                    <div v-else-if="att.type === 'pdf'">
+                      <q-icon name="picture_as_pdf" size="sm" />
+                      {{ att.name }}
+                    </div>
+                  </template>
+                </div>
+              </template>
+              <template v-else-if="msg.attachment">
+                <img
+                  v-if="msg.attachment.type === 'image' && msg.attachment.preview"
+                  :src="msg.attachment.preview"
+                  style="max-width: 200px; max-height: 150px; border-radius: 8px"
+                  class="q-mb-xs"
+                >
+                <div v-if="msg.attachment.type === 'pdf'" class="q-mb-xs">
+                  <q-icon name="picture_as_pdf" size="sm" />
+                  {{ msg.attachment.name }}
+                </div>
+              </template>
               <div style="white-space: pre-wrap" v-text="msg.content" />
             </div>
           </q-chat-message>
@@ -155,15 +194,17 @@ async function send() {
 
       <q-separator />
 
-      <div v-if="pendingFile" class="q-px-md q-pt-sm">
+      <div v-if="pendingFiles.length" class="q-px-md q-pt-sm row q-gutter-xs" style="flex-wrap: wrap">
         <q-chip
+          v-for="(pf, i) in pendingFiles"
+          :key="i"
           removable
           color="primary"
           text-color="white"
-          :icon="pendingFile.type === 'image' ? 'image' : 'picture_as_pdf'"
-          @remove="pendingFile = null"
+          :icon="pf.type === 'image' ? 'image' : 'picture_as_pdf'"
+          @remove="removePendingFile(i)"
         >
-          {{ pendingFile.name }}
+          {{ pf.name }}
         </q-chip>
       </div>
 
@@ -172,11 +213,12 @@ async function send() {
           ref="fileInput"
           type="file"
           accept="image/*,application/pdf"
+          multiple
           style="display: none"
           @change="onFileChange"
         >
         <q-btn flat round dense icon="attach_file" @click="pickFile">
-          <q-tooltip>Foto oder PDF anhängen</q-tooltip>
+          <q-tooltip>Fotos oder PDF anhängen</q-tooltip>
         </q-btn>
         <q-input
           v-model="input"

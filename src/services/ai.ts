@@ -227,91 +227,16 @@ export async function callMistralOcr(imageBase64: string, apiKey: string, db?: R
   return text
 }
 
-interface OcrWithAnnotationResult<T> {
-  markdown: string
-  annotation: T
-}
-
 /**
- * Ein-Stufen-Pipeline: OCR + Document Annotation in einem API-Call.
- * Nutzt document_annotation_format um strukturierte Daten direkt vom OCR-Modell zu bekommen.
- */
-async function callMistralOcrWithAnnotation<T>(
-  imageBase64: string,
-  apiKey: string,
-  schema: z.ZodType<T>,
-  prompt: string,
-  db?: RxDatabase,
-): Promise<OcrWithAnnotationResult<T>> {
-  const hash = await hashImage(imageBase64)
-
-  const jsonSchema = z.toJSONSchema(schema)
-
-  const resp = await fetch('https://api.mistral.ai/v1/ocr', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'mistral-ocr-latest',
-      document: {
-        type: 'image_url',
-        image_url: `data:image/jpeg;base64,${imageBase64}`,
-      },
-      table_format: 'markdown',
-      document_annotation_format: {
-        type: 'json_schema',
-        json_schema: {
-          name: 'document_annotation',
-          schema: jsonSchema,
-        },
-      },
-      document_annotation_prompt: prompt,
-    }),
-  })
-
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}))
-    throw new Error(`Mistral OCR+Annotation error ${resp.status}: ${(err as any).error?.message || resp.statusText}`)
-  }
-
-  const data = await resp.json() as { pages?: OcrPage[], document_annotation?: string }
-
-  // Markdown extrahieren (für Cache)
-  const markdown = data.pages?.map((p) => {
-    let md = p.markdown || ''
-    if (p.tables?.length) {
-      for (const tbl of p.tables)
-        md = md.replace(`[${tbl.id}](${tbl.id})`, tbl.content)
-    }
-    return md
-  }).join('\n\n') || ''
-
-  // OCR-Cache befüllen
-  ocrCache.set(hash, markdown)
-  if (db) {
-    try {
-      await (db as any).ocrcache.insert({ id: hash, markdown, createdAt: new Date().toISOString() })
-    }
-    catch {}
-  }
-
-  // Annotation parsen
-  const annotationRaw = data.document_annotation
-  if (!annotationRaw)
-    throw new Error('Keine document_annotation in OCR-Response erhalten')
-
-  const annotation = schema.parse(JSON.parse(annotationRaw)) as T
-  return { markdown, annotation }
-}
-
-/**
- * Zwei-Stufen-Pipeline für Mistral: OCR → Chat (Fallback)
+ * Zwei-Stufen-Pipeline für Mistral: OCR → Chat
  * Stufe 1: mistral-ocr-latest extrahiert Text perfekt (inkl. Tabellen)
  * Stufe 2: Chat-Modell parst den OCR-Text in strukturiertes JSON (ohne Bild)
+ *
+ * Getestet vs. document_annotation_format (Ein-Stufen): Document Annotation
+ * halluziniert massiv bei Rechnungen (erfindet Beträge, falsche Kategorien).
+ * 2-Stufen ist zuverlässiger weil das Chat-Modell nur den OCR-Text sieht.
  */
-async function parseWithOcrPipelineTwoStep<T>(
+async function parseWithOcrPipeline<T>(
   imageBase64: string,
   apiKey: string,
   schema: z.ZodType<T>,
@@ -333,30 +258,6 @@ async function parseWithOcrPipelineTwoStep<T>(
   }))
 
   return object as T
-}
-
-/**
- * Haupt-Pipeline für Mistral: Versucht Ein-Stufen (Document Annotation),
- * fällt bei Fehler auf Zwei-Stufen (OCR → Chat) zurück.
- */
-async function parseWithOcrPipeline<T>(
-  imageBase64: string,
-  apiKey: string,
-  schema: z.ZodType<T>,
-  prompt: string,
-  modelId?: string,
-  db?: RxDatabase,
-): Promise<T> {
-  try {
-    const result = await withRetry(() =>
-      callMistralOcrWithAnnotation(imageBase64, apiKey, schema, prompt, db),
-    )
-    return result.annotation
-  }
-  catch (e: any) {
-    console.warn('Document Annotation fehlgeschlagen, Fallback auf 2-Stufen-Pipeline:', e.message)
-    return parseWithOcrPipelineTwoStep(imageBase64, apiKey, schema, prompt, modelId, db)
-  }
 }
 
 const INVOICE_PROMPT = `Analysiere diese Werkstattrechnung sorgfältig.

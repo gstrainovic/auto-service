@@ -272,16 +272,16 @@ export interface ChatOptions {
   model?: string
 }
 
-function buildMessages(messages: ChatMessage[], imageBase64?: string) {
+function buildAiMessages(messages: ChatMessage[], imagesBase64?: string[]) {
   return messages
     .filter(m => m.id !== 'welcome')
     .map((m) => {
-      if (m.role === 'user' && m === messages[messages.length - 1] && imageBase64) {
+      if (m.role === 'user' && m === messages[messages.length - 1] && imagesBase64?.length) {
         return {
           role: 'user' as const,
           content: [
             { type: 'text' as const, text: m.content || 'Analysiere dieses Bild.' },
-            { type: 'image' as const, image: imageBase64 },
+            ...imagesBase64.map(img => ({ type: 'image' as const, image: img })),
           ],
         }
       }
@@ -289,7 +289,7 @@ function buildMessages(messages: ChatMessage[], imageBase64?: string) {
     })
 }
 
-function extractResponse(result: any): string | undefined {
+function extractResult(result: any): string | undefined {
   if (result.text)
     return result.text
   const lastToolResult = result.steps
@@ -316,43 +316,16 @@ export async function sendChatMessage(
 
   const tools = createTools(db, opts.provider, opts.apiKey, opts.model)
 
-  // Mehrere Bilder sequentiell verarbeiten (eins nach dem anderen)
-  if (imagesBase64 && imagesBase64.length > 1) {
-    const responses: string[] = []
-    for (let i = 0; i < imagesBase64.length; i++) {
-      const textForImage = i === 0
-        ? messages[messages.length - 1]?.content || `Analysiere Bild ${i + 1}.`
-        : `Analysiere Bild ${i + 1}.`
-
-      const messagesForCall = i === 0
-        ? messages
-        : [...messages, ...responses.flatMap((r, j) => [
-            { id: `img-q-${j}`, role: 'user' as const, content: `Analysiere Bild ${j + 1}.` },
-            { id: `img-a-${j}`, role: 'assistant' as const, content: r },
-          ]), { id: `img-q-${i}`, role: 'user' as const, content: textForImage }]
-
-      const aiMessages = buildMessages(messagesForCall, imagesBase64[i])
-      const result = await withRetry(() => generateText({
-        model,
-        system: SYSTEM_PROMPT,
-        messages: aiMessages,
-        tools,
-        stopWhen: stepCountIs(2),
-      }))
-      responses.push(extractResponse(result) || `Bild ${i + 1} analysiert.`)
-    }
-    return responses.join('\n\n')
-  }
-
-  // Ein Bild oder kein Bild
-  const aiMessages = buildMessages(messages, imagesBase64?.[0])
+  // Alle Bilder in einem Request (Mistral erlaubt bis zu 8 pro Request)
+  const aiMessages = buildAiMessages(messages, imagesBase64)
   const result = await withRetry(() => generateText({
     model,
+    maxRetries: 0,
     system: SYSTEM_PROMPT,
     messages: aiMessages,
     tools,
     stopWhen: stepCountIs(2),
   }))
 
-  return extractResponse(result) || 'Erledigt.'
+  return extractResult(result) || 'Erledigt.'
 }

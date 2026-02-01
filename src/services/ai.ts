@@ -141,6 +141,7 @@ export async function parseInvoice(
 
   const { object } = await withRetry(() => generateObject({
     model,
+    maxRetries: 0,
     schema: invoiceSchema,
     messages: [{
       role: 'user',
@@ -170,6 +171,7 @@ export async function parseVehicleDocument(
 
   const { object } = await withRetry(() => generateObject({
     model,
+    maxRetries: 0,
     schema: vehicleDocumentSchema,
     messages: [{
       role: 'user',
@@ -199,6 +201,7 @@ export async function parseServiceBook(
 
   const { object } = await withRetry(() => generateObject({
     model,
+    maxRetries: 0,
     schema: serviceBookSchema,
     messages: [{
       role: 'user',

@@ -231,9 +231,11 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         mileageAtService: z.number().optional().describe('Kilometerstand'),
         imageIndex: z.number().optional().describe('Index des zugehörigen Bildes (0-basiert)'),
         items: z.array(z.object({
-          description: z.string(),
-          category: z.string(),
-          amount: z.number(),
+          description: z.string().describe('Beschreibung der Arbeit oder des Teils'),
+          category: z.enum(MAINTENANCE_CATEGORIES).describe(
+            'Kategorie: oelwechsel, bremsen, reifen, inspektion, fahrwerk, auspuff, kuehlung, autoglas, elektrik, karosserie, sonstiges',
+          ),
+          amount: z.number().describe('Einzelbetrag dieser Position'),
         })).describe('Positionen der Rechnung'),
       }),
       execute: async ({ vehicleId, workshopName, date, totalAmount, currency, mileageAtService, imageIndex, items }) => {

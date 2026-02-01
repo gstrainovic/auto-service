@@ -2,7 +2,8 @@ import process from 'node:process'
 import { expect, test } from '@playwright/test'
 
 const AI_PROVIDER = process.env.AI_PROVIDER || 'openrouter'
-const AI_API_KEY = process.env.OPENROUTER_API_KEY || ''
+const AI_API_KEY = process.env[`${AI_PROVIDER.toUpperCase().replace('-', '_')}_API_KEY`]
+  || process.env.OPENROUTER_API_KEY || ''
 
 test.describe('Chat Flow', () => {
   test.setTimeout(120_000)

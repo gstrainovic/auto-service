@@ -1,5 +1,6 @@
 import type { AiProvider } from '../stores/settings'
 import { createAnthropic } from '@ai-sdk/anthropic'
+import { createMistral } from '@ai-sdk/mistral'
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { z } from 'zod'
@@ -91,10 +92,7 @@ export function getModel(opts: ModelOptions) {
         apiKey: opts.apiKey,
       })('google/gemini-2.0-flash-001')
     case 'mistral':
-      return createOpenAI({
-        baseURL: 'https://openrouter.ai/api/v1',
-        apiKey: opts.apiKey,
-      })('mistralai/pixtral-large-2411')
+      return createMistral({ apiKey: opts.apiKey })('mistral-small-latest')
     case 'meta-llama':
       return createOpenAI({
         baseURL: 'https://openrouter.ai/api/v1',

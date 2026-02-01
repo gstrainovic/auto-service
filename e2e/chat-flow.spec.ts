@@ -35,9 +35,21 @@ test.describe('Chat Flow', () => {
     // Step 4: Wait for AI response (at least 3 messages: welcome + user + assistant)
     await expect(page.locator('.q-message')).toHaveCount(3, { timeout: 60_000 })
 
-    // Step 5: Verify the assistant responded with tool result or confirmation
+    // Step 5: Wait for assistant response with substantial text
     const lastMsg = page.locator('.q-message').last()
-    await expect(lastMsg).toContainText(/angelegt|eingetragen|erstellt|hinzugefügt|gespeichert|wurde|erledigt/i, { timeout: 10_000 })
+    await expect(lastMsg).toContainText(/Audi/i, { timeout: 30_000 })
+
+    // Check if model created directly or asked for confirmation
+    const lastMsgText = await lastMsg.textContent() || ''
+    if (!/angelegt|eingetragen|erstellt|hinzugefügt|gespeichert|erledigt/i.test(lastMsgText)) {
+      // Model asked for confirmation — send "Ja, bitte eintragen"
+      const chatInput = page.locator('.q-dialog input[placeholder="Nachricht..."]')
+      await chatInput.fill('Ja, bitte eintragen')
+      await chatInput.press('Enter')
+      await expect(page.locator('.q-message')).toHaveCount(5, { timeout: 60_000 })
+      const finalMsg = page.locator('.q-message').last()
+      await expect(finalMsg).toContainText(/angelegt|eingetragen|erstellt|hinzugefügt|gespeichert|wurde|erledigt/i, { timeout: 30_000 })
+    }
 
     // Step 6: Close chat and verify vehicle in UI (reads from RxDB)
     await page.locator('.q-toolbar').getByRole('button').last().click()

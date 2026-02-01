@@ -9,7 +9,7 @@ test.describe('Scan Flow', () => {
     await page.getByLabel('Modell').fill('320d')
     await page.getByLabel('Baujahr').fill('2020')
     await page.getByLabel('Kilometerstand').fill('45000')
-    await page.getByRole('button', { name: 'Fahrzeug speichern' }).click()
+    await page.getByRole('button', { name: 'Speichern' }).click()
 
     // Navigate to scan
     await page.goto('/scan')

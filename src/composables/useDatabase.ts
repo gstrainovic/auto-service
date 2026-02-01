@@ -15,6 +15,8 @@ export function useDatabase() {
   dbPromise.then((database) => {
     db.value = database
     ready.value = true
+    if (import.meta.env.DEV)
+      (window as any).__rxdb = database
   })
 
   return { db, ready, dbPromise: dbPromise! }

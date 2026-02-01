@@ -68,5 +68,12 @@ export const useVehiclesStore = defineStore('vehicles', () => {
       await doc.patch({ customSchedule: schedule, updatedAt: new Date().toISOString() })
   }
 
-  return { vehicles, load, add, remove, updateMileage, updateCustomSchedule }
+  async function update(id: string, data: Partial<Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt'>>) {
+    const db = await dbPromise
+    const doc = await (db as any).vehicles.findOne({ selector: { id } }).exec()
+    if (doc)
+      await doc.patch({ ...data, updatedAt: new Date().toISOString() })
+  }
+
+  return { vehicles, load, add, remove, update, updateMileage, updateCustomSchedule }
 })

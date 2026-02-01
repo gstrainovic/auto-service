@@ -25,7 +25,7 @@ test.describe('Invoice Scan Flow', () => {
     await page.getByLabel('Baujahr').fill('2020')
     await page.getByLabel('Kilometerstand').fill('45000')
     await page.getByLabel('Kennzeichen').fill('M-AB 1234')
-    await page.getByRole('button', { name: 'Fahrzeug speichern' }).click()
+    await page.getByRole('button', { name: 'Speichern' }).click()
     await expect(page.getByText('BMW 320d')).toBeVisible()
 
     // Step 3: Go to scan page and select the vehicle

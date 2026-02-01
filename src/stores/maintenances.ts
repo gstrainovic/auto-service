@@ -54,5 +54,19 @@ export const useMaintenancesStore = defineStore('maintenances', () => {
       await doc.patch({ status, updatedAt: new Date().toISOString() })
   }
 
-  return { maintenances, overdue, due, loadForVehicle, add, updateStatus }
+  async function update(id: string, data: Partial<Omit<Maintenance, 'id' | 'createdAt' | 'updatedAt'>>) {
+    const db = await dbPromise
+    const doc = await (db as any).maintenances.findOne({ selector: { id } }).exec()
+    if (doc)
+      await doc.patch({ ...data, updatedAt: new Date().toISOString() })
+  }
+
+  async function remove(id: string) {
+    const db = await dbPromise
+    const doc = await (db as any).maintenances.findOne({ selector: { id } }).exec()
+    if (doc)
+      await doc.remove()
+  }
+
+  return { maintenances, overdue, due, loadForVehicle, add, update, updateStatus, remove }
 })

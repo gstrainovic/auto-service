@@ -13,7 +13,7 @@ test.describe('Vehicle Flow', () => {
     await page.getByLabel('Baujahr').fill('2020')
     await page.getByLabel('Kilometerstand').fill('45000')
     await page.getByLabel('Kennzeichen').fill('M-AB 1234')
-    await page.getByRole('button', { name: 'Fahrzeug speichern' }).click()
+    await page.getByRole('button', { name: 'Speichern' }).click()
 
     await expect(page.getByText('BMW 320d')).toBeVisible()
     await expect(page.getByText('45.000 km')).toBeVisible()
@@ -26,7 +26,7 @@ test.describe('Vehicle Flow', () => {
     await page.getByLabel('Modell').fill('Golf')
     await page.getByLabel('Baujahr').fill('2019')
     await page.getByLabel('Kilometerstand').fill('80000')
-    await page.getByRole('button', { name: 'Fahrzeug speichern' }).click()
+    await page.getByRole('button', { name: 'Speichern' }).click()
 
     await expect(page.getByText('VW Golf')).toBeVisible()
 
@@ -41,7 +41,7 @@ test.describe('Vehicle Flow', () => {
     await page.getByLabel('Modell').fill('A4')
     await page.getByLabel('Baujahr').fill('2021')
     await page.getByLabel('Kilometerstand').fill('30000')
-    await page.getByRole('button', { name: 'Fahrzeug speichern' }).click()
+    await page.getByRole('button', { name: 'Speichern' }).click()
 
     await expect(page.getByText('Audi A4')).toBeVisible()
 

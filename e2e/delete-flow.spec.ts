@@ -10,7 +10,7 @@ test.describe('Delete Flow', () => {
     await page.getByLabel('Baujahr').fill('2018')
     await page.getByLabel('Kilometerstand').fill('80000')
     await page.getByLabel('Kennzeichen').fill('HH-VW 1234')
-    await page.getByRole('button', { name: 'Fahrzeug speichern' }).click()
+    await page.getByRole('button', { name: 'Speichern' }).click()
     await expect(page.getByText('VW Golf')).toBeVisible()
 
     // Navigate to vehicle detail

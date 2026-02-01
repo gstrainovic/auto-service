@@ -40,6 +40,7 @@ export const invoiceSchema: RxJsonSchema<any> = {
     workshopName: { type: 'string' },
     date: { type: 'string', format: 'date' },
     totalAmount: { type: 'number' },
+    currency: { type: 'string' },
     mileageAtService: { type: 'integer' },
     imageData: { type: 'string' },
     rawText: { type: 'string' },

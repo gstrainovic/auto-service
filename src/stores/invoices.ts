@@ -14,6 +14,7 @@ export interface Invoice {
   workshopName: string
   date: string
   totalAmount: number
+  currency: string
   mileageAtService: number
   imageData: string
   rawText: string
@@ -44,5 +45,19 @@ export const useInvoicesStore = defineStore('invoices', () => {
     })
   }
 
-  return { invoices, loadForVehicle, add }
+  async function update(id: string, data: Partial<Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'>>) {
+    const db = await dbPromise
+    const doc = await (db as any).invoices.findOne({ selector: { id } }).exec()
+    if (doc)
+      await doc.patch({ ...data, updatedAt: new Date().toISOString() })
+  }
+
+  async function remove(id: string) {
+    const db = await dbPromise
+    const doc = await (db as any).invoices.findOne({ selector: { id } }).exec()
+    if (doc)
+      await doc.remove()
+  }
+
+  return { invoices, loadForVehicle, add, update, remove }
 })

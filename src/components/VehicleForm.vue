@@ -1,5 +1,16 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, watchEffect } from 'vue'
+
+const props = defineProps<{
+  initialData?: {
+    make: string
+    model: string
+    year: number
+    mileage: number
+    licensePlate: string
+    vin: string
+  }
+}>()
 
 const emit = defineEmits<{ save: [vehicle: typeof form] }>()
 
@@ -10,6 +21,17 @@ const form = reactive({
   mileage: 0,
   licensePlate: '',
   vin: '',
+})
+
+watchEffect(() => {
+  if (props.initialData) {
+    form.make = props.initialData.make
+    form.model = props.initialData.model
+    form.year = props.initialData.year
+    form.mileage = props.initialData.mileage
+    form.licensePlate = props.initialData.licensePlate
+    form.vin = props.initialData.vin
+  }
 })
 
 function onSubmit() {
@@ -25,6 +47,6 @@ function onSubmit() {
     <q-input v-model.number="form.mileage" label="Kilometerstand *" type="number" outlined required />
     <q-input v-model="form.licensePlate" label="Kennzeichen" outlined />
     <q-input v-model="form.vin" label="FIN (Fahrzeug-Identnummer)" outlined />
-    <q-btn type="submit" label="Fahrzeug speichern" color="primary" />
+    <q-btn type="submit" label="Speichern" color="primary" />
   </q-form>
 </template>

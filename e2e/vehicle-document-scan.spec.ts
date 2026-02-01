@@ -61,7 +61,7 @@ test.describe('Vehicle Document Scan', () => {
     await page.getByLabel('Baujahr').fill('2021')
     await page.getByLabel('Kilometerstand').fill('38500')
     await page.getByLabel('Kennzeichen').fill('B-HS 4321')
-    await page.getByRole('button', { name: 'Fahrzeug speichern' }).click()
+    await page.getByRole('button', { name: 'Speichern' }).click()
     await expect(page.getByText('VW Golf VIII')).toBeVisible()
 
     // Go to scan page, select Service-Heft tab

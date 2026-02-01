@@ -21,8 +21,16 @@ Deine Fähigkeiten:
 - Wartungsstatus prüfen und Empfehlungen geben
 - Fragen zu Wartungsintervallen beantworten
 
-Antworte immer auf Deutsch. Benutze IMMER die verfügbaren Tools um Aktionen auszuführen — beschreibe nicht was du tun würdest, sondern tu es direkt.
-Wenn der Benutzer ein Bild schickt, analysiere es SOFORT und gib die Ergebnisse direkt aus (Werkstatt, Datum, Betrag, Arbeiten). Sage NICHT "ich werde analysieren" — analysiere es einfach.
+WICHTIGE REGELN:
+1. Bevor du ein Fahrzeug anlegst, zeige ALLE Felder dem Benutzer und warte auf Bestätigung:
+   - Marke, Modell, Baujahr, Kilometerstand, Kennzeichen, Fahrgestellnummer
+2. Bevor du eine Rechnung einträgst, zeige ALLE Felder dem Benutzer und warte auf Bestätigung:
+   - Werkstatt, Datum, Gesamtbetrag, Währung, Kilometerstand, alle Positionen (Beschreibung, Kategorie, Betrag)
+3. Führe KEINE Tools aus bevor der Benutzer die Daten bestätigt hat.
+4. Wenn du unsicher bist über ein Feld, zeige was du erkannt hast und frage nach.
+
+Antworte immer auf Deutsch.
+Wenn der Benutzer ein Bild schickt, analysiere es und gib die Ergebnisse strukturiert aus.
 Halte deine Antworten kurz und hilfreich.`
 
 export const WELCOME_MESSAGE: ChatMessage = {
@@ -38,7 +46,7 @@ export const WELCOME_MESSAGE: ChatMessage = {
 Schick mir einfach eine Nachricht oder ein Foto!`,
 }
 
-function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, modelId?: string) {
+function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, modelId?: string, imagesBase64?: string[]) {
   return {
     list_vehicles: tool({
       description: 'Listet alle Fahrzeuge auf',
@@ -64,8 +72,9 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
       }),
       execute: async ({ make, model, year, mileage, licensePlate, vin }) => {
         const now = new Date().toISOString()
+        const id = crypto.randomUUID()
         await (db as any).vehicles.insert({
-          id: crypto.randomUUID(),
+          id,
           make,
           model,
           year,
@@ -75,7 +84,7 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
           createdAt: now,
           updatedAt: now,
         })
-        return { success: true, message: `${make} ${model} (${year}) wurde angelegt.` }
+        return { success: true, vehicleId: id, message: `${make} ${model} (${year}) wurde angelegt. Fahrzeug-ID: ${id}` }
       },
     }),
 
@@ -176,15 +185,31 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         vehicleId: z.string().describe('Fahrzeug-ID'),
         workshopName: z.string().describe('Name der Werkstatt'),
         date: z.string().describe('Datum im Format YYYY-MM-DD'),
-        totalAmount: z.number().describe('Gesamtbetrag in Euro'),
+        totalAmount: z.number().describe('Gesamtbetrag'),
+        currency: z.string().optional().describe('Währung (z.B. EUR, CHF, USD). Standard: EUR'),
         mileageAtService: z.number().optional().describe('Kilometerstand'),
+        imageIndex: z.number().optional().describe('Index des zugehörigen Bildes (0-basiert)'),
         items: z.array(z.object({
           description: z.string(),
           category: z.string(),
           amount: z.number(),
         })).describe('Positionen der Rechnung'),
       }),
-      execute: async ({ vehicleId, workshopName, date, totalAmount, mileageAtService, items }) => {
+      execute: async ({ vehicleId, workshopName, date, totalAmount, currency, mileageAtService, imageIndex, items }) => {
+        // Duplikat-Prüfung: gleiche Werkstatt + Datum oder gleicher Betrag + Datum
+        const existing = await (db as any).invoices.find({ selector: { vehicleId, date } }).exec()
+        const duplicate = existing.find((d: any) => {
+          const inv = d.toJSON()
+          return inv.workshopName === workshopName || inv.totalAmount === totalAmount
+        })
+        if (duplicate) {
+          const d = duplicate.toJSON()
+          return {
+            success: false,
+            message: `Diese Rechnung existiert bereits: ${d.workshopName}, ${d.date}, ${d.totalAmount} ${d.currency || 'EUR'}. Keine doppelte Erfassung.`,
+          }
+        }
+
         const now = new Date().toISOString()
         await (db as any).invoices.insert({
           id: crypto.randomUUID(),
@@ -193,7 +218,8 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
           date,
           totalAmount,
           mileageAtService: mileageAtService || 0,
-          imageData: '',
+          currency: currency || 'EUR',
+          imageData: (imagesBase64 && imageIndex !== undefined) ? imagesBase64[imageIndex] ?? '' : '',
           rawText: '',
           items,
           createdAt: now,
@@ -293,15 +319,23 @@ function buildAiMessages(messages: ChatMessage[], imagesBase64?: string[]) {
 function extractResult(result: any): string | undefined {
   if (result.text)
     return result.text
-  const lastToolResult = result.steps
-    ?.flatMap((s: any) => s.toolResults ?? [])
-    ?.pop() as any
-  if (lastToolResult?.result && typeof lastToolResult.result === 'object') {
-    const r = lastToolResult.result as Record<string, unknown>
-    if (r.message)
-      return String(r.message)
-  }
+  const allResults = result.steps
+    ?.flatMap((s: any) => s.toolResults ?? []) as any[] | undefined
+  if (!allResults?.length)
+    return undefined
+  const messages = allResults
+    .map((tr: any) => {
+      const r = tr?.result
+      if (r && typeof r === 'object' && (r as any).message)
+        return String((r as any).message)
+      return undefined
+    })
+    .filter(Boolean)
+  return messages.length ? messages.join('\n') : undefined
 }
+
+// Zwischenspeicher für Bilder zwischen Phase 1 (Analyse) und Phase 2 (Tool-Calls)
+let pendingImages: string[] = []
 
 export async function sendChatMessage(
   db: RxDatabase,
@@ -315,22 +349,52 @@ export async function sendChatMessage(
     model: opts.model,
   })
 
-  const allTools = createTools(db, opts.provider, opts.apiKey, opts.model)
+  if (imagesBase64?.length) {
+    // Phase 1: Bilder analysieren — nur Text zurückgeben, NICHTS speichern
+    pendingImages = imagesBase64
+    const phase1 = await withRetry(() => generateText({
+      model,
+      maxRetries: 0,
+      system: `${SYSTEM_PROMPT}\n\nBeschreibe detailliert was du auf dem Bild/den Bildern siehst. Zeige die erkannten Daten strukturiert an — getrennt nach Fahrzeug-Daten und Rechnungs-Daten, so wie sie eingetragen werden würden. Frage den Benutzer ob die Daten korrekt sind bevor du fortfährst.`,
+      messages: buildAiMessages(messages, imagesBase64),
+      stopWhen: stepCountIs(1),
+    }))
+    return phase1.text || 'Keine Ergebnisse.'
+  }
 
-  // Bilder sind bereits im Message-Content — scan_document nicht anbieten
+  // Phase 2: Wenn Bilder aus vorheriger Nachricht zwischengespeichert sind
+  const storedImages = pendingImages.length ? [...pendingImages] : undefined
+  if (storedImages?.length)
+    pendingImages = []
+
+  const allTools = createTools(db, opts.provider, opts.apiKey, opts.model, storedImages)
   const { scan_document: _, ...toolsWithoutScan } = allTools
-  const tools = imagesBase64?.length ? toolsWithoutScan : allTools
+  const tools = storedImages?.length ? toolsWithoutScan : allTools
 
-  // Alle Bilder in einem Request (Mistral erlaubt bis zu 8 pro Request)
-  const aiMessages = buildAiMessages(messages, imagesBase64)
+  // Fahrzeugliste für Kontext
+  const vehicleDocs = await (db as any).vehicles.find().exec()
+  const vehicleList = vehicleDocs.map((d: any) => {
+    const v = d.toJSON()
+    return `- ${v.make} ${v.model} (${v.year}): ID=${v.id}`
+  }).join('\n')
+
+  const aiMessages = buildAiMessages(messages)
+
+  // Kontext-Hinweis für Tool-Calls anhängen
+  if (storedImages?.length) {
+    aiMessages.push({
+      role: 'user' as any,
+      content: `Kontext: Es wurden ${storedImages.length} Bilder gesendet (Index 0–${storedImages.length - 1}). Nutze imageIndex bei add_invoice um das Bild zu speichern.\n\nVerfügbare Fahrzeuge:\n${vehicleList || '(keine — lege zuerst ein Fahrzeug an mit add_vehicle, dann nutze die zurückgegebene vehicleId für add_invoice)'}\n\nWICHTIG: Verwende NUR die exakten Fahrzeug-IDs aus der Liste oben oder aus dem Ergebnis von add_vehicle. Erfinde KEINE IDs.`,
+    })
+  }
+
   const result = await withRetry(() => generateText({
     model,
     maxRetries: 0,
     system: SYSTEM_PROMPT,
     messages: aiMessages,
     tools,
-    stopWhen: stepCountIs(2),
+    stopWhen: stepCountIs(5),
   }))
-
   return extractResult(result) || 'Erledigt.'
 }

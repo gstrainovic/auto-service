@@ -89,10 +89,13 @@ test.describe('Chat Flow', () => {
     ])
     await expect(page.locator('.q-chip')).toHaveCount(2)
 
-    // Remove the first chip
+    // Remove the first chip — one should remain
+    const firstChipText = await page.locator('.q-chip').first().textContent()
     await page.locator('.q-chip').first().getByRole('button').click()
     await expect(page.locator('.q-chip')).toHaveCount(1)
-    await expect(page.getByText('test-kaufvertrag.png')).toBeVisible()
+    // The remaining chip should be the OTHER file
+    const remainingText = await page.locator('.q-chip').first().textContent()
+    expect(remainingText).not.toBe(firstChipText)
   })
 
   test('send multiple images shows thumbnail grid in message', async ({ page }) => {

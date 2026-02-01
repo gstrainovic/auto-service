@@ -314,9 +314,11 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
           mileageAtService: mileageAtService || 0,
           currency: currency || 'EUR',
           imageData: await (async () => {
-            if (!imagesBase64 || imageIndex === undefined)
+            if (!imagesBase64?.length)
               return ''
-            const raw = imagesBase64[imageIndex] ?? ''
+            // Fallback: wenn Modell keinen imageIndex übergibt, erstes Bild verwenden
+            const idx = imageIndex ?? 0
+            const raw = imagesBase64[idx] ?? ''
             if (!raw)
               return ''
             return autoRotateForDocument(raw)

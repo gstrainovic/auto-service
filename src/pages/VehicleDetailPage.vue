@@ -23,6 +23,7 @@ const selectedInvoice = ref<Invoice | null>(null)
 const confirmDeleteInvoice = ref(false)
 const confirmDeleteVehicle = ref(false)
 const confirmDeleteMaintenance = ref<string | null>(null)
+const confirmResetSchedule = ref(false)
 
 // Edit state
 const editVehicle = ref(false)
@@ -130,6 +131,13 @@ async function saveMaintenanceEdit() {
   await maintenancesStore.update(editMaintenance.value.id, { ...editMaintenanceForm.value })
   editMaintenance.value = null
 }
+
+async function resetSchedule() {
+  if (!vehicle.value)
+    return
+  await vehiclesStore.updateCustomSchedule(vehicle.value.id, [])
+  confirmResetSchedule.value = false
+}
 </script>
 
 <template>
@@ -159,6 +167,28 @@ async function saveMaintenanceEdit() {
 
       <q-tab-panels v-model="tab">
         <q-tab-panel name="maintenance">
+          <div v-if="vehicle.customSchedule?.length" class="q-mb-md">
+            <div class="text-subtitle2 q-mb-sm">
+              Fahrzeugspezifischer Wartungsplan
+            </div>
+            <q-list bordered separator dense>
+              <q-item v-for="(item, i) in vehicle.customSchedule" :key="i">
+                <q-item-section avatar>
+                  <q-icon name="event_repeat" color="primary" size="sm" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>{{ item.label }}</q-item-label>
+                  <q-item-label caption>
+                    {{ item.intervalKm > 0 ? `${item.intervalKm.toLocaleString()} km` : '' }}{{ item.intervalKm > 0 && item.intervalMonths > 0 ? ' / ' : '' }}{{ item.intervalMonths > 0 ? `${item.intervalMonths} Monate` : '' }}
+                  </q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+            <q-btn
+              flat dense size="sm" color="negative" icon="delete" label="Zurücksetzen"
+              class="q-mt-xs" @click="confirmResetSchedule = true"
+            />
+          </div>
           <q-list bordered separator>
             <q-item v-for="m in maintenancesStore.maintenances" :key="m.id">
               <q-item-section>
@@ -370,6 +400,22 @@ async function saveMaintenanceEdit() {
         <q-card-actions align="right">
           <q-btn flat label="Abbrechen" @click="confirmDeleteMaintenance = null" />
           <q-btn flat color="negative" label="Löschen" @click="deleteMaintenance(confirmDeleteMaintenance!)" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Confirm reset schedule -->
+    <q-dialog v-model="confirmResetSchedule">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">
+            Wartungsplan zurücksetzen?
+          </div>
+          <div>Der fahrzeugspezifische Wartungsplan wird gelöscht und die Standard-Intervalle werden verwendet.</div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Abbrechen" @click="confirmResetSchedule = false" />
+          <q-btn flat color="negative" label="Zurücksetzen" @click="resetSchedule" />
         </q-card-actions>
       </q-card>
     </q-dialog>

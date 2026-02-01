@@ -97,6 +97,20 @@ Wenn du ein Tool erfolgreich ausgeführt hast, fasse IMMER zusammen was du getan
 - **Löschung**: Nenne was genau gelöscht wurde
 - **Duplikat erkannt**: Erkläre welcher existierende Eintrag gefunden wurde
 
+WARTUNGSPLAN AUS SERVICE-HEFT:
+- Wenn der Benutzer Fotos aus dem Service-Heft/Wartungsplan schickt:
+  1. Lies die Intervalle sorgfältig ab (km und Zeitintervalle)
+  2. Mappe zu Kategorien: oelwechsel, inspektion, bremsen, reifen, luftfilter, zahnriemen, bremsflüssigkeit, klimaanlage, tuev, kuehlung, fahrwerk, elektrik, sonstiges
+  3. Zeige dem Benutzer eine Tabelle mit allen erkannten Intervallen
+  4. Nach Bestätigung: verwende set_maintenance_schedule
+- Typische Zuordnung:
+  - Zündkerzen → elektrik
+  - Getriebeöl/Differentialöl/Verteilergetriebeöl → sonstiges (Label beschreibt es genau)
+  - Kleine Wartung/Inspektion → inspektion
+  - Antriebsriemen/Keilriemen → zahnriemen
+  - Kühlmittel/Frostschutz → kuehlung
+  - Reifendichtmittel → reifen
+
 Antworte immer auf Deutsch.
 Wenn der Benutzer ein Bild schickt, analysiere es und gib die Ergebnisse strukturiert aus.
 Halte deine Antworten kurz und hilfreich.`
@@ -256,7 +270,7 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         if (!doc)
           return { error: 'Fahrzeug nicht gefunden' }
         const vehicle = doc.toJSON()
-        const schedule = getMaintenanceSchedule(vehicle.make, vehicle.model)
+        const schedule = getMaintenanceSchedule(vehicle.make, vehicle.model, vehicle.customSchedule)
         const mDocs = await (db as any).maintenances.find({ selector: { vehicleId } }).exec()
         const lastMaintenances = mDocs.map((d: any) => ({
           type: d.type,
@@ -268,6 +282,34 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
           lastMaintenances,
           schedule,
         })
+      },
+    }),
+
+    set_maintenance_schedule: tool({
+      description: 'Setzt den Wartungsplan eines Fahrzeugs basierend auf Hersteller-Angaben aus dem Service-Heft',
+      inputSchema: z.object({
+        vehicleId: z.string().describe('Fahrzeug-ID'),
+        schedule: z.array(z.object({
+          type: z.enum(MAINTENANCE_CATEGORIES).describe('Wartungskategorie'),
+          label: z.string().describe('Beschreibung z.B. "Motoröl + Ölfilter"'),
+          intervalKm: z.number().describe('km-Intervall (0 wenn nur zeitbasiert)'),
+          intervalMonths: z.number().describe('Monats-Intervall'),
+        })).describe('Wartungsintervalle aus dem Service-Heft'),
+      }),
+      execute: async ({ vehicleId, schedule }) => {
+        const doc = await (db as any).vehicles.findOne({ selector: { id: vehicleId } }).exec()
+        if (!doc)
+          return { error: 'Fahrzeug nicht gefunden' }
+        await doc.patch({ customSchedule: schedule, updatedAt: new Date().toISOString() })
+        const v = doc.toJSON()
+        return {
+          success: true,
+          message: `Wartungsplan für ${v.make} ${v.model} gespeichert (${schedule.length} Positionen)`,
+          schedule: schedule.map(s => ({
+            label: s.label,
+            interval: `${s.intervalKm > 0 ? `${s.intervalKm.toLocaleString()} km` : ''}${s.intervalKm > 0 && s.intervalMonths > 0 ? ' / ' : ''}${s.intervalMonths > 0 ? `${s.intervalMonths} Monate` : ''}`,
+          })),
+        }
       },
     }),
 

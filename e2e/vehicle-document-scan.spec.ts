@@ -2,9 +2,9 @@ import path from 'node:path'
 import process from 'node:process'
 import { expect, test } from '@playwright/test'
 
-const AI_PROVIDER = process.env.AI_PROVIDER || 'openrouter'
+const AI_PROVIDER = process.env.AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env[`${AI_PROVIDER.toUpperCase().replace('-', '_')}_API_KEY`]
-  || process.env.OPENROUTER_API_KEY || ''
+  || process.env.MISTRAL_API_KEY || ''
 
 test.describe('Vehicle Document Scan', () => {
   test.setTimeout(120_000)

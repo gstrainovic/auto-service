@@ -23,16 +23,15 @@ e2e/              # Playwright tests + fixtures/
 scripts/          # compare-ai.ts
 
 ## AI Providers
-Five cloud providers via Vercel AI SDK v6 + @ai-sdk/openai (OpenAI-compatible):
-- **openrouter** (gemini-2.0-flash-001) — primary, best for vision+chat, no quota issues
+Vier cloud Providers via Vercel AI SDK v6:
+- **mistral** (mistral-small-latest) — primary, vision+chat+tools, schnell (~3s), zuverlässiges Tool-Calling
 - **anthropic** (claude-sonnet-4-20250514)
 - **openai** (gpt-4o-mini)
-- **mistral** (mistralai/pixtral-large-2411 via OpenRouter) — vision+chat+tools
 - **meta-llama** (meta-llama/llama-4-maverick via OpenRouter) — vision+chat+tools
 
-Removed providers (2025-01 comparison): Google direct (quota limits), Groq (vision decommissioned).
+Entfernte Provider: OpenRouter+Gemini (SDK-Inkompatibilitäten mit neuen Gemini-Response-Feldern wie `reasoning`, `file_search_call`; Gemini narrated Tool-Calls statt sie auszuführen), Google direct (Quota-Limits), Groq (Vision eingestellt).
 
-Provider + API key in localStorage (Settings page). .env only for E2E tests.
+Provider + API key in localStorage (Settings page). .env nur für E2E-Tests.
 
 ## Privacy / Datenschutz der Provider
 WICHTIG: Bei kostenlosen API-Tiers bezahlt man mit seinen Daten.
@@ -61,8 +60,9 @@ Getestetes Setup (Jan 2026): Ollama 0.15.2, qwen3-vl:2b, Quadro P1000 (4 GB VRAM
 ## E2E Testing
 - Quasar icon-only buttons need CSS class selectors (.chat-fab), not getByRole
 - .env loaded by playwright.config.ts, keys injected via page.evaluate → localStorage
-- All AI tests use OpenRouter (fast, accurate, ~3s for vision)
+- Alle AI-Tests nutzen Mistral als Default (schnell, zuverlässig, ~3–6s für Vision+Tools)
 - Use .first() for assertions that may match multiple elements (AI can create duplicates)
+- Chat-Test: Assertion auf Tool-Ergebnis muss `erledigt` einschließen (Fallback wenn Model keinen eigenen Text generiert)
 
 ## Code Style
 - German UI text and AI schema descriptions
@@ -71,4 +71,4 @@ Getestetes Setup (Jan 2026): Ollama 0.15.2, qwen3-vl:2b, Quadro P1000 (4 GB VRAM
 
 ## Gotchas
 - Lint errors in docs/plans/*.md are false positives (code blocks parsed as JS)
-- OpenRouter is the only provider tested for vision/scan — others may need model adjustments
+- Mistral ist der primäre E2E-Test-Provider — andere Provider können abweichendes Tool-Calling-Verhalten zeigen

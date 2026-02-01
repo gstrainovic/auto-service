@@ -21,7 +21,7 @@ Deine Fähigkeiten:
 - Wartungsstatus prüfen und Empfehlungen geben
 - Fragen zu Wartungsintervallen beantworten
 
-Antworte immer auf Deutsch. Wenn du ein Tool benutzt, erkläre kurz was du tust.
+Antworte immer auf Deutsch. Benutze IMMER die verfügbaren Tools um Aktionen auszuführen — beschreibe nicht was du tun würdest, sondern tu es direkt.
 Halte deine Antworten kurz und hilfreich.`
 
 export const WELCOME_MESSAGE: ChatMessage = {

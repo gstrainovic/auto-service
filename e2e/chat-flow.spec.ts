@@ -2,9 +2,9 @@ import path from 'node:path'
 import process from 'node:process'
 import { expect, test } from '@playwright/test'
 
-const AI_PROVIDER = process.env.AI_PROVIDER || 'openrouter'
+const AI_PROVIDER = process.env.AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env[`${AI_PROVIDER.toUpperCase().replace('-', '_')}_API_KEY`]
-  || process.env.OPENROUTER_API_KEY || ''
+  || process.env.MISTRAL_API_KEY || ''
 
 const fixturesDir = path.join(import.meta.dirname, 'fixtures')
 
@@ -36,14 +36,14 @@ test.describe('Chat Flow', () => {
     // Step 4: Wait for AI response (at least 3 messages: welcome + user + assistant)
     await expect(page.locator('.q-message')).toHaveCount(3, { timeout: 60_000 })
 
-    // Step 5: Verify the assistant responded
+    // Step 5: Verify the assistant responded with tool result or confirmation
     const lastMsg = page.locator('.q-message').last()
-    await expect(lastMsg).toContainText(/Audi|A4|angelegt|eingetragen|erstellt|hinzugefügt|Erledigt/i, { timeout: 10_000 })
+    await expect(lastMsg).toContainText(/angelegt|eingetragen|erstellt|hinzugefügt|gespeichert|wurde|erledigt/i, { timeout: 10_000 })
 
-    // Step 6: Close chat and verify the vehicle was created
+    // Step 6: Close chat and verify vehicle in UI (reads from RxDB)
     await page.locator('.q-toolbar').getByRole('button').last().click()
     await page.goto('/vehicles')
-    await expect(page.getByText('Audi A4').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText('Audi A4').first()).toBeVisible({ timeout: 15_000 })
     await expect(page.getByText('B-CD 5678').first()).toBeVisible()
   })
 

@@ -60,7 +60,11 @@ function onFileChange(event: Event) {
       reader.readAsDataURL(file)
     }
     else {
+      if (pendingFiles.value.filter(f => f.type === 'image').length >= 8)
+        break
       resizeImage(file).then(({ dataUrl, base64 }) => {
+        if (pendingFiles.value.filter(f => f.type === 'image').length >= 8)
+          return
         pendingFiles.value.push({
           file,
           type: 'image',
@@ -220,7 +224,7 @@ async function send() {
           @change="onFileChange"
         >
         <q-btn flat round dense icon="attach_file" @click="pickFile">
-          <q-tooltip>Fotos oder PDF anhängen</q-tooltip>
+          <q-tooltip>Fotos (max. 8) oder PDF anhängen</q-tooltip>
         </q-btn>
         <q-input
           v-model="input"

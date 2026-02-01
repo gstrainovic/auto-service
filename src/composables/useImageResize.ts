@@ -1,7 +1,11 @@
 /**
  * Resize images before sending to Vision APIs.
- * Mistral Small 3.1 internally caps at 1540px (longest side)
- * and tokenizes at 28×28 px per token — anything larger is wasted bandwidth.
+ *
+ * Mistral Vision Limits (docs.mistral.ai/capabilities/vision):
+ * - Max 8 images per request, max 10 MB per image
+ * - Max 10.000×10.000 px (error above), formats: JPEG, PNG, WEBP, GIF
+ * - Mistral Small: internally downscales to 1540×1540
+ * - Tokens per image: (W × H) / 784 ≈ max 3.025 at 1540×1540
  */
 export function resizeImage(
   file: File,

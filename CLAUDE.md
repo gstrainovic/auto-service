@@ -18,7 +18,7 @@ src/
   services/       # ai.ts (multi-provider), chat.ts (tool-calling), maintenance-schedule.ts
   stores/         # Pinia: vehicles, invoices, maintenances, settings
   db/             # RxDB schema + database init
-  composables/    # useDatabase()
+  composables/    # useDatabase(), useImageResize (client-side 1540px resize)
 e2e/              # Playwright tests + fixtures/
 scripts/          # compare-ai.ts
 
@@ -36,7 +36,7 @@ Provider + API key in localStorage (Settings page). .env nur für E2E-Tests.
 ## Privacy / Datenschutz der Provider
 WICHTIG: Bei kostenlosen API-Tiers bezahlt man mit seinen Daten.
 - **OpenRouter + Gemini Free**: Google trainiert mit Free-Tier-Daten. In EU nicht erlaubt ohne Paid Tier.
-- **Mistral Free (Experiment Plan)**: Daten werden standardmäßig für Training verwendet. Opt-out möglich.
+- **Mistral Experiment (Free)**: Daten werden standardmäßig für Training verwendet. Opt-out möglich. Scale-Plan für Produktion nötig.
 - **Meta Llama API**: Kein Training mit API-Daten, ABER multimodale Modelle in EU eingeschränkt.
 - **Anthropic API**: Kein Training mit API-Daten. 7 Tage Retention. Nicht kostenlos.
 - **OpenAI API**: Kein Training seit März 2023. Nicht kostenlos.
@@ -50,10 +50,27 @@ Getestetes Setup (Jan 2026): Ollama 0.15.2, qwen3-vl:2b, Quadro P1000 (4 GB VRAM
 - qwen3-vl:4b (3.3 GB) hängt bei Vision auf 4 GB VRAM — 2b empfohlen
 - Ollama API: http://localhost:11434, OpenAI-kompatibel via /v1/chat/completions
 
+## Mistral Vision Limits
+Quelle: docs.mistral.ai/capabilities/vision
+- Max **8 Bilder** pro API-Request
+- Max **10 MB** pro Bild, max **10.000×10.000 px**
+- Formate: JPEG, PNG, WEBP, GIF (single-frame)
+- Mistral Small: intern auf **1540×1540** skaliert → client-seitig auf 1540px resizen spart Bandbreite
+- Tokens pro Bild: `(W × H) / 784` ≈ max 3.025 bei 1540×1540
+- Client-Resize: `useImageResize.ts` → JPEG 80%, max 1540px longest side
+
+## Mistral API Tiers & Rate-Limits
+- **Experiment (Free)**: 50K Tokens/Min, 4M Tokens/Monat, 1 RPS — verstecktes Vision-Rate-Limit
+- **Scale (Paid)**: 2M Tokens/Min, 360 Req/Min — kein separates Vision-Limit
+- Dashboard zeigt Scale-Limits auch im Experiment-Plan an (irreführend!)
+- Spending-Limit ≠ Tier-Upgrade — man muss explizit auf Scale wechseln
+- `maxRetries: 0` auf allen AI SDK Calls — verhindert SDK-interne Retries (default: 2) die Rate-Limit aufbrauchen
+
 ## Key Patterns
 - AI SDK v6: `inputSchema` (not `parameters`), `stopWhen: stepCountIs(n)` (not maxSteps)
 - Chat tools write directly to RxDB — no REST API layer
 - Chat stepCount=2 to prevent duplicate tool calls
+- `scan_document` Tool wird ausgeblendet wenn Bilder im Message sind (Modell sieht Bilder direkt)
 - z.enum(MAINTENANCE_CATEGORIES) enforces valid categories in AI schemas
 - RxDB: optional fields can be added without schema version bump
 

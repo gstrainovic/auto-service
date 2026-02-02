@@ -1,8 +1,6 @@
-import { dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { expect, test } from '@playwright/test'
-
-const __dirname = `${dirname(fileURLToPath(import.meta.url))}/`
 
 test.describe('Settings Flow', () => {
   test('select AI provider and enter API key', async ({ page }) => {
@@ -41,7 +39,7 @@ test.describe('Settings Flow', () => {
     const downloadPromise = page.waitForEvent('download')
     await page.locator('.export-btn').click()
     const download = await downloadPromise
-    const downloadPath = `${__dirname}fixtures/export-test.json`
+    const downloadPath = path.join(tmpdir(), `export-test-${Date.now()}.json`)
     await download.saveAs(downloadPath)
 
     // Delete the vehicle

@@ -25,6 +25,7 @@ dist-ssr
 
 # Generated test fixtures
 e2e/fixtures/*.png
+e2e/fixtures/export-test.json
 test-results/
 
 # Environment (contains API keys)

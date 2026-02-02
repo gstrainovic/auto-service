@@ -111,6 +111,16 @@ WARTUNGSPLAN AUS SERVICE-HEFT:
   - Kühlmittel/Frostschutz → kuehlung
   - Reifendichtmittel → reifen
 
+HINWEIS AUF SERVICE-HEFT:
+- Wenn ein Fahrzeug KEINEN fahrzeugspezifischen Wartungsplan hat (customSchedule fehlt), weise den Benutzer darauf hin:
+  - Der aktuelle Wartungsplan basiert auf allgemeinen/markenbasierten Intervallen
+  - Für genauere, fahrzeugspezifische Intervalle sollte er sein Service-Heft fotografieren und hochladen
+  - Dann werden die Hersteller-Intervalle für sein konkretes Modell hinterlegt
+- Zeige diesen Hinweis:
+  - Proaktiv, wenn über ein Fahrzeug ohne customSchedule gesprochen wird (z.B. bei get_vehicle, get_maintenance_status)
+  - Aber NICHT wiederholt — einmal pro Gespräch pro Fahrzeug reicht
+- Formulierung z.B.: "💡 Tipp: Der Wartungsplan für deinen [Marke Modell] basiert auf allgemeinen Intervallen. Fotografiere dein Service-Heft und schick mir die Bilder — dann hinterlege ich die genauen Hersteller-Intervalle für dein Fahrzeug."
+
 Antworte immer auf Deutsch.
 Wenn der Benutzer ein Bild schickt, analysiere es und gib die Ergebnisse strukturiert aus.
 Halte deine Antworten kurz und hilfreich.`
@@ -247,7 +257,7 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         const invoiceDocs = await (db as any).invoices.find({ selector: { vehicleId } }).exec()
         const maintenanceDocs = await (db as any).maintenances.find({ selector: { vehicleId } }).exec()
         return {
-          vehicle: { id: vehicle.id, make: vehicle.make, model: vehicle.model, year: vehicle.year, mileage: vehicle.mileage, licensePlate: vehicle.licensePlate },
+          vehicle: { id: vehicle.id, make: vehicle.make, model: vehicle.model, year: vehicle.year, mileage: vehicle.mileage, licensePlate: vehicle.licensePlate, hasCustomSchedule: !!vehicle.customSchedule?.length },
           invoices: invoiceDocs.map((d: any) => {
             const i = d.toJSON()
             return { id: i.id, workshopName: i.workshopName, date: i.date, totalAmount: i.totalAmount, items: i.items }
@@ -270,18 +280,23 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         if (!doc)
           return { error: 'Fahrzeug nicht gefunden' }
         const vehicle = doc.toJSON()
-        const schedule = getMaintenanceSchedule(vehicle.make, vehicle.model, vehicle.customSchedule)
+        const schedule = getMaintenanceSchedule(vehicle.customSchedule)
         const mDocs = await (db as any).maintenances.find({ selector: { vehicleId } }).exec()
         const lastMaintenances = mDocs.map((d: any) => ({
           type: d.type,
           mileageAtService: d.mileageAtService,
           doneAt: d.doneAt,
         }))
-        return checkDueMaintenances({
+        const status = checkDueMaintenances({
           currentMileage: vehicle.mileage,
           lastMaintenances,
           schedule,
         })
+        return {
+          ...status,
+          hasCustomSchedule: !!vehicle.customSchedule?.length,
+          vehicle: `${vehicle.make} ${vehicle.model}`,
+        }
       },
     }),
 
@@ -643,7 +658,8 @@ Zeige die erkannten Daten strukturiert an — getrennt nach Fahrzeug-Daten und R
   const vehicleDocs = await (db as any).vehicles.find().exec()
   const vehicleList = vehicleDocs.map((d: any) => {
     const v = d.toJSON()
-    return `- ${v.make} ${v.model} (${v.year}), ${v.mileage} km${v.licensePlate ? `, ${v.licensePlate}` : ''}: ID=${v.id}`
+    const scheduleInfo = v.customSchedule?.length ? '✅ Service-Heft' : '⚠️ allgemeiner Wartungsplan'
+    return `- ${v.make} ${v.model} (${v.year}), ${v.mileage} km${v.licensePlate ? `, ${v.licensePlate}` : ''} [${scheduleInfo}]: ID=${v.id}`
   }).join('\n')
 
   const vehicleContext = vehicleList

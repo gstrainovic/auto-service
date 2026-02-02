@@ -35,24 +35,10 @@ const DEFAULT_SCHEDULE: ScheduleItem[] = [
   { type: 'tuev', label: 'TÜV / HU', intervalKm: 0, intervalMonths: 24 },
 ]
 
-const BRAND_SCHEDULES: Record<string, ScheduleItem[]> = {
-  BMW: [
-    { type: 'oelwechsel', label: 'Ölwechsel', intervalKm: 15000, intervalMonths: 12 },
-    { type: 'inspektion', label: 'Inspektion', intervalKm: 30000, intervalMonths: 24 },
-    { type: 'bremsen', label: 'Bremsen prüfen', intervalKm: 30000, intervalMonths: 24 },
-    { type: 'reifen', label: 'Reifenwechsel', intervalKm: 40000, intervalMonths: 48 },
-    { type: 'luftfilter', label: 'Luftfilter', intervalKm: 60000, intervalMonths: 48 },
-    { type: 'zahnriemen', label: 'Steuerkette (Sichtprüfung)', intervalKm: 100000, intervalMonths: 60 },
-    { type: 'bremsflüssigkeit', label: 'Bremsflüssigkeit', intervalKm: 0, intervalMonths: 24 },
-    { type: 'klimaanlage', label: 'Klimaanlage Service', intervalKm: 0, intervalMonths: 24 },
-    { type: 'tuev', label: 'TÜV / HU', intervalKm: 0, intervalMonths: 24 },
-  ],
-}
-
-export function getMaintenanceSchedule(make: string, _model: string, customSchedule?: ScheduleItem[]): ScheduleItem[] {
+export function getMaintenanceSchedule(customSchedule?: ScheduleItem[]): ScheduleItem[] {
   if (customSchedule?.length)
     return customSchedule
-  return BRAND_SCHEDULES[make] || DEFAULT_SCHEDULE
+  return DEFAULT_SCHEDULE
 }
 
 function addMonths(dateStr: string, months: number): Date {

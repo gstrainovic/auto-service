@@ -20,7 +20,7 @@ watch(() => vehiclesStore.vehicles, computeDue, { deep: true })
 async function computeDue() {
   const db = await dbPromise
   for (const vehicle of vehiclesStore.vehicles) {
-    const schedule = getMaintenanceSchedule(vehicle.make, vehicle.model, vehicle.customSchedule as any)
+    const schedule = getMaintenanceSchedule(vehicle.customSchedule as any)
     const mDocs = await (db as any).maintenances.find({ selector: { vehicleId: vehicle.id } }).exec()
     const lastMaintenances = mDocs.map((d: any) => ({
       type: d.type,
@@ -67,6 +67,13 @@ async function deleteMaintenance(vehicleId: string, type: string) {
       <div class="text-subtitle2 q-mb-sm">
         {{ vehicle.mileage.toLocaleString('de-DE') }} km · {{ vehicle.licensePlate }}
       </div>
+
+      <q-banner v-if="!vehicle.customSchedule?.length" class="bg-warning text-white q-mb-sm schedule-hint" rounded dense>
+        <template #avatar>
+          <q-icon name="info" size="xs" />
+        </template>
+        Allgemeine Wartungsintervalle — Service-Heft im Chat hochladen für genaue Intervalle.
+      </q-banner>
 
       <q-list v-if="dueMap[vehicle.id]?.length" bordered separator>
         <q-item v-for="item in dueMap[vehicle.id]" :key="item.type">

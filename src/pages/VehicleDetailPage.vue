@@ -167,6 +167,13 @@ async function resetSchedule() {
 
       <q-tab-panels v-model="tab">
         <q-tab-panel name="maintenance">
+          <q-banner v-if="!vehicle.customSchedule?.length" class="bg-warning text-white q-mb-md schedule-hint" rounded>
+            <template #avatar>
+              <q-icon name="info" />
+            </template>
+            Der Wartungsplan basiert auf allgemeinen Intervallen.
+            Fotografiere dein Service-Heft und schick es im Chat — dann werden die genauen Hersteller-Intervalle für dein Fahrzeug hinterlegt.
+          </q-banner>
           <div v-if="vehicle.customSchedule?.length" class="q-mb-md">
             <div class="text-subtitle2 q-mb-sm">
               Fahrzeugspezifischer Wartungsplan

@@ -38,3 +38,4 @@ tmp/
 
 # Tesseract.js cached language data
 *.traineddata
+.serena/

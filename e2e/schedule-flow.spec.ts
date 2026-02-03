@@ -11,7 +11,7 @@ test.describe('Schedule Flow', () => {
   test.setTimeout(120_000)
   test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
 
-  test('set custom schedule via chat tool', async ({ page }) => {
+  test('SC-001: set custom schedule via chat tool', async ({ page }) => {
     // Configure AI provider
     await page.goto('/')
     await page.evaluate(({ provider, key }) => {

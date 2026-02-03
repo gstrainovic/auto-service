@@ -80,7 +80,7 @@ async function seedMaintenance(page: any, vehicleId: string) {
 }
 
 test.describe('Vehicle CRUD', () => {
-  test('edit a vehicle', async ({ page }) => {
+  test('CR-001: edit a vehicle', async ({ page }) => {
     await createVehicleAndOpen(page, {
       make: 'BMW',
       model: '320d',
@@ -110,7 +110,7 @@ test.describe('Vehicle CRUD', () => {
     await expect(page.getByText('30.000 km')).toBeVisible()
   })
 
-  test('delete a vehicle from detail page', async ({ page }) => {
+  test('CR-002: delete a vehicle from detail page', async ({ page }) => {
     await createVehicleAndOpen(page, {
       make: 'Audi',
       model: 'A3',
@@ -128,7 +128,7 @@ test.describe('Vehicle CRUD', () => {
 })
 
 test.describe('Invoice CRUD', () => {
-  test('edit an invoice', async ({ page }) => {
+  test('CR-003: edit an invoice', async ({ page }) => {
     await createVehicleAndOpen(page, {
       make: 'VW',
       model: 'Passat',
@@ -168,7 +168,7 @@ test.describe('Invoice CRUD', () => {
     await expect(page.getByText('550.00')).toBeVisible()
   })
 
-  test('edit invoice items (add and remove)', async ({ page }) => {
+  test('CR-004: edit invoice items (add and remove)', async ({ page }) => {
     await createVehicleAndOpen(page, {
       make: 'Ford',
       model: 'Focus',
@@ -208,7 +208,7 @@ test.describe('Invoice CRUD', () => {
     await expect(page.locator('.q-dialog').getByText('Luftfilter')).toBeVisible({ timeout: 5_000 })
   })
 
-  test('delete an invoice', async ({ page }) => {
+  test('CR-005: delete an invoice', async ({ page }) => {
     await createVehicleAndOpen(page, {
       make: 'Opel',
       model: 'Astra',
@@ -237,7 +237,7 @@ test.describe('Invoice CRUD', () => {
 })
 
 test.describe('Invoice Duplicate Detection', () => {
-  test('reject duplicate invoice with same date and workshop', async ({ page }) => {
+  test('CR-006: reject duplicate invoice with same date and workshop', async ({ page }) => {
     await createVehicleAndOpen(page, {
       make: 'Toyota',
       model: 'Corolla',
@@ -279,7 +279,7 @@ test.describe('Invoice Duplicate Detection', () => {
 })
 
 test.describe('Maintenance CRUD', () => {
-  test('edit a maintenance entry', async ({ page }) => {
+  test('CR-007: edit a maintenance entry', async ({ page }) => {
     await createVehicleAndOpen(page, {
       make: 'Skoda',
       model: 'Octavia',
@@ -316,7 +316,7 @@ test.describe('Maintenance CRUD', () => {
     await expect(page.getByText('76.000 km')).toBeVisible()
   })
 
-  test('delete a maintenance entry', async ({ page }) => {
+  test('CR-008: delete a maintenance entry', async ({ page }) => {
     await createVehicleAndOpen(page, {
       make: 'Seat',
       model: 'Leon',
@@ -342,7 +342,7 @@ test.describe('Maintenance CRUD', () => {
     await expect(page.getByText('Keine Wartungseinträge vorhanden')).toBeVisible()
   })
 
-  test('change maintenance status via edit', async ({ page }) => {
+  test('CR-009: change maintenance status via edit', async ({ page }) => {
     await createVehicleAndOpen(page, {
       make: 'Renault',
       model: 'Megane',

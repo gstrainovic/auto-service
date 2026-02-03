@@ -3,7 +3,7 @@ import type { AiProvider } from '../stores/settings'
 import { generateText, stepCountIs, tool } from 'ai'
 import { z } from 'zod'
 import { autoRotateForDocument } from '../composables/useImageResize'
-import { callMistralOcr, callMistralOcrPdf, getModel, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument, withRetry } from './ai'
+import { callMistralOcr, callMistralOcrPdf, getModel, hashImage, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument, withRetry } from './ai'
 import { checkDueMaintenances, getMaintenanceSchedule } from './maintenance-schedule'
 
 /**
@@ -53,6 +53,7 @@ Deine Fähigkeiten:
 - Fotos von Rechnungen, Kaufverträgen, Fahrzeugscheinen und Service-Heften analysieren
 - Wartungsstatus prüfen und Empfehlungen geben
 - Fragen zu Wartungsintervallen beantworten
+- OCR-Texte gespeicherter Rechnungen abrufen (get_ocr_text) — enthält den maschinengelesenen Volltext
 
 FAHRZEUG-ERKENNUNG:
 - Der Benutzer kennt KEINE IDs. Er sagt z.B. "mein BMW", "der Golf", "das Fahrzeug".
@@ -260,7 +261,7 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
           vehicle: { id: vehicle.id, make: vehicle.make, model: vehicle.model, year: vehicle.year, mileage: vehicle.mileage, licensePlate: vehicle.licensePlate, hasCustomSchedule: !!vehicle.customSchedule?.length },
           invoices: invoiceDocs.map((d: any) => {
             const i = d.toJSON()
-            return { id: i.id, workshopName: i.workshopName, date: i.date, totalAmount: i.totalAmount, items: i.items }
+            return { id: i.id, workshopName: i.workshopName, date: i.date, totalAmount: i.totalAmount, items: i.items, hasOcrText: !!i.ocrCacheId }
           }),
           maintenances: maintenanceDocs.map((d: any) => {
             const m = d.toJSON()
@@ -362,6 +363,9 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         }
 
         const now = new Date().toISOString()
+        const imgRaw = imagesBase64?.length ? (imagesBase64[imageIndex ?? 0] ?? '') : ''
+        const imageData = imgRaw ? await autoRotateForDocument(imgRaw) : ''
+        const ocrCacheId = imgRaw ? await hashImage(imgRaw) : ''
         await (db as any).invoices.insert({
           id: crypto.randomUUID(),
           vehicleId,
@@ -370,17 +374,8 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
           totalAmount,
           mileageAtService: mileageAtService || 0,
           currency: currency || 'EUR',
-          imageData: await (async () => {
-            if (!imagesBase64?.length)
-              return ''
-            // Fallback: wenn Modell keinen imageIndex übergibt, erstes Bild verwenden
-            const idx = imageIndex ?? 0
-            const raw = imagesBase64[idx] ?? ''
-            if (!raw)
-              return ''
-            return autoRotateForDocument(raw)
-          })(),
-          rawText: '',
+          imageData,
+          ocrCacheId,
           items,
           createdAt: now,
           updatedAt: now,
@@ -442,6 +437,25 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
           message: `Rechnung gelöscht`,
           deleted: { workshopName: inv.workshopName, date: inv.date, totalAmount: inv.totalAmount, maintenances: maintenances.length },
         }
+      },
+    }),
+
+    get_ocr_text: tool({
+      description: 'Liest den OCR-Text einer Rechnung aus dem Cache. Nützlich um Details einer gespeicherten Rechnung nachzuschlagen.',
+      inputSchema: z.object({
+        invoiceId: z.string().describe('Rechnungs-ID'),
+      }),
+      execute: async ({ invoiceId }) => {
+        const invDoc = await (db as any).invoices.findOne({ selector: { id: invoiceId } }).exec()
+        if (!invDoc)
+          return { error: 'Rechnung nicht gefunden' }
+        const inv = invDoc.toJSON()
+        if (!inv.ocrCacheId)
+          return { error: 'Kein OCR-Text für diese Rechnung vorhanden' }
+        const ocrDoc = await (db as any).ocrcache.findOne({ selector: { id: inv.ocrCacheId } }).exec()
+        if (!ocrDoc)
+          return { error: 'OCR-Cache-Eintrag nicht gefunden' }
+        return { invoiceId, ocrText: ocrDoc.markdown }
       },
     }),
 
@@ -597,9 +611,10 @@ Analysiere jede Seite einzeln. Zeige die erkannten Daten pro Seite strukturiert 
     // Mistral: OCR-Vorverarbeitung für perfekte Texterkennung (Tabellen, Spalten, Beträge)
     let ocrTexts: string[] = []
     if (opts.provider === 'mistral') {
-      ocrTexts = await Promise.all(
-        imagesBase64.map(img => withRetry(() => callMistralOcr(img, opts.apiKey, db)).catch(() => '')),
+      const ocrResults = await Promise.all(
+        imagesBase64.map(img => withRetry(() => callMistralOcr(img, opts.apiKey, db)).catch(() => ({ markdown: '', cacheId: '' }))),
       )
+      ocrTexts = ocrResults.map(r => r.markdown)
     }
 
     const ocrContext = ocrTexts.filter(Boolean).length

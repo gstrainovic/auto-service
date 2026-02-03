@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 test.describe('Scan Flow', () => {
-  test('scan page shows vehicle selector and upload', async ({ page }) => {
+  test('SF-001: scan page shows vehicle selector and upload', async ({ page }) => {
     // First add a vehicle
     await page.goto('/vehicles')
     await page.getByRole('button', { name: 'Hinzufügen' }).click()

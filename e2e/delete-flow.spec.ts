@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 test.describe('Delete Flow', () => {
-  test('delete a vehicle with confirmation dialog', async ({ page }) => {
+  test('DF-001: delete a vehicle with confirmation dialog', async ({ page }) => {
     // Add a vehicle first
     await page.goto('/vehicles')
     await page.getByRole('button', { name: 'Hinzufügen' }).click()
@@ -30,7 +30,7 @@ test.describe('Delete Flow', () => {
     await expect(page.getByText('VW Golf')).not.toBeVisible({ timeout: 5_000 })
   })
 
-  test('scan page has document type tabs', async ({ page }) => {
+  test('DF-002: scan page has document type tabs', async ({ page }) => {
     await page.goto('/scan')
     await expect(page.getByRole('heading', { name: 'Dokument scannen' })).toBeVisible()
 

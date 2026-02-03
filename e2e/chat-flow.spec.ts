@@ -11,7 +11,7 @@ test.describe('Chat Flow', () => {
   test.setTimeout(120_000)
   test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
 
-  test('open chat and create a vehicle via tool-calling', async ({ page }) => {
+  test('CF-001: open chat and create a vehicle via tool-calling', async ({ page }) => {
     // Configure AI provider
     await page.goto('/')
     await page.evaluate(({ provider, key }) => {
@@ -41,14 +41,14 @@ test.describe('Chat Flow', () => {
 
     // Check if model created directly or asked for confirmation
     const lastMsgText = await lastMsg.textContent() || ''
-    if (!/angelegt|eingetragen|erstellt|hinzugefügt|gespeichert|erfasst|erledigt/i.test(lastMsgText)) {
+    if (!/angelegt|eingetragen|erstellt|hinzugefügt|gespeichert|erfasst|erledigt|Hier sind die Daten|Daten deines Fahrzeugs/i.test(lastMsgText)) {
       // Model asked for confirmation — send "Ja, bitte eintragen"
       const chatInput = page.locator('.q-dialog input[placeholder="Nachricht..."]')
       await chatInput.fill('Ja, bitte eintragen')
       await chatInput.press('Enter')
       await expect(page.locator('.q-message')).toHaveCount(5, { timeout: 60_000 })
       const finalMsg = page.locator('.q-message').last()
-      await expect(finalMsg).toContainText(/angelegt|eingetragen|erstellt|hinzugefügt|gespeichert|wurde|erledigt/i, { timeout: 30_000 })
+      await expect(finalMsg).toContainText(/angelegt|eingetragen|erstellt|hinzugefügt|gespeichert|wurde|erledigt|Hier sind die Daten|Daten deines Fahrzeugs/i, { timeout: 30_000 })
     }
 
     // Step 6: Close chat and verify vehicle in UI (reads from RxDB)
@@ -58,7 +58,7 @@ test.describe('Chat Flow', () => {
     await expect(page.getByText('B-CD 5678').first()).toBeVisible()
   })
 
-  test('attach multiple images and see pending chips', async ({ page }) => {
+  test('CF-002: attach multiple images and see pending chips', async ({ page }) => {
     await page.goto('/')
     await page.locator('.chat-fab').click()
     await expect(page.getByText('KI-Assistent')).toBeVisible()
@@ -76,7 +76,7 @@ test.describe('Chat Flow', () => {
     await expect(page.getByText('test-kaufvertrag.png')).toBeVisible()
   })
 
-  test('remove individual pending file via chip', async ({ page }) => {
+  test('CF-003: remove individual pending file via chip', async ({ page }) => {
     await page.goto('/')
     await page.locator('.chat-fab').click()
     await expect(page.getByText('KI-Assistent')).toBeVisible()
@@ -98,7 +98,7 @@ test.describe('Chat Flow', () => {
     expect(remainingText).not.toBe(firstChipText)
   })
 
-  test('send multiple images shows thumbnail grid in message', async ({ page }) => {
+  test('CF-004: send multiple images shows thumbnail grid in message', async ({ page }) => {
     await page.goto('/')
     await page.evaluate(({ provider, key }) => {
       localStorage.setItem('ai_provider', provider)

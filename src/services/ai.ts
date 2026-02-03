@@ -145,7 +145,7 @@ export async function withRetry<T>(fn: () => Promise<T>, maxRetries = 4): Promis
  */
 const ocrCache = new Map<string, string>()
 
-async function hashImage(base64: string): Promise<string> {
+export async function hashImage(base64: string): Promise<string> {
   const data = new TextEncoder().encode(base64)
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
   return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')
@@ -164,13 +164,18 @@ interface OcrPage {
  * perfekter Tabellen- und Spaltenstruktur-Erkennung.
  * Ergebnisse werden per SHA-256-Hash gecacht (In-Memory).
  */
-export async function callMistralOcr(imageBase64: string, apiKey: string, db?: RxDatabase): Promise<string> {
+export interface OcrResult {
+  markdown: string
+  cacheId: string
+}
+
+export async function callMistralOcr(imageBase64: string, apiKey: string, db?: RxDatabase): Promise<OcrResult> {
   const hash = await hashImage(imageBase64)
 
   // 1. In-Memory-Cache (schnellste Stufe)
   const memCached = ocrCache.get(hash)
   if (memCached)
-    return memCached
+    return { markdown: memCached, cacheId: hash }
 
   // 2. RxDB-Cache (persistente Stufe)
   if (db) {
@@ -178,7 +183,7 @@ export async function callMistralOcr(imageBase64: string, apiKey: string, db?: R
     if (dbDoc) {
       const text = dbDoc.markdown
       ocrCache.set(hash, text)
-      return text
+      return { markdown: text, cacheId: hash }
     }
   }
 
@@ -192,7 +197,7 @@ export async function callMistralOcr(imageBase64: string, apiKey: string, db?: R
       model: 'mistral-ocr-latest',
       document: {
         type: 'image_url',
-        image_url: `data:image/jpeg;base64,${imageBase64}`,
+        image_url: imageBase64.startsWith('/9j/') ? `data:image/jpeg;base64,${imageBase64}` : `data:image/webp;base64,${imageBase64}`,
       },
       table_format: 'markdown',
     }),
@@ -224,7 +229,7 @@ export async function callMistralOcr(imageBase64: string, apiKey: string, db?: R
     catch {}
   }
 
-  return text
+  return { markdown: text, cacheId: hash }
 }
 
 /**
@@ -282,7 +287,7 @@ async function parseWithOcrPipeline<T>(
   modelId?: string,
   db?: RxDatabase,
 ): Promise<T> {
-  const ocrText = await withRetry(() => callMistralOcr(imageBase64, apiKey, db))
+  const { markdown: ocrText } = await withRetry(() => callMistralOcr(imageBase64, apiKey, db))
   const model = getModel({ provider: 'mistral', apiKey, model: modelId })
 
   const { object } = await withRetry(() => generateObject({

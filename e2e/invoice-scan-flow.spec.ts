@@ -9,7 +9,7 @@ test.describe('Invoice Scan Flow', () => {
   test.setTimeout(120_000)
   test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
 
-  test('scan a workshop invoice with AI and save results', async ({ page }) => {
+  test('IS-001: scan a workshop invoice with AI and save results', async ({ page }) => {
     // Step 1: Configure AI provider
     await page.goto('/')
     await page.evaluate(({ provider, key }) => {

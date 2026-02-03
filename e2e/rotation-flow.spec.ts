@@ -9,7 +9,7 @@ test.describe('Image Rotation', () => {
   test.setTimeout(120_000)
   test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
 
-  test('landscape invoice is auto-rotated to portrait on save', async ({ page }) => {
+  test('RF-001: landscape invoice is auto-rotated to portrait on save', async ({ page }) => {
     // Step 1: Configure AI provider
     await page.goto('/')
     await page.evaluate(({ provider, key }) => {

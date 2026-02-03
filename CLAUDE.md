@@ -94,6 +94,28 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - RxDB: optional fields can be added without schema version bump
 
 ## E2E Testing
+
+### Test-IDs (Präfix-Schema)
+| Präfix | Bereich | Beispiel |
+|--------|---------|----------|
+| VF | Vehicle Flow | VF-001: add a vehicle |
+| DF | Delete Flow | DF-001: delete with dialog |
+| SF | Scan Flow | SF-001: scanner UI |
+| IS | Invoice Scan | IS-001: AI scan + save |
+| VD | Vehicle Document | VD-001: Kaufvertrag |
+| CR | CRUD Operations | CR-001 bis CR-009 |
+| RF | Rotation Flow | RF-001: auto-rotate |
+| CF | Chat Flow | CF-001 bis CF-004 |
+| SC | Schedule Flow | SC-001: chat tool |
+| SH | Schedule Hint | SH-001, SH-002 |
+| SE | Settings Flow | SE-001, SE-002 |
+| CI | Chat Image | CI-001: rotation |
+| CS | Chat Schedule | CS-001, CS-002 |
+| MV | MediaViewer | MV-001, MV-002 |
+
+**Gesamt: 33 Tests** — `npm run test:e2e --list` zeigt alle
+
+### Test-Konventionen
 - Quasar icon-only buttons need CSS class selectors (.chat-fab), not getByRole
 - .env loaded by playwright.config.ts, keys injected via page.evaluate → localStorage
 - Alle AI-Tests nutzen Mistral als Default (schnell, zuverlässig, ~3–6s für Vision+Tools)

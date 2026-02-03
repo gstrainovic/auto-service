@@ -5,9 +5,11 @@ import { marked } from 'marked'
 import { Notify } from 'quasar'
 import { nextTick, onMounted, ref, watch } from 'vue'
 import { useDatabase } from '../composables/useDatabase'
-import { resizeImage } from '../composables/useImageResize'
+import { autoRotateForDocument, resizeImage } from '../composables/useImageResize'
+import { hashImage } from '../services/ai'
 import { sendChatMessage, WELCOME_MESSAGE } from '../services/chat'
 import { useSettingsStore } from '../stores/settings'
+import MediaViewer from './MediaViewer.vue'
 
 const MAX_PDF_SIZE = 50 * 1024 * 1024 // 50 MB (Mistral OCR Limit)
 
@@ -28,6 +30,12 @@ const loading = ref(false)
 const pendingFiles = ref<{ file: File, type: 'image' | 'pdf', name: string, preview: string, base64: string }[]>([])
 const scrollArea = ref<any>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
+const mediaViewerOpen = ref(false)
+const mediaViewerImageSrc = ref('')
+const mediaViewerPdfBase64 = ref('')
+const mediaViewerOcr = ref('')
+// Session-only storage for PDF base64 data (too large to persist)
+const pdfDataByMsgId = new Map<string, string>()
 
 // Chat-Verlauf aus RxDB laden
 onMounted(async () => {
@@ -106,13 +114,17 @@ function onFileChange(event: Event) {
       reader.readAsDataURL(file)
     }
     else {
-      resizeImage(file).then(({ dataUrl, base64 }) => {
+      resizeImage(file).then(async ({ dataUrl, base64 }) => {
+        const rotatedBase64 = await autoRotateForDocument(base64)
+        const isOriginal = rotatedBase64 === base64
+        const finalBase64 = rotatedBase64
+        const finalDataUrl = isOriginal ? dataUrl : `data:image/webp;base64,${rotatedBase64}`
         pendingFiles.value.push({
           file,
           type: 'image',
           name: file.name,
-          preview: dataUrl,
-          base64,
+          preview: finalDataUrl,
+          base64: finalBase64,
         })
       })
     }
@@ -142,6 +154,9 @@ async function send() {
 
   const imagesBase64 = files.filter(f => f.type === 'image').map(f => f.base64)
   const pdfFile = files.find(f => f.type === 'pdf')
+
+  if (pdfFile)
+    pdfDataByMsgId.set(userMsg.id, pdfFile.base64)
 
   messages.value.push(userMsg)
   await saveMessage(userMsg)
@@ -177,6 +192,32 @@ async function send() {
   finally {
     loading.value = false
   }
+}
+
+async function openImageViewer(src: string) {
+  mediaViewerImageSrc.value = src
+  mediaViewerPdfBase64.value = ''
+  mediaViewerOcr.value = ''
+  mediaViewerOpen.value = true
+
+  // OCR-Text aus RxDB laden (falls vorhanden)
+  try {
+    const base64 = src.split(',')[1]
+    if (base64) {
+      const hash = await hashImage(base64)
+      const db = await dbPromise
+      const doc = await (db as any).ocrcache.findOne({ selector: { id: hash } }).exec()
+      if (doc)
+        mediaViewerOcr.value = doc.markdown
+    }
+  }
+  catch {}
+}
+
+function openPdfViewer(base64: string) {
+  mediaViewerImageSrc.value = ''
+  mediaViewerPdfBase64.value = base64
+  mediaViewerOpen.value = true
 }
 
 async function clearChat() {
@@ -224,9 +265,14 @@ async function clearChat() {
                     <img
                       v-if="att.type === 'image' && att.preview"
                       :src="att.preview"
-                      style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px"
+                      style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer"
+                      @click="openImageViewer(att.preview!)"
                     >
-                    <div v-else-if="att.type === 'pdf'">
+                    <div
+                      v-else-if="att.type === 'pdf'"
+                      style="cursor: pointer"
+                      @click="pdfDataByMsgId.has(msg.id) && openPdfViewer(pdfDataByMsgId.get(msg.id)!)"
+                    >
                       <q-icon name="picture_as_pdf" size="sm" />
                       {{ att.name }}
                     </div>
@@ -237,10 +283,15 @@ async function clearChat() {
                 <img
                   v-if="msg.attachment.type === 'image' && msg.attachment.preview"
                   :src="msg.attachment.preview"
-                  style="max-width: 200px; max-height: 150px; border-radius: 8px"
+                  style="max-width: 200px; max-height: 150px; border-radius: 8px; cursor: pointer"
                   class="q-mb-xs"
+                  @click="openImageViewer(msg.attachment!.preview!)"
                 >
-                <div v-if="msg.attachment.type === 'pdf'" class="q-mb-xs">
+                <div
+                  v-if="msg.attachment.type === 'pdf'" class="q-mb-xs"
+                  style="cursor: pointer"
+                  @click="pdfDataByMsgId.has(msg.id) && openPdfViewer(pdfDataByMsgId.get(msg.id)!)"
+                >
                   <q-icon name="picture_as_pdf" size="sm" />
                   {{ msg.attachment.name }}
                 </div>
@@ -296,6 +347,13 @@ async function clearChat() {
       </div>
     </q-card>
   </q-dialog>
+
+  <MediaViewer
+    v-model="mediaViewerOpen"
+    :image-src="mediaViewerImageSrc"
+    :pdf-base64="mediaViewerPdfBase64"
+    :ocr-markdown="mediaViewerOcr"
+  />
 </template>
 
 <style scoped>

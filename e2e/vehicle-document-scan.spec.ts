@@ -9,7 +9,7 @@ test.describe('Vehicle Document Scan', () => {
   test.setTimeout(120_000)
   test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
 
-  test('scan a Kaufvertrag and create vehicle', async ({ page }) => {
+  test('VD-001: scan a Kaufvertrag and create vehicle', async ({ page }) => {
     // Configure AI provider
     await page.goto('/')
     await page.evaluate(({ provider, key }) => {
@@ -45,7 +45,7 @@ test.describe('Vehicle Document Scan', () => {
     await expect(page.getByText(/Golf/i).first()).toBeVisible()
   })
 
-  test('scan a Service-Heft and add to vehicle', async ({ page }) => {
+  test('VD-002: scan a Service-Heft and add to vehicle', async ({ page }) => {
     // Configure AI provider
     await page.goto('/')
     await page.evaluate(({ provider, key }) => {

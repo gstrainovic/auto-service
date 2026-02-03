@@ -3,7 +3,7 @@ import path from 'node:path'
 import { expect, test } from '@playwright/test'
 
 test.describe('Settings Flow', () => {
-  test('select AI provider and enter API key', async ({ page }) => {
+  test('SE-001: select AI provider and enter API key', async ({ page }) => {
     await page.goto('/settings')
     await expect(page.getByText('KI-Provider')).toBeVisible()
 
@@ -15,7 +15,7 @@ test.describe('Settings Flow', () => {
     await expect(apiKeyInput).toBeVisible()
   })
 
-  test('export and import database', async ({ page }) => {
+  test('SE-002: export and import database', async ({ page }) => {
     await page.goto('/settings')
 
     // Wait for DB to be ready, then insert a test vehicle

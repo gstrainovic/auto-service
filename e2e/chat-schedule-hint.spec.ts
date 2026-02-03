@@ -8,7 +8,7 @@ test.describe('Chat Schedule Hint', () => {
   test.setTimeout(120_000)
   test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
 
-  test('AI mentions service book hint when asking about maintenance status', async ({ page }) => {
+  test('CS-001: AI mentions service book hint when asking about maintenance status', async ({ page }) => {
     // Configure AI provider
     await page.goto('/')
     await page.evaluate(({ provider, key }) => {
@@ -40,10 +40,10 @@ test.describe('Chat Schedule Hint', () => {
 
     // AI should mention service book / allgemein / Service-Heft in its response
     const assistantMsg = page.locator('.q-message').last()
-    await expect(assistantMsg).toContainText(/[Ss]ervice-[Hh]eft|allgemein/i, { timeout: 30_000 })
+    await expect(assistantMsg).toContainText(/Service-Heft|allgemein/i, { timeout: 30_000 })
   })
 
-  test('AI does NOT mention service book hint when customSchedule exists', async ({ page }) => {
+  test('CS-002: AI does NOT mention service book hint when customSchedule exists', async ({ page }) => {
     // Configure AI provider
     await page.goto('/')
     await page.evaluate(({ provider, key }) => {
@@ -94,7 +94,7 @@ test.describe('Chat Schedule Hint', () => {
     // AI should show maintenance status but NOT mention service book hint
     const assistantMsg = page.locator('.q-message').last()
     // Should contain maintenance-related content
-    await expect(assistantMsg).toContainText(/[Ww]artung|[Öö]lwechsel|[Ff]ällig|[Ss]tatus|erledigt/i, { timeout: 30_000 })
+    await expect(assistantMsg).toContainText(/Wartung|Ölwechsel|Fällig|Status|erledigt/i, { timeout: 30_000 })
 
     // The context shows "✅ Service-Heft" so AI should NOT suggest uploading it
     const msgText = await assistantMsg.textContent() || ''

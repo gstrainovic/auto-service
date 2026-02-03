@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 test.describe('Vehicle Flow', () => {
-  test('add a vehicle and see it in the list', async ({ page }) => {
+  test('VF-001: add a vehicle and see it in the list', async ({ page }) => {
     await page.goto('/vehicles')
     await expect(page.getByText('Noch keine Fahrzeuge')).toBeVisible()
 
@@ -19,7 +19,7 @@ test.describe('Vehicle Flow', () => {
     await expect(page.getByText('45.000 km')).toBeVisible()
   })
 
-  test('vehicle appears on dashboard after adding', async ({ page }) => {
+  test('VF-002: vehicle appears on dashboard after adding', async ({ page }) => {
     await page.goto('/vehicles')
     await page.getByRole('button', { name: 'Hinzufügen' }).click()
     await page.getByLabel('Marke').fill('VW')
@@ -34,7 +34,7 @@ test.describe('Vehicle Flow', () => {
     await expect(page.getByText('VW Golf')).toBeVisible()
   })
 
-  test('delete a vehicle', async ({ page }) => {
+  test('VF-003: delete a vehicle', async ({ page }) => {
     await page.goto('/vehicles')
     await page.getByRole('button', { name: 'Hinzufügen' }).click()
     await page.getByLabel('Marke').fill('Audi')

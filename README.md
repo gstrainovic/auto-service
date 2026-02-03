@@ -111,6 +111,29 @@ ollama run qwen3-vl:2b "Beschreibe dieses Bild" bild.png
 
 ## E2E-Tests
 
+### Test-Katalog
+
+Die E2E-Tests sind nummeriert für präzise Referenzierung in Bug-Reports und CI-Logs:
+
+| Präfix | Bereich | Tests |
+|--------|---------|-------|
+| **VF** | Vehicle Flow | VF-001 bis VF-003 (Fahrzeug hinzufügen, Dashboard, löschen) |
+| **DF** | Delete Flow | DF-001, DF-002 (Löschdialog, Scan-Tabs) |
+| **SF** | Scan Flow | SF-001 (Scanner UI) |
+| **IS** | Invoice Scan | IS-001 (Rechnung scannen + speichern) |
+| **VD** | Vehicle Document | VD-001, VD-002 (Kaufvertrag, Service-Heft) |
+| **CR** | CRUD Operations | CR-001 bis CR-009 (Fahrzeug/Rechnung/Wartung bearbeiten/löschen) |
+| **RF** | Rotation Flow | RF-001 (Auto-Rotation Querformat) |
+| **CF** | Chat Flow | CF-001 bis CF-004 (Tool-Calling, Multi-Image) |
+| **SC** | Schedule Flow | SC-001 (Wartungsplan via Chat) |
+| **SH** | Schedule Hint | SH-001, SH-002 (Banner mit/ohne customSchedule) |
+| **SE** | Settings Flow | SE-001, SE-002 (Provider-Auswahl, Export/Import) |
+| **CI** | Chat Image | CI-001 (Auto-Rotation im Chat) |
+| **CS** | Chat Schedule | CS-001, CS-002 (Service-Heft-Hinweis im Chat) |
+| **MV** | MediaViewer | MV-001, MV-002 (Optimierung, OCR-Tab) |
+
+**Gesamt: 33 Tests in 14 Dateien**
+
 Tests nutzen echte AI-APIs (OpenRouter). Keys werden aus `.env` geladen:
 
 ```bash

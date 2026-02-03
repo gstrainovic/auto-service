@@ -20,7 +20,7 @@ async function waitForDb(page: any) {
 }
 
 test.describe('Schedule Hint', () => {
-  test('shows warning banner when no customSchedule exists', async ({ page }) => {
+  test('SH-001: shows warning banner when no customSchedule exists', async ({ page }) => {
     await createVehicleAndOpen(page, {
       make: 'Fiat',
       model: 'Punto',
@@ -39,7 +39,7 @@ test.describe('Schedule Hint', () => {
     await expect(page.locator('.schedule-hint')).toContainText('Allgemeine Wartungsintervalle')
   })
 
-  test('hides warning banner when customSchedule exists', async ({ page }) => {
+  test('SH-002: hides warning banner when customSchedule exists', async ({ page }) => {
     await createVehicleAndOpen(page, {
       make: 'Honda',
       model: 'Civic',

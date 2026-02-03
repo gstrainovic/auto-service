@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { useDatabase } from '../composables/useDatabase'
+import { ref, shallowRef } from 'vue'
+import { db, id, tx } from '../lib/instantdb'
 
 export interface InvoiceItem {
   description: string
@@ -11,53 +11,84 @@ export interface InvoiceItem {
 export interface Invoice {
   id: string
   vehicleId: string
-  workshopName: string
+  workshopName?: string
   date: string
-  totalAmount: number
-  currency: string
-  mileageAtService: number
-  imageData: string
+  totalAmount?: number
+  currency?: string
+  mileageAtService?: number
+  imageData?: string
   ocrCacheId?: string
-  items: InvoiceItem[]
+  items?: InvoiceItem[]
   createdAt: string
   updatedAt: string
 }
 
 export const useInvoicesStore = defineStore('invoices', () => {
   const invoices = ref<Invoice[]>([])
-  const { dbPromise } = useDatabase()
+  const isLoading = ref(true)
+  const error = shallowRef<Error | null>(null)
+  let unsubscribe: (() => void) | null = null
 
-  async function loadForVehicle(vehicleId: string) {
-    const db = await dbPromise
-    ;(db as any).invoices.find({ selector: { vehicleId } }).$.subscribe((docs: any[]) => {
-      invoices.value = docs.map(d => d.toJSON())
-    })
+  function load() {
+    if (unsubscribe) return
+
+    isLoading.value = true
+    unsubscribe = db.subscribeQuery(
+      { invoices: {} },
+      (result) => {
+        if (result.error) {
+          error.value = new Error(result.error.message)
+          isLoading.value = false
+          return
+        }
+        if (result.data) {
+          invoices.value = (result.data.invoices || []) as Invoice[]
+          isLoading.value = false
+        }
+      },
+    )
+  }
+
+  function getByVehicleId(vehicleId: string): Invoice[] {
+    return invoices.value.filter(i => i.vehicleId === vehicleId)
   }
 
   async function add(invoice: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'>) {
-    const db = await dbPromise
     const now = new Date().toISOString()
-    await (db as any).invoices.insert({
-      ...invoice,
-      id: crypto.randomUUID(),
-      createdAt: now,
-      updatedAt: now,
-    })
+    const newId = id()
+    await db.transact([
+      (tx.invoices as any)[newId].update({
+        ...invoice,
+        createdAt: now,
+        updatedAt: now,
+      }),
+    ])
+    return newId
   }
 
-  async function update(id: string, data: Partial<Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'>>) {
-    const db = await dbPromise
-    const doc = await (db as any).invoices.findOne({ selector: { id } }).exec()
-    if (doc)
-      await doc.patch({ ...data, updatedAt: new Date().toISOString() })
+  async function remove(invoiceId: string) {
+    await db.transact([
+      (tx.invoices as any)[invoiceId].delete(),
+    ])
   }
 
-  async function remove(id: string) {
-    const db = await dbPromise
-    const doc = await (db as any).invoices.findOne({ selector: { id } }).exec()
-    if (doc)
-      await doc.remove()
+  async function update(invoiceId: string, data: Partial<Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'>>) {
+    await db.transact([
+      (tx.invoices as any)[invoiceId].update({
+        ...data,
+        updatedAt: new Date().toISOString(),
+      }),
+    ])
   }
 
-  return { invoices, loadForVehicle, add, update, remove }
+  return {
+    invoices,
+    isLoading,
+    error,
+    load,
+    getByVehicleId,
+    add,
+    remove,
+    update,
+  }
 })

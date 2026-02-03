@@ -17,7 +17,7 @@ export interface Invoice {
   currency: string
   mileageAtService: number
   imageData: string
-  rawText: string
+  ocrCacheId?: string
   items: InvoiceItem[]
   createdAt: string
   updatedAt: string

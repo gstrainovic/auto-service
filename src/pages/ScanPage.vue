@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router'
 import InvoiceResult from '../components/InvoiceResult.vue'
 import InvoiceScanner from '../components/InvoiceScanner.vue'
 import { autoRotateForDocument } from '../composables/useImageResize'
-import { MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument } from '../services/ai'
+import { hashImage, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument } from '../services/ai'
 import { useInvoicesStore } from '../stores/invoices'
 import { useMaintenancesStore } from '../stores/maintenances'
 import { useSettingsStore } from '../stores/settings'
@@ -92,14 +92,17 @@ async function onSaveInvoice() {
     return
 
   const inv = parsedInvoice.value
+  const rotatedImage = await autoRotateForDocument(imageBase64.value)
+  const ocrCacheId = await hashImage(imageBase64.value)
   await invoicesStore.add({
     vehicleId: selectedVehicleId.value,
     workshopName: inv.workshopName || '',
     date: inv.date,
     totalAmount: inv.totalAmount || 0,
+    currency: inv.currency || 'EUR',
     mileageAtService: inv.mileageAtService || 0,
-    imageData: await autoRotateForDocument(imageBase64.value),
-    rawText: '',
+    imageData: rotatedImage,
+    ocrCacheId,
     items: inv.items || [],
   })
 

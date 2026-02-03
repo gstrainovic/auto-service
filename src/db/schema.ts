@@ -43,7 +43,7 @@ export const invoiceSchema: RxJsonSchema<any> = {
     currency: { type: 'string' },
     mileageAtService: { type: 'integer' },
     imageData: { type: 'string' },
-    rawText: { type: 'string' },
+    ocrCacheId: { type: 'string' },
     items: {
       type: 'array',
       items: {

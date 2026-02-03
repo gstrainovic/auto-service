@@ -3,7 +3,9 @@ import type { Invoice, InvoiceItem } from '../stores/invoices'
 import type { Maintenance } from '../stores/maintenances'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import MediaViewer from '../components/MediaViewer.vue'
 import VehicleForm from '../components/VehicleForm.vue'
+import { useDatabase } from '../composables/useDatabase'
 import { useInvoicesStore } from '../stores/invoices'
 import { useMaintenancesStore } from '../stores/maintenances'
 import { useVehiclesStore } from '../stores/vehicles'
@@ -24,6 +26,9 @@ const confirmDeleteInvoice = ref(false)
 const confirmDeleteVehicle = ref(false)
 const confirmDeleteMaintenance = ref<string | null>(null)
 const confirmResetSchedule = ref(false)
+const mediaViewerOpen = ref(false)
+const mediaViewerOcr = ref('')
+const { dbPromise } = useDatabase()
 
 // Edit state
 const editVehicle = ref(false)
@@ -130,6 +135,20 @@ async function saveMaintenanceEdit() {
     return
   await maintenancesStore.update(editMaintenance.value.id, { ...editMaintenanceForm.value })
   editMaintenance.value = null
+}
+
+async function openMediaViewer(inv: Invoice) {
+  mediaViewerOcr.value = ''
+  mediaViewerOpen.value = true
+  if (inv.ocrCacheId) {
+    try {
+      const db = await dbPromise
+      const doc = await (db as any).ocrcache.findOne({ selector: { id: inv.ocrCacheId } }).exec()
+      if (doc)
+        mediaViewerOcr.value = doc.markdown
+    }
+    catch {}
+  }
 }
 
 async function resetSchedule() {
@@ -259,10 +278,14 @@ async function resetSchedule() {
 
         <q-card-section v-if="selectedInvoice.imageData">
           <q-img
-            :src="`data:image/jpeg;base64,${selectedInvoice.imageData}`"
-            style="max-height: 400px"
+            :src="selectedInvoice.imageData.startsWith('/9j/') ? `data:image/jpeg;base64,${selectedInvoice.imageData}` : `data:image/webp;base64,${selectedInvoice.imageData}`"
+            style="max-height: 400px; cursor: pointer"
             fit="contain"
+            @click="openMediaViewer(selectedInvoice!)"
           />
+          <div class="text-caption text-grey text-center q-mt-xs">
+            Klick zum Vergrößern
+          </div>
         </q-card-section>
 
         <q-card-section v-if="selectedInvoice.items?.length">
@@ -426,6 +449,14 @@ async function resetSchedule() {
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- Fullscreen media viewer -->
+    <MediaViewer
+      v-if="selectedInvoice"
+      v-model="mediaViewerOpen"
+      :image-base64="selectedInvoice.imageData"
+      :ocr-markdown="mediaViewerOcr"
+    />
 
     <!-- Confirm delete vehicle -->
     <q-dialog v-model="confirmDeleteVehicle">

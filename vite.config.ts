@@ -27,4 +27,15 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    proxy: {
+      // Proxy für InstantDB Self-Hosted Server (HTTP + WebSocket)
+      '/instant-api': {
+        target: 'http://localhost:8888',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/instant-api/, ''),
+        ws: true,
+      },
+    },
+  },
 })

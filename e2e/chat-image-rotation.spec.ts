@@ -1,9 +1,14 @@
 import path from 'node:path'
 import { expect, test } from '@playwright/test'
+import { clearInstantDB } from './fixtures/db-cleanup'
 
 const fixturesDir = path.join(import.meta.dirname, 'fixtures')
 
 test.describe('Chat Image Auto-Rotation', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
+
   test('CI-001: landscape image is auto-rotated to portrait in chat thumbnail', async ({ page }) => {
     await page.goto('/')
 

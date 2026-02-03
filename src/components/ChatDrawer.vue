@@ -4,8 +4,8 @@ import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { Notify } from 'quasar'
 import { nextTick, onMounted, ref, watch } from 'vue'
-import { useDatabase } from '../composables/useDatabase'
 import { autoRotateForDocument, resizeImage } from '../composables/useImageResize'
+import { db, tx } from '../lib/instantdb'
 import { hashImage } from '../services/ai'
 import { sendChatMessage, WELCOME_MESSAGE } from '../services/chat'
 import { useSettingsStore } from '../stores/settings'
@@ -22,7 +22,6 @@ function renderMarkdown(text: string): string {
 const open = defineModel<boolean>({ default: false })
 
 const settings = useSettingsStore()
-const { dbPromise } = useDatabase()
 
 const messages = ref<ChatMessage[]>([WELCOME_MESSAGE])
 const input = ref('')
@@ -37,33 +36,37 @@ const mediaViewerOcr = ref('')
 // Session-only storage for PDF base64 data (too large to persist)
 const pdfDataByMsgId = new Map<string, string>()
 
-// Chat-Verlauf aus RxDB laden
+// Chat-Verlauf aus InstantDB laden
 onMounted(async () => {
-  const db = await dbPromise
-  const docs = await (db as any).chatmessages.find({ sort: [{ createdAt: 'asc' }] }).exec()
-  if (docs.length) {
-    messages.value = [
-      WELCOME_MESSAGE,
-      ...docs.map((d: any) => ({
-        id: d.id,
-        role: d.role,
-        content: d.content,
-        attachments: d.attachments?.length ? d.attachments : undefined,
-      })),
-    ]
+  try {
+    const result = await db.queryOnce({ chatmessages: {} })
+    const docs = (result.data.chatmessages || [])
+      .sort((a: any, b: any) => (a.createdAt || 0) - (b.createdAt || 0))
+    if (docs.length) {
+      messages.value = [
+        WELCOME_MESSAGE,
+        ...docs.map((d: any) => ({
+          id: d.id,
+          role: d.role,
+          content: d.content,
+          attachments: d.attachments?.length ? d.attachments : undefined,
+        })),
+      ]
+    }
   }
+  catch {}
 })
 
 async function saveMessage(msg: ChatMessage) {
-  const db = await dbPromise
   try {
-    await (db as any).chatmessages.insert({
-      id: msg.id,
-      role: msg.role,
-      content: msg.content,
-      attachments: msg.attachments || [],
-      createdAt: new Date().toISOString(),
-    })
+    await db.transact([
+      tx.chatmessages[msg.id].update({
+        role: msg.role,
+        content: msg.content,
+        attachments: msg.attachments || [],
+        createdAt: Date.now(),
+      }),
+    ])
   }
   catch {}
 }
@@ -165,8 +168,7 @@ async function send() {
   loading.value = true
 
   try {
-    const db = await dbPromise
-    const response = await sendChatMessage(db, messages.value, {
+    const response = await sendChatMessage(messages.value, {
       provider: settings.aiProvider,
       apiKey: settings.aiApiKey,
       model: settings.aiModel || undefined,
@@ -200,13 +202,14 @@ async function openImageViewer(src: string) {
   mediaViewerOcr.value = ''
   mediaViewerOpen.value = true
 
-  // OCR-Text aus RxDB laden (falls vorhanden)
+  // OCR-Text aus InstantDB laden (falls vorhanden)
   try {
     const base64 = src.split(',')[1]
     if (base64) {
       const hash = await hashImage(base64)
-      const db = await dbPromise
-      const doc = await (db as any).ocrcache.findOne({ selector: { id: hash } }).exec()
+      const result = await db.queryOnce({ ocrcache: {} })
+      const entries = result.data.ocrcache || []
+      const doc = entries.find((e: any) => e.hash === hash)
       if (doc)
         mediaViewerOcr.value = doc.markdown
     }
@@ -221,8 +224,14 @@ function openPdfViewer(base64: string) {
 }
 
 async function clearChat() {
-  const db = await dbPromise
-  await (db as any).chatmessages.find().remove()
+  try {
+    const result = await db.queryOnce({ chatmessages: {} })
+    const msgs = result.data.chatmessages || []
+    if (msgs.length) {
+      await db.transact(msgs.map((m: any) => tx.chatmessages[m.id].delete()))
+    }
+  }
+  catch {}
   messages.value = [WELCOME_MESSAGE]
 }
 </script>

@@ -1,10 +1,10 @@
-import type { RxDatabase } from 'rxdb'
 import type { AiProvider } from '../stores/settings'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createMistral } from '@ai-sdk/mistral'
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { z } from 'zod'
+import { db, id, tx } from '../lib/instantdb'
 
 export const MAINTENANCE_CATEGORIES = [
   'oelwechsel',
@@ -169,22 +169,33 @@ export interface OcrResult {
   cacheId: string
 }
 
-export async function callMistralOcr(imageBase64: string, apiKey: string, db?: RxDatabase): Promise<OcrResult> {
+export async function callMistralOcr(imageBase64: string, apiKey: string): Promise<OcrResult> {
+  console.log('[OCR] callMistralOcr called, base64 length:', imageBase64.length)
   const hash = await hashImage(imageBase64)
+  console.log('[OCR] hash computed:', hash.slice(0, 8))
 
   // 1. In-Memory-Cache (schnellste Stufe)
   const memCached = ocrCache.get(hash)
-  if (memCached)
+  if (memCached) {
+    console.log('[OCR] Memory cache hit')
     return { markdown: memCached, cacheId: hash }
+  }
 
-  // 2. RxDB-Cache (persistente Stufe)
-  if (db) {
-    const dbDoc = await (db as any).ocrcache.findOne({ selector: { id: hash } }).exec()
-    if (dbDoc) {
-      const text = dbDoc.markdown
-      ocrCache.set(hash, text)
-      return { markdown: text, cacheId: hash }
+  // 2. InstantDB-Cache (persistente Stufe)
+  // InstantDB verlangt UUIDs als Entity-IDs, daher hash als Feld speichern
+  try {
+    const result = await db.queryOnce({ ocrcache: {} })
+    const ocrEntries = result.data.ocrcache || []
+    console.log('[OCR] InstantDB cache entries:', ocrEntries.length)
+    const cached = ocrEntries.find((o: any) => o.hash === hash)
+    if (cached) {
+      console.log('[OCR] InstantDB cache hit')
+      ocrCache.set(hash, cached.markdown)
+      return { markdown: cached.markdown, cacheId: hash }
     }
+  }
+  catch (e) {
+    console.error('[OCR] InstantDB query failed:', e)
   }
 
   const resp = await fetch('https://api.mistral.ai/v1/ocr', {
@@ -221,12 +232,14 @@ export async function callMistralOcr(imageBase64: string, apiKey: string, db?: R
 
   ocrCache.set(hash, text)
 
-  // In RxDB persistieren
-  if (db) {
-    try {
-      await (db as any).ocrcache.insert({ id: hash, markdown: text, createdAt: new Date().toISOString() })
-    }
-    catch {}
+  // In InstantDB persistieren (UUID als Entity-ID, hash als Feld)
+  try {
+    const entityId = id()
+    await db.transact([tx.ocrcache[entityId].update({ hash, markdown: text, createdAt: Date.now() })])
+    console.log('[OCR] Cached to InstantDB:', hash.slice(0, 8))
+  }
+  catch (e) {
+    console.error('[OCR] InstantDB cache write failed:', e)
   }
 
   return { markdown: text, cacheId: hash }
@@ -285,9 +298,8 @@ async function parseWithOcrPipeline<T>(
   schema: z.ZodType<T>,
   prompt: string,
   modelId?: string,
-  db?: RxDatabase,
 ): Promise<T> {
-  const { markdown: ocrText } = await withRetry(() => callMistralOcr(imageBase64, apiKey, db))
+  const { markdown: ocrText } = await withRetry(() => callMistralOcr(imageBase64, apiKey))
   const model = getModel({ provider: 'mistral', apiKey, model: modelId })
 
   const { object } = await withRetry(() => generateObject({
@@ -344,11 +356,10 @@ export async function parseInvoice(
   provider: AiProvider,
   apiKey: string,
   modelId?: string,
-  db?: RxDatabase,
 ): Promise<ParsedInvoice> {
   // Mistral: OCR-Pipeline (perfekte Tabellenextraktion → JSON-Parsing)
   if (provider === 'mistral') {
-    return parseWithOcrPipeline(imageBase64, apiKey, invoiceSchema, INVOICE_PROMPT, modelId, db)
+    return parseWithOcrPipeline(imageBase64, apiKey, invoiceSchema, INVOICE_PROMPT, modelId)
   }
 
   // Andere Provider: direkte Bild-Analyse
@@ -382,10 +393,9 @@ export async function parseVehicleDocument(
   provider: AiProvider,
   apiKey: string,
   modelId?: string,
-  db?: RxDatabase,
 ): Promise<ParsedVehicleDocument> {
   if (provider === 'mistral') {
-    return parseWithOcrPipeline(imageBase64, apiKey, vehicleDocumentSchema, VEHICLE_DOC_PROMPT, modelId, db)
+    return parseWithOcrPipeline(imageBase64, apiKey, vehicleDocumentSchema, VEHICLE_DOC_PROMPT, modelId)
   }
 
   const model = getModel({ provider, apiKey, model: modelId })
@@ -412,10 +422,9 @@ export async function parseServiceBook(
   provider: AiProvider,
   apiKey: string,
   modelId?: string,
-  db?: RxDatabase,
 ): Promise<ParsedServiceBook> {
   if (provider === 'mistral') {
-    return parseWithOcrPipeline(imageBase64, apiKey, serviceBookSchema, SERVICE_BOOK_PROMPT, modelId, db)
+    return parseWithOcrPipeline(imageBase64, apiKey, serviceBookSchema, SERVICE_BOOK_PROMPT, modelId)
   }
 
   const model = getModel({ provider, apiKey, model: modelId })

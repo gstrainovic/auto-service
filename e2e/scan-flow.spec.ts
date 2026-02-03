@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test'
+import { clearInstantDB } from './fixtures/db-cleanup'
 
 test.describe('Scan Flow', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
+
   test('SF-001: scan page shows vehicle selector and upload', async ({ page }) => {
     // First add a vehicle
     await page.goto('/vehicles')

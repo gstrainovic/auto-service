@@ -30,7 +30,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
   let unsubscribe: (() => void) | null = null
 
   function load() {
-    if (unsubscribe) return
+    if (unsubscribe)
+      return
 
     isLoading.value = true
     unsubscribe = db.subscribeQuery(
@@ -51,6 +52,11 @@ export const useInvoicesStore = defineStore('invoices', () => {
 
   function getByVehicleId(vehicleId: string): Invoice[] {
     return invoices.value.filter(i => i.vehicleId === vehicleId)
+  }
+
+  // Compat-Methode: lädt einfach alle und filtert dann (InstantDB ist reaktiv)
+  async function loadForVehicle(_vehicleId: string) {
+    load()
   }
 
   async function add(invoice: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'>) {
@@ -86,6 +92,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
     isLoading,
     error,
     load,
+    loadForVehicle,
     getByVehicleId,
     add,
     remove,

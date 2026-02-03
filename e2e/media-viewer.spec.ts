@@ -1,6 +1,7 @@
 import path from 'node:path'
 import process from 'node:process'
 import { expect, test } from '@playwright/test'
+import { clearInstantDB } from './fixtures/db-cleanup'
 
 const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
@@ -8,6 +9,10 @@ const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
 test.describe('MediaViewer', () => {
   test.setTimeout(120_000)
   test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
+
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
 
   test('MV-001: shows optimization hint after invoice scan', async ({ page }) => {
     // Configure AI provider
@@ -68,6 +73,9 @@ test.describe('MediaViewer', () => {
   test('MV-002: chat image shows OCR tab in MediaViewer', async ({ page }) => {
     test.skip(AI_PROVIDER !== 'mistral', 'OCR cache only available with Mistral provider')
 
+    // Capture browser console logs
+    page.on('console', msg => console.log('[BROWSER]', msg.type(), msg.text()))
+
     // Configure AI provider
     await page.goto('/')
     await page.evaluate(({ provider, key }) => {
@@ -96,21 +104,26 @@ test.describe('MediaViewer', () => {
     await expect(assistantMsg).toContainText(/.+/, { timeout: 10_000 })
 
     // Wait for OCR cache to be written - poll until cache is populated
-    await page.evaluate(async () => {
+    const ocrCacheFound = await page.evaluate(async () => {
       for (let i = 0; i < 60; i++) {
         try {
-          const db = (window as any).__rxdb
-          if (db) {
-            const docs = await db.ocrcache.find().exec()
+          const idb = (window as any).__instantdb
+          if (idb) {
+            const result = await idb.db.queryOnce({ ocrcache: {} })
+            const docs = result.data.ocrcache || []
             if (docs.length > 0)
-              return true
+              return { found: true, count: docs.length, ids: docs.map((d: any) => d.id) }
           }
         }
-        catch {}
+        catch (e) {
+          console.error('OCR cache query error:', e)
+        }
         await new Promise(r => setTimeout(r, 500))
       }
-      return false
+      return { found: false, count: 0, ids: [] }
     })
+    console.log('OCR cache status:', JSON.stringify(ocrCacheFound))
+    expect(ocrCacheFound.found, 'OCR cache should have been written by chat flow').toBe(true)
 
     // Click the image thumbnail to open MediaViewer
     const userMsg = page.locator('.q-message').nth(1)

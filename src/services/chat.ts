@@ -1,8 +1,8 @@
-import type { RxDatabase } from 'rxdb'
 import type { AiProvider } from '../stores/settings'
 import { generateText, stepCountIs, tool } from 'ai'
 import { z } from 'zod'
 import { autoRotateForDocument } from '../composables/useImageResize'
+import { db, id as instantId, tx } from '../lib/instantdb'
 import { callMistralOcr, callMistralOcrPdf, getModel, hashImage, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument, withRetry } from './ai'
 import { checkDueMaintenances, getMaintenanceSchedule } from './maintenance-schedule'
 
@@ -139,17 +139,22 @@ export const WELCOME_MESSAGE: ChatMessage = {
 Schick mir einfach eine Nachricht oder ein Foto!`,
 }
 
-function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, modelId?: string, imagesBase64?: string[]) {
+function createTools(provider: AiProvider, apiKey: string, modelId?: string, imagesBase64?: string[]) {
   return {
     list_vehicles: tool({
       description: 'Listet alle Fahrzeuge auf',
       inputSchema: z.object({}),
       execute: async () => {
-        const docs = await (db as any).vehicles.find().exec()
-        return docs.map((d: any) => {
-          const v = d.toJSON()
-          return { id: v.id, make: v.make, model: v.model, year: v.year, mileage: v.mileage, licensePlate: v.licensePlate }
-        })
+        const result = await db.queryOnce({ vehicles: {} })
+        const vehicles = result.data.vehicles || []
+        return vehicles.map((v: any) => ({
+          id: v.id,
+          make: v.make,
+          model: v.model,
+          year: v.year,
+          mileage: v.mileage,
+          licensePlate: v.licensePlate,
+        }))
       },
     }),
 
@@ -164,22 +169,22 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         vin: z.string().optional().describe('Fahrgestellnummer'),
       }),
       execute: async ({ make, model, year, mileage, licensePlate, vin }) => {
-        const now = new Date().toISOString()
-        const id = crypto.randomUUID()
-        await (db as any).vehicles.insert({
-          id,
-          make,
-          model,
-          year,
-          mileage: mileage || 0,
-          licensePlate: licensePlate || '',
-          vin: vin || '',
-          createdAt: now,
-          updatedAt: now,
-        })
+        const now = Date.now()
+        const vehicleId = instantId()
+        await db.transact([
+          tx.vehicles[vehicleId].update({
+            make,
+            model,
+            year,
+            mileage: mileage || 0,
+            licensePlate: licensePlate || '',
+            vin: vin || '',
+            createdAt: now,
+          }),
+        ])
         return {
           success: true,
-          vehicleId: id,
+          vehicleId,
           message: `Fahrzeug angelegt`,
           data: { make, model, year, mileage: mileage || 0, licensePlate: licensePlate || '', vin: vin || '' },
         }
@@ -198,25 +203,27 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         vin: z.string().optional().describe('Neue Fahrgestellnummer'),
       }),
       execute: async ({ vehicleId, make, model, year, mileage, licensePlate, vin }) => {
-        const doc = await (db as any).vehicles.findOne({ selector: { id: vehicleId } }).exec()
-        if (!doc)
+        const result = await db.queryOnce({ vehicles: {} })
+        const vehicles = result.data.vehicles || []
+        const vehicle = vehicles.find((v: any) => v.id === vehicleId)
+        if (!vehicle)
           return { success: false, message: 'Fahrzeug nicht gefunden' }
         const before: Record<string, any> = {}
         const after: Record<string, any> = {}
-        const patch: Record<string, any> = { updatedAt: new Date().toISOString() }
+        const patch: Record<string, any> = {}
         const fields = { make, model, year, mileage, licensePlate, vin } as Record<string, any>
         for (const [key, value] of Object.entries(fields)) {
           if (value !== undefined) {
-            before[key] = (doc as any)[key]
+            before[key] = (vehicle as any)[key]
             after[key] = value
             patch[key] = value
           }
         }
-        await doc.patch(patch)
+        await db.transact([tx.vehicles[vehicleId].update(patch)])
         return {
           success: true,
-          message: `${after.make || doc.make} ${after.model || doc.model} aktualisiert`,
-          vehicle: `${doc.make} ${doc.model} (${doc.year})`,
+          message: `${after.make || vehicle.make} ${after.model || vehicle.model} aktualisiert`,
+          vehicle: `${vehicle.make} ${vehicle.model} (${vehicle.year})`,
           changes: { before, after },
         }
       },
@@ -228,15 +235,20 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         vehicleId: z.string().describe('Fahrzeug-ID'),
       }),
       execute: async ({ vehicleId }) => {
-        const doc = await (db as any).vehicles.findOne({ selector: { id: vehicleId } }).exec()
-        if (!doc)
+        const result = await db.queryOnce({ vehicles: {}, invoices: {}, maintenances: {} })
+        const vehicles = result.data.vehicles || []
+        const vehicle = vehicles.find((v: any) => v.id === vehicleId)
+        if (!vehicle)
           return { success: false, message: 'Fahrzeug nicht gefunden' }
-        const name = `${doc.make} ${doc.model}`
-        const invoices = await (db as any).invoices.find({ selector: { vehicleId } }).exec()
-        for (const inv of invoices) await inv.remove()
-        const maintenances = await (db as any).maintenances.find({ selector: { vehicleId } }).exec()
-        for (const m of maintenances) await m.remove()
-        await doc.remove()
+        const name = `${vehicle.make} ${vehicle.model}`
+        const invoices = (result.data.invoices || []).filter((i: any) => i.vehicleId === vehicleId)
+        const maintenances = (result.data.maintenances || []).filter((m: any) => m.vehicleId === vehicleId)
+        const transactions = [
+          ...invoices.map((i: any) => tx.invoices[i.id].delete()),
+          ...maintenances.map((m: any) => tx.maintenances[m.id].delete()),
+          tx.vehicles[vehicleId].delete(),
+        ]
+        await db.transact(transactions)
         return {
           success: true,
           message: `Fahrzeug gelöscht`,
@@ -251,22 +263,29 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         vehicleId: z.string().describe('Fahrzeug-ID'),
       }),
       execute: async ({ vehicleId }) => {
-        const doc = await (db as any).vehicles.findOne({ selector: { id: vehicleId } }).exec()
-        if (!doc)
+        const result = await db.queryOnce({ vehicles: {}, invoices: {}, maintenances: {} })
+        const vehicles = result.data.vehicles || []
+        const vehicle = vehicles.find((v: any) => v.id === vehicleId)
+        if (!vehicle)
           return { error: 'Fahrzeug nicht gefunden' }
-        const vehicle = doc.toJSON()
-        const invoiceDocs = await (db as any).invoices.find({ selector: { vehicleId } }).exec()
-        const maintenanceDocs = await (db as any).maintenances.find({ selector: { vehicleId } }).exec()
+        const invoices = (result.data.invoices || []).filter((i: any) => i.vehicleId === vehicleId)
+        const maintenances = (result.data.maintenances || []).filter((m: any) => m.vehicleId === vehicleId)
         return {
           vehicle: { id: vehicle.id, make: vehicle.make, model: vehicle.model, year: vehicle.year, mileage: vehicle.mileage, licensePlate: vehicle.licensePlate, hasCustomSchedule: !!vehicle.customSchedule?.length },
-          invoices: invoiceDocs.map((d: any) => {
-            const i = d.toJSON()
-            return { id: i.id, workshopName: i.workshopName, date: i.date, totalAmount: i.totalAmount, items: i.items, hasOcrText: !!i.ocrCacheId }
-          }),
-          maintenances: maintenanceDocs.map((d: any) => {
-            const m = d.toJSON()
-            return { type: m.type, description: m.description, doneAt: m.doneAt, mileageAtService: m.mileageAtService }
-          }),
+          invoices: invoices.map((i: any) => ({
+            id: i.id,
+            workshopName: i.workshopName,
+            date: i.date,
+            totalAmount: i.totalAmount,
+            items: i.items,
+            hasOcrText: !!i.ocrCacheId,
+          })),
+          maintenances: maintenances.map((m: any) => ({
+            type: m.type,
+            description: m.description,
+            doneAt: m.doneAt,
+            mileageAtService: m.mileageAtService,
+          })),
         }
       },
     }),
@@ -277,16 +296,17 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         vehicleId: z.string().describe('Fahrzeug-ID'),
       }),
       execute: async ({ vehicleId }) => {
-        const doc = await (db as any).vehicles.findOne({ selector: { id: vehicleId } }).exec()
-        if (!doc)
+        const result = await db.queryOnce({ vehicles: {}, maintenances: {} })
+        const vehicles = result.data.vehicles || []
+        const vehicle = vehicles.find((v: any) => v.id === vehicleId)
+        if (!vehicle)
           return { error: 'Fahrzeug nicht gefunden' }
-        const vehicle = doc.toJSON()
         const schedule = getMaintenanceSchedule(vehicle.customSchedule)
-        const mDocs = await (db as any).maintenances.find({ selector: { vehicleId } }).exec()
-        const lastMaintenances = mDocs.map((d: any) => ({
-          type: d.type,
-          mileageAtService: d.mileageAtService,
-          doneAt: d.doneAt,
+        const maintenances = (result.data.maintenances || []).filter((m: any) => m.vehicleId === vehicleId)
+        const lastMaintenances = maintenances.map((m: any) => ({
+          type: m.type,
+          mileageAtService: m.mileageAtService,
+          doneAt: m.doneAt,
         }))
         const status = checkDueMaintenances({
           currentMileage: vehicle.mileage,
@@ -313,14 +333,15 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         })).describe('Wartungsintervalle aus dem Service-Heft'),
       }),
       execute: async ({ vehicleId, schedule }) => {
-        const doc = await (db as any).vehicles.findOne({ selector: { id: vehicleId } }).exec()
-        if (!doc)
+        const result = await db.queryOnce({ vehicles: {} })
+        const vehicles = result.data.vehicles || []
+        const vehicle = vehicles.find((v: any) => v.id === vehicleId)
+        if (!vehicle)
           return { error: 'Fahrzeug nicht gefunden' }
-        await doc.patch({ customSchedule: schedule, updatedAt: new Date().toISOString() })
-        const v = doc.toJSON()
+        await db.transact([tx.vehicles[vehicleId].update({ customSchedule: schedule })])
         return {
           success: true,
-          message: `Wartungsplan für ${v.make} ${v.model} gespeichert (${schedule.length} Positionen)`,
+          message: `Wartungsplan für ${vehicle.make} ${vehicle.model} gespeichert (${schedule.length} Positionen)`,
           schedule: schedule.map(s => ({
             label: s.label,
             interval: `${s.intervalKm > 0 ? `${s.intervalKm.toLocaleString()} km` : ''}${s.intervalKm > 0 && s.intervalMonths > 0 ? ' / ' : ''}${s.intervalMonths > 0 ? `${s.intervalMonths} Monate` : ''}`,
@@ -349,61 +370,66 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
       }),
       execute: async ({ vehicleId, workshopName, date, totalAmount, currency, mileageAtService, imageIndex, items }) => {
         // Duplikat-Prüfung: gleiche Werkstatt + Datum oder gleicher Betrag + Datum
-        const existing = await (db as any).invoices.find({ selector: { vehicleId, date } }).exec()
-        const duplicate = existing.find((d: any) => {
-          const inv = d.toJSON()
-          return inv.workshopName === workshopName || inv.totalAmount === totalAmount
-        })
+        const result = await db.queryOnce({ invoices: {}, vehicles: {} })
+        const existingInvoices = (result.data.invoices || []).filter((i: any) => i.vehicleId === vehicleId && i.date === date)
+        const duplicate = existingInvoices.find((inv: any) => inv.workshopName === workshopName || inv.totalAmount === totalAmount)
         if (duplicate) {
-          const d = duplicate.toJSON()
           return {
             success: false,
-            message: `Diese Rechnung existiert bereits: ${d.workshopName}, ${d.date}, ${d.totalAmount} ${d.currency || 'EUR'}. Keine doppelte Erfassung.`,
+            message: `Diese Rechnung existiert bereits: ${duplicate.workshopName}, ${duplicate.date}, ${duplicate.totalAmount} ${duplicate.currency || 'EUR'}. Keine doppelte Erfassung.`,
           }
         }
 
-        const now = new Date().toISOString()
+        const now = Date.now()
         const imgRaw = imagesBase64?.length ? (imagesBase64[imageIndex ?? 0] ?? '') : ''
         const imageData = imgRaw ? await autoRotateForDocument(imgRaw) : ''
         const ocrCacheId = imgRaw ? await hashImage(imgRaw) : ''
-        await (db as any).invoices.insert({
-          id: crypto.randomUUID(),
-          vehicleId,
-          workshopName,
-          date,
-          totalAmount,
-          mileageAtService: mileageAtService || 0,
-          currency: currency || 'EUR',
-          imageData,
-          ocrCacheId,
-          items,
-          createdAt: now,
-          updatedAt: now,
-        })
+        const invoiceId = instantId()
+
+        const transactions: any[] = [
+          tx.invoices[invoiceId].update({
+            vehicleId,
+            workshopName,
+            date,
+            totalAmount,
+            mileageAtService: mileageAtService || 0,
+            currency: currency || 'EUR',
+            imageData,
+            ocrCacheId,
+            items,
+            createdAt: now,
+          }),
+        ]
+
         for (const item of items) {
           const normalized = item.category.toLowerCase().trim()
           const aiCategory = (MAINTENANCE_CATEGORIES as readonly string[]).includes(normalized) ? normalized : 'sonstiges'
           const category = correctCategory(item.description, aiCategory)
-          await (db as any).maintenances.insert({
-            id: crypto.randomUUID(),
-            vehicleId,
-            invoiceId: '',
-            type: category,
-            description: item.description,
-            doneAt: date,
-            mileageAtService: mileageAtService || 0,
-            nextDueDate: '',
-            nextDueMileage: 0,
-            status: 'done',
-            createdAt: now,
-            updatedAt: now,
-          })
+          const maintenanceId = instantId()
+          transactions.push(
+            tx.maintenances[maintenanceId].update({
+              vehicleId,
+              invoiceId: '',
+              type: category,
+              description: item.description,
+              doneAt: date,
+              mileageAtService: mileageAtService || 0,
+              nextDueDate: '',
+              nextDueMileage: 0,
+              status: 'done',
+              createdAt: now,
+            }),
+          )
         }
+
         if (mileageAtService) {
-          const vDoc = await (db as any).vehicles.findOne({ selector: { id: vehicleId } }).exec()
-          if (vDoc && mileageAtService > (vDoc.mileage || 0))
-            await vDoc.patch({ mileage: mileageAtService, updatedAt: now })
+          const vehicles = result.data.vehicles || []
+          const vehicle = vehicles.find((v: any) => v.id === vehicleId)
+          if (vehicle && mileageAtService > (vehicle.mileage || 0))
+            transactions.push(tx.vehicles[vehicleId].update({ mileage: mileageAtService }))
         }
+
+        await db.transact(transactions)
         return {
           success: true,
           message: `Rechnung erfasst`,
@@ -425,17 +451,21 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         invoiceId: z.string().describe('Rechnungs-ID'),
       }),
       execute: async ({ invoiceId }) => {
-        const doc = await (db as any).invoices.findOne({ selector: { id: invoiceId } }).exec()
-        if (!doc)
+        const result = await db.queryOnce({ invoices: {}, maintenances: {} })
+        const invoices = result.data.invoices || []
+        const invoice = invoices.find((i: any) => i.id === invoiceId)
+        if (!invoice)
           return { success: false, message: 'Rechnung nicht gefunden' }
-        const maintenances = await (db as any).maintenances.find({ selector: { invoiceId } }).exec()
-        for (const m of maintenances) await m.remove()
-        await doc.remove()
-        const inv = doc.toJSON()
+        const maintenances = (result.data.maintenances || []).filter((m: any) => m.invoiceId === invoiceId)
+        const transactions = [
+          ...maintenances.map((m: any) => tx.maintenances[m.id].delete()),
+          tx.invoices[invoiceId].delete(),
+        ]
+        await db.transact(transactions)
         return {
           success: true,
           message: `Rechnung gelöscht`,
-          deleted: { workshopName: inv.workshopName, date: inv.date, totalAmount: inv.totalAmount, maintenances: maintenances.length },
+          deleted: { workshopName: invoice.workshopName, date: invoice.date, totalAmount: invoice.totalAmount, maintenances: maintenances.length },
         }
       },
     }),
@@ -446,16 +476,18 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
         invoiceId: z.string().describe('Rechnungs-ID'),
       }),
       execute: async ({ invoiceId }) => {
-        const invDoc = await (db as any).invoices.findOne({ selector: { id: invoiceId } }).exec()
-        if (!invDoc)
+        const result = await db.queryOnce({ invoices: {}, ocrcache: {} })
+        const invoices = result.data.invoices || []
+        const invoice = invoices.find((i: any) => i.id === invoiceId)
+        if (!invoice)
           return { error: 'Rechnung nicht gefunden' }
-        const inv = invDoc.toJSON()
-        if (!inv.ocrCacheId)
+        if (!invoice.ocrCacheId)
           return { error: 'Kein OCR-Text für diese Rechnung vorhanden' }
-        const ocrDoc = await (db as any).ocrcache.findOne({ selector: { id: inv.ocrCacheId } }).exec()
-        if (!ocrDoc)
+        const ocrEntries = result.data.ocrcache || []
+        const ocrEntry = ocrEntries.find((o: any) => o.hash === invoice.ocrCacheId)
+        if (!ocrEntry)
           return { error: 'OCR-Cache-Eintrag nicht gefunden' }
-        return { invoiceId, ocrText: ocrDoc.markdown }
+        return { invoiceId, ocrText: ocrEntry.markdown }
       },
     }),
 
@@ -468,15 +500,15 @@ function createTools(db: RxDatabase, provider: AiProvider, apiKey: string, model
       }),
       execute: async ({ imageBase64, documentType }) => {
         if (documentType === 'rechnung') {
-          const result = await parseInvoice(imageBase64, provider, apiKey, modelId, db)
+          const result = await parseInvoice(imageBase64, provider, apiKey, modelId)
           return { type: 'rechnung', data: result }
         }
         else if (documentType === 'serviceheft') {
-          const result = await parseServiceBook(imageBase64, provider, apiKey, modelId, db)
+          const result = await parseServiceBook(imageBase64, provider, apiKey, modelId)
           return { type: 'serviceheft', data: result }
         }
         else {
-          const result = await parseVehicleDocument(imageBase64, provider, apiKey, modelId, db)
+          const result = await parseVehicleDocument(imageBase64, provider, apiKey, modelId)
           return { type: 'fahrzeugdokument', data: result }
         }
       },
@@ -555,7 +587,6 @@ let pendingImages: string[] = []
 let pendingPdfOcrTexts: string[] = []
 
 export async function sendChatMessage(
-  db: RxDatabase,
   messages: ChatMessage[],
   opts: ChatOptions,
   imagesBase64?: string[],
@@ -612,7 +643,7 @@ Analysiere jede Seite einzeln. Zeige die erkannten Daten pro Seite strukturiert 
     let ocrTexts: string[] = []
     if (opts.provider === 'mistral') {
       const ocrResults = await Promise.all(
-        imagesBase64.map(img => withRetry(() => callMistralOcr(img, opts.apiKey, db)).catch(() => ({ markdown: '', cacheId: '' }))),
+        imagesBase64.map(img => withRetry(() => callMistralOcr(img, opts.apiKey)).catch(() => ({ markdown: '', cacheId: '' }))),
       )
       ocrTexts = ocrResults.map(r => r.markdown)
     }
@@ -665,14 +696,14 @@ Zeige die erkannten Daten strukturiert an — getrennt nach Fahrzeug-Daten und R
   if (storedPdfOcr?.length)
     pendingPdfOcrTexts = []
 
-  const allTools = createTools(db, opts.provider, opts.apiKey, opts.model, storedImages)
+  const allTools = createTools(opts.provider, opts.apiKey, opts.model, storedImages)
   const { scan_document: _, ...toolsWithoutScan } = allTools
   const tools = (storedImages?.length || storedPdfOcr?.length) ? toolsWithoutScan : allTools
 
   // Fahrzeugliste für Kontext — IMMER injizieren, nicht nur bei Bildern
-  const vehicleDocs = await (db as any).vehicles.find().exec()
-  const vehicleList = vehicleDocs.map((d: any) => {
-    const v = d.toJSON()
+  const vehicleResult = await db.queryOnce({ vehicles: {} })
+  const vehicles = vehicleResult.data.vehicles || []
+  const vehicleList = vehicles.map((v: any) => {
     const scheduleInfo = v.customSchedule?.length ? '✅ Service-Heft' : '⚠️ allgemeiner Wartungsplan'
     return `- ${v.make} ${v.model} (${v.year}), ${v.mileage} km${v.licensePlate ? `, ${v.licensePlate}` : ''} [${scheduleInfo}]: ID=${v.id}`
   }).join('\n')

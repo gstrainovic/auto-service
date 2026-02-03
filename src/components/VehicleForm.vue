@@ -8,7 +8,7 @@ const props = defineProps<{
     year: number
     mileage: number
     licensePlate: string
-    vin: string
+    vin?: string
   }
 }>()
 
@@ -30,7 +30,7 @@ watchEffect(() => {
     form.year = props.initialData.year
     form.mileage = props.initialData.mileage
     form.licensePlate = props.initialData.licensePlate
-    form.vin = props.initialData.vin
+    form.vin = props.initialData.vin || ''
   }
 })
 

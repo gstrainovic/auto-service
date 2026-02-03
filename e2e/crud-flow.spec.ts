@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { clearInstantDB } from './fixtures/db-cleanup'
 
 // Helper: create a vehicle via UI and navigate to its detail page
 async function createVehicleAndOpen(page: any, data: { make: string, model: string, year: string, mileage: string, plate?: string }) {
@@ -25,61 +26,66 @@ function getVehicleIdFromUrl(page: any): string {
   return match ? match[1] : ''
 }
 
-// Helper: wait for __rxdb to be exposed on window (set by useDatabase in dev mode)
+// Helper: wait for __instantdb to be exposed on window (set by instantdb.ts in dev mode)
 async function waitForDb(page: any) {
-  await page.waitForFunction(() => !!(window as any).__rxdb, { timeout: 10_000 })
+  await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 10_000 })
 }
 
-// Helper: seed an invoice via page.evaluate into RxDB
+// Helper: seed an invoice via page.evaluate into InstantDB
 async function seedInvoice(page: any, vehicleId: string) {
   await waitForDb(page)
   await page.evaluate(async (vId: string) => {
-    const db = (window as any).__rxdb
-    const now = new Date().toISOString()
-    await db.invoices.insert({
-      id: crypto.randomUUID(),
-      vehicleId: vId,
-      workshopName: 'Werkstatt Schmidt',
-      date: '2025-06-15',
-      totalAmount: 450.50,
-      currency: '€',
-      mileageAtService: 52000,
-      imageData: '',
-      rawText: '',
-      items: [
-        { description: 'Ölwechsel', category: 'Wartung', amount: 120 },
-        { description: 'Bremsbeläge', category: 'Verschleiß', amount: 330.50 },
-      ],
-      createdAt: now,
-      updatedAt: now,
-    })
+    const { db, tx, id: genId } = (window as any).__instantdb
+    const invoiceId = genId()
+    const now = Date.now()
+    await db.transact([
+      tx.invoices[invoiceId].update({
+        vehicleId: vId,
+        workshopName: 'Werkstatt Schmidt',
+        date: '2025-06-15',
+        totalAmount: 450.50,
+        currency: '€',
+        mileageAtService: 52000,
+        imageData: '',
+        items: [
+          { description: 'Ölwechsel', category: 'Wartung', amount: 120 },
+          { description: 'Bremsbeläge', category: 'Verschleiß', amount: 330.50 },
+        ],
+        createdAt: now,
+      }),
+    ])
   }, vehicleId)
 }
 
-// Helper: seed a maintenance entry via page.evaluate
+// Helper: seed a maintenance entry via page.evaluate into InstantDB
 async function seedMaintenance(page: any, vehicleId: string) {
   await waitForDb(page)
   await page.evaluate(async (vId: string) => {
-    const db = (window as any).__rxdb
-    const now = new Date().toISOString()
-    await db.maintenances.insert({
-      id: crypto.randomUUID(),
-      vehicleId: vId,
-      invoiceId: '',
-      type: 'Ölwechsel',
-      description: 'Motoröl 5W-30 gewechselt',
-      doneAt: '2025-06-15',
-      mileageAtService: 52000,
-      nextDueDate: '2026-06-15',
-      nextDueMileage: 67000,
-      status: 'done',
-      createdAt: now,
-      updatedAt: now,
-    })
+    const { db, tx, id: genId } = (window as any).__instantdb
+    const maintId = genId()
+    const now = Date.now()
+    await db.transact([
+      tx.maintenances[maintId].update({
+        vehicleId: vId,
+        invoiceId: '',
+        type: 'Ölwechsel',
+        description: 'Motoröl 5W-30 gewechselt',
+        doneAt: '2025-06-15',
+        mileageAtService: 52000,
+        nextDueDate: '2026-06-15',
+        nextDueMileage: 67000,
+        status: 'done',
+        createdAt: now,
+      }),
+    ])
   }, vehicleId)
 }
 
 test.describe('Vehicle CRUD', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
+
   test('CR-001: edit a vehicle', async ({ page }) => {
     await createVehicleAndOpen(page, {
       make: 'BMW',
@@ -128,6 +134,10 @@ test.describe('Vehicle CRUD', () => {
 })
 
 test.describe('Invoice CRUD', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
+
   test('CR-003: edit an invoice', async ({ page }) => {
     await createVehicleAndOpen(page, {
       make: 'VW',
@@ -237,6 +247,10 @@ test.describe('Invoice CRUD', () => {
 })
 
 test.describe('Invoice Duplicate Detection', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
+
   test('CR-006: reject duplicate invoice with same date and workshop', async ({ page }) => {
     await createVehicleAndOpen(page, {
       make: 'Toyota',
@@ -248,20 +262,21 @@ test.describe('Invoice Duplicate Detection', () => {
     const vehicleId = getVehicleIdFromUrl(page)
     await seedInvoice(page, vehicleId)
 
-    // Try to insert a duplicate invoice (same workshop + date) directly into RxDB
+    // Check for duplicate invoice (same workshop + date) in InstantDB
     await waitForDb(page)
     const result = await page.evaluate(async (vId: string) => {
-      const db = (window as any).__rxdb
-      // Check for existing invoice with same date
-      const existing = await db.invoices.find({ selector: { vehicleId: vId, date: '2025-06-15' } }).exec()
-      const duplicate = existing.find((d: any) => {
-        const inv = d.toJSON()
-        return inv.workshopName === 'Werkstatt Schmidt' || inv.totalAmount === 450.50
-      })
+      const { db } = (window as any).__instantdb
+      // Check for existing invoices
+      const queryResult = await db.queryOnce({ invoices: {} })
+      const invoices = queryResult.data.invoices || []
+      const existing = invoices.filter((inv: any) => inv.vehicleId === vId && inv.date === '2025-06-15')
+      const duplicate = existing.find((inv: any) =>
+        inv.workshopName === 'Werkstatt Schmidt' || inv.totalAmount === 450.50,
+      )
       return {
         hasDuplicate: !!duplicate,
         existingCount: existing.length,
-        workshopName: duplicate?.toJSON().workshopName,
+        workshopName: duplicate?.workshopName,
       }
     }, vehicleId)
 
@@ -279,6 +294,10 @@ test.describe('Invoice Duplicate Detection', () => {
 })
 
 test.describe('Maintenance CRUD', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
+
   test('CR-007: edit a maintenance entry', async ({ page }) => {
     await createVehicleAndOpen(page, {
       make: 'Skoda',

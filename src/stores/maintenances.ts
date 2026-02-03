@@ -48,6 +48,11 @@ export const useMaintenancesStore = defineStore('maintenances', () => {
     return maintenances.value.filter(m => m.vehicleId === vehicleId)
   }
 
+  // Compat-Methode: lädt einfach alle und filtert dann (InstantDB ist reaktiv)
+  async function loadForVehicle(_vehicleId: string) {
+    load()
+  }
+
   async function add(maintenance: Omit<Maintenance, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     const now = new Date().toISOString()
     const newId = id()
@@ -93,6 +98,7 @@ export const useMaintenancesStore = defineStore('maintenances', () => {
     isLoading,
     error,
     load,
+    loadForVehicle,
     getByVehicleId,
     add,
     remove,

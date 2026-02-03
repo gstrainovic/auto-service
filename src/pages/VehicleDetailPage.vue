@@ -5,7 +5,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MediaViewer from '../components/MediaViewer.vue'
 import VehicleForm from '../components/VehicleForm.vue'
-import { useDatabase } from '../composables/useDatabase'
+import { db } from '../lib/instantdb'
 import { useInvoicesStore } from '../stores/invoices'
 import { useMaintenancesStore } from '../stores/maintenances'
 import { useVehiclesStore } from '../stores/vehicles'
@@ -28,7 +28,6 @@ const confirmDeleteMaintenance = ref<string | null>(null)
 const confirmResetSchedule = ref(false)
 const mediaViewerOpen = ref(false)
 const mediaViewerOcr = ref('')
-const { dbPromise } = useDatabase()
 
 // Edit state
 const editVehicle = ref(false)
@@ -142,8 +141,9 @@ async function openMediaViewer(inv: Invoice) {
   mediaViewerOpen.value = true
   if (inv.ocrCacheId) {
     try {
-      const db = await dbPromise
-      const doc = await (db as any).ocrcache.findOne({ selector: { id: inv.ocrCacheId } }).exec()
+      const result = await db.queryOnce({ ocrcache: {} })
+      const entries = result.data.ocrcache || []
+      const doc = entries.find((e: any) => e.hash === inv.ocrCacheId)
       if (doc)
         mediaViewerOcr.value = doc.markdown
     }

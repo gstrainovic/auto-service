@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test'
+import { clearInstantDB } from './fixtures/db-cleanup'
 
 test.describe('Vehicle Flow', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
+
   test('VF-001: add a vehicle and see it in the list', async ({ page }) => {
     await page.goto('/vehicles')
     await expect(page.getByText('Noch keine Fahrzeuge')).toBeVisible()
@@ -45,8 +50,8 @@ test.describe('Vehicle Flow', () => {
 
     await expect(page.getByText('Audi A4')).toBeVisible()
 
-    // Delete button has icon="delete" but no label text
-    await page.locator('button[aria-label="delete"], .q-btn .q-icon').filter({ hasText: 'delete' }).first().click()
+    // Delete button: the button contains an img with "delete" text (icon)
+    await page.locator('button').filter({ has: page.getByText('delete', { exact: true }) }).click()
 
     await expect(page.getByText('Audi A4')).not.toBeVisible()
   })

@@ -1,29 +1,29 @@
 <script setup lang="ts">
 import { useQuasar } from 'quasar'
 import { computed, onMounted, ref } from 'vue'
-import { useDatabase } from '../composables/useDatabase'
+import { db, tx } from '../lib/instantdb'
 import { exportDatabase, importDatabase } from '../services/db-export'
 import { useSettingsStore } from '../stores/settings'
 
 const settings = useSettingsStore()
 const $q = useQuasar()
-const { db } = useDatabase()
 const showKey = ref(false)
 const ocrCacheCount = ref(0)
 
 async function refreshCacheCount() {
-  if (!db.value)
-    return
-  const docs = await (db.value as any).ocrcache.find().exec()
-  ocrCacheCount.value = docs.length
+  try {
+    const result = await db.queryOnce({ ocrcache: {} })
+    ocrCacheCount.value = (result.data.ocrcache || []).length
+  }
+  catch {
+    ocrCacheCount.value = 0
+  }
 }
 
 onMounted(() => refreshCacheCount())
 
 async function handleExport() {
-  if (!db.value)
-    return
-  const json = await exportDatabase(db.value)
+  const json = await exportDatabase()
   const blob = new Blob([json], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -37,11 +37,11 @@ async function handleExport() {
 async function handleImport(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
-  if (!file || !db.value)
+  if (!file)
     return
   try {
     const json = await file.text()
-    const result = await importDatabase(db.value, json)
+    const result = await importDatabase(json)
     const summary = Object.entries(result.imported)
       .map(([k, v]) => `${k}: ${v}`)
       .join(', ')
@@ -55,11 +55,16 @@ async function handleImport(event: Event) {
 }
 
 async function clearOcrCache() {
-  if (!db.value)
-    return
-  await (db.value as any).ocrcache.find().remove()
-  ocrCacheCount.value = 0
-  $q.notify({ type: 'positive', message: 'OCR-Cache geleert' })
+  try {
+    const result = await db.queryOnce({ ocrcache: {} })
+    const entries = result.data.ocrcache || []
+    if (entries.length) {
+      await db.transact(entries.map((e: any) => tx.ocrcache[e.id].delete()))
+    }
+    ocrCacheCount.value = 0
+    $q.notify({ type: 'positive', message: 'OCR-Cache geleert' })
+  }
+  catch {}
 }
 
 const defaultModels: Record<string, string> = {

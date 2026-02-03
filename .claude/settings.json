@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm run lint:fix -- --quiet \"$CLAUDE_FILE_PATH\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "intercept",
+            "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -qE '\\.env$|settings\\.local\\.json$'; then echo 'BLOCKED: Sensitive file contains API keys'; exit 1; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

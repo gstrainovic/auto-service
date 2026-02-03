@@ -1,6 +1,7 @@
 import path from 'node:path'
 import process from 'node:process'
 import { expect, test } from '@playwright/test'
+import { clearInstantDB } from './fixtures/db-cleanup'
 
 const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
@@ -8,6 +9,10 @@ const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
 test.describe('Vehicle Document Scan', () => {
   test.setTimeout(120_000)
   test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
+
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
 
   test('VD-001: scan a Kaufvertrag and create vehicle', async ({ page }) => {
     // Configure AI provider

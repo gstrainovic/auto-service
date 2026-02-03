@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import type { DueResult } from '../services/maintenance-schedule'
 import { onMounted, ref, watch } from 'vue'
-import { useDatabase } from '../composables/useDatabase'
+import { db, tx } from '../lib/instantdb'
 import { checkDueMaintenances, getMaintenanceSchedule } from '../services/maintenance-schedule'
 import { useVehiclesStore } from '../stores/vehicles'
 
 const vehiclesStore = useVehiclesStore()
 const dueMap = ref<Record<string, DueResult[]>>({})
-const { dbPromise } = useDatabase()
 const confirmDelete = ref<{ vehicleId: string, type: string, label: string } | null>(null)
 
 onMounted(async () => {
@@ -18,14 +17,16 @@ onMounted(async () => {
 watch(() => vehiclesStore.vehicles, computeDue, { deep: true })
 
 async function computeDue() {
-  const db = await dbPromise
+  const result = await db.queryOnce({ maintenances: {} })
+  const allMaintenances = result.data.maintenances || []
+
   for (const vehicle of vehiclesStore.vehicles) {
     const schedule = getMaintenanceSchedule(vehicle.customSchedule as any)
-    const mDocs = await (db as any).maintenances.find({ selector: { vehicleId: vehicle.id } }).exec()
-    const lastMaintenances = mDocs.map((d: any) => ({
-      type: d.type,
-      mileageAtService: d.mileageAtService,
-      doneAt: d.doneAt,
+    const vehicleMaintenances = allMaintenances.filter((m: any) => m.vehicleId === vehicle.id)
+    const lastMaintenances = vehicleMaintenances.map((m: any) => ({
+      type: m.type,
+      mileageAtService: m.mileageAtService,
+      doneAt: m.doneAt,
     }))
 
     dueMap.value[vehicle.id] = checkDueMaintenances({
@@ -37,12 +38,12 @@ async function computeDue() {
 }
 
 async function deleteMaintenance(vehicleId: string, type: string) {
-  const db = await dbPromise
-  const docs = await (db as any).maintenances.find({
-    selector: { vehicleId, type },
-  }).exec()
-  for (const doc of docs)
-    await doc.remove()
+  const result = await db.queryOnce({ maintenances: {} })
+  const maintenances = (result.data.maintenances || [])
+    .filter((m: any) => m.vehicleId === vehicleId && m.type === type)
+  if (maintenances.length) {
+    await db.transact(maintenances.map((m: any) => tx.maintenances[m.id].delete()))
+  }
   confirmDelete.value = null
   await computeDue()
 }

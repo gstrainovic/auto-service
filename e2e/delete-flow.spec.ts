@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test'
+import { clearInstantDB } from './fixtures/db-cleanup'
 
 test.describe('Delete Flow', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
+
   test('DF-001: delete a vehicle with confirmation dialog', async ({ page }) => {
     // Add a vehicle first
     await page.goto('/vehicles')

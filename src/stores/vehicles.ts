@@ -29,7 +29,8 @@ export const useVehiclesStore = defineStore('vehicles', () => {
   let unsubscribe: (() => void) | null = null
 
   function load() {
-    if (unsubscribe) return
+    if (unsubscribe)
+      return
 
     isLoading.value = true
     error.value = null

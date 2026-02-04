@@ -10,7 +10,53 @@
 
 ---
 
-## Task 1: RxDB-Infrastruktur entfernen
+## Fortschritt (Stand: 2026-02-03)
+
+| Task | Beschreibung | Status |
+|------|--------------|--------|
+| 1-8 | InstantDB-Migration | ✅ Erledigt |
+| 9 | main.ts PrimeVue konfigurieren | ✅ Erledigt |
+| 10 | App.vue Layout | ✅ Erledigt |
+| 11-16 | Komponenten migrieren | ✅ Erledigt |
+| 17-21 | Pages migrieren | ✅ Erledigt |
+| 22 | E2E-Tests fixen | 🔄 In Arbeit (18/33) |
+| 23 | Cleanup | ⏳ Offen |
+
+**E2E-Tests:** 18/33 bestanden (55%)
+
+### Erkenntnisse aus Phase 1-3 (InstantDB)
+
+| Problem | Lösung |
+|---------|--------|
+| InstantDB DevTools blockiert UI-Klicks | `devtool: false` in init() |
+| Entity-IDs müssen UUIDs sein | `id()` für IDs, Hash als separates Feld |
+| DB-Cleanup via SQL funktioniert nicht | Client-API `db.transact()` verwenden |
+| OCR-Cache: Hash als ID | → UUID als ID, Hash als Lookup-Feld |
+
+### Erkenntnisse aus Phase 4 (PrimeVue)
+
+| Problem | Lösung |
+|---------|--------|
+| InputNumber Label nicht verknüpft | `input-id` statt `id` verwenden |
+| v-tooltip Direktive fehlt | `app.directive('tooltip', Tooltip)` in main.ts |
+| Labels mit `*` brechen getByLabel | Labels ohne `*` oder Regex verwenden |
+
+### Offene Test-Fixes für morgen (15 Tests)
+
+| Test-ID | Problem | Fix |
+|---------|---------|-----|
+| CF-003 | Chip remove icon Selektor | PrimeVue Chip remove event prüfen |
+| CR-003, CR-004 | Invoice Dialog Labels | Label-Attribute in InvoiceResult.vue |
+| CR-007-009 | Maintenance Item Selektoren | `.maintenance-item` + Icon-Selektoren |
+| MV-001, RF-001 | `getByText('Rechnungen')` → 2 Elemente | `getByRole('tab')` verwenden |
+| SF-001 | `getByText('Kamera')` → 2 Buttons | `getByRole('button').first()` |
+| SE-001, SE-002 | Settings Labels fehlen | Label-Attribute in SettingsPage.vue |
+| IS-001, VD-001, VD-002 | Scan Result Card Selektor | Card-Klasse in ScanPage.vue prüfen |
+| VF-003 | Delete Button Icon | Icon-Selektor anpassen |
+
+---
+
+## Task 1: RxDB-Infrastruktur entfernen ✅
 
 **Files:**
 - Delete: `src/db/schema.ts`
@@ -46,7 +92,7 @@ git add -A && git commit -m "chore: remove RxDB infrastructure"
 
 ---
 
-## Task 2: Vehicles Store migrieren
+## Task 2: Vehicles Store migrieren ✅
 
 **Files:**
 - Modify: `src/stores/vehicles.ts`
@@ -83,10 +129,10 @@ export interface Vehicle {
 `src/stores/vehicles.ts`:
 
 ```typescript
+import type { Vehicle, VehicleScheduleItem } from '../lib/instantdb'
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 import { db, id, tx } from '../lib/instantdb'
-import type { Vehicle, VehicleScheduleItem } from '../lib/instantdb'
 
 export type { Vehicle, VehicleScheduleItem }
 
@@ -97,7 +143,8 @@ export const useVehiclesStore = defineStore('vehicles', () => {
   let unsubscribe: (() => void) | null = null
 
   function load() {
-    if (unsubscribe) return
+    if (unsubscribe)
+      return
 
     isLoading.value = true
     error.value = null
@@ -175,7 +222,7 @@ git add src/stores/vehicles.ts src/lib/instantdb.ts && git commit -m "feat: migr
 
 ---
 
-## Task 3: Invoices Store migrieren
+## Task 3: Invoices Store migrieren ✅
 
 **Files:**
 - Modify: `src/stores/invoices.ts`
@@ -211,10 +258,10 @@ export interface Invoice {
 `src/stores/invoices.ts`:
 
 ```typescript
+import type { Invoice, InvoiceItem } from '../lib/instantdb'
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 import { db, id, tx } from '../lib/instantdb'
-import type { Invoice, InvoiceItem } from '../lib/instantdb'
 
 export type { Invoice, InvoiceItem }
 
@@ -225,7 +272,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
   let unsubscribe: (() => void) | null = null
 
   function load() {
-    if (unsubscribe) return
+    if (unsubscribe)
+      return
 
     isLoading.value = true
     unsubscribe = db.subscribeQuery(
@@ -297,7 +345,7 @@ git add src/stores/invoices.ts src/lib/instantdb.ts && git commit -m "feat: migr
 
 ---
 
-## Task 4: Maintenances Store migrieren
+## Task 4: Maintenances Store migrieren ✅
 
 **Files:**
 - Modify: `src/stores/maintenances.ts`
@@ -325,10 +373,10 @@ export interface Maintenance {
 **Step 2: Maintenances Store ersetzen**
 
 ```typescript
+import type { Maintenance } from '../lib/instantdb'
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 import { db, id, tx } from '../lib/instantdb'
-import type { Maintenance } from '../lib/instantdb'
 
 export type { Maintenance }
 
@@ -339,7 +387,8 @@ export const useMaintenancesStore = defineStore('maintenances', () => {
   let unsubscribe: (() => void) | null = null
 
   function load() {
-    if (unsubscribe) return
+    if (unsubscribe)
+      return
 
     isLoading.value = true
     unsubscribe = db.subscribeQuery(
@@ -385,7 +434,8 @@ export const useMaintenancesStore = defineStore('maintenances', () => {
     const toRemove = maintenances.value.filter(
       m => m.vehicleId === vehicleId && m.type === type
     )
-    if (toRemove.length === 0) return
+    if (toRemove.length === 0)
+      return
 
     await db.transact(
       toRemove.map(m => (tx.maintenances as any)[m.id].delete())
@@ -423,7 +473,7 @@ git add src/stores/maintenances.ts src/lib/instantdb.ts && git commit -m "feat: 
 
 ---
 
-## Task 5: Chat Service migrieren
+## Task 5: Chat Service migrieren ✅
 
 **Files:**
 - Modify: `src/services/chat.ts`
@@ -461,7 +511,7 @@ git add src/services/chat.ts src/lib/instantdb.ts && git commit -m "feat: migrat
 
 ---
 
-## Task 6: AI Service (OCR Cache) migrieren
+## Task 6: AI Service (OCR Cache) migrieren ✅
 
 **Files:**
 - Modify: `src/services/ai.ts`
@@ -471,7 +521,7 @@ git add src/services/chat.ts src/lib/instantdb.ts && git commit -m "feat: migrat
 
 ```typescript
 export interface OcrCache {
-  id: string  // SHA-256 hash
+  id: string // SHA-256 hash
   markdown: string
   createdAt: string
 }
@@ -489,7 +539,7 @@ git add src/services/ai.ts src/lib/instantdb.ts && git commit -m "feat: migrate 
 
 ---
 
-## Task 7: DB Export Service migrieren
+## Task 7: DB Export Service migrieren ✅
 
 **Files:**
 - Modify: `src/services/db-export.ts`
@@ -521,7 +571,8 @@ export async function importDatabase(json: string): Promise<{ imported: Record<s
   const imported: Record<string, number> = {}
 
   for (const [collection, items] of Object.entries(data)) {
-    if (!Array.isArray(items)) continue
+    if (!Array.isArray(items))
+      continue
     const transactions = items.map((item: any) =>
       (tx as any)[collection][item.id || id()].update(item)
     )
@@ -543,7 +594,7 @@ git add src/services/db-export.ts && git commit -m "feat: migrate db-export to I
 
 ---
 
-## Task 8: Pages von RxDB-Abhängigkeiten befreien
+## Task 8: Pages von RxDB-Abhängigkeiten befreien ✅
 
 **Files:**
 - Modify: `src/pages/DashboardPage.vue`
@@ -571,8 +622,8 @@ git add src/pages/*.vue && git commit -m "refactor: remove RxDB dependencies fro
 import Aura from '@primeuix/themes/aura'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
-import ToastService from 'primevue/toastservice'
 import ConfirmationService from 'primevue/confirmationservice'
+import ToastService from 'primevue/toastservice'
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'

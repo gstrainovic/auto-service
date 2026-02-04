@@ -52,7 +52,7 @@ test.describe('Invoice Scan Flow', () => {
     await expect(page.getByText('Erkannte Daten')).toBeVisible({ timeout: 60_000 })
 
     // Step 6: Verify parsed data
-    const resultCard = page.locator('.q-card', { hasText: 'Erkannte Daten' })
+    const resultCard = page.locator('.vehicle-card', { hasText: 'Erkannte Daten' })
     await expect(resultCard.getByText(/München/)).toBeVisible()
     await expect(resultCard.getByText('Positionen')).toBeVisible()
 

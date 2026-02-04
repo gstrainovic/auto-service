@@ -37,7 +37,7 @@ test.describe('Vehicle Document Scan', () => {
     await expect(page.getByText('Erkannte Fahrzeugdaten')).toBeVisible({ timeout: 60_000 })
 
     // Verify parsed data
-    const resultCard = page.locator('.q-card', { hasText: 'Erkannte Fahrzeugdaten' })
+    const resultCard = page.locator('.vehicle-card', { hasText: 'Erkannte Fahrzeugdaten' })
     await expect(resultCard.getByText(/Volkswagen/i)).toBeVisible()
     await expect(resultCard.getByText(/Golf/i)).toBeVisible()
 
@@ -87,7 +87,7 @@ test.describe('Vehicle Document Scan', () => {
     await expect(page.getByText('Erkannte Service-Einträge')).toBeVisible({ timeout: 60_000 })
 
     // Verify parsed entries exist
-    const resultCard = page.locator('.q-card', { hasText: 'Erkannte Service-Einträge' })
+    const resultCard = page.locator('.vehicle-card', { hasText: 'Erkannte Service-Einträge' })
     const entries = resultCard.locator('.q-item')
     expect(await entries.count()).toBeGreaterThanOrEqual(1)
 

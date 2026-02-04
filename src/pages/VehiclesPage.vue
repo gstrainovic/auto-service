@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
 import { onMounted, ref } from 'vue'
 import VehicleCard from '../components/VehicleCard.vue'
 import VehicleForm from '../components/VehicleForm.vue'
@@ -16,16 +18,19 @@ async function onSave(data: any) {
 </script>
 
 <template>
-  <q-page padding>
-    <div class="row items-center q-mb-md">
-      <h5 class="q-my-none">
+  <main class="page-container">
+    <div class="page-header">
+      <h2 class="page-title">
         Fahrzeuge
-      </h5>
-      <q-space />
-      <q-btn color="primary" icon="add" label="Hinzufügen" @click="showForm = true" />
+      </h2>
+      <Button
+        icon="pi pi-plus"
+        label="Hinzufügen"
+        @click="showForm = true"
+      />
     </div>
 
-    <div v-if="store.vehicles.length === 0" class="text-center q-pa-xl text-grey">
+    <div v-if="store.vehicles.length === 0" class="empty-state">
       Noch keine Fahrzeuge. Füge dein erstes Auto hinzu.
     </div>
 
@@ -36,17 +41,40 @@ async function onSave(data: any) {
       @delete="store.remove($event)"
     />
 
-    <q-dialog v-model="showForm">
-      <q-card style="min-width: 350px">
-        <q-card-section>
-          <div class="text-h6">
-            Neues Fahrzeug
-          </div>
-        </q-card-section>
-        <q-card-section>
-          <VehicleForm @save="onSave" />
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-  </q-page>
+    <Dialog
+      v-model:visible="showForm"
+      header="Neues Fahrzeug"
+      modal
+      :style="{ minWidth: '350px' }"
+    >
+      <VehicleForm @save="onSave" />
+    </Dialog>
+  </main>
 </template>
+
+<style scoped>
+.page-container {
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--p-text-muted-color);
+}
+</style>

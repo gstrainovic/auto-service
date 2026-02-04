@@ -5,14 +5,23 @@ import { clearInstantDB } from './fixtures/db-cleanup'
 async function createVehicleAndOpen(page: any, data: { make: string, model: string, year: string, mileage: string }) {
   await page.goto('/vehicles')
   await page.getByRole('button', { name: 'Hinzufügen' }).click()
-  await page.getByLabel('Marke').fill(data.make)
-  await page.getByLabel('Modell').fill(data.model)
-  await page.getByLabel('Baujahr').fill(data.year)
-  await page.getByLabel('Kilometerstand').fill(data.mileage)
+  await page.getByLabel(/Marke/).fill(data.make)
+  await page.getByLabel(/Modell/).fill(data.model)
+
+  const yearInput = page.getByLabel(/Baujahr/)
+  await yearInput.click()
+  await yearInput.press('Control+a')
+  await yearInput.pressSequentially(data.year)
+
+  const mileageInput = page.getByLabel(/Kilometerstand/)
+  await mileageInput.click()
+  await mileageInput.press('Control+a')
+  await mileageInput.pressSequentially(data.mileage)
+
   await page.getByRole('button', { name: 'Speichern' }).click()
   await expect(page.getByText(`${data.make} ${data.model}`)).toBeVisible()
 
-  await page.locator('.q-card', { hasText: `${data.make} ${data.model}` }).click()
+  await page.locator('.vehicle-card', { hasText: `${data.make} ${data.model}` }).click()
   await expect(page).toHaveURL(/\/vehicles\/.+/, { timeout: 5_000 })
 }
 

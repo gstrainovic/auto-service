@@ -58,11 +58,11 @@ test.describe('Image Rotation', () => {
     await page.getByText('Rechnungen').click()
 
     // Click the invoice to open the detail dialog
-    const invoiceItem = page.locator('.q-tab-panel .q-item').first()
+    const invoiceItem = page.locator('.invoice-item').first()
     await invoiceItem.click()
 
     // Wait for dialog with image
-    const dialog = page.locator('.q-dialog')
+    const dialog = page.locator('[data-pc-name="dialog"]')
     await expect(dialog).toBeVisible({ timeout: 5_000 })
     const img = dialog.locator('img')
     await expect(img).toBeVisible({ timeout: 5_000 })

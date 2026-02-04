@@ -1,22 +1,19 @@
 import Aura from '@primeuix/themes/aura'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
-import { Dialog, Notify, Quasar } from 'quasar'
+import ConfirmationService from 'primevue/confirmationservice'
+import ToastService from 'primevue/toastservice'
+import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 
-import '@quasar/extras/material-icons/material-icons.css'
-import 'quasar/src/css/index.sass'
 import 'primeicons/primeicons.css'
 
 const app = createApp(App)
 app.use(createPinia())
 app.use(router)
-app.use(Quasar, {
-  plugins: { Notify, Dialog },
-})
-// PrimeVue parallel zu Quasar für schrittweise Migration
+app.directive('tooltip', Tooltip)
 app.use(PrimeVue, {
   theme: {
     preset: Aura,
@@ -27,4 +24,7 @@ app.use(PrimeVue, {
     },
   },
 })
+app.use(ToastService)
+app.use(ConfirmationService)
+
 app.mount('#app')

@@ -8,18 +8,18 @@ const props = defineProps<{ vehicle: Vehicle }>()
 const emit = defineEmits<{ delete: [id: string] }>()
 const router = useRouter()
 
-function navigateToDetail(): void {
+function handleClick() {
   router.push(`/vehicles/${props.vehicle.id}`)
 }
 
-function onDelete(event: Event): void {
+function handleDelete(event: Event) {
   event.stopPropagation()
   emit('delete', props.vehicle.id)
 }
 </script>
 
 <template>
-  <Card class="vehicle-card" @click="navigateToDetail">
+  <Card class="mb-3 cursor-pointer" @click="handleClick">
     <template #title>
       {{ vehicle.make }} {{ vehicle.model }}
     </template>
@@ -27,20 +27,16 @@ function onDelete(event: Event): void {
       {{ vehicle.year }} · {{ vehicle.licensePlate }}
     </template>
     <template #content>
-      <div class="mileage">
-        <i class="pi pi-gauge" />
-        {{ vehicle.mileage.toLocaleString('de-DE') }} km
-      </div>
+      <i class="pi pi-car mr-2" />
+      {{ vehicle.mileage.toLocaleString('de-DE') }} km
     </template>
     <template #footer>
-      <div class="card-actions">
+      <div class="flex justify-end">
         <Button
           icon="pi pi-trash"
           severity="danger"
           text
-          rounded
-          aria-label="Löschen"
-          @click="onDelete"
+          @click="handleDelete"
         />
       </div>
     </template>
@@ -48,25 +44,7 @@ function onDelete(event: Event): void {
 </template>
 
 <style scoped>
-.vehicle-card {
+.cursor-pointer {
   cursor: pointer;
-  margin-bottom: 1rem;
-  transition: box-shadow 0.2s;
-}
-
-.vehicle-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.mileage {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--p-text-muted-color);
-}
-
-.card-actions {
-  display: flex;
-  justify-content: flex-end;
 }
 </style>

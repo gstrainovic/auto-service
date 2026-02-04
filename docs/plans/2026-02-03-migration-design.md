@@ -1,7 +1,19 @@
 # Migration Design: RxDB → InstantDB + Quasar → PrimeVue
 
 **Datum:** 2026-02-03
-**Status:** Genehmigt
+**Status:** Phase 1-3 ✅ Abgeschlossen | Phase 4-5 ⏳ Offen
+
+## Fortschritt
+
+| Phase | Beschreibung | Status |
+|-------|--------------|--------|
+| Phase 1 | Infrastruktur (RxDB entfernen) | ✅ Erledigt |
+| Phase 2 | Stores (vehicles, invoices, maintenances) | ✅ Erledigt |
+| Phase 3 | Services (chat, ai, db-export) | ✅ Erledigt |
+| Phase 4 | UI-Komponenten (Quasar → PrimeVue) | ⏳ Nicht begonnen |
+| Phase 5 | Cleanup (Quasar deinstallieren) | ⏳ Nicht begonnen |
+
+**E2E-Tests:** 33/33 bestanden ✅
 
 ## Entscheidungen
 
@@ -71,7 +83,7 @@ TypeScript-Interfaces nur für IDE-Unterstützung.
 - `invoices` - Rechnungen (vehicleId Referenz)
 - `maintenances` - Wartungen (vehicleId Referenz)
 - `chatmessages` - Chat-Verlauf
-- `ocrcache` - OCR-Cache (Hash als ID)
+- `ocrcache` - OCR-Cache (UUID als ID, Hash als Feld)
 
 ## Datei-Änderungen
 

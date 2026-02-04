@@ -55,10 +55,10 @@ test.describe('MediaViewer', () => {
     await page.getByText('Rechnungen').click()
 
     // Click invoice to open detail dialog
-    const invoiceItem = page.locator('.q-tab-panel .q-item').first()
+    const invoiceItem = page.locator('.invoice-item').first()
     await invoiceItem.click()
 
-    const dialog = page.locator('.q-dialog')
+    const dialog = page.locator('[data-pc-name="dialog"]')
     await expect(dialog).toBeVisible({ timeout: 5_000 })
 
     // Click image to open MediaViewer
@@ -89,18 +89,18 @@ test.describe('MediaViewer', () => {
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
     // Attach image and send
-    const fileInput = page.locator('.q-dialog input[type="file"]')
+    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]')
     await fileInput.setInputFiles(path.join(import.meta.dirname, 'fixtures', 'test-invoice.png'))
-    await expect(page.locator('.q-chip')).toHaveCount(1, { timeout: 10_000 })
+    await expect(page.locator('[data-pc-name="chip"]')).toHaveCount(1, { timeout: 10_000 })
 
     const input = page.locator('input[placeholder="Nachricht..."]')
     await input.fill('Was steht auf dieser Rechnung?')
-    await page.locator('.q-dialog button.bg-primary').last().click()
+    await page.locator('[data-pc-name="drawer"] button').filter({ has: page.locator('.pi-send') }).click()
 
     // Wait for AI response (OCR + tool-calling takes time)
-    await expect(page.locator('.q-message')).toHaveCount(3, { timeout: 60_000 })
+    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
     // Ensure assistant message has content (OCR cache write should be complete by now)
-    const assistantMsg = page.locator('.q-message').last()
+    const assistantMsg = page.locator('.chat-message').last()
     await expect(assistantMsg).toContainText(/.+/, { timeout: 10_000 })
 
     // Wait for OCR cache to be written - poll until cache is populated
@@ -126,7 +126,7 @@ test.describe('MediaViewer', () => {
     expect(ocrCacheFound.found, 'OCR cache should have been written by chat flow').toBe(true)
 
     // Click the image thumbnail to open MediaViewer
-    const userMsg = page.locator('.q-message').nth(1)
+    const userMsg = page.locator('.chat-message').nth(1)
     const thumbnail = userMsg.locator('img')
     await expect(thumbnail).toBeVisible({ timeout: 5_000 })
     await thumbnail.click()

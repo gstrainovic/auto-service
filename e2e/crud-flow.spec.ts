@@ -5,17 +5,30 @@ import { clearInstantDB } from './fixtures/db-cleanup'
 async function createVehicleAndOpen(page: any, data: { make: string, model: string, year: string, mileage: string, plate?: string }) {
   await page.goto('/vehicles')
   await page.getByRole('button', { name: 'Hinzufügen' }).click()
-  await page.getByLabel('Marke').fill(data.make)
-  await page.getByLabel('Modell').fill(data.model)
-  await page.getByLabel('Baujahr').fill(data.year)
-  await page.getByLabel('Kilometerstand').fill(data.mileage)
+
+  // PrimeVue FloatLabel: Labels have "*" suffix, use regex match
+  await page.getByLabel(/Marke/).fill(data.make)
+  await page.getByLabel(/Modell/).fill(data.model)
+
+  // InputNumber is a spinbutton - clear and type instead of fill
+  const yearInput = page.getByLabel(/Baujahr/)
+  await yearInput.click()
+  await yearInput.press('Control+a')
+  await yearInput.pressSequentially(data.year)
+
+  const mileageInput = page.getByLabel(/Kilometerstand/)
+  await mileageInput.click()
+  await mileageInput.press('Control+a')
+  await mileageInput.pressSequentially(data.mileage)
+
   if (data.plate)
-    await page.getByLabel('Kennzeichen').fill(data.plate)
+    await page.getByLabel(/Kennzeichen/).fill(data.plate)
+
   await page.getByRole('button', { name: 'Speichern' }).click()
   await expect(page.getByText(`${data.make} ${data.model}`)).toBeVisible()
 
-  // Click the vehicle card (not just the text, which might match dialog content)
-  await page.locator('.q-card', { hasText: `${data.make} ${data.model}` }).click()
+  // Click the vehicle card
+  await page.locator('.vehicle-card', { hasText: `${data.make} ${data.model}` }).click()
   await expect(page).toHaveURL(/\/vehicles\/.+/, { timeout: 5_000 })
 }
 
@@ -100,15 +113,16 @@ test.describe('Vehicle CRUD', () => {
     await expect(page.getByText('Fahrzeug bearbeiten')).toBeVisible()
 
     // Verify form is pre-filled
-    await expect(page.locator('.q-dialog').getByLabel('Marke')).toHaveValue('BMW')
-    await expect(page.locator('.q-dialog').getByLabel('Modell')).toHaveValue('320d')
+    const dialog = page.locator('[data-pc-name="dialog"]')
+    await expect(dialog.getByLabel('Marke')).toHaveValue('BMW')
+    await expect(dialog.getByLabel('Modell')).toHaveValue('320d')
 
     // Change values
-    await page.locator('.q-dialog').getByLabel('Marke').fill('Mercedes')
-    await page.locator('.q-dialog').getByLabel('Modell').fill('C220')
-    await page.locator('.q-dialog').getByLabel('Baujahr').fill('2022')
-    await page.locator('.q-dialog').getByLabel('Kilometerstand').fill('30000')
-    await page.locator('.q-dialog').getByRole('button', { name: 'Speichern' }).click()
+    await dialog.getByLabel('Marke').fill('Mercedes')
+    await dialog.getByLabel('Modell').fill('C220')
+    await dialog.getByLabel('Baujahr').fill('2022')
+    await dialog.getByLabel('Kilometerstand').fill('30000')
+    await dialog.getByRole('button', { name: 'Speichern' }).click()
 
     // Verify updated values
     await expect(page.getByText('Mercedes C220')).toBeVisible()
@@ -126,7 +140,7 @@ test.describe('Vehicle CRUD', () => {
 
     await page.getByRole('button', { name: 'Löschen' }).click()
     await expect(page.getByText('Fahrzeug löschen?')).toBeVisible()
-    await page.locator('.q-dialog').getByRole('button', { name: 'Löschen' }).click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
 
     await expect(page).toHaveURL(/\/vehicles/)
     await expect(page.getByText('Audi A3')).not.toBeVisible({ timeout: 5_000 })
@@ -155,14 +169,14 @@ test.describe('Invoice CRUD', () => {
 
     // Open invoice detail
     await page.getByText('Werkstatt Schmidt').click()
-    await expect(page.locator('.q-dialog').getByText('450.50')).toBeVisible()
+    await expect(page.locator('[data-pc-name="dialog"]').getByText('450.50')).toBeVisible()
 
     // Click edit
-    await page.locator('.q-dialog').getByRole('button', { name: 'Bearbeiten' }).click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Bearbeiten' }).click()
     await expect(page.getByText('Rechnung bearbeiten')).toBeVisible()
 
     // Verify pre-filled values
-    const editDialog = page.locator('.q-dialog', { hasText: 'Rechnung bearbeiten' })
+    const editDialog = page.locator('[data-pc-name="dialog"]', { hasText: 'Rechnung bearbeiten' })
     await expect(editDialog.getByLabel('Werkstatt')).toHaveValue('Werkstatt Schmidt')
 
     // Change values
@@ -194,9 +208,9 @@ test.describe('Invoice CRUD', () => {
 
     // Open detail, then edit
     await page.getByText('Werkstatt Schmidt').click()
-    await page.locator('.q-dialog').getByRole('button', { name: 'Bearbeiten' }).click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Bearbeiten' }).click()
 
-    const editDialog = page.locator('.q-dialog', { hasText: 'Rechnung bearbeiten' })
+    const editDialog = page.locator('[data-pc-name="dialog"]', { hasText: 'Rechnung bearbeiten' })
 
     // Should have 2 existing items
     await expect(editDialog.getByLabel('Beschreibung').first()).toHaveValue('Ölwechsel')
@@ -207,7 +221,7 @@ test.describe('Invoice CRUD', () => {
     await newDescInputs.last().fill('Luftfilter')
 
     // Remove the first item (Ölwechsel)
-    await editDialog.locator('button').filter({ has: page.locator('.q-icon', { hasText: 'remove_circle' }) }).first().click()
+    await editDialog.locator('button').filter({ has: page.locator('i.pi-minus-circle') }).first().click()
 
     // Save
     await editDialog.getByRole('button', { name: 'Speichern' }).click()
@@ -215,7 +229,7 @@ test.describe('Invoice CRUD', () => {
     // Verify — reopen
     await page.getByText('Rechnungen').click()
     await page.getByText('Werkstatt Schmidt').click()
-    await expect(page.locator('.q-dialog').getByText('Luftfilter')).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('[data-pc-name="dialog"]').getByText('Luftfilter')).toBeVisible({ timeout: 5_000 })
   })
 
   test('CR-005: delete an invoice', async ({ page }) => {
@@ -234,14 +248,14 @@ test.describe('Invoice CRUD', () => {
 
     // Open detail and delete
     await page.getByText('Werkstatt Schmidt').click()
-    await page.locator('.q-dialog').getByRole('button', { name: 'Löschen' }).click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
 
     // Confirm deletion
     await expect(page.getByText('Rechnung löschen?')).toBeVisible()
-    await page.locator('.q-dialog', { hasText: 'Rechnung löschen?' }).getByRole('button', { name: 'Löschen' }).click()
+    await page.locator('[data-pc-name="dialog"]', { hasText: 'Rechnung löschen?' }).getByRole('button', { name: 'Löschen' }).click()
 
     // Invoice should be gone from the list
-    await expect(page.locator('.q-tab-panel').getByText('Werkstatt Schmidt')).not.toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('[data-pc-name="tabpanel"]').getByText('Werkstatt Schmidt')).not.toBeVisible({ timeout: 5_000 })
     await expect(page.getByText('Keine Rechnungen vorhanden')).toBeVisible()
   })
 })
@@ -288,7 +302,7 @@ test.describe('Invoice Duplicate Detection', () => {
     // Verify only one invoice is visible in the UI
     await page.getByText('Rechnungen').click()
     await expect(page.getByText('Werkstatt Schmidt')).toBeVisible({ timeout: 10_000 })
-    const invoiceItems = page.locator('.q-tab-panel .q-item')
+    const invoiceItems = page.locator('[data-pc-name="tabpanel"] .invoice-item')
     await expect(invoiceItems).toHaveCount(1)
   })
 })
@@ -313,11 +327,11 @@ test.describe('Maintenance CRUD', () => {
     await expect(page.getByText('Motoröl 5W-30 gewechselt')).toBeVisible({ timeout: 10_000 })
 
     // Click edit button within the maintenance list item (not the header Bearbeiten button)
-    const maintenanceItem = page.locator('.q-item', { hasText: 'Motoröl 5W-30 gewechselt' })
-    await maintenanceItem.locator('button').filter({ has: page.locator('.q-icon', { hasText: 'edit' }) }).click()
+    const maintenanceItem = page.locator('.maintenance-item', { hasText: 'Motoröl 5W-30 gewechselt' })
+    await maintenanceItem.locator('button').filter({ has: page.locator('i.pi-pencil') }).click()
     await expect(page.getByText('Wartungseintrag bearbeiten')).toBeVisible()
 
-    const editDialog = page.locator('.q-dialog', { hasText: 'Wartungseintrag bearbeiten' })
+    const editDialog = page.locator('[data-pc-name="dialog"]', { hasText: 'Wartungseintrag bearbeiten' })
 
     // Verify pre-filled
     await expect(editDialog.getByLabel('Beschreibung')).toHaveValue('Motoröl 5W-30 gewechselt')
@@ -349,12 +363,12 @@ test.describe('Maintenance CRUD', () => {
     await expect(page.getByText('Motoröl 5W-30 gewechselt')).toBeVisible({ timeout: 10_000 })
 
     // Click delete button within the maintenance list item
-    const maintenanceItem = page.locator('.q-item', { hasText: 'Motoröl 5W-30 gewechselt' })
-    await maintenanceItem.locator('button').filter({ has: page.locator('.q-icon', { hasText: 'delete' }) }).click()
+    const maintenanceItem = page.locator('.maintenance-item', { hasText: 'Motoröl 5W-30 gewechselt' })
+    await maintenanceItem.locator('button').filter({ has: page.locator('i.pi-trash') }).click()
 
     // Confirm
     await expect(page.getByText('Wartungseintrag löschen?')).toBeVisible()
-    await page.locator('.q-dialog', { hasText: 'Wartungseintrag löschen?' }).getByRole('button', { name: 'Löschen' }).click()
+    await page.locator('[data-pc-name="dialog"]', { hasText: 'Wartungseintrag löschen?' }).getByRole('button', { name: 'Löschen' }).click()
 
     // Should be gone
     await expect(page.getByText('Motoröl 5W-30 gewechselt')).not.toBeVisible({ timeout: 5_000 })
@@ -375,10 +389,10 @@ test.describe('Maintenance CRUD', () => {
     await expect(page.getByText('Motoröl 5W-30 gewechselt')).toBeVisible({ timeout: 10_000 })
 
     // Open edit within the maintenance list item
-    const maintenanceItem = page.locator('.q-item', { hasText: 'Motoröl 5W-30 gewechselt' })
-    await maintenanceItem.locator('button').filter({ has: page.locator('.q-icon', { hasText: 'edit' }) }).click()
+    const maintenanceItem = page.locator('.maintenance-item', { hasText: 'Motoröl 5W-30 gewechselt' })
+    await maintenanceItem.locator('button').filter({ has: page.locator('i.pi-pencil') }).click()
 
-    const editDialog = page.locator('.q-dialog', { hasText: 'Wartungseintrag bearbeiten' })
+    const editDialog = page.locator('[data-pc-name="dialog"]', { hasText: 'Wartungseintrag bearbeiten' })
 
     // Change status to "Fällig"
     await editDialog.getByLabel('Status').click()

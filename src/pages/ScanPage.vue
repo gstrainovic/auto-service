@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import type { ParsedInvoice, ParsedServiceBook, ParsedVehicleDocument } from '../services/ai'
+import Button from 'primevue/button'
+import Card from 'primevue/card'
+import ProgressSpinner from 'primevue/progressspinner'
+import Select from 'primevue/select'
+import Tab from 'primevue/tab'
+import TabList from 'primevue/tablist'
+import Tabs from 'primevue/tabs'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import InvoiceResult from '../components/InvoiceResult.vue'
@@ -23,13 +30,8 @@ const imageBase64 = ref('')
 const loading = ref(false)
 const error = ref('')
 
-// Invoice scan state
 const parsedInvoice = ref<ParsedInvoice | null>(null)
-
-// Vehicle document scan state
 const parsedVehicleDoc = ref<ParsedVehicleDocument | null>(null)
-
-// Service book scan state
 const parsedServiceBook = ref<ParsedServiceBook | null>(null)
 
 const vehicleOptions = computed(() =>
@@ -41,14 +43,14 @@ const vehicleOptions = computed(() =>
 
 onMounted(() => vehiclesStore.load())
 
-function resetResults() {
+function resetResults(): void {
   parsedInvoice.value = null
   parsedVehicleDoc.value = null
   parsedServiceBook.value = null
   error.value = ''
 }
 
-async function onCaptured(base64: string) {
+async function onCaptured(base64: string): Promise<void> {
   imageBase64.value = base64
   loading.value = true
   resetResults()
@@ -87,7 +89,7 @@ async function onCaptured(base64: string) {
   }
 }
 
-async function onSaveInvoice() {
+async function onSaveInvoice(): Promise<void> {
   if (!parsedInvoice.value || !selectedVehicleId.value)
     return
 
@@ -132,7 +134,7 @@ async function onSaveInvoice() {
   parsedInvoice.value = null
 }
 
-async function onSaveVehicleDoc() {
+async function onSaveVehicleDoc(): Promise<void> {
   if (!parsedVehicleDoc.value)
     return
 
@@ -150,7 +152,7 @@ async function onSaveVehicleDoc() {
   router.push('/vehicles')
 }
 
-async function onSaveServiceBook() {
+async function onSaveServiceBook(): Promise<void> {
   if (!parsedServiceBook.value || !selectedVehicleId.value)
     return
 
@@ -202,41 +204,49 @@ function normalizeCategory(cat: string): string {
 </script>
 
 <template>
-  <q-page padding>
-    <h5>Dokument scannen</h5>
+  <main class="page-container">
+    <h2 class="page-title">
+      Dokument scannen
+    </h2>
 
-    <q-tabs v-model="scanTab" align="left" class="q-mb-md" @update:model-value="resetResults">
-      <q-tab name="rechnung" label="Rechnung" icon="receipt" />
-      <q-tab name="fahrzeug" label="Kaufvertrag / Schein" icon="directions_car" />
-      <q-tab name="serviceheft" label="Service-Heft" icon="menu_book" />
-    </q-tabs>
+    <Tabs v-model:value="scanTab" @update:value="resetResults">
+      <TabList>
+        <Tab value="rechnung">
+          <i class="pi pi-receipt tab-icon" /> Rechnung
+        </Tab>
+        <Tab value="fahrzeug">
+          <i class="pi pi-car tab-icon" /> Kaufvertrag / Schein
+        </Tab>
+        <Tab value="serviceheft">
+          <i class="pi pi-book tab-icon" /> Service-Heft
+        </Tab>
+      </TabList>
+    </Tabs>
 
-    <!-- Vehicle selector for rechnung and serviceheft -->
-    <q-select
-      v-if="scanTab !== 'fahrzeug'"
-      v-model="selectedVehicleId"
-      :options="vehicleOptions"
-      label="Fahrzeug wählen"
-      outlined
-      emit-value
-      map-options
-      class="q-mb-md"
-    />
+    <div v-if="scanTab !== 'fahrzeug'" class="vehicle-selector">
+      <Select
+        v-model="selectedVehicleId"
+        :options="vehicleOptions"
+        option-label="label"
+        option-value="value"
+        placeholder="Fahrzeug wählen"
+        class="w-full"
+      />
+    </div>
 
     <InvoiceScanner @captured="onCaptured" />
 
-    <div v-if="loading" class="q-mt-md text-center">
-      <q-spinner-dots size="40px" />
-      <div class="q-mt-sm">
+    <div v-if="loading" class="loading-state">
+      <ProgressSpinner style="width: 40px; height: 40px" />
+      <div class="loading-text">
         {{ scanTab === 'rechnung' ? 'KI analysiert Rechnung...' : scanTab === 'fahrzeug' ? 'KI liest Fahrzeugdaten...' : 'KI analysiert Service-Heft...' }}
       </div>
     </div>
 
-    <div v-if="error" class="q-mt-md text-negative">
+    <div v-if="error" class="error-state">
       {{ error }}
     </div>
 
-    <!-- Invoice result -->
     <InvoiceResult
       v-if="parsedInvoice"
       :result="parsedInvoice"
@@ -244,112 +254,228 @@ function normalizeCategory(cat: string): string {
       @discard="parsedInvoice = null"
     />
 
-    <!-- Vehicle document result -->
-    <q-card v-if="parsedVehicleDoc" class="q-mt-md">
-      <q-card-section>
-        <div class="text-h6">
-          Erkannte Fahrzeugdaten
+    <Card v-if="parsedVehicleDoc" class="result-card">
+      <template #title>
+        Erkannte Fahrzeugdaten
+      </template>
+      <template #content>
+        <div class="field-list">
+          <div class="field-row">
+            <span class="field-label">Dokumenttyp</span>
+            <span class="field-value">{{ parsedVehicleDoc.documentType }}</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Marke</span>
+            <span class="field-value">{{ parsedVehicleDoc.make }}</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Modell</span>
+            <span class="field-value">{{ parsedVehicleDoc.model }}</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Baujahr</span>
+            <span class="field-value">{{ parsedVehicleDoc.year }}</span>
+          </div>
+          <div v-if="parsedVehicleDoc.plate" class="field-row">
+            <span class="field-label">Kennzeichen</span>
+            <span class="field-value">{{ parsedVehicleDoc.plate }}</span>
+          </div>
+          <div v-if="parsedVehicleDoc.vin" class="field-row">
+            <span class="field-label">VIN</span>
+            <span class="field-value">{{ parsedVehicleDoc.vin }}</span>
+          </div>
+          <div v-if="parsedVehicleDoc.mileage" class="field-row">
+            <span class="field-label">Kilometerstand</span>
+            <span class="field-value">{{ parsedVehicleDoc.mileage?.toLocaleString('de-DE') }} km</span>
+          </div>
+          <div v-if="parsedVehicleDoc.engineType" class="field-row">
+            <span class="field-label">Motor</span>
+            <span class="field-value">{{ parsedVehicleDoc.engineType }} {{ parsedVehicleDoc.enginePower || '' }}</span>
+          </div>
+          <div v-if="parsedVehicleDoc.purchasePrice" class="field-row">
+            <span class="field-label">Kaufpreis</span>
+            <span class="field-value">{{ parsedVehicleDoc.purchasePrice?.toFixed(2) }} EUR</span>
+          </div>
         </div>
-      </q-card-section>
-      <q-card-section>
-        <q-field label="Dokumenttyp" stack-label borderless>
-          <template #control>
-            {{ parsedVehicleDoc.documentType }}
-          </template>
-        </q-field>
-        <q-field label="Marke" stack-label borderless>
-          <template #control>
-            {{ parsedVehicleDoc.make }}
-          </template>
-        </q-field>
-        <q-field label="Modell" stack-label borderless>
-          <template #control>
-            {{ parsedVehicleDoc.model }}
-          </template>
-        </q-field>
-        <q-field label="Baujahr" stack-label borderless>
-          <template #control>
-            {{ parsedVehicleDoc.year }}
-          </template>
-        </q-field>
-        <q-field v-if="parsedVehicleDoc.plate" label="Kennzeichen" stack-label borderless>
-          <template #control>
-            {{ parsedVehicleDoc.plate }}
-          </template>
-        </q-field>
-        <q-field v-if="parsedVehicleDoc.vin" label="VIN" stack-label borderless>
-          <template #control>
-            {{ parsedVehicleDoc.vin }}
-          </template>
-        </q-field>
-        <q-field v-if="parsedVehicleDoc.mileage" label="Kilometerstand" stack-label borderless>
-          <template #control>
-            {{ parsedVehicleDoc.mileage?.toLocaleString('de-DE') }} km
-          </template>
-        </q-field>
-        <q-field v-if="parsedVehicleDoc.engineType" label="Motor" stack-label borderless>
-          <template #control>
-            {{ parsedVehicleDoc.engineType }} {{ parsedVehicleDoc.enginePower || '' }}
-          </template>
-        </q-field>
-        <q-field v-if="parsedVehicleDoc.purchasePrice" label="Kaufpreis" stack-label borderless>
-          <template #control>
-            {{ parsedVehicleDoc.purchasePrice?.toFixed(2) }} €
-          </template>
-        </q-field>
-      </q-card-section>
-      <q-card-actions>
-        <q-btn color="primary" label="Fahrzeug anlegen" @click="onSaveVehicleDoc" />
-        <q-btn flat label="Verwerfen" @click="parsedVehicleDoc = null" />
-      </q-card-actions>
-    </q-card>
-
-    <!-- Service book result -->
-    <q-card v-if="parsedServiceBook" class="q-mt-md">
-      <q-card-section>
-        <div class="text-h6">
-          Erkannte Service-Einträge
+      </template>
+      <template #footer>
+        <div class="card-actions">
+          <Button label="Fahrzeug anlegen" severity="primary" @click="onSaveVehicleDoc" />
+          <Button label="Verwerfen" text @click="parsedVehicleDoc = null" />
         </div>
-      </q-card-section>
-      <q-card-section>
-        <q-list bordered separator>
-          <q-item v-for="(entry, i) in parsedServiceBook.entries" :key="i">
-            <q-item-section>
-              <q-item-label>
-                {{ entry.date }} · {{ entry.mileage?.toLocaleString('de-DE') }} km
-              </q-item-label>
-              <q-item-label v-if="entry.workshopName" caption>
-                {{ entry.workshopName }}
-              </q-item-label>
-              <q-item-label v-for="(item, j) in entry.items" :key="j" caption>
-                {{ item.description }} ({{ normalizeCategory(item.category) }})
-              </q-item-label>
-            </q-item-section>
-          </q-item>
-        </q-list>
+      </template>
+    </Card>
 
-        <div v-if="parsedServiceBook.manufacturerIntervals?.length" class="q-mt-md">
-          <div class="text-subtitle1">
+    <Card v-if="parsedServiceBook" class="result-card">
+      <template #title>
+        Erkannte Service-Eintrage
+      </template>
+      <template #content>
+        <div class="entries-list">
+          <div v-for="(entry, i) in parsedServiceBook.entries" :key="i" class="entry-item">
+            <div class="entry-header">
+              {{ entry.date }} · {{ entry.mileage?.toLocaleString('de-DE') }} km
+            </div>
+            <div v-if="entry.workshopName" class="entry-workshop">
+              {{ entry.workshopName }}
+            </div>
+            <div v-for="(item, j) in entry.items" :key="j" class="entry-detail">
+              {{ item.description }} ({{ normalizeCategory(item.category) }})
+            </div>
+          </div>
+        </div>
+
+        <div v-if="parsedServiceBook.manufacturerIntervals?.length" class="intervals-section">
+          <div class="intervals-title">
             Hersteller-Intervalle
           </div>
-          <q-list bordered separator>
-            <q-item v-for="(interval, i) in parsedServiceBook.manufacturerIntervals" :key="i">
-              <q-item-section>
-                <q-item-label>{{ interval.type }}</q-item-label>
-                <q-item-label caption>
-                  {{ interval.intervalKm > 0 ? `alle ${interval.intervalKm.toLocaleString('de-DE')} km` : '' }}
-                  {{ interval.intervalKm > 0 && interval.intervalMonths > 0 ? ' / ' : '' }}
-                  {{ interval.intervalMonths > 0 ? `alle ${interval.intervalMonths} Monate` : '' }}
-                </q-item-label>
-              </q-item-section>
-            </q-item>
-          </q-list>
+          <div class="intervals-list">
+            <div v-for="(interval, i) in parsedServiceBook.manufacturerIntervals" :key="i" class="interval-item">
+              <div class="interval-type">
+                {{ interval.type }}
+              </div>
+              <div class="interval-values">
+                {{ interval.intervalKm > 0 ? `alle ${interval.intervalKm.toLocaleString('de-DE')} km` : '' }}
+                {{ interval.intervalKm > 0 && interval.intervalMonths > 0 ? ' / ' : '' }}
+                {{ interval.intervalMonths > 0 ? `alle ${interval.intervalMonths} Monate` : '' }}
+              </div>
+            </div>
+          </div>
         </div>
-      </q-card-section>
-      <q-card-actions>
-        <q-btn color="primary" label="Zu Fahrzeug hinzufügen" @click="onSaveServiceBook" />
-        <q-btn flat label="Verwerfen" @click="parsedServiceBook = null" />
-      </q-card-actions>
-    </q-card>
-  </q-page>
+      </template>
+      <template #footer>
+        <div class="card-actions">
+          <Button label="Zu Fahrzeug hinzufugen" severity="primary" @click="onSaveServiceBook" />
+          <Button label="Verwerfen" text @click="parsedServiceBook = null" />
+        </div>
+      </template>
+    </Card>
+  </main>
 </template>
+
+<style scoped>
+.page-container {
+  padding: 1rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin: 0 0 1rem;
+}
+
+.tab-icon {
+  margin-right: 0.5rem;
+}
+
+.vehicle-selector {
+  margin: 1rem 0;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.loading-state {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.loading-text {
+  margin-top: 0.5rem;
+  color: var(--text-color-secondary);
+}
+
+.error-state {
+  margin-top: 1rem;
+  color: var(--red-500);
+}
+
+.result-card {
+  margin-top: 1rem;
+}
+
+.field-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.field-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+}
+
+.field-label {
+  color: var(--text-color-secondary);
+}
+
+.field-value {
+  font-weight: 500;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.entries-list {
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+}
+
+.entry-item {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.entry-item:last-child {
+  border-bottom: none;
+}
+
+.entry-header {
+  font-weight: 500;
+}
+
+.entry-workshop,
+.entry-detail {
+  font-size: 0.875rem;
+  color: var(--text-color-secondary);
+}
+
+.intervals-section {
+  margin-top: 1rem;
+}
+
+.intervals-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.intervals-list {
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+}
+
+.interval-item {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.interval-item:last-child {
+  border-bottom: none;
+}
+
+.interval-type {
+  font-weight: 500;
+}
+
+.interval-values {
+  font-size: 0.875rem;
+  color: var(--text-color-secondary);
+}
+</style>

@@ -28,7 +28,7 @@ test.describe('Delete Flow', () => {
     await expect(page.getByText('Alle Rechnungen und Wartungseinträge')).toBeVisible()
 
     // Confirm delete
-    await page.locator('.q-dialog').getByRole('button', { name: 'Löschen' }).click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
 
     // Should redirect to vehicles list
     await expect(page).toHaveURL(/\/vehicles/)

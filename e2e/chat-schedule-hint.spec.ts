@@ -36,15 +36,15 @@ test.describe('Chat Schedule Hint', () => {
     await page.locator('.chat-fab').click()
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
-    const input = page.locator('input[placeholder="Nachricht..."]')
+    const input = page.locator('.chat-drawer input[placeholder="Nachricht..."]')
     await input.fill('Was ist beim Yaris an Wartung fällig?')
-    await page.locator('.q-dialog button.bg-primary').last().click()
+    await page.locator('.chat-drawer button').filter({ has: page.locator('.pi-send') }).click()
 
     // Wait for AI response (welcome + user + assistant = 3 messages minimum)
-    await expect(page.locator('.q-message')).toHaveCount(3, { timeout: 60_000 })
+    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
 
     // AI should mention service book / allgemein / Service-Heft in its response
-    const assistantMsg = page.locator('.q-message').last()
+    const assistantMsg = page.locator('.chat-message').last()
     await expect(assistantMsg).toContainText(/Service-Heft|allgemein/i, { timeout: 30_000 })
   })
 
@@ -91,15 +91,15 @@ test.describe('Chat Schedule Hint', () => {
     await page.locator('.chat-fab').click()
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
-    const input = page.locator('input[placeholder="Nachricht..."]')
+    const input = page.locator('.chat-drawer input[placeholder="Nachricht..."]')
     await input.fill('Was ist beim Mazda an Wartung fällig?')
-    await page.locator('.q-dialog button.bg-primary').last().click()
+    await page.locator('.chat-drawer button').filter({ has: page.locator('.pi-send') }).click()
 
     // Wait for AI response
-    await expect(page.locator('.q-message')).toHaveCount(3, { timeout: 60_000 })
+    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
 
     // AI should show maintenance status but NOT mention service book hint
-    const assistantMsg = page.locator('.q-message').last()
+    const assistantMsg = page.locator('.chat-message').last()
     // Should contain maintenance-related content
     await expect(assistantMsg).toContainText(/Wartung|Ölwechsel|Fällig|Status|erledigt/i, { timeout: 30_000 })
 

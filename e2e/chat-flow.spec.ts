@@ -33,31 +33,31 @@ test.describe('Chat Flow', () => {
     await expect(page.getByText('Fahrzeuge verwalten')).toBeVisible()
 
     // Step 3: Ask to create a vehicle
-    const input = page.locator('input[placeholder="Nachricht..."]')
+    const input = page.getByPlaceholder('Nachricht...')
     await input.fill('Trage bitte einen Audi A4 Baujahr 2019 mit 62000 km und Kennzeichen B-CD 5678 ein.')
-    await page.locator('.q-dialog button.bg-primary').last().click()
+    await page.locator('[data-pc-name="drawer"]').locator('button:has(.pi-send)').click()
 
     // Step 4: Wait for AI response (at least 3 messages: welcome + user + assistant)
-    await expect(page.locator('.q-message')).toHaveCount(3, { timeout: 60_000 })
+    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
 
     // Step 5: Wait for assistant response with substantial text
-    const lastMsg = page.locator('.q-message').last()
+    const lastMsg = page.locator('.chat-message').last()
     await expect(lastMsg).toContainText(/Audi/i, { timeout: 30_000 })
 
     // Check if model created directly or asked for confirmation
     const lastMsgText = await lastMsg.textContent() || ''
     if (!/angelegt|eingetragen|erstellt|hinzugefügt|gespeichert|erfasst|erledigt|Hier sind die Daten|Daten deines Fahrzeugs/i.test(lastMsgText)) {
       // Model asked for confirmation — send "Ja, bitte eintragen"
-      const chatInput = page.locator('.q-dialog input[placeholder="Nachricht..."]')
+      const chatInput = page.locator('[data-pc-name="drawer"]').getByPlaceholder('Nachricht...')
       await chatInput.fill('Ja, bitte eintragen')
       await chatInput.press('Enter')
-      await expect(page.locator('.q-message')).toHaveCount(5, { timeout: 60_000 })
-      const finalMsg = page.locator('.q-message').last()
+      await expect(page.locator('.chat-message')).toHaveCount(5, { timeout: 60_000 })
+      const finalMsg = page.locator('.chat-message').last()
       await expect(finalMsg).toContainText(/angelegt|eingetragen|erstellt|hinzugefügt|gespeichert|wurde|erledigt|Hier sind die Daten|Daten deines Fahrzeugs/i, { timeout: 30_000 })
     }
 
-    // Step 6: Close chat and verify vehicle in UI (reads from RxDB)
-    await page.locator('.q-toolbar').getByRole('button').last().click()
+    // Step 6: Close chat and verify vehicle in UI
+    await page.locator('[data-pc-name="drawer"]').locator('button:has(.pi-times)').click()
     await page.goto('/vehicles')
     await expect(page.getByText('Audi A4').first()).toBeVisible({ timeout: 15_000 })
     await expect(page.getByText('B-CD 5678').first()).toBeVisible()
@@ -69,14 +69,14 @@ test.describe('Chat Flow', () => {
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
     // Attach two images at once
-    const fileInput = page.locator('.q-dialog input[type="file"]')
+    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]')
     await fileInput.setInputFiles([
       path.join(fixturesDir, 'test-invoice.png'),
       path.join(fixturesDir, 'test-kaufvertrag.png'),
     ])
 
     // Both chips should appear
-    await expect(page.locator('.q-chip')).toHaveCount(2)
+    await expect(page.locator('[data-pc-name="chip"]')).toHaveCount(2)
     await expect(page.getByText('test-invoice.png')).toBeVisible()
     await expect(page.getByText('test-kaufvertrag.png')).toBeVisible()
   })
@@ -87,19 +87,19 @@ test.describe('Chat Flow', () => {
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
     // Attach two images
-    const fileInput = page.locator('.q-dialog input[type="file"]')
+    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]')
     await fileInput.setInputFiles([
       path.join(fixturesDir, 'test-invoice.png'),
       path.join(fixturesDir, 'test-kaufvertrag.png'),
     ])
-    await expect(page.locator('.q-chip')).toHaveCount(2)
+    await expect(page.locator('[data-pc-name="chip"]')).toHaveCount(2)
 
     // Remove the first chip — one should remain
-    const firstChipText = await page.locator('.q-chip').first().textContent()
-    await page.locator('.q-chip').first().getByRole('button').click()
-    await expect(page.locator('.q-chip')).toHaveCount(1)
+    const firstChipText = await page.locator('[data-pc-name="chip"]').first().textContent()
+    await page.locator('[data-pc-name="chip"]').first().locator('[data-pc-section="removeicon"]').click()
+    await expect(page.locator('[data-pc-name="chip"]')).toHaveCount(1)
     // The remaining chip should be the OTHER file
-    const remainingText = await page.locator('.q-chip').first().textContent()
+    const remainingText = await page.locator('[data-pc-name="chip"]').first().textContent()
     expect(remainingText).not.toBe(firstChipText)
   })
 
@@ -115,28 +115,28 @@ test.describe('Chat Flow', () => {
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
     // Attach two images
-    const fileInput = page.locator('.q-dialog input[type="file"]')
+    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]')
     await fileInput.setInputFiles([
       path.join(fixturesDir, 'test-invoice.png'),
       path.join(fixturesDir, 'test-kaufvertrag.png'),
     ])
-    await expect(page.locator('.q-chip')).toHaveCount(2)
+    await expect(page.locator('[data-pc-name="chip"]')).toHaveCount(2)
 
     // Type a message and send
-    const input = page.locator('input[placeholder="Nachricht..."]')
+    const input = page.getByPlaceholder('Nachricht...')
     await input.fill('Was siehst du auf diesen beiden Bildern?')
-    await page.locator('.q-dialog button.bg-primary').last().click()
+    await page.locator('[data-pc-name="drawer"]').locator('button:has(.pi-send)').click()
 
     // Pending chips should be gone after sending
-    await expect(page.locator('.q-chip')).toHaveCount(0)
+    await expect(page.locator('[data-pc-name="chip"]')).toHaveCount(0)
 
     // User message should show two thumbnail images (120px grid)
-    const userMsg = page.locator('.q-message', { hasText: 'Was siehst du' })
+    const userMsg = page.locator('.chat-message', { hasText: 'Was siehst du' })
     await expect(userMsg.locator('img')).toHaveCount(2)
 
     // Wait for AI response
-    await expect(page.locator('.q-message')).toHaveCount(3, { timeout: 60_000 })
-    const assistantMsg = page.locator('.q-message').last()
+    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
+    const assistantMsg = page.locator('.chat-message').last()
     await expect(assistantMsg).toContainText(/.+/, { timeout: 10_000 })
   })
 })

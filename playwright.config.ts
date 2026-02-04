@@ -6,7 +6,8 @@ config({ path: '.env' })
 
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: true,
+  fullyParallel: false, // Disabled to avoid test interference with shared InstantDB
+  workers: 1, // Run tests serially
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   webServer: {

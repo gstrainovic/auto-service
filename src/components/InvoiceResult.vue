@@ -1,59 +1,124 @@
 <script setup lang="ts">
 import type { ParsedInvoice } from '../services/ai'
+import Button from 'primevue/button'
+
+import Card from 'primevue/card'
 
 defineProps<{ result: ParsedInvoice }>()
 defineEmits<{ save: [], discard: [] }>()
 </script>
 
 <template>
-  <q-card class="q-mt-md">
-    <q-card-section>
-      <div class="text-h6">
-        Erkannte Daten
-      </div>
-    </q-card-section>
-    <q-card-section>
-      <q-field label="Werkstatt" stack-label borderless>
-        <template #control>
+  <Card class="mt-4">
+    <template #title>
+      Erkannte Daten
+    </template>
+    <template #content>
+      <div class="field-group">
+        <label class="field-label">Werkstatt</label>
+        <div class="field-value">
           {{ result.workshopName }}
-        </template>
-      </q-field>
-      <q-field label="Datum" stack-label borderless>
-        <template #control>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Datum</label>
+        <div class="field-value">
           {{ result.date }}
-        </template>
-      </q-field>
-      <q-field label="Gesamtbetrag" stack-label borderless>
-        <template #control>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Gesamtbetrag</label>
+        <div class="field-value">
           {{ result.totalAmount?.toFixed(2) }} €
-        </template>
-      </q-field>
-      <q-field v-if="result.mileageAtService" label="Kilometerstand" stack-label borderless>
-        <template #control>
+        </div>
+      </div>
+      <div v-if="result.mileageAtService" class="field-group">
+        <label class="field-label">Kilometerstand</label>
+        <div class="field-value">
           {{ result.mileageAtService?.toLocaleString('de-DE') }} km
-        </template>
-      </q-field>
+        </div>
+      </div>
 
-      <div class="text-subtitle1 q-mt-md">
+      <div class="text-lg font-semibold mt-4 mb-2">
         Positionen
       </div>
-      <q-list bordered separator>
-        <q-item v-for="(item, i) in result.items" :key="i">
-          <q-item-section>
-            <q-item-label>{{ item.description }}</q-item-label>
-            <q-item-label caption>
+      <ul class="item-list">
+        <li v-for="(item, i) in result.items" :key="i" class="item-row">
+          <div class="item-content">
+            <div class="item-description">
+              {{ item.description }}
+            </div>
+            <div class="item-category">
               {{ item.category }}
-            </q-item-label>
-          </q-item-section>
-          <q-item-section side>
+            </div>
+          </div>
+          <div class="item-amount">
             {{ item.amount.toFixed(2) }} €
-          </q-item-section>
-        </q-item>
-      </q-list>
-    </q-card-section>
-    <q-card-actions>
-      <q-btn color="primary" label="Speichern" @click="$emit('save')" />
-      <q-btn flat label="Verwerfen" @click="$emit('discard')" />
-    </q-card-actions>
-  </q-card>
+          </div>
+        </li>
+      </ul>
+    </template>
+    <template #footer>
+      <div class="flex gap-2">
+        <Button label="Speichern" @click="$emit('save')" />
+        <Button label="Verwerfen" text @click="$emit('discard')" />
+      </div>
+    </template>
+  </Card>
 </template>
+
+<style scoped>
+.field-group {
+  margin-bottom: 0.75rem;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color);
+  margin-bottom: 0.25rem;
+}
+
+.field-value {
+  font-size: 1rem;
+}
+
+.item-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: var(--p-border-radius);
+}
+
+.item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--p-content-border-color);
+}
+
+.item-row:last-child {
+  border-bottom: none;
+}
+
+.item-content {
+  flex: 1;
+}
+
+.item-description {
+  font-weight: 500;
+}
+
+.item-category {
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+}
+
+.item-amount {
+  font-weight: 500;
+  white-space: nowrap;
+  margin-left: 1rem;
+}
+</style>

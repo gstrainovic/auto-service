@@ -1,25 +1,39 @@
 import { expect, test } from '@playwright/test'
+import { clearInstantDB } from './fixtures/db-cleanup'
 
 // Helper: create a vehicle via UI and navigate to its detail page
 async function createVehicleAndOpen(page: any, data: { make: string, model: string, year: string, mileage: string }) {
   await page.goto('/vehicles')
   await page.getByRole('button', { name: 'Hinzufügen' }).click()
-  await page.getByLabel('Marke').fill(data.make)
-  await page.getByLabel('Modell').fill(data.model)
-  await page.getByLabel('Baujahr').fill(data.year)
-  await page.getByLabel('Kilometerstand').fill(data.mileage)
+  await page.getByLabel(/Marke/).fill(data.make)
+  await page.getByLabel(/Modell/).fill(data.model)
+
+  const yearInput = page.getByLabel(/Baujahr/)
+  await yearInput.click()
+  await yearInput.press('Control+a')
+  await yearInput.pressSequentially(data.year)
+
+  const mileageInput = page.getByLabel(/Kilometerstand/)
+  await mileageInput.click()
+  await mileageInput.press('Control+a')
+  await mileageInput.pressSequentially(data.mileage)
+
   await page.getByRole('button', { name: 'Speichern' }).click()
   await expect(page.getByText(`${data.make} ${data.model}`)).toBeVisible()
 
-  await page.locator('.q-card', { hasText: `${data.make} ${data.model}` }).click()
+  await page.locator('.vehicle-card', { hasText: `${data.make} ${data.model}` }).click()
   await expect(page).toHaveURL(/\/vehicles\/.+/, { timeout: 5_000 })
 }
 
 async function waitForDb(page: any) {
-  await page.waitForFunction(() => !!(window as any).__rxdb, { timeout: 10_000 })
+  await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 10_000 })
 }
 
 test.describe('Schedule Hint', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
+
   test('SH-001: shows warning banner when no customSchedule exists', async ({ page }) => {
     await createVehicleAndOpen(page, {
       make: 'Fiat',
@@ -47,18 +61,18 @@ test.describe('Schedule Hint', () => {
       mileage: '35000',
     })
 
-    // Set customSchedule directly via RxDB
+    // Set customSchedule directly via InstantDB
     const vehicleId = page.url().match(/\/vehicles\/(.+)/)?.[1] || ''
     await waitForDb(page)
     await page.evaluate(async (vId: string) => {
-      const db = (window as any).__rxdb
-      const doc = await db.vehicles.findOne({ selector: { id: vId } }).exec()
-      await doc.patch({
-        customSchedule: [
-          { type: 'oelwechsel', label: 'Ölwechsel', intervalKm: 10000, intervalMonths: 12 },
-        ],
-        updatedAt: new Date().toISOString(),
-      })
+      const { db, tx } = (window as any).__instantdb
+      await db.transact([
+        tx.vehicles[vId].update({
+          customSchedule: [
+            { type: 'oelwechsel', label: 'Ölwechsel', intervalKm: 10000, intervalMonths: 12 },
+          ],
+        }),
+      ])
     }, vehicleId)
 
     // Reload to pick up the change

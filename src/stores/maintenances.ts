@@ -1,17 +1,17 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
-import { useDatabase } from '../composables/useDatabase'
+import { ref, shallowRef } from 'vue'
+import { db, id, tx } from '../lib/instantdb'
 
 export interface Maintenance {
   id: string
   vehicleId: string
-  invoiceId: string
+  invoiceId?: string
   type: string
-  description: string
+  description?: string
   doneAt: string
   mileageAtService: number
-  nextDueDate: string
-  nextDueMileage: number
+  nextDueDate?: string
+  nextDueMileage?: number
   status: 'done' | 'due' | 'overdue'
   createdAt: string
   updatedAt: string
@@ -19,54 +19,90 @@ export interface Maintenance {
 
 export const useMaintenancesStore = defineStore('maintenances', () => {
   const maintenances = ref<Maintenance[]>([])
-  const { dbPromise } = useDatabase()
+  const isLoading = ref(true)
+  const error = shallowRef<Error | null>(null)
+  let unsubscribe: (() => void) | null = null
 
-  const overdue = computed(() =>
-    maintenances.value.filter(m => m.status === 'overdue'),
-  )
+  function load(): void {
+    if (unsubscribe)
+      return
 
-  const due = computed(() =>
-    maintenances.value.filter(m => m.status === 'due'),
-  )
-
-  async function loadForVehicle(vehicleId: string) {
-    const db = await dbPromise
-    ;(db as any).maintenances.find({ selector: { vehicleId } }).$.subscribe((docs: any[]) => {
-      maintenances.value = docs.map(d => d.toJSON())
-    })
+    isLoading.value = true
+    unsubscribe = db.subscribeQuery(
+      { maintenances: {} },
+      (result) => {
+        if (result.error) {
+          error.value = new Error(result.error.message)
+          isLoading.value = false
+          return
+        }
+        if (result.data) {
+          maintenances.value = (result.data.maintenances || []) as Maintenance[]
+          isLoading.value = false
+        }
+      },
+    )
   }
 
-  async function add(maintenance: Omit<Maintenance, 'id' | 'createdAt' | 'updatedAt'>) {
-    const db = await dbPromise
+  function getByVehicleId(vehicleId: string): Maintenance[] {
+    return maintenances.value.filter(m => m.vehicleId === vehicleId)
+  }
+
+  // Compat-Methode: lädt einfach alle und filtert dann (InstantDB ist reaktiv)
+  async function loadForVehicle(_vehicleId: string) {
+    load()
+  }
+
+  async function add(maintenance: Omit<Maintenance, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     const now = new Date().toISOString()
-    await (db as any).maintenances.insert({
-      ...maintenance,
-      id: crypto.randomUUID(),
-      createdAt: now,
-      updatedAt: now,
-    })
+    const newId = id()
+    await db.transact([
+      (tx.maintenances as any)[newId].update({
+        ...maintenance,
+        createdAt: now,
+        updatedAt: now,
+      }),
+    ])
+    return newId
   }
 
-  async function updateStatus(id: string, status: Maintenance['status']) {
-    const db = await dbPromise
-    const doc = await (db as any).maintenances.findOne({ selector: { id } }).exec()
-    if (doc)
-      await doc.patch({ status, updatedAt: new Date().toISOString() })
+  async function remove(maintenanceId: string): Promise<void> {
+    await db.transact([
+      (tx.maintenances as any)[maintenanceId].delete(),
+    ])
   }
 
-  async function update(id: string, data: Partial<Omit<Maintenance, 'id' | 'createdAt' | 'updatedAt'>>) {
-    const db = await dbPromise
-    const doc = await (db as any).maintenances.findOne({ selector: { id } }).exec()
-    if (doc)
-      await doc.patch({ ...data, updatedAt: new Date().toISOString() })
+  async function removeByVehicleAndType(vehicleId: string, type: string): Promise<void> {
+    const toRemove = maintenances.value.filter(
+      m => m.vehicleId === vehicleId && m.type === type,
+    )
+    if (toRemove.length === 0)
+      return
+
+    await db.transact(
+      toRemove.map(m => (tx.maintenances as any)[m.id].delete()),
+    )
   }
 
-  async function remove(id: string) {
-    const db = await dbPromise
-    const doc = await (db as any).maintenances.findOne({ selector: { id } }).exec()
-    if (doc)
-      await doc.remove()
+  async function update(maintenanceId: string, data: Partial<Omit<Maintenance, 'id' | 'createdAt' | 'updatedAt'>>): Promise<void> {
+    await db.transact([
+      (tx.maintenances as any)[maintenanceId].update({
+        ...data,
+        updatedAt: new Date().toISOString(),
+      }),
+    ])
   }
 
-  return { maintenances, overdue, due, loadForVehicle, add, update, updateStatus, remove }
+  return {
+    maintenances,
+    isLoading,
+    error,
+    load,
+    loadForVehicle,
+    getByVehicleId,
+    add,
+    remove,
+    removeByVehicleAndType,
+    update,
+  }
 })

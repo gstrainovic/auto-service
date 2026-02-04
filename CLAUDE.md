@@ -10,17 +10,47 @@ npm run test:e2e:ui  # Playwright UI mode
 npx tsx scripts/compare-ai.ts  # Compare AI providers on test invoice
 
 ## Architecture
-Vue 3 + Quasar + Pinia + RxDB (offline-first) + Vercel AI SDK v6 + PWA
+Vue 3 + Quasar + Pinia + **InstantDB** (self-hosted) + Vercel AI SDK v6 + PWA
 
 src/
   pages/          # DashboardPage, VehiclesPage, VehicleDetailPage, ScanPage, SettingsPage
   components/     # ChatDrawer, InvoiceResult, InvoiceScanner, VehicleCard, VehicleForm
   services/       # ai.ts (multi-provider), chat.ts (tool-calling), maintenance-schedule.ts
   stores/         # Pinia: vehicles, invoices, maintenances, settings
-  db/             # RxDB schema + database init
-  composables/    # useDatabase(), useImageResize (client-side 1540px resize)
+  lib/            # instantdb.ts (DB-Client)
+  composables/    # useImageResize (client-side 1540px resize)
 e2e/              # Playwright tests + fixtures/
 scripts/          # compare-ai.ts
+
+## InstantDB (Self-Hosted)
+Backend-Datenbank mit Echtzeit-Sync via WebSocket. Ersetzt RxDB.
+
+### Server starten
+```bash
+cd ~/instant/server && podman-compose -f docker-compose-dev.yml up -d
+```
+
+### Server stoppen
+```bash
+cd ~/instant/server && podman-compose -f docker-compose-dev.yml down
+```
+
+### PostgreSQL-Zugriff (Debug)
+```bash
+podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;"
+```
+
+### Konfiguration
+- App-ID: `cd7e6912-773b-4ee1-be18-4d95c3b20e9f`
+- HTTP API: Via Vite-Proxy `/instant-api → localhost:8888`
+- WebSocket: `ws://localhost:8888/runtime/session`
+- DevTools deaktiviert (Toggle-Button blockierte UI-Klicks)
+
+### InstantDB vs RxDB Unterschiede
+- **Entity-IDs müssen UUIDs sein** — keine beliebigen Strings (z.B. SHA-256 Hashes)
+- **Schemaless** — keine Schema-Definition nötig, Felder werden dynamisch erstellt
+- **Echtzeit-Sync** — Änderungen werden sofort an alle Clients gepusht
+- **Kein Offline-First** — braucht aktive Server-Verbindung
 
 ## AI Providers
 Vier cloud Providers via Vercel AI SDK v6:
@@ -83,15 +113,15 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 
 ## Key Patterns
 - AI SDK v6: `inputSchema` (not `parameters`), `stopWhen: stepCountIs(n)` (not maxSteps)
-- Chat tools write directly to RxDB — no REST API layer
+- Chat tools write directly to InstantDB — no REST API layer
 - Chat stepCount=5 (Phase 2), dynamisch höher für PDF mit vielen Seiten
-- Chat-Verlauf wird in RxDB `chatmessages` Collection persistiert
+- Chat-Verlauf wird in InstantDB `chatmessages` Entity persistiert
 - >8 Bilder: OCR-Text wird verwendet, Bilder nicht an Vision-Modell gesendet
 - Regelbasierte Kategorie-Korrektur: Keywords überschreiben AI-Zuordnung (z.B. "Auspuff" → auspuff)
 - PDF-Upload: max 50 MB, OCR pro Seite, Duplikat-Erkennung bei identischen Seiten
 - `scan_document` Tool wird ausgeblendet wenn Bilder im Message sind (Modell sieht Bilder direkt)
 - z.enum(MAINTENANCE_CATEGORIES) enforces valid categories in AI schemas
-- RxDB: optional fields can be added without schema version bump
+- InstantDB: Entity-IDs müssen UUIDs sein (nutze `id()` Funktion)
 
 ## E2E Testing
 
@@ -127,6 +157,13 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - antfu ESLint (no semicolons, single quotes, if-newline rule)
 - All source TypeScript; eslint.config.js stays .js (ESLint compat)
 
+## InstantDB Gotchas
+- Entity-IDs müssen UUIDs sein — `id()` verwenden, Hashes als separates Feld speichern
+- `devtool: false` setzen — DevTools-Toggle blockiert UI-Klicks in Tests
+- DB-Cleanup in Tests via Client-API (`db.transact`) — direktes SQL umgeht WebSocket-Sync
+- OCR-Cache: `tx.ocrcache[id()].update({ hash, markdown, ... })` statt `tx.ocrcache[hash].update(...)`
+
 ## Gotchas
 - Lint errors in docs/plans/*.md are false positives (code blocks parsed as JS)
 - Mistral ist der primäre E2E-Test-Provider — andere Provider können abweichendes Tool-Calling-Verhalten zeigen
+- Fedora: `podman-compose` statt `docker-compose` verwenden

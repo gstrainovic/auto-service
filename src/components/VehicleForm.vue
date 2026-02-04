@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import Button from 'primevue/button'
+import FloatLabel from 'primevue/floatlabel'
+import InputNumber from 'primevue/inputnumber'
+import InputText from 'primevue/inputtext'
 import { reactive, watchEffect } from 'vue'
 
 const props = defineProps<{
@@ -8,7 +12,7 @@ const props = defineProps<{
     year: number
     mileage: number
     licensePlate: string
-    vin: string
+    vin?: string
   }
 }>()
 
@@ -30,23 +34,91 @@ watchEffect(() => {
     form.year = props.initialData.year
     form.mileage = props.initialData.mileage
     form.licensePlate = props.initialData.licensePlate
-    form.vin = props.initialData.vin
+    form.vin = props.initialData.vin || ''
   }
 })
 
-function onSubmit() {
+function onSubmit(event: Event): void {
+  event.preventDefault()
   emit('save', { ...form })
 }
 </script>
 
 <template>
-  <q-form class="q-gutter-md" @submit="onSubmit">
-    <q-input v-model="form.make" label="Marke *" outlined required />
-    <q-input v-model="form.model" label="Modell *" outlined required />
-    <q-input v-model.number="form.year" label="Baujahr *" type="number" outlined required />
-    <q-input v-model.number="form.mileage" label="Kilometerstand *" type="number" outlined required />
-    <q-input v-model="form.licensePlate" label="Kennzeichen" outlined />
-    <q-input v-model="form.vin" label="FIN (Fahrzeug-Identnummer)" outlined />
-    <q-btn type="submit" label="Speichern" color="primary" />
-  </q-form>
+  <form class="vehicle-form" @submit="onSubmit">
+    <FloatLabel>
+      <InputText
+        id="make"
+        v-model="form.make"
+        required
+        class="w-full"
+      />
+      <label for="make">Marke</label>
+    </FloatLabel>
+
+    <FloatLabel>
+      <InputText
+        id="model"
+        v-model="form.model"
+        required
+        class="w-full"
+      />
+      <label for="model">Modell</label>
+    </FloatLabel>
+
+    <FloatLabel>
+      <InputNumber
+        v-model="form.year"
+        input-id="year"
+        :use-grouping="false"
+        required
+        class="w-full"
+      />
+      <label for="year">Baujahr</label>
+    </FloatLabel>
+
+    <FloatLabel>
+      <InputNumber
+        v-model="form.mileage"
+        input-id="mileage"
+        :min="0"
+        suffix=" km"
+        required
+        class="w-full"
+      />
+      <label for="mileage">Kilometerstand</label>
+    </FloatLabel>
+
+    <FloatLabel>
+      <InputText
+        id="licensePlate"
+        v-model="form.licensePlate"
+        class="w-full"
+      />
+      <label for="licensePlate">Kennzeichen</label>
+    </FloatLabel>
+
+    <FloatLabel>
+      <InputText
+        id="vin"
+        v-model="form.vin"
+        class="w-full"
+      />
+      <label for="vin">FIN (Fahrzeug-Identnummer)</label>
+    </FloatLabel>
+
+    <Button type="submit" label="Speichern" />
+  </form>
 </template>
+
+<style scoped>
+.vehicle-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.w-full {
+  width: 100%;
+}
+</style>

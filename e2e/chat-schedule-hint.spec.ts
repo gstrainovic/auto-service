@@ -1,5 +1,6 @@
 import process from 'node:process'
 import { expect, test } from '@playwright/test'
+import { clearInstantDB } from './fixtures/db-cleanup'
 
 const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
@@ -7,6 +8,10 @@ const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
 test.describe('Chat Schedule Hint', () => {
   test.setTimeout(120_000)
   test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
+
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
 
   test('CS-001: AI mentions service book hint when asking about maintenance status', async ({ page }) => {
     // Configure AI provider
@@ -31,15 +36,15 @@ test.describe('Chat Schedule Hint', () => {
     await page.locator('.chat-fab').click()
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
-    const input = page.locator('input[placeholder="Nachricht..."]')
+    const input = page.locator('.chat-drawer input[placeholder="Nachricht..."]')
     await input.fill('Was ist beim Yaris an Wartung fällig?')
-    await page.locator('.q-dialog button.bg-primary').last().click()
+    await page.locator('.chat-drawer button').filter({ has: page.locator('.pi-send') }).click()
 
     // Wait for AI response (welcome + user + assistant = 3 messages minimum)
-    await expect(page.locator('.q-message')).toHaveCount(3, { timeout: 60_000 })
+    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
 
     // AI should mention service book / allgemein / Service-Heft in its response
-    const assistantMsg = page.locator('.q-message').last()
+    const assistantMsg = page.locator('.chat-message').last()
     await expect(assistantMsg).toContainText(/Service-Heft|allgemein/i, { timeout: 30_000 })
   })
 
@@ -62,21 +67,23 @@ test.describe('Chat Schedule Hint', () => {
     await page.getByRole('button', { name: 'Speichern' }).click()
     await expect(page.getByText('Mazda 3').first()).toBeVisible({ timeout: 10_000 })
 
-    // Set customSchedule directly via RxDB
-    await page.waitForFunction(() => !!(window as any).__rxdb, { timeout: 10_000 })
+    // Set customSchedule directly via InstantDB
+    await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 10_000 })
     await page.evaluate(async () => {
-      const db = (window as any).__rxdb
-      const docs = await db.vehicles.find().exec()
-      const mazda = docs.find((d: any) => d.make === 'Mazda')
+      const { db, tx } = (window as any).__instantdb
+      const result = await db.queryOnce({ vehicles: {} })
+      const vehicles = result.data.vehicles || []
+      const mazda = vehicles.find((v: any) => v.make === 'Mazda')
       if (mazda) {
-        await mazda.patch({
-          customSchedule: [
-            { type: 'oelwechsel', label: 'Ölwechsel', intervalKm: 10000, intervalMonths: 12 },
-            { type: 'inspektion', label: 'Inspektion', intervalKm: 20000, intervalMonths: 24 },
-            { type: 'bremsen', label: 'Bremsen prüfen', intervalKm: 30000, intervalMonths: 24 },
-          ],
-          updatedAt: new Date().toISOString(),
-        })
+        await db.transact([
+          tx.vehicles[mazda.id].update({
+            customSchedule: [
+              { type: 'oelwechsel', label: 'Ölwechsel', intervalKm: 10000, intervalMonths: 12 },
+              { type: 'inspektion', label: 'Inspektion', intervalKm: 20000, intervalMonths: 24 },
+              { type: 'bremsen', label: 'Bremsen prüfen', intervalKm: 30000, intervalMonths: 24 },
+            ],
+          }),
+        ])
       }
     })
 
@@ -84,15 +91,15 @@ test.describe('Chat Schedule Hint', () => {
     await page.locator('.chat-fab').click()
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
-    const input = page.locator('input[placeholder="Nachricht..."]')
+    const input = page.locator('.chat-drawer input[placeholder="Nachricht..."]')
     await input.fill('Was ist beim Mazda an Wartung fällig?')
-    await page.locator('.q-dialog button.bg-primary').last().click()
+    await page.locator('.chat-drawer button').filter({ has: page.locator('.pi-send') }).click()
 
     // Wait for AI response
-    await expect(page.locator('.q-message')).toHaveCount(3, { timeout: 60_000 })
+    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
 
     // AI should show maintenance status but NOT mention service book hint
-    const assistantMsg = page.locator('.q-message').last()
+    const assistantMsg = page.locator('.chat-message').last()
     // Should contain maintenance-related content
     await expect(assistantMsg).toContainText(/Wartung|Ölwechsel|Fällig|Status|erledigt/i, { timeout: 30_000 })
 

@@ -1,12 +1,10 @@
-import { quasar, transformAssetUrls } from '@quasar/vite-plugin'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   plugins: [
-    vue({ template: { transformAssetUrls } }),
-    quasar({ autoImportComponentCase: 'kebab' }),
+    vue(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt'],
@@ -27,4 +25,15 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    proxy: {
+      // Proxy für InstantDB Self-Hosted Server (HTTP + WebSocket)
+      '/instant-api': {
+        target: 'http://localhost:8888',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/instant-api/, ''),
+        ws: true,
+      },
+    },
+  },
 })

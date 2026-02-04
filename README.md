@@ -9,7 +9,7 @@ Offline-fähige PWA zur Verwaltung von Fahrzeugen, Wartungen und Werkstattrechnu
 - **Wartungs-Dashboard** — Übersicht über fällige, überfällige und erledigte Wartungen pro Fahrzeug
 - **KI-Chat-Assistent** — Floating Chat mit Tool-Calling: Fahrzeuge verwalten, Dokumente scannen, Wartungsstatus abfragen
 - **Multi-Provider AI** — OpenRouter (Gemini), Anthropic Claude, OpenAI, Mistral (Pixtral), Meta Llama
-- **Offline-First** — RxDB als lokale Datenbank, funktioniert ohne Server
+- **Echtzeit-Sync** — InstantDB als Backend mit WebSocket-Sync
 - **PWA** — Installierbar auf Smartphone und Desktop
 
 ## Tech Stack
@@ -17,7 +17,7 @@ Offline-fähige PWA zur Verwaltung von Fahrzeugen, Wartungen und Werkstattrechnu
 | Bereich | Technologie |
 |---------|-------------|
 | Frontend | Vue 3, Quasar, Pinia, Vue Router |
-| Datenbank | RxDB (offline-first, IndexedDB) |
+| Datenbank | InstantDB (self-hosted, PostgreSQL + WebSocket) |
 | AI | Vercel AI SDK v6, Zod |
 | Build | Vite, TypeScript, PWA (Workbox) |
 | Tests | Playwright (E2E) |
@@ -25,12 +25,30 @@ Offline-fähige PWA zur Verwaltung von Fahrzeugen, Wartungen und Werkstattrechnu
 
 ## Schnellstart
 
+### 1. InstantDB Server starten
+
+```bash
+# Erster Start: Klone das InstantDB-Repo
+git clone https://github.com/instantdb/instant ~/instant
+
+# Server starten (braucht Docker/Podman)
+cd ~/instant/server && podman-compose -f docker-compose-dev.yml up -d
+```
+
+### 2. App starten
+
 ```bash
 npm install
 npm run dev
 ```
 
 Die App läuft auf `http://localhost:5173`.
+
+### InstantDB Server stoppen
+
+```bash
+cd ~/instant/server && podman-compose -f docker-compose-dev.yml down
+```
 
 ### AI konfigurieren
 
@@ -57,8 +75,8 @@ src/
   components/     ChatDrawer, InvoiceResult, InvoiceScanner, VehicleCard, VehicleForm
   services/       AI (Multi-Provider), Chat (Tool-Calling), Wartungsplan
   stores/         Pinia Stores (Fahrzeuge, Rechnungen, Wartungen, Einstellungen)
-  db/             RxDB Schema + Initialisierung
-  composables/    useDatabase()
+  lib/            InstantDB Client
+  composables/    useImageResize (Client-seitige Bildoptimierung)
 e2e/              Playwright Tests + Test-Fixtures
 scripts/          AI-Provider-Vergleichsskript
 ```

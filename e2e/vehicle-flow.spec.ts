@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test'
+import { clearInstantDB } from './fixtures/db-cleanup'
 
 test.describe('Vehicle Flow', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
+
   test('VF-001: add a vehicle and see it in the list', async ({ page }) => {
     await page.goto('/vehicles')
     await expect(page.getByText('Noch keine Fahrzeuge')).toBeVisible()
@@ -45,8 +50,9 @@ test.describe('Vehicle Flow', () => {
 
     await expect(page.getByText('Audi A4')).toBeVisible()
 
-    // Delete button has icon="delete" but no label text
-    await page.locator('button[aria-label="delete"], .q-btn .q-icon').filter({ hasText: 'delete' }).first().click()
+    // Delete button: PrimeVue icon-only button within the Audi A4 vehicle card
+    const audiCard = page.locator('[data-pc-name="card"]', { hasText: 'Audi A4' })
+    await audiCard.getByRole('button', { name: 'Löschen' }).click()
 
     await expect(page.getByText('Audi A4')).not.toBeVisible()
   })

@@ -1,6 +1,7 @@
 import path from 'node:path'
 import process from 'node:process'
 import { expect, test } from '@playwright/test'
+import { clearInstantDB } from './fixtures/db-cleanup'
 
 const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
@@ -8,6 +9,10 @@ const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
 test.describe('Invoice Scan Flow', () => {
   test.setTimeout(120_000)
   test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
+
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
 
   test('IS-001: scan a workshop invoice with AI and save results', async ({ page }) => {
     // Step 1: Configure AI provider
@@ -47,11 +52,11 @@ test.describe('Invoice Scan Flow', () => {
     await expect(page.getByText('Erkannte Daten')).toBeVisible({ timeout: 60_000 })
 
     // Step 6: Verify parsed data
-    const resultCard = page.locator('.q-card', { hasText: 'Erkannte Daten' })
+    const resultCard = page.locator('[data-pc-name="card"]', { hasText: 'Erkannte Daten' })
     await expect(resultCard.getByText(/München/)).toBeVisible()
     await expect(resultCard.getByText('Positionen')).toBeVisible()
 
-    const items = resultCard.locator('.q-item')
+    const items = resultCard.locator('.item-row')
     await expect(items.first()).toBeVisible()
     expect(await items.count()).toBeGreaterThanOrEqual(1)
 
@@ -62,8 +67,8 @@ test.describe('Invoice Scan Flow', () => {
     // Step 8: Verify invoice saved to vehicle
     await page.goto('/vehicles')
     await page.getByText('BMW 320d').click()
-    await page.getByText('Rechnungen').click()
-    await expect(page.locator('.q-tab-panel').getByText(/München/)).toBeVisible({ timeout: 10_000 })
+    await page.getByRole('tab', { name: 'Rechnungen' }).click()
+    await expect(page.locator('[data-pc-name="tabpanel"]').getByText(/München/)).toBeVisible({ timeout: 10_000 })
 
     // Step 9: Verify dashboard shows maintenance status
     await page.goto('/')

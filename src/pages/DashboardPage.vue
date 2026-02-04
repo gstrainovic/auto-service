@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import type { DueResult } from '../services/maintenance-schedule'
+import Badge from 'primevue/badge'
+import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
+import Message from 'primevue/message'
 import { onMounted, ref, watch } from 'vue'
-import { useDatabase } from '../composables/useDatabase'
+import { useRouter } from 'vue-router'
+import { db, tx } from '../lib/instantdb'
 import { checkDueMaintenances, getMaintenanceSchedule } from '../services/maintenance-schedule'
 import { useVehiclesStore } from '../stores/vehicles'
 
+const router = useRouter()
 const vehiclesStore = useVehiclesStore()
 const dueMap = ref<Record<string, DueResult[]>>({})
-const { dbPromise } = useDatabase()
 const confirmDelete = ref<{ vehicleId: string, type: string, label: string } | null>(null)
 
 onMounted(async () => {
@@ -18,14 +23,16 @@ onMounted(async () => {
 watch(() => vehiclesStore.vehicles, computeDue, { deep: true })
 
 async function computeDue() {
-  const db = await dbPromise
+  const result = await db.queryOnce({ maintenances: {} })
+  const allMaintenances = result.data.maintenances || []
+
   for (const vehicle of vehiclesStore.vehicles) {
     const schedule = getMaintenanceSchedule(vehicle.customSchedule as any)
-    const mDocs = await (db as any).maintenances.find({ selector: { vehicleId: vehicle.id } }).exec()
-    const lastMaintenances = mDocs.map((d: any) => ({
-      type: d.type,
-      mileageAtService: d.mileageAtService,
-      doneAt: d.doneAt,
+    const vehicleMaintenances = allMaintenances.filter((m: any) => m.vehicleId === vehicle.id)
+    const lastMaintenances = vehicleMaintenances.map((m: any) => ({
+      type: m.type,
+      mileageAtService: m.mileageAtService,
+      doneAt: m.doneAt,
     }))
 
     dueMap.value[vehicle.id] = checkDueMaintenances({
@@ -37,99 +44,236 @@ async function computeDue() {
 }
 
 async function deleteMaintenance(vehicleId: string, type: string) {
-  const db = await dbPromise
-  const docs = await (db as any).maintenances.find({
-    selector: { vehicleId, type },
-  }).exec()
-  for (const doc of docs)
-    await doc.remove()
+  const result = await db.queryOnce({ maintenances: {} })
+  const maintenances = (result.data.maintenances || [])
+    .filter((m: any) => m.vehicleId === vehicleId && m.type === type)
+  if (maintenances.length) {
+    await db.transact(maintenances.map((m: any) => tx.maintenances[m.id].delete()))
+  }
   confirmDelete.value = null
   await computeDue()
+}
+
+function getStatusIcon(status: string): string {
+  if (status === 'overdue')
+    return 'pi pi-exclamation-triangle'
+  if (status === 'due')
+    return 'pi pi-clock'
+  return 'pi pi-check-circle'
+}
+
+function getStatusColor(status: string): string {
+  if (status === 'overdue')
+    return 'var(--p-red-500)'
+  if (status === 'due')
+    return 'var(--p-yellow-500)'
+  return 'var(--p-green-500)'
+}
+
+function getStatusSeverity(status: string): 'danger' | 'warn' | 'success' {
+  if (status === 'overdue')
+    return 'danger'
+  if (status === 'due')
+    return 'warn'
+  return 'success'
+}
+
+function getStatusLabel(status: string): string {
+  if (status === 'overdue')
+    return 'Überfällig'
+  if (status === 'due')
+    return 'Fällig'
+  return 'OK'
 }
 </script>
 
 <template>
-  <q-page padding>
-    <h5>Dashboard</h5>
+  <main class="page-container">
+    <h2 class="page-title">
+      Dashboard
+    </h2>
 
-    <div v-if="vehiclesStore.vehicles.length === 0" class="text-center q-pa-xl text-grey">
-      <q-icon name="directions_car" size="64px" />
-      <div class="q-mt-md">
+    <div v-if="vehiclesStore.vehicles.length === 0" class="empty-state">
+      <i class="pi pi-car empty-icon" />
+      <div class="empty-text">
         Füge dein erstes Fahrzeug hinzu um loszulegen.
       </div>
-      <q-btn color="primary" to="/vehicles" label="Fahrzeuge" class="q-mt-md" />
+      <Button
+        label="Fahrzeuge"
+        @click="router.push('/vehicles')"
+      />
     </div>
 
-    <div v-for="vehicle in vehiclesStore.vehicles" :key="vehicle.id" class="q-mb-lg">
-      <div class="text-h6">
+    <div v-for="vehicle in vehiclesStore.vehicles" :key="vehicle.id" class="vehicle-section">
+      <h3 class="vehicle-title">
         {{ vehicle.make }} {{ vehicle.model }}
-      </div>
-      <div class="text-subtitle2 q-mb-sm">
+      </h3>
+      <div class="vehicle-subtitle">
         {{ vehicle.mileage.toLocaleString('de-DE') }} km · {{ vehicle.licensePlate }}
       </div>
 
-      <q-banner v-if="!vehicle.customSchedule?.length" class="bg-warning text-white q-mb-sm schedule-hint" rounded dense>
-        <template #avatar>
-          <q-icon name="info" size="xs" />
+      <Message
+        v-if="!vehicle.customSchedule?.length"
+        severity="warn"
+        :closable="false"
+        class="schedule-hint"
+      >
+        <template #icon>
+          <i class="pi pi-info-circle" />
         </template>
         Allgemeine Wartungsintervalle — Service-Heft im Chat hochladen für genaue Intervalle.
-      </q-banner>
+      </Message>
 
-      <q-list v-if="dueMap[vehicle.id]?.length" bordered separator>
-        <q-item v-for="item in dueMap[vehicle.id]" :key="item.type">
-          <q-item-section avatar>
-            <q-icon
-              :name="item.status === 'overdue' ? 'warning' : item.status === 'due' ? 'schedule' : 'check_circle'"
-              :color="item.status === 'overdue' ? 'negative' : item.status === 'due' ? 'warning' : 'positive'"
-            />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>{{ item.label }}</q-item-label>
-            <q-item-label v-if="item.lastDoneAt" caption>
-              Zuletzt: {{ item.lastDoneAt }} bei {{ item.lastMileage?.toLocaleString('de-DE') }} km
-            </q-item-label>
-          </q-item-section>
-          <q-item-section side>
-            <div class="row items-center q-gutter-xs">
-              <q-badge :color="item.status === 'overdue' ? 'negative' : item.status === 'due' ? 'warning' : 'positive'">
-                {{ item.status === 'overdue' ? 'Überfällig' : item.status === 'due' ? 'Fällig' : 'OK' }}
-              </q-badge>
-              <q-btn
-                v-if="item.lastDoneAt"
-                flat
-                round
-                dense
-                size="sm"
-                icon="delete"
-                color="grey"
-                @click="confirmDelete = { vehicleId: vehicle.id, type: item.type, label: item.label }"
-              />
+      <div v-if="dueMap[vehicle.id]?.length" class="maintenance-list">
+        <div v-for="item in dueMap[vehicle.id]" :key="item.type" class="maintenance-item">
+          <div class="maintenance-icon">
+            <i :class="getStatusIcon(item.status)" :style="{ color: getStatusColor(item.status) }" />
+          </div>
+          <div class="maintenance-content">
+            <div class="maintenance-label">
+              {{ item.label }}
             </div>
-          </q-item-section>
-        </q-item>
-      </q-list>
+            <div v-if="item.lastDoneAt" class="maintenance-caption">
+              Zuletzt: {{ item.lastDoneAt }} bei {{ item.lastMileage?.toLocaleString('de-DE') }} km
+            </div>
+          </div>
+          <div class="maintenance-actions">
+            <Badge
+              :value="getStatusLabel(item.status)"
+              :severity="getStatusSeverity(item.status)"
+            />
+            <Button
+              v-if="item.lastDoneAt"
+              icon="pi pi-trash"
+              text
+              rounded
+              size="small"
+              severity="secondary"
+              @click="confirmDelete = { vehicleId: vehicle.id, type: item.type, label: item.label }"
+            />
+          </div>
+        </div>
+      </div>
     </div>
 
-    <q-dialog :model-value="!!confirmDelete" @update:model-value="confirmDelete = null">
-      <q-card>
-        <q-card-section>
-          <div class="text-h6">
-            Wartungseintrag löschen?
-          </div>
-        </q-card-section>
-        <q-card-section>
-          Alle Einträge für <strong>{{ confirmDelete?.label }}</strong> werden gelöscht.
-          Diese Aktion kann nicht rückgängig gemacht werden.
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Abbrechen" @click="confirmDelete = null" />
-          <q-btn
-            color="negative"
-            label="Löschen"
-            @click="confirmDelete && deleteMaintenance(confirmDelete.vehicleId, confirmDelete.type)"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-  </q-page>
+    <Dialog
+      :visible="!!confirmDelete"
+      header="Wartungseintrag löschen?"
+      modal
+      @update:visible="confirmDelete = null"
+    >
+      <p>
+        Alle Einträge für <strong>{{ confirmDelete?.label }}</strong> werden gelöscht.
+        Diese Aktion kann nicht rückgängig gemacht werden.
+      </p>
+      <template #footer>
+        <Button
+          label="Abbrechen"
+          text
+          @click="confirmDelete = null"
+        />
+        <Button
+          label="Löschen"
+          severity="danger"
+          @click="confirmDelete && deleteMaintenance(confirmDelete.vehicleId, confirmDelete.type)"
+        />
+      </template>
+    </Dialog>
+  </main>
 </template>
+
+<style scoped>
+.page-container {
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-title {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--p-text-muted-color);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.empty-text {
+  margin-bottom: 1rem;
+}
+
+.vehicle-section {
+  margin-bottom: 2rem;
+}
+
+.vehicle-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.vehicle-subtitle {
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+  margin-bottom: 0.75rem;
+}
+
+.schedule-hint {
+  margin-bottom: 0.75rem;
+}
+
+.maintenance-list {
+  border: 1px solid var(--p-surface-200);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.maintenance-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--p-surface-200);
+}
+
+.maintenance-item:last-child {
+  border-bottom: none;
+}
+
+.maintenance-icon {
+  flex-shrink: 0;
+}
+
+.maintenance-icon i {
+  font-size: 1.25rem;
+}
+
+.maintenance-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.maintenance-label {
+  font-weight: 500;
+}
+
+.maintenance-caption {
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color);
+}
+
+.maintenance-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+</style>

@@ -2,10 +2,17 @@
 import type { ChatMessage } from '../services/chat'
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
-import { Notify } from 'quasar'
+import Button from 'primevue/button'
+import Chip from 'primevue/chip'
+import Divider from 'primevue/divider'
+import Drawer from 'primevue/drawer'
+import InputText from 'primevue/inputtext'
+import ProgressSpinner from 'primevue/progressspinner'
+import ScrollPanel from 'primevue/scrollpanel'
+import { useToast } from 'primevue/usetoast'
 import { nextTick, onMounted, ref, watch } from 'vue'
-import { useDatabase } from '../composables/useDatabase'
 import { autoRotateForDocument, resizeImage } from '../composables/useImageResize'
+import { db, tx } from '../lib/instantdb'
 import { hashImage } from '../services/ai'
 import { sendChatMessage, WELCOME_MESSAGE } from '../services/chat'
 import { useSettingsStore } from '../stores/settings'
@@ -21,8 +28,8 @@ function renderMarkdown(text: string): string {
 
 const open = defineModel<boolean>({ default: false })
 
+const toast = useToast()
 const settings = useSettingsStore()
-const { dbPromise } = useDatabase()
 
 const messages = ref<ChatMessage[]>([WELCOME_MESSAGE])
 const input = ref('')
@@ -37,33 +44,37 @@ const mediaViewerOcr = ref('')
 // Session-only storage for PDF base64 data (too large to persist)
 const pdfDataByMsgId = new Map<string, string>()
 
-// Chat-Verlauf aus RxDB laden
+// Chat-Verlauf aus InstantDB laden
 onMounted(async () => {
-  const db = await dbPromise
-  const docs = await (db as any).chatmessages.find({ sort: [{ createdAt: 'asc' }] }).exec()
-  if (docs.length) {
-    messages.value = [
-      WELCOME_MESSAGE,
-      ...docs.map((d: any) => ({
-        id: d.id,
-        role: d.role,
-        content: d.content,
-        attachments: d.attachments?.length ? d.attachments : undefined,
-      })),
-    ]
+  try {
+    const result = await db.queryOnce({ chatmessages: {} })
+    const docs = (result.data.chatmessages || [])
+      .sort((a: any, b: any) => (a.createdAt || 0) - (b.createdAt || 0))
+    if (docs.length) {
+      messages.value = [
+        WELCOME_MESSAGE,
+        ...docs.map((d: any) => ({
+          id: d.id,
+          role: d.role,
+          content: d.content,
+          attachments: d.attachments?.length ? d.attachments : undefined,
+        })),
+      ]
+    }
   }
+  catch {}
 })
 
 async function saveMessage(msg: ChatMessage) {
-  const db = await dbPromise
   try {
-    await (db as any).chatmessages.insert({
-      id: msg.id,
-      role: msg.role,
-      content: msg.content,
-      attachments: msg.attachments || [],
-      createdAt: new Date().toISOString(),
-    })
+    await db.transact([
+      tx.chatmessages[msg.id].update({
+        role: msg.role,
+        content: msg.content,
+        attachments: msg.attachments || [],
+        createdAt: Date.now(),
+      }),
+    ])
   }
   catch {}
 }
@@ -72,9 +83,9 @@ function scrollToBottom() {
   nextTick(() => {
     if (scrollArea.value) {
       const el = scrollArea.value.$el || scrollArea.value
-      const target = el.querySelector('.q-scrollarea__container')
-      if (target)
-        target.scrollTop = target.scrollHeight
+      const content = el.querySelector('.p-scrollpanel-content')
+      if (content)
+        content.scrollTop = content.scrollHeight
     }
   })
 }
@@ -95,7 +106,12 @@ function onFileChange(event: Event) {
     const isImage = file.type.startsWith('image/')
     if (!isImage) {
       if (file.size > MAX_PDF_SIZE) {
-        Notify.create({ type: 'negative', message: `PDF zu groß (${(file.size / 1024 / 1024).toFixed(0)} MB). Maximum: 50 MB.` })
+        toast.add({
+          severity: 'error',
+          summary: 'Fehler',
+          detail: `PDF zu groß (${(file.size / 1024 / 1024).toFixed(0)} MB). Maximum: 50 MB.`,
+          life: 5000,
+        })
         break
       }
       pendingFiles.value = []
@@ -165,8 +181,7 @@ async function send() {
   loading.value = true
 
   try {
-    const db = await dbPromise
-    const response = await sendChatMessage(db, messages.value, {
+    const response = await sendChatMessage(messages.value, {
       provider: settings.aiProvider,
       apiKey: settings.aiApiKey,
       model: settings.aiModel || undefined,
@@ -200,13 +215,14 @@ async function openImageViewer(src: string) {
   mediaViewerOcr.value = ''
   mediaViewerOpen.value = true
 
-  // OCR-Text aus RxDB laden (falls vorhanden)
+  // OCR-Text aus InstantDB laden (falls vorhanden)
   try {
     const base64 = src.split(',')[1]
     if (base64) {
       const hash = await hashImage(base64)
-      const db = await dbPromise
-      const doc = await (db as any).ocrcache.findOne({ selector: { id: hash } }).exec()
+      const result = await db.queryOnce({ ocrcache: {} })
+      const entries = result.data.ocrcache || []
+      const doc = entries.find((e: any) => e.hash === hash)
       if (doc)
         mediaViewerOcr.value = doc.markdown
     }
@@ -221,108 +237,133 @@ function openPdfViewer(base64: string) {
 }
 
 async function clearChat() {
-  const db = await dbPromise
-  await (db as any).chatmessages.find().remove()
+  try {
+    const result = await db.queryOnce({ chatmessages: {} })
+    const msgs = result.data.chatmessages || []
+    if (msgs.length) {
+      await db.transact(msgs.map((m: any) => tx.chatmessages[m.id].delete()))
+    }
+  }
+  catch {}
   messages.value = [WELCOME_MESSAGE]
 }
 </script>
 
 <template>
-  <q-btn
-    fab
-    icon="chat"
-    color="primary"
+  <Button
+    icon="pi pi-comments"
+    rounded
     class="chat-fab"
     @click="open = true"
   />
 
-  <q-dialog v-model="open" position="right" full-height maximized>
-    <q-card style="width: 400px; max-width: 100vw" class="column full-height">
-      <q-toolbar class="bg-primary text-white">
-        <q-toolbar-title class="text-subtitle1">
-          KI-Assistent
-        </q-toolbar-title>
-        <q-btn flat round dense icon="delete_sweep" @click="clearChat">
-          <q-tooltip>Chat löschen</q-tooltip>
-        </q-btn>
-        <q-btn flat round dense icon="close" @click="open = false" />
-      </q-toolbar>
-
-      <q-scroll-area ref="scrollArea" class="col">
-        <div class="q-pa-md q-gutter-md">
-          <q-chat-message
-            v-for="msg in messages"
-            :key="msg.id"
-            :name="msg.role === 'user' ? 'Du' : 'Assistent'"
-            :sent="msg.role === 'user'"
-            :bg-color="msg.role === 'user' ? 'primary' : 'grey-3'"
-            :text-color="msg.role === 'user' ? 'white' : 'dark'"
-          >
-            <div>
-              <template v-if="msg.attachments?.length">
-                <div class="row q-gutter-xs q-mb-xs" style="flex-wrap: wrap">
-                  <template v-for="(att, i) in msg.attachments" :key="i">
-                    <img
-                      v-if="att.type === 'image' && att.preview"
-                      :src="att.preview"
-                      style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer"
-                      @click="openImageViewer(att.preview!)"
-                    >
-                    <div
-                      v-else-if="att.type === 'pdf'"
-                      style="cursor: pointer"
-                      @click="pdfDataByMsgId.has(msg.id) && openPdfViewer(pdfDataByMsgId.get(msg.id)!)"
-                    >
-                      <q-icon name="picture_as_pdf" size="sm" />
-                      {{ att.name }}
-                    </div>
-                  </template>
-                </div>
-              </template>
-              <template v-else-if="msg.attachment">
-                <img
-                  v-if="msg.attachment.type === 'image' && msg.attachment.preview"
-                  :src="msg.attachment.preview"
-                  style="max-width: 200px; max-height: 150px; border-radius: 8px; cursor: pointer"
-                  class="q-mb-xs"
-                  @click="openImageViewer(msg.attachment!.preview!)"
-                >
-                <div
-                  v-if="msg.attachment.type === 'pdf'" class="q-mb-xs"
-                  style="cursor: pointer"
-                  @click="pdfDataByMsgId.has(msg.id) && openPdfViewer(pdfDataByMsgId.get(msg.id)!)"
-                >
-                  <q-icon name="picture_as_pdf" size="sm" />
-                  {{ msg.attachment.name }}
-                </div>
-              </template>
-              <div class="chat-markdown" v-html="renderMarkdown(msg.content)" />
-            </div>
-          </q-chat-message>
-
-          <q-chat-message v-if="loading" name="Assistent" bg-color="grey-3">
-            <q-spinner-dots size="2em" />
-          </q-chat-message>
+  <Drawer
+    v-model:visible="open"
+    position="right"
+    :style="{ width: '400px', maxWidth: '100vw' }"
+    class="chat-drawer"
+  >
+    <template #header>
+      <div class="chat-header">
+        <span class="chat-title">KI-Assistent</span>
+        <div class="chat-header-actions">
+          <Button
+            v-tooltip.bottom="'Chat löschen'"
+            icon="pi pi-trash"
+            text
+            rounded
+            severity="secondary"
+            @click="clearChat"
+          />
+          <Button
+            icon="pi pi-times"
+            text
+            rounded
+            severity="secondary"
+            @click="open = false"
+          />
         </div>
-      </q-scroll-area>
+      </div>
+    </template>
 
-      <q-separator />
-
-      <div v-if="pendingFiles.length" class="q-px-md q-pt-sm row q-gutter-xs" style="flex-wrap: wrap">
-        <q-chip
-          v-for="(pf, i) in pendingFiles"
-          :key="i"
-          removable
-          color="primary"
-          text-color="white"
-          :icon="pf.type === 'image' ? 'image' : 'picture_as_pdf'"
-          @remove="removePendingFile(i)"
+    <ScrollPanel ref="scrollArea" class="chat-scroll">
+      <div class="chat-messages">
+        <div
+          v-for="msg in messages"
+          :key="msg.id"
+          class="chat-message"
+          :class="msg.role === 'user' ? 'chat-message-user' : 'chat-message-assistant'"
         >
-          {{ pf.name }}
-        </q-chip>
+          <div class="chat-message-name">
+            {{ msg.role === 'user' ? 'Du' : 'Assistent' }}
+          </div>
+          <div class="chat-message-bubble" :class="msg.role === 'user' ? 'bubble-user' : 'bubble-assistant'">
+            <template v-if="msg.attachments?.length">
+              <div class="attachment-row">
+                <template v-for="(att, i) in msg.attachments" :key="i">
+                  <img
+                    v-if="att.type === 'image' && att.preview"
+                    :src="att.preview"
+                    class="attachment-image"
+                    @click="openImageViewer(att.preview!)"
+                  >
+                  <div
+                    v-else-if="att.type === 'pdf'"
+                    class="attachment-pdf"
+                    @click="pdfDataByMsgId.has(msg.id) && openPdfViewer(pdfDataByMsgId.get(msg.id)!)"
+                  >
+                    <i class="pi pi-file-pdf" />
+                    {{ att.name }}
+                  </div>
+                </template>
+              </div>
+            </template>
+            <template v-else-if="msg.attachment">
+              <img
+                v-if="msg.attachment.type === 'image' && msg.attachment.preview"
+                :src="msg.attachment.preview"
+                class="attachment-image-large"
+                @click="openImageViewer(msg.attachment!.preview!)"
+              >
+              <div
+                v-if="msg.attachment.type === 'pdf'"
+                class="attachment-pdf"
+                @click="pdfDataByMsgId.has(msg.id) && openPdfViewer(pdfDataByMsgId.get(msg.id)!)"
+              >
+                <i class="pi pi-file-pdf" />
+                {{ msg.attachment.name }}
+              </div>
+            </template>
+            <div class="chat-markdown" v-html="renderMarkdown(msg.content)" />
+          </div>
+        </div>
+
+        <div v-if="loading" class="chat-message chat-message-assistant">
+          <div class="chat-message-name">
+            Assistent
+          </div>
+          <div class="chat-message-bubble bubble-assistant">
+            <ProgressSpinner style="width: 24px; height: 24px" stroke-width="4" />
+          </div>
+        </div>
+      </div>
+    </ScrollPanel>
+
+    <template #footer>
+      <Divider class="chat-divider" />
+
+      <div v-if="pendingFiles.length" class="pending-files">
+        <Chip
+          v-for="(pf, i) in pendingFiles"
+          :key="pf.name"
+          :label="pf.name"
+          :icon="pf.type === 'image' ? 'pi pi-image' : 'pi pi-file-pdf'"
+          removable
+          @remove="removePendingFile(i)"
+        />
       </div>
 
-      <div class="q-pa-sm row items-end no-wrap q-gutter-xs">
+      <div class="chat-input-row">
         <input
           ref="fileInput"
           type="file"
@@ -331,22 +372,29 @@ async function clearChat() {
           style="display: none"
           @change="onFileChange"
         >
-        <q-btn flat round dense icon="attach_file" @click="pickFile">
-          <q-tooltip>Fotos oder PDF anhängen (max. 50 MB)</q-tooltip>
-        </q-btn>
-        <q-input
-          v-model="input"
-          class="col"
-          outlined
-          dense
+        <Button
+          v-tooltip.top="'Fotos oder PDF anhängen (max. 50 MB)'"
+          icon="pi pi-paperclip"
+          text
           rounded
+          severity="secondary"
+          @click="pickFile"
+        />
+        <InputText
+          v-model="input"
+          class="chat-input"
           placeholder="Nachricht..."
           @keyup.enter="send"
         />
-        <q-btn round dense color="primary" icon="send" :loading="loading" @click="send" />
+        <Button
+          icon="pi pi-send"
+          rounded
+          :loading="loading"
+          @click="send"
+        />
       </div>
-    </q-card>
-  </q-dialog>
+    </template>
+  </Drawer>
 
   <MediaViewer
     v-model="mediaViewerOpen"
@@ -362,6 +410,140 @@ async function clearChat() {
   bottom: 24px;
   right: 24px;
   z-index: 1000;
+}
+
+.chat-drawer :deep(.p-drawer-content) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.chat-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.chat-header-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.chat-scroll {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.chat-scroll :deep(.p-scrollpanel-content) {
+  padding: 1rem;
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.chat-message {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-message-user {
+  align-items: flex-end;
+}
+
+.chat-message-assistant {
+  align-items: flex-start;
+}
+
+.chat-message-name {
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color);
+  margin-bottom: 0.25rem;
+}
+
+.chat-message-bubble {
+  max-width: 85%;
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  word-break: break-word;
+}
+
+.bubble-user {
+  background: var(--p-primary-color);
+  color: var(--p-primary-contrast-color);
+  border-bottom-right-radius: 0.25rem;
+}
+
+.bubble-assistant {
+  background: var(--p-surface-100);
+  color: var(--p-text-color);
+  border-bottom-left-radius: 0.25rem;
+}
+
+.attachment-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.attachment-image {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.attachment-image-large {
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
+.attachment-pdf {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.attachment-pdf i {
+  font-size: 1.25rem;
+}
+
+.chat-divider {
+  margin: 0;
+}
+
+.pending-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem 0;
+}
+
+.chat-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.chat-input {
+  flex: 1;
 }
 </style>
 

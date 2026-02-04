@@ -1,29 +1,35 @@
 <script setup lang="ts">
-import { useQuasar } from 'quasar'
+import Button from 'primevue/button'
+import Card from 'primevue/card'
+import InputText from 'primevue/inputtext'
+import Message from 'primevue/message'
+import Select from 'primevue/select'
+import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
-import { useDatabase } from '../composables/useDatabase'
+import { db, tx } from '../lib/instantdb'
 import { exportDatabase, importDatabase } from '../services/db-export'
 import { useSettingsStore } from '../stores/settings'
 
 const settings = useSettingsStore()
-const $q = useQuasar()
-const { db } = useDatabase()
+const toast = useToast()
 const showKey = ref(false)
 const ocrCacheCount = ref(0)
+const importInput = ref<HTMLInputElement | null>(null)
 
-async function refreshCacheCount() {
-  if (!db.value)
-    return
-  const docs = await (db.value as any).ocrcache.find().exec()
-  ocrCacheCount.value = docs.length
+async function refreshCacheCount(): Promise<void> {
+  try {
+    const result = await db.queryOnce({ ocrcache: {} })
+    ocrCacheCount.value = (result.data.ocrcache || []).length
+  }
+  catch {
+    ocrCacheCount.value = 0
+  }
 }
 
 onMounted(() => refreshCacheCount())
 
-async function handleExport() {
-  if (!db.value)
-    return
-  const json = await exportDatabase(db.value)
+async function handleExport(): Promise<void> {
+  const json = await exportDatabase()
   const blob = new Blob([json], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -31,35 +37,40 @@ async function handleExport() {
   a.download = `auto-service-backup-${new Date().toISOString().slice(0, 10)}.json`
   a.click()
   URL.revokeObjectURL(url)
-  $q.notify({ type: 'positive', message: 'Daten exportiert' })
+  toast.add({ severity: 'success', summary: 'Daten exportiert', life: 3000 })
 }
 
-async function handleImport(event: Event) {
+async function handleImport(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
-  if (!file || !db.value)
+  if (!file)
     return
   try {
     const json = await file.text()
-    const result = await importDatabase(db.value, json)
+    const result = await importDatabase(json)
     const summary = Object.entries(result.imported)
       .map(([k, v]) => `${k}: ${v}`)
       .join(', ')
-    $q.notify({ type: 'positive', message: `Import erfolgreich — ${summary}` })
+    toast.add({ severity: 'success', summary: `Import erfolgreich - ${summary}`, life: 5000 })
     await refreshCacheCount()
   }
   catch (e: any) {
-    $q.notify({ type: 'negative', message: `Import fehlgeschlagen: ${e.message}` })
+    toast.add({ severity: 'error', summary: `Import fehlgeschlagen: ${e.message}`, life: 5000 })
   }
   input.value = ''
 }
 
-async function clearOcrCache() {
-  if (!db.value)
-    return
-  await (db.value as any).ocrcache.find().remove()
-  ocrCacheCount.value = 0
-  $q.notify({ type: 'positive', message: 'OCR-Cache geleert' })
+async function clearOcrCache(): Promise<void> {
+  try {
+    const result = await db.queryOnce({ ocrcache: {} })
+    const entries = result.data.ocrcache || []
+    if (entries.length) {
+      await db.transact(entries.map((e: any) => tx.ocrcache[e.id].delete()))
+    }
+    ocrCacheCount.value = 0
+    toast.add({ severity: 'success', summary: 'OCR-Cache geleert', life: 3000 })
+  }
+  catch {}
 }
 
 const defaultModels: Record<string, string> = {
@@ -77,21 +88,41 @@ const providerOptions = [
   { label: 'Anthropic Claude', value: 'anthropic' },
   { label: 'OpenAI', value: 'openai' },
   { label: 'Meta Llama 4 Maverick (via OpenRouter)', value: 'meta-llama' },
-  { label: 'Ollama lokal (qwen3-vl:2b) — 100% privat', value: 'ollama' },
+  { label: 'Ollama lokal (qwen3-vl:2b) - 100% privat', value: 'ollama' },
 ]
 
 const providerInfo = computed(() => {
   switch (settings.aiProvider) {
     case 'mistral':
-      return { text: 'Mistral Small — schnell, Chat + Tool Calling. Direkte Mistral-API.', warn: true, warnText: 'Mistral Free Tier (Experiment Plan): Deine Daten werden standardmäßig für Modell-Training verwendet. Opt-out in den Mistral-Kontoeinstellungen möglich.' }
+      return {
+        text: 'Mistral Small - schnell, Chat + Tool Calling. Direkte Mistral-API.',
+        warn: true,
+        warnText: 'Mistral Free Tier (Experiment Plan): Deine Daten werden standardmassig fur Modell-Training verwendet. Opt-out in den Mistral-Kontoeinstellungen moglich.',
+      }
     case 'anthropic':
-      return { text: 'Claude Sonnet — Vision + Chat + Tool Calling. API-Daten werden nicht für Training verwendet.', warn: false, warnText: '' }
+      return {
+        text: 'Claude Sonnet - Vision + Chat + Tool Calling. API-Daten werden nicht fur Training verwendet.',
+        warn: false,
+        warnText: '',
+      }
     case 'openai':
-      return { text: 'GPT-4o Mini — Chat + Tool Calling. API-Daten werden seit März 2023 nicht für Training verwendet.', warn: false, warnText: '' }
+      return {
+        text: 'GPT-4o Mini - Chat + Tool Calling. API-Daten werden seit Marz 2023 nicht fur Training verwendet.',
+        warn: false,
+        warnText: '',
+      }
     case 'meta-llama':
-      return { text: 'Llama 4 Maverick — Vision + Chat + Tool Calling (via OpenRouter).', warn: true, warnText: 'Meta Llama: API-Daten werden nicht für Training verwendet, aber multimodale Modelle (Vision) sind in der EU rechtlich eingeschränkt.' }
+      return {
+        text: 'Llama 4 Maverick - Vision + Chat + Tool Calling (via OpenRouter).',
+        warn: true,
+        warnText: 'Meta Llama: API-Daten werden nicht fur Training verwendet, aber multimodale Modelle (Vision) sind in der EU rechtlich eingeschrankt.',
+      }
     case 'ollama':
-      return { text: 'qwen3-vl:2b — Vision + Chat + Tool Calling, 100% lokal. Ollama muss auf localhost:11434 laufen. Kein API-Key nötig.', warn: false, warnText: '' }
+      return {
+        text: 'qwen3-vl:2b - Vision + Chat + Tool Calling, 100% lokal. Ollama muss auf localhost:11434 laufen. Kein API-Key notig.',
+        warn: false,
+        warnText: '',
+      }
     default:
       return { text: '', warn: false, warnText: '' }
   }
@@ -99,89 +130,84 @@ const providerInfo = computed(() => {
 </script>
 
 <template>
-  <q-page padding>
-    <h5>Einstellungen</h5>
+  <main class="page-container">
+    <h2 class="page-title">
+      Einstellungen
+    </h2>
 
-    <q-card class="q-mb-md">
-      <q-card-section>
-        <div class="text-h6">
-          KI-Provider
+    <Card class="settings-card">
+      <template #title>
+        KI-Provider
+      </template>
+      <template #content>
+        <div class="form-field">
+          <label>Provider</label>
+          <Select
+            v-model="settings.aiProvider"
+            :options="providerOptions"
+            option-label="label"
+            option-value="value"
+            class="w-full"
+          />
         </div>
-      </q-card-section>
-      <q-card-section>
-        <q-select
-          v-model="settings.aiProvider"
-          :options="providerOptions"
-          label="Provider"
-          outlined
-          emit-value
-          map-options
-        />
-        <q-input
-          v-model="settings.aiApiKey"
-          label="API Key"
-          outlined
-          :type="showKey ? 'text' : 'password'"
-          class="q-mt-md"
-        >
-          <template #append>
-            <q-icon
-              :name="showKey ? 'visibility_off' : 'visibility'"
-              class="cursor-pointer"
+
+        <div class="form-field">
+          <label>API Key</label>
+          <div class="input-with-toggle">
+            <InputText
+              v-model="settings.aiApiKey"
+              :type="showKey ? 'text' : 'password'"
+              class="w-full"
+            />
+            <Button
+              :icon="showKey ? 'pi pi-eye-slash' : 'pi pi-eye'"
+              text
               @click="showKey = !showKey"
             />
-          </template>
-        </q-input>
-        <q-input
-          v-model="settings.aiModel"
-          label="Model (leer = Standard)"
-          outlined
-          class="q-mt-md"
-          :placeholder="defaultModel"
-        />
-        <div class="text-caption q-mt-sm text-grey">
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label>Model (leer = Standard)</label>
+          <InputText
+            v-model="settings.aiModel"
+            :placeholder="defaultModel"
+            class="w-full"
+          />
+        </div>
+
+        <div class="provider-info">
           {{ providerInfo.text }}
         </div>
-        <q-banner
-          v-if="providerInfo.warn"
-          class="q-mt-sm bg-warning text-dark"
-          rounded
-          dense
-        >
-          <template #avatar>
-            <q-icon
-              name="warning"
-              color="dark"
-            />
+
+        <Message v-if="providerInfo.warn" severity="warn" class="provider-warning">
+          <template #icon>
+            <i class="pi pi-exclamation-triangle" />
           </template>
           {{ providerInfo.warnText }}
-        </q-banner>
-      </q-card-section>
-    </q-card>
+        </Message>
+      </template>
+    </Card>
 
-    <q-card class="q-mb-md">
-      <q-card-section>
-        <div class="text-h6">
-          Daten
-        </div>
-      </q-card-section>
-      <q-card-section>
-        <div class="q-gutter-sm">
-          <q-btn
+    <Card class="settings-card">
+      <template #title>
+        Daten
+      </template>
+      <template #content>
+        <div class="button-group">
+          <Button
             label="Daten exportieren"
-            icon="download"
-            color="primary"
-            outline
+            icon="pi pi-download"
+            outlined
             class="export-btn"
             @click="handleExport"
           />
-          <q-btn
+          <Button
             label="Daten importieren"
-            icon="upload"
-            color="primary"
-            outline
+            icon="pi pi-upload"
+            outlined
             class="import-btn"
-            @click="($refs.importInput as HTMLInputElement).click()"
+            @click="importInput?.click()"
           />
           <input
             ref="importInput"
@@ -191,21 +217,94 @@ const providerInfo = computed(() => {
             @change="handleImport"
           >
         </div>
-        <div class="q-mt-md">
-          <q-btn
+
+        <div class="cache-section">
+          <Button
             label="OCR-Cache leeren"
-            icon="delete_sweep"
-            color="negative"
-            outline
-            size="sm"
+            icon="pi pi-trash"
+            outlined
+            severity="danger"
+            size="small"
             class="clear-cache-btn"
             @click="clearOcrCache"
           />
-          <span class="text-caption q-ml-sm text-grey">
-            {{ ocrCacheCount }} Einträge im Cache
+          <span class="cache-count">
+            {{ ocrCacheCount }} Eintrage im Cache
           </span>
         </div>
-      </q-card-section>
-    </q-card>
-  </q-page>
+      </template>
+    </Card>
+  </main>
 </template>
+
+<style scoped>
+.page-container {
+  padding: 1rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin: 0 0 1rem;
+}
+
+.settings-card {
+  margin-bottom: 1rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.form-field label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.input-with-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.input-with-toggle .w-full {
+  flex: 1;
+}
+
+.provider-info {
+  font-size: 0.875rem;
+  color: var(--text-color-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.provider-warning {
+  margin-top: 0.5rem;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cache-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.cache-count {
+  font-size: 0.875rem;
+  color: var(--text-color-secondary);
+}
+</style>

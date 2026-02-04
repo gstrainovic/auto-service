@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test'
+import { clearInstantDB } from './fixtures/db-cleanup'
 
 test.describe('Delete Flow', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
+
   test('DF-001: delete a vehicle with confirmation dialog', async ({ page }) => {
     // Add a vehicle first
     await page.goto('/vehicles')
@@ -23,7 +28,7 @@ test.describe('Delete Flow', () => {
     await expect(page.getByText('Alle Rechnungen und Wartungseinträge')).toBeVisible()
 
     // Confirm delete
-    await page.locator('.q-dialog').getByRole('button', { name: 'Löschen' }).click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
 
     // Should redirect to vehicles list
     await expect(page).toHaveURL(/\/vehicles/)

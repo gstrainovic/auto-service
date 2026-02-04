@@ -308,7 +308,7 @@ function normalizeCategory(cat: string): string {
 
     <Card v-if="parsedServiceBook" class="result-card">
       <template #title>
-        Erkannte Service-Eintrage
+        Erkannte Service-Einträge
       </template>
       <template #content>
         <div class="entries-list">
@@ -345,7 +345,7 @@ function normalizeCategory(cat: string): string {
       </template>
       <template #footer>
         <div class="card-actions">
-          <Button label="Zu Fahrzeug hinzufugen" severity="primary" @click="onSaveServiceBook" />
+          <Button label="Zu Fahrzeug hinzufügen" severity="primary" @click="onSaveServiceBook" />
           <Button label="Verwerfen" text @click="parsedServiceBook = null" />
         </div>
       </template>

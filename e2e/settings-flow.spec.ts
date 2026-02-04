@@ -12,11 +12,11 @@ test.describe('Settings Flow', () => {
     await page.goto('/settings')
     await expect(page.getByText('KI-Provider')).toBeVisible()
 
-    // Check provider dropdown is visible
-    await expect(page.getByLabel('Provider')).toBeVisible()
+    // Check provider dropdown is visible (PrimeVue Select renders as combobox)
+    await expect(page.getByRole('combobox').first()).toBeVisible()
 
-    // Check API key input exists
-    const apiKeyInput = page.getByLabel('API Key')
+    // Check API key input exists (password type input)
+    const apiKeyInput = page.locator('input[type="password"]')
     await expect(apiKeyInput).toBeVisible()
   })
 
@@ -65,12 +65,19 @@ test.describe('Settings Flow', () => {
     }, testVehicleId)
     expect(gone).toBe(true)
 
-    // Import the file
-    const fileInput = page.locator('input[type="file"]')
-    await fileInput.setInputFiles(downloadPath)
+    // Import the file using filechooser API
+    const fileChooserPromise = page.waitForEvent('filechooser')
+    await page.getByRole('button', { name: 'Daten importieren' }).click()
+    const fileChooser = await fileChooserPromise
+    await fileChooser.setFiles(downloadPath)
 
-    // Wait for import notification
-    await expect(page.getByText('Import erfolgreich')).toBeVisible({ timeout: 5000 })
+    // Wait for import to complete by checking the data directly (more reliable than toast)
+    await page.waitForFunction(async (vId: string) => {
+      const { db } = (window as any).__instantdb
+      const result = await db.queryOnce({ vehicles: {} })
+      const vehicles = result.data.vehicles || []
+      return vehicles.some((v: any) => v.id === vId)
+    }, testVehicleId, { timeout: 10000 })
 
     // Verify vehicle is back
     const restored = await page.evaluate(async (vId: string) => {

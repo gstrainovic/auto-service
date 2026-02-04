@@ -96,7 +96,8 @@ test.describe('Chat Flow', () => {
 
     // Remove the first chip — one should remain
     const firstChipText = await page.locator('[data-pc-name="chip"]').first().textContent()
-    await page.locator('[data-pc-name="chip"]').first().locator('[data-pc-section="removeicon"]').click()
+    // PrimeVue Chip remove icon uses class p-chip-remove-icon
+    await page.locator('[data-pc-name="chip"]').first().locator('.p-chip-remove-icon').click()
     await expect(page.locator('[data-pc-name="chip"]')).toHaveCount(1)
     // The remaining chip should be the OTHER file
     const remainingText = await page.locator('[data-pc-name="chip"]').first().textContent()

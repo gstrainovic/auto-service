@@ -50,8 +50,9 @@ test.describe('Vehicle Flow', () => {
 
     await expect(page.getByText('Audi A4')).toBeVisible()
 
-    // Delete button: the button contains an img with "delete" text (icon)
-    await page.locator('button').filter({ has: page.getByText('delete', { exact: true }) }).click()
+    // Delete button: PrimeVue icon-only button within the Audi A4 vehicle card
+    const audiCard = page.locator('[data-pc-name="card"]', { hasText: 'Audi A4' })
+    await audiCard.getByRole('button', { name: 'Löschen' }).click()
 
     await expect(page.getByText('Audi A4')).not.toBeVisible()
   })

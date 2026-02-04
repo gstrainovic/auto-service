@@ -177,11 +177,11 @@ test.describe('Invoice CRUD', () => {
 
     // Verify pre-filled values
     const editDialog = page.locator('[data-pc-name="dialog"]', { hasText: 'Rechnung bearbeiten' })
-    await expect(editDialog.getByLabel('Werkstatt')).toHaveValue('Werkstatt Schmidt')
+    await expect(editDialog.locator('#invoice-workshop')).toHaveValue('Werkstatt Schmidt')
 
     // Change values
-    await editDialog.getByLabel('Werkstatt').fill('Autohaus Müller')
-    await editDialog.getByLabel('Gesamtbetrag').fill('550.00')
+    await editDialog.locator('#invoice-workshop').fill('Autohaus Müller')
+    await editDialog.locator('#invoice-total-input').fill('550.00')
 
     // Save
     await editDialog.getByRole('button', { name: 'Speichern' }).click()
@@ -213,15 +213,15 @@ test.describe('Invoice CRUD', () => {
     const editDialog = page.locator('[data-pc-name="dialog"]', { hasText: 'Rechnung bearbeiten' })
 
     // Should have 2 existing items
-    await expect(editDialog.getByLabel('Beschreibung').first()).toHaveValue('Ölwechsel')
+    await expect(editDialog.getByPlaceholder('Beschreibung').first()).toHaveValue('Ölwechsel')
 
     // Add a new item
     await editDialog.getByRole('button', { name: 'Position hinzufügen' }).click()
-    const newDescInputs = editDialog.getByLabel('Beschreibung')
+    const newDescInputs = editDialog.getByPlaceholder('Beschreibung')
     await newDescInputs.last().fill('Luftfilter')
 
     // Remove the first item (Ölwechsel)
-    await editDialog.locator('button').filter({ has: page.locator('i.pi-minus-circle') }).first().click()
+    await editDialog.locator('button').filter({ has: page.locator('.pi-minus-circle') }).first().click()
 
     // Save
     await editDialog.getByRole('button', { name: 'Speichern' }).click()
@@ -328,18 +328,18 @@ test.describe('Maintenance CRUD', () => {
 
     // Click edit button within the maintenance list item (not the header Bearbeiten button)
     const maintenanceItem = page.locator('.maintenance-item', { hasText: 'Motoröl 5W-30 gewechselt' })
-    await maintenanceItem.locator('button').filter({ has: page.locator('i.pi-pencil') }).click()
+    await maintenanceItem.getByRole('button', { name: 'Bearbeiten' }).click()
     await expect(page.getByText('Wartungseintrag bearbeiten')).toBeVisible()
 
     const editDialog = page.locator('[data-pc-name="dialog"]', { hasText: 'Wartungseintrag bearbeiten' })
 
     // Verify pre-filled
-    await expect(editDialog.getByLabel('Beschreibung')).toHaveValue('Motoröl 5W-30 gewechselt')
-    await expect(editDialog.getByLabel('Typ')).toHaveValue('Ölwechsel')
+    await expect(editDialog.locator('#maintenance-description')).toHaveValue('Motoröl 5W-30 gewechselt')
+    await expect(editDialog.locator('#maintenance-type')).toHaveValue('Ölwechsel')
 
     // Change values
-    await editDialog.getByLabel('Beschreibung').fill('Vollsynthetisches Öl gewechselt')
-    await editDialog.getByLabel('Kilometerstand', { exact: true }).fill('76000')
+    await editDialog.locator('#maintenance-description').fill('Vollsynthetisches Öl gewechselt')
+    await editDialog.locator('#maintenance-mileage-input').fill('76000')
 
     // Save
     await editDialog.getByRole('button', { name: 'Speichern' }).click()
@@ -364,7 +364,7 @@ test.describe('Maintenance CRUD', () => {
 
     // Click delete button within the maintenance list item
     const maintenanceItem = page.locator('.maintenance-item', { hasText: 'Motoröl 5W-30 gewechselt' })
-    await maintenanceItem.locator('button').filter({ has: page.locator('i.pi-trash') }).click()
+    await maintenanceItem.getByRole('button', { name: 'Löschen' }).click()
 
     // Confirm
     await expect(page.getByText('Wartungseintrag löschen?')).toBeVisible()
@@ -390,12 +390,12 @@ test.describe('Maintenance CRUD', () => {
 
     // Open edit within the maintenance list item
     const maintenanceItem = page.locator('.maintenance-item', { hasText: 'Motoröl 5W-30 gewechselt' })
-    await maintenanceItem.locator('button').filter({ has: page.locator('i.pi-pencil') }).click()
+    await maintenanceItem.getByRole('button', { name: 'Bearbeiten' }).click()
 
     const editDialog = page.locator('[data-pc-name="dialog"]', { hasText: 'Wartungseintrag bearbeiten' })
 
     // Change status to "Fällig"
-    await editDialog.getByLabel('Status').click()
+    await editDialog.locator('#maintenance-status').click()
     await page.getByRole('option', { name: 'Fällig', exact: true }).click()
 
     await editDialog.getByRole('button', { name: 'Speichern' }).click()

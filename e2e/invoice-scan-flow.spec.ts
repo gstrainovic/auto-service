@@ -52,11 +52,11 @@ test.describe('Invoice Scan Flow', () => {
     await expect(page.getByText('Erkannte Daten')).toBeVisible({ timeout: 60_000 })
 
     // Step 6: Verify parsed data
-    const resultCard = page.locator('.vehicle-card', { hasText: 'Erkannte Daten' })
+    const resultCard = page.locator('[data-pc-name="card"]', { hasText: 'Erkannte Daten' })
     await expect(resultCard.getByText(/München/)).toBeVisible()
     await expect(resultCard.getByText('Positionen')).toBeVisible()
 
-    const items = resultCard.locator('.q-item')
+    const items = resultCard.locator('.item-row')
     await expect(items.first()).toBeVisible()
     expect(await items.count()).toBeGreaterThanOrEqual(1)
 
@@ -67,8 +67,8 @@ test.describe('Invoice Scan Flow', () => {
     // Step 8: Verify invoice saved to vehicle
     await page.goto('/vehicles')
     await page.getByText('BMW 320d').click()
-    await page.getByText('Rechnungen').click()
-    await expect(page.locator('.q-tab-panel').getByText(/München/)).toBeVisible({ timeout: 10_000 })
+    await page.getByRole('tab', { name: 'Rechnungen' }).click()
+    await expect(page.locator('[data-pc-name="tabpanel"]').getByText(/München/)).toBeVisible({ timeout: 10_000 })
 
     // Step 9: Verify dashboard shows maintenance status
     await page.goto('/')

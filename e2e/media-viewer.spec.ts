@@ -52,7 +52,7 @@ test.describe('MediaViewer', () => {
     // Open vehicle detail → invoices
     await page.goto('/vehicles')
     await page.getByText('Test MediaViewer').click()
-    await page.getByText('Rechnungen').click()
+    await page.getByRole('tab', { name: 'Rechnungen' }).click()
 
     // Click invoice to open detail dialog
     const invoiceItem = page.locator('.invoice-item').first()

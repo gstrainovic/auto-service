@@ -55,7 +55,7 @@ test.describe('Image Rotation', () => {
     // Step 7: Open vehicle detail and check stored image
     await page.goto('/vehicles')
     await page.getByText('BMW 320d').click()
-    await page.getByText('Rechnungen').click()
+    await page.getByRole('tab', { name: 'Rechnungen' }).click()
 
     // Click the invoice to open the detail dialog
     const invoiceItem = page.locator('.invoice-item').first()

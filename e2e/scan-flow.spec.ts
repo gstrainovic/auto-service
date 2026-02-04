@@ -19,7 +19,8 @@ test.describe('Scan Flow', () => {
     // Navigate to scan
     await page.goto('/scan')
     await expect(page.getByRole('heading', { name: 'Dokument scannen' })).toBeVisible()
-    await expect(page.getByText('Kamera')).toBeVisible()
-    await expect(page.getByText('Datei')).toBeVisible()
+    // Two "Kamera" buttons exist (main action + toggle), use first()
+    await expect(page.getByRole('button', { name: 'Kamera' }).first()).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Datei' })).toBeVisible()
   })
 })

@@ -261,6 +261,7 @@ function getImageSrc(imageData: string): string {
                 <div class="maintenance-actions">
                   <Button
                     v-tooltip.top="'Eintrag bearbeiten'"
+                    aria-label="Bearbeiten"
                     icon="pi pi-pencil"
                     text
                     rounded
@@ -269,6 +270,7 @@ function getImageSrc(imageData: string): string {
                   />
                   <Button
                     v-tooltip.top="'Eintrag löschen'"
+                    aria-label="Löschen"
                     icon="pi pi-trash"
                     text
                     rounded
@@ -382,24 +384,24 @@ function getImageSrc(imageData: string): string {
     >
       <form class="edit-form" @submit.prevent="saveInvoiceEdit">
         <div class="form-field">
-          <label>Werkstatt</label>
-          <InputText v-model="editInvoiceForm.workshopName" class="w-full" />
+          <label for="invoice-workshop">Werkstatt</label>
+          <InputText id="invoice-workshop" v-model="editInvoiceForm.workshopName" class="w-full" />
         </div>
         <div class="form-field">
-          <label>Datum</label>
-          <InputText v-model="editInvoiceForm.date" type="date" class="w-full" />
+          <label for="invoice-date">Datum</label>
+          <InputText id="invoice-date" v-model="editInvoiceForm.date" type="date" class="w-full" />
         </div>
         <div class="form-field">
-          <label>Gesamtbetrag</label>
-          <InputNumber v-model="editInvoiceForm.totalAmount" mode="decimal" :min-fraction-digits="2" class="w-full" />
+          <label for="invoice-total">Gesamtbetrag</label>
+          <InputNumber id="invoice-total" v-model="editInvoiceForm.totalAmount" mode="decimal" :min-fraction-digits="2" class="w-full" input-id="invoice-total-input" />
         </div>
         <div class="form-field">
-          <label>Währung</label>
-          <InputText v-model="editInvoiceForm.currency" class="w-full" />
+          <label for="invoice-currency">Währung</label>
+          <InputText id="invoice-currency" v-model="editInvoiceForm.currency" class="w-full" />
         </div>
         <div class="form-field">
-          <label>Kilometerstand</label>
-          <InputNumber v-model="editInvoiceForm.mileageAtService" class="w-full" />
+          <label for="invoice-mileage">Kilometerstand</label>
+          <InputNumber id="invoice-mileage" v-model="editInvoiceForm.mileageAtService" class="w-full" input-id="invoice-mileage-input" />
         </div>
 
         <div class="items-section">
@@ -432,32 +434,33 @@ function getImageSrc(imageData: string): string {
     >
       <form class="edit-form" @submit.prevent="saveMaintenanceEdit">
         <div class="form-field">
-          <label>Typ</label>
-          <InputText v-model="editMaintenanceForm.type" class="w-full" />
+          <label for="maintenance-type">Typ</label>
+          <InputText id="maintenance-type" v-model="editMaintenanceForm.type" class="w-full" />
         </div>
         <div class="form-field">
-          <label>Beschreibung</label>
-          <InputText v-model="editMaintenanceForm.description" class="w-full" />
+          <label for="maintenance-description">Beschreibung</label>
+          <InputText id="maintenance-description" v-model="editMaintenanceForm.description" class="w-full" />
         </div>
         <div class="form-field">
-          <label>Erledigt am</label>
-          <InputText v-model="editMaintenanceForm.doneAt" type="date" class="w-full" />
+          <label for="maintenance-done-at">Erledigt am</label>
+          <InputText id="maintenance-done-at" v-model="editMaintenanceForm.doneAt" type="date" class="w-full" />
         </div>
         <div class="form-field">
-          <label>Kilometerstand</label>
-          <InputNumber v-model="editMaintenanceForm.mileageAtService" class="w-full" />
+          <label for="maintenance-mileage">Kilometerstand</label>
+          <InputNumber id="maintenance-mileage" v-model="editMaintenanceForm.mileageAtService" class="w-full" input-id="maintenance-mileage-input" />
         </div>
         <div class="form-field">
-          <label>Nächster Termin</label>
-          <InputText v-model="editMaintenanceForm.nextDueDate" type="date" class="w-full" />
+          <label for="maintenance-next-date">Nächster Termin</label>
+          <InputText id="maintenance-next-date" v-model="editMaintenanceForm.nextDueDate" type="date" class="w-full" />
         </div>
         <div class="form-field">
-          <label>Nächster Kilometerstand</label>
-          <InputNumber v-model="editMaintenanceForm.nextDueMileage" class="w-full" />
+          <label for="maintenance-next-mileage">Nächster Kilometerstand</label>
+          <InputNumber id="maintenance-next-mileage" v-model="editMaintenanceForm.nextDueMileage" class="w-full" input-id="maintenance-next-mileage-input" />
         </div>
         <div class="form-field">
-          <label>Status</label>
+          <label for="maintenance-status">Status</label>
           <Select
+            id="maintenance-status"
             v-model="editMaintenanceForm.status"
             :options="statusOptions"
             option-label="label"

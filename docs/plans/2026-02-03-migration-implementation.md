@@ -10,7 +10,7 @@
 
 ---
 
-## Fortschritt (Stand: 2026-02-03)
+## Fortschritt (Stand: 2026-02-04)
 
 | Task | Beschreibung | Status |
 |------|--------------|--------|
@@ -19,10 +19,10 @@
 | 10 | App.vue Layout | ✅ Erledigt |
 | 11-16 | Komponenten migrieren | ✅ Erledigt |
 | 17-21 | Pages migrieren | ✅ Erledigt |
-| 22 | E2E-Tests fixen | 🔄 In Arbeit (18/33) |
+| 22 | E2E-Tests fixen | ✅ Erledigt (33/33) |
 | 23 | Cleanup | ⏳ Offen |
 
-**E2E-Tests:** 18/33 bestanden (55%)
+**E2E-Tests:** 33/33 bestanden (100%)
 
 ### Erkenntnisse aus Phase 1-3 (InstantDB)
 
@@ -41,18 +41,19 @@
 | v-tooltip Direktive fehlt | `app.directive('tooltip', Tooltip)` in main.ts |
 | Labels mit `*` brechen getByLabel | Labels ohne `*` oder Regex verwenden |
 
-### Offene Test-Fixes für morgen (15 Tests)
+### Erledigte Test-Fixes (15 Tests → alle gefixt)
 
 | Test-ID | Problem | Fix |
 |---------|---------|-----|
-| CF-003 | Chip remove icon Selektor | PrimeVue Chip remove event prüfen |
-| CR-003, CR-004 | Invoice Dialog Labels | Label-Attribute in InvoiceResult.vue |
-| CR-007-009 | Maintenance Item Selektoren | `.maintenance-item` + Icon-Selektoren |
-| MV-001, RF-001 | `getByText('Rechnungen')` → 2 Elemente | `getByRole('tab')` verwenden |
-| SF-001 | `getByText('Kamera')` → 2 Buttons | `getByRole('button').first()` |
-| SE-001, SE-002 | Settings Labels fehlen | Label-Attribute in SettingsPage.vue |
-| IS-001, VD-001, VD-002 | Scan Result Card Selektor | Card-Klasse in ScanPage.vue prüfen |
-| VF-003 | Delete Button Icon | Icon-Selektor anpassen |
+| CF-003 | Chip remove icon Selektor | `locator('.remove-btn')` statt Icon-Selektor |
+| CR-003, CR-004 | Invoice Dialog Labels | `inputId` für InputText, Dialog-Selektoren angepasst |
+| CR-007-009 | Maintenance Item Selektoren | `[data-pc-name="card"]` + DataTable-Selektoren |
+| MV-001, RF-001 | `getByText('Rechnungen')` → 2 Elemente | `getByRole('tab', { name: 'Rechnungen' })` |
+| SF-001 | `getByText('Kamera')` → 2 Buttons | `getByRole('tab', { name: 'Kamera' })` |
+| SE-001, SE-002 | Settings Labels/Import | FileChooser API statt direktem Input |
+| IS-001 | Tab + Panel Selektoren | `getByRole('tab')` + `[data-pc-name="tabpanel"]` |
+| VD-001, VD-002 | Scan Result Card Selektor | `[data-pc-name="card"]` mit Text-Filter |
+| VF-003 | Delete Button Icon | PrimeVue Button mit `name: 'Löschen'` |
 
 ---
 

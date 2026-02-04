@@ -36,8 +36,8 @@ test.describe('Vehicle Document Scan', () => {
     await expect(page.getByText('KI liest Fahrzeugdaten...')).toBeVisible({ timeout: 10_000 })
     await expect(page.getByText('Erkannte Fahrzeugdaten')).toBeVisible({ timeout: 60_000 })
 
-    // Verify parsed data
-    const resultCard = page.locator('.vehicle-card', { hasText: 'Erkannte Fahrzeugdaten' })
+    // Verify parsed data (PrimeVue Card with result-card class)
+    const resultCard = page.locator('.result-card', { hasText: 'Erkannte Fahrzeugdaten' })
     await expect(resultCard.getByText(/Volkswagen/i)).toBeVisible()
     await expect(resultCard.getByText(/Golf/i)).toBeVisible()
 
@@ -73,8 +73,8 @@ test.describe('Vehicle Document Scan', () => {
     await page.goto('/scan')
     await page.getByRole('tab', { name: 'Service-Heft' }).click()
 
-    // Select vehicle
-    await page.getByLabel('Fahrzeug wählen').click()
+    // Select vehicle (PrimeVue Select renders as combobox)
+    await page.getByRole('combobox').click()
     await page.getByText('VW Golf VIII').click()
 
     // Upload the Service-Heft image
@@ -86,9 +86,9 @@ test.describe('Vehicle Document Scan', () => {
     await expect(page.getByText('KI analysiert Service-Heft...')).toBeVisible({ timeout: 10_000 })
     await expect(page.getByText('Erkannte Service-Einträge')).toBeVisible({ timeout: 60_000 })
 
-    // Verify parsed entries exist
-    const resultCard = page.locator('.vehicle-card', { hasText: 'Erkannte Service-Einträge' })
-    const entries = resultCard.locator('.q-item')
+    // Verify parsed entries exist (PrimeVue Card with entry-item class)
+    const resultCard = page.locator('.result-card', { hasText: 'Erkannte Service-Einträge' })
+    const entries = resultCard.locator('.entry-item')
     expect(await entries.count()).toBeGreaterThanOrEqual(1)
 
     // Save to vehicle

@@ -355,7 +355,7 @@ async function clearChat() {
       <div v-if="pendingFiles.length" class="pending-files">
         <Chip
           v-for="(pf, i) in pendingFiles"
-          :key="i"
+          :key="pf.name"
           :label="pf.name"
           :icon="pf.type === 'image' ? 'pi pi-image' : 'pi pi-file-pdf'"
           removable

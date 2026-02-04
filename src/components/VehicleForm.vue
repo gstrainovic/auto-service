@@ -68,8 +68,8 @@ function onSubmit(event: Event): void {
 
     <FloatLabel>
       <InputNumber
-        input-id="year"
         v-model="form.year"
+        input-id="year"
         :use-grouping="false"
         required
         class="w-full"
@@ -79,8 +79,8 @@ function onSubmit(event: Event): void {
 
     <FloatLabel>
       <InputNumber
-        input-id="mileage"
         v-model="form.mileage"
+        input-id="mileage"
         :min="0"
         suffix=" km"
         required

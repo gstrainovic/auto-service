@@ -20,7 +20,7 @@
 | 11-16 | Komponenten migrieren | ✅ Erledigt |
 | 17-21 | Pages migrieren | ✅ Erledigt |
 | 22 | E2E-Tests fixen | ✅ Erledigt (33/33) |
-| 23 | Cleanup | ⏳ Offen |
+| 23 | Cleanup | ✅ Erledigt |
 
 **E2E-Tests:** 33/33 bestanden (100%)
 

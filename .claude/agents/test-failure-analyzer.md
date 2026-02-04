@@ -1,3 +1,7 @@
+---
+name: test-failure-analyzer
+---
+
 # Test Failure Analyzer
 
 Analysiere fehlgeschlagene E2E-Tests und finde die Root Cause.

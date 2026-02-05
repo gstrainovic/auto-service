@@ -20,6 +20,40 @@ test.describe('Settings Flow', () => {
     await expect(apiKeyInput).toBeVisible()
   })
 
+  test('SE-003: default theme is dark', async ({ page }) => {
+    // Clear localStorage to simulate first visit
+    await page.goto('/settings')
+    await page.evaluate(() => localStorage.removeItem('theme'))
+    await page.reload()
+
+    // HTML should have dark-mode class by default
+    await expect(page.locator('html.dark-mode')).toBeAttached()
+
+    // Settings dropdown should show "Dunkel"
+    await expect(page.getByRole('combobox', { name: 'Dunkel' })).toBeVisible()
+  })
+
+  test('SE-004: switch theme from dark to light and back', async ({ page }) => {
+    await page.goto('/settings')
+
+    // Start in dark mode
+    await expect(page.locator('html.dark-mode')).toBeAttached()
+
+    // Switch to light
+    await page.getByRole('combobox', { name: 'Dunkel' }).click()
+    await page.getByRole('option', { name: 'Hell' }).click()
+    await expect(page.locator('html.dark-mode')).not.toBeAttached()
+
+    // Verify persisted in localStorage
+    const storedTheme = await page.evaluate(() => localStorage.getItem('theme'))
+    expect(storedTheme).toBe('light')
+
+    // Switch back to dark
+    await page.getByRole('combobox', { name: 'Hell' }).click()
+    await page.getByRole('option', { name: 'Dunkel' }).click()
+    await expect(page.locator('html.dark-mode')).toBeAttached()
+  })
+
   test('SE-002: export and import database', async ({ page }) => {
     await page.goto('/settings')
 

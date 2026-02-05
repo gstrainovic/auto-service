@@ -10,6 +10,15 @@ import router from './router'
 
 import 'primeicons/primeicons.css'
 
+// Theme sofort anwenden bevor Vue mountet (verhindert Light-Flash)
+void (() => {
+  const theme = localStorage.getItem('theme') || 'dark'
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  const isDark = theme === 'dark' || (theme === 'system' && prefersDark)
+  if (isDark)
+    document.documentElement.classList.add('dark-mode')
+})()
+
 const app = createApp(App)
 app.use(createPinia())
 app.use(router)

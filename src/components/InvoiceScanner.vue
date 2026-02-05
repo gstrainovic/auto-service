@@ -35,9 +35,9 @@ function triggerFileSelect(): void {
 async function onDrop(event: DragEvent): Promise<void> {
   isDragging.value = false
   const files = event.dataTransfer?.files
-  if (files?.length) {
-    await handleFile(files[0])
-  }
+  const file = files?.[0]
+  if (file)
+    await handleFile(file)
 }
 </script>
 

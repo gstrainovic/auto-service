@@ -73,6 +73,12 @@ async function clearOcrCache(): Promise<void> {
   catch {}
 }
 
+const themeOptions = [
+  { label: 'Dunkel', value: 'dark' },
+  { label: 'Hell', value: 'light' },
+  { label: 'System', value: 'system' },
+]
+
 const defaultModels: Record<string, string> = {
   'mistral': 'mistral-small-latest',
   'anthropic': 'claude-sonnet-4-20250514',
@@ -134,6 +140,24 @@ const providerInfo = computed(() => {
     <h2 class="page-title">
       Einstellungen
     </h2>
+
+    <Card class="settings-card">
+      <template #title>
+        Design
+      </template>
+      <template #content>
+        <div class="form-field">
+          <label>Farbschema</label>
+          <Select
+            v-model="settings.theme"
+            :options="themeOptions"
+            option-label="label"
+            option-value="value"
+            class="w-full"
+          />
+        </div>
+      </template>
+    </Card>
 
     <Card class="settings-card">
       <template #title>

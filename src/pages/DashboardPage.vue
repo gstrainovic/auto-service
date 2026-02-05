@@ -14,7 +14,6 @@ const router = useRouter()
 const vehiclesStore = useVehiclesStore()
 const dueMap = ref<Record<string, DueResult[]>>({})
 const confirmDelete = ref<{ vehicleId: string, type: string, label: string } | null>(null)
-
 onMounted(async () => {
   await vehiclesStore.load()
   await computeDue()
@@ -85,6 +84,12 @@ function getStatusLabel(status: string): string {
     return 'Fällig'
   return 'OK'
 }
+
+function getDueCounts(vehicleId: string): { due: number, total: number } {
+  const items = dueMap.value[vehicleId] || []
+  const due = items.filter(i => i.status === 'due' || i.status === 'overdue').length
+  return { due, total: items.length }
+}
 </script>
 
 <template>
@@ -110,6 +115,12 @@ function getStatusLabel(status: string): string {
       </h3>
       <div class="vehicle-subtitle">
         {{ vehicle.mileage.toLocaleString('de-DE') }} km · {{ vehicle.licensePlate }}
+        <Badge
+          v-if="getDueCounts(vehicle.id).total > 0"
+          class="vehicle-progress"
+          :value="`${getDueCounts(vehicle.id).due}/${getDueCounts(vehicle.id).total} fällig`"
+          :severity="getDueCounts(vehicle.id).due > 0 ? 'warn' : 'success'"
+        />
       </div>
 
       <Message
@@ -190,9 +201,10 @@ function getStatusLabel(status: string): string {
 }
 
 .page-title {
-  margin: 0 0 1rem;
-  font-size: 1.5rem;
-  font-weight: 500;
+  margin: 0 0 1.5rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .empty-state {
@@ -221,9 +233,16 @@ function getStatusLabel(status: string): string {
 }
 
 .vehicle-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   font-size: 0.875rem;
   color: var(--p-text-muted-color);
   margin-bottom: 0.75rem;
+}
+
+.vehicle-progress {
+  font-size: 0.75rem;
 }
 
 .schedule-hint {

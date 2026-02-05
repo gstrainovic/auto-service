@@ -170,14 +170,11 @@ export interface OcrResult {
 }
 
 export async function callMistralOcr(imageBase64: string, apiKey: string): Promise<OcrResult> {
-  console.log('[OCR] callMistralOcr called, base64 length:', imageBase64.length)
   const hash = await hashImage(imageBase64)
-  console.log('[OCR] hash computed:', hash.slice(0, 8))
 
   // 1. In-Memory-Cache (schnellste Stufe)
   const memCached = ocrCache.get(hash)
   if (memCached) {
-    console.log('[OCR] Memory cache hit')
     return { markdown: memCached, cacheId: hash }
   }
 
@@ -186,10 +183,8 @@ export async function callMistralOcr(imageBase64: string, apiKey: string): Promi
   try {
     const result = await db.queryOnce({ ocrcache: {} })
     const ocrEntries = result.data.ocrcache || []
-    console.log('[OCR] InstantDB cache entries:', ocrEntries.length)
     const cached = ocrEntries.find((o: any) => o.hash === hash)
     if (cached) {
-      console.log('[OCR] InstantDB cache hit')
       ocrCache.set(hash, cached.markdown)
       return { markdown: cached.markdown, cacheId: hash }
     }
@@ -236,7 +231,6 @@ export async function callMistralOcr(imageBase64: string, apiKey: string): Promi
   try {
     const entityId = id()
     await db.transact([tx.ocrcache[entityId].update({ hash, markdown: text, createdAt: Date.now() })])
-    console.log('[OCR] Cached to InstantDB:', hash.slice(0, 8))
   }
   catch (e) {
     console.error('[OCR] InstantDB cache write failed:', e)

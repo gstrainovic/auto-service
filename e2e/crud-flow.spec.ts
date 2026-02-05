@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test'
-import { clearInstantDB } from './fixtures/db-cleanup'
+import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
 // Helper: create a vehicle via UI and navigate to its detail page
 async function createVehicleAndOpen(page: any, data: { make: string, model: string, year: string, mileage: string, plate?: string }) {
@@ -94,6 +93,16 @@ async function seedMaintenance(page: any, vehicleId: string) {
   }, vehicleId)
 }
 
+// Helper: delete vehicle via UI (targets header delete button, not item delete buttons)
+async function deleteVehicleViaUI(page: any) {
+  // Header delete button has visible text, item buttons are icon-only
+  // Use the button that contains text "Löschen" (not just aria-label)
+  await page.locator('button:has-text("Löschen")').first().click()
+  await expect(page.getByText('Fahrzeug löschen?')).toBeVisible()
+  await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+  await expect(page).toHaveURL(/\/vehicles/)
+}
+
 test.describe('Vehicle CRUD', () => {
   test.beforeEach(async ({ page }) => {
     await clearInstantDB(page)
@@ -128,6 +137,9 @@ test.describe('Vehicle CRUD', () => {
     await expect(page.getByText('Mercedes C220')).toBeVisible()
     await expect(page.getByText('2022')).toBeVisible()
     await expect(page.getByText('30.000 km')).toBeVisible()
+
+    // DELETE (cleanup)
+    await deleteVehicleViaUI(page)
   })
 
   test('CR-002: delete a vehicle from detail page', async ({ page }) => {
@@ -138,7 +150,8 @@ test.describe('Vehicle CRUD', () => {
       mileage: '60000',
     })
 
-    await page.getByRole('button', { name: 'Löschen' }).click()
+    // DELETE (tests AND cleans up) - use the header delete button (has visible text, not icon-only)
+    await page.locator('button:has-text("Löschen")').first().click()
     await expect(page.getByText('Fahrzeug löschen?')).toBeVisible()
     await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
 
@@ -190,6 +203,9 @@ test.describe('Invoice CRUD', () => {
     await page.getByText('Rechnungen').click()
     await expect(page.getByText('Autohaus Müller')).toBeVisible({ timeout: 5_000 })
     await expect(page.getByText('550.00')).toBeVisible()
+
+    // DELETE (cleanup)
+    await deleteVehicleViaUI(page)
   })
 
   test('CR-004: edit invoice items (add and remove)', async ({ page }) => {
@@ -230,6 +246,10 @@ test.describe('Invoice CRUD', () => {
     await page.getByText('Rechnungen').click()
     await page.getByText('Werkstatt Schmidt').click()
     await expect(page.locator('[data-pc-name="dialog"]').getByText('Luftfilter')).toBeVisible({ timeout: 5_000 })
+
+    // DELETE (cleanup) - close dialog first, then delete vehicle
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Close' }).click()
+    await deleteVehicleViaUI(page)
   })
 
   test('CR-005: delete an invoice', async ({ page }) => {
@@ -256,7 +276,10 @@ test.describe('Invoice CRUD', () => {
 
     // Invoice should be gone from the list
     await expect(page.locator('[data-pc-name="tabpanel"]').getByText('Werkstatt Schmidt')).not.toBeVisible({ timeout: 5_000 })
-    await expect(page.getByText('Keine Rechnungen vorhanden')).toBeVisible()
+    await expect(page.getByText(/keine rechnungen/i)).toBeVisible()
+
+    // DELETE vehicle (cleanup)
+    await deleteVehicleViaUI(page)
   })
 })
 
@@ -304,6 +327,9 @@ test.describe('Invoice Duplicate Detection', () => {
     await expect(page.getByText('Werkstatt Schmidt')).toBeVisible({ timeout: 10_000 })
     const invoiceItems = page.locator('[data-pc-name="tabpanel"] .invoice-item')
     await expect(invoiceItems).toHaveCount(1)
+
+    // DELETE (cleanup)
+    await deleteVehicleViaUI(page)
   })
 })
 
@@ -347,6 +373,9 @@ test.describe('Maintenance CRUD', () => {
     // Verify update
     await expect(page.getByText('Vollsynthetisches Öl gewechselt')).toBeVisible({ timeout: 5_000 })
     await expect(page.getByText('76.000 km')).toBeVisible()
+
+    // DELETE (cleanup)
+    await deleteVehicleViaUI(page)
   })
 
   test('CR-008: delete a maintenance entry', async ({ page }) => {
@@ -372,7 +401,10 @@ test.describe('Maintenance CRUD', () => {
 
     // Should be gone
     await expect(page.getByText('Motoröl 5W-30 gewechselt')).not.toBeVisible({ timeout: 5_000 })
-    await expect(page.getByText('Keine Wartungseinträge vorhanden')).toBeVisible()
+    await expect(page.getByText(/keine wartungseinträge/i)).toBeVisible()
+
+    // DELETE vehicle (cleanup)
+    await deleteVehicleViaUI(page)
   })
 
   test('CR-009: change maintenance status via edit', async ({ page }) => {
@@ -402,5 +434,8 @@ test.describe('Maintenance CRUD', () => {
 
     // Entry should still be visible
     await expect(page.getByText('Motoröl 5W-30 gewechselt')).toBeVisible()
+
+    // DELETE (cleanup)
+    await deleteVehicleViaUI(page)
   })
 })

@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test'
-import { clearInstantDB } from './fixtures/db-cleanup'
+import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
 test.describe('Delete Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -7,7 +6,7 @@ test.describe('Delete Flow', () => {
   })
 
   test('DF-001: delete a vehicle with confirmation dialog', async ({ page }) => {
-    // Add a vehicle first
+    // CREATE
     await page.goto('/vehicles')
     await page.getByRole('button', { name: 'Hinzufügen' }).click()
     await page.getByLabel('Marke').fill('VW')
@@ -16,26 +15,26 @@ test.describe('Delete Flow', () => {
     await page.getByLabel('Kilometerstand').fill('80000')
     await page.getByLabel('Kennzeichen').fill('HH-VW 1234')
     await page.getByRole('button', { name: 'Speichern' }).click()
+
+    // READ
     await expect(page.getByText('VW Golf')).toBeVisible()
 
     // Navigate to vehicle detail
     await page.getByText('VW Golf').click()
     await expect(page.getByText('HH-VW 1234')).toBeVisible()
 
-    // Click delete and confirm
-    await page.getByRole('button', { name: 'Löschen' }).click()
+    // DELETE with confirmation (tests AND cleans up)
+    await page.locator('button:has-text("Löschen")').first().click()
     await expect(page.getByText('Fahrzeug löschen?')).toBeVisible()
     await expect(page.getByText('Alle Rechnungen und Wartungseinträge')).toBeVisible()
 
-    // Confirm delete
     await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
-
-    // Should redirect to vehicles list
     await expect(page).toHaveURL(/\/vehicles/)
     await expect(page.getByText('VW Golf')).not.toBeVisible({ timeout: 5_000 })
   })
 
   test('DF-002: scan page has document type tabs', async ({ page }) => {
+    // This test doesn't create persistent data - no cleanup needed
     await page.goto('/scan')
     await expect(page.getByRole('heading', { name: 'Dokument scannen' })).toBeVisible()
 

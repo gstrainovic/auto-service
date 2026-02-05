@@ -8,15 +8,20 @@ const emit = defineEmits<{ captured: [base64: string] }>()
 const preview = ref('')
 const useCamera = ref(true)
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const isDragging = ref(false)
+
+async function handleFile(file: File): Promise<void> {
+  const { dataUrl, base64 } = await resizeImage(file)
+  preview.value = dataUrl
+  emit('captured', base64)
+}
 
 async function onFileSelected(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file)
     return
-  const { dataUrl, base64 } = await resizeImage(file)
-  preview.value = dataUrl
-  emit('captured', base64)
+  await handleFile(file)
   input.value = ''
 }
 
@@ -24,6 +29,14 @@ function triggerFileSelect(): void {
   if (fileInputRef.value) {
     fileInputRef.value.capture = useCamera.value ? 'environment' : ''
     fileInputRef.value.click()
+  }
+}
+
+async function onDrop(event: DragEvent): Promise<void> {
+  isDragging.value = false
+  const files = event.dataTransfer?.files
+  if (files?.length) {
+    await handleFile(files[0])
   }
 }
 </script>
@@ -63,6 +76,17 @@ function triggerFileSelect(): void {
       />
     </div>
 
+    <div
+      class="drop-zone"
+      :class="{ 'drop-zone-active': isDragging }"
+      @dragover.prevent="isDragging = true"
+      @dragleave="isDragging = false"
+      @drop.prevent="onDrop"
+    >
+      <i class="pi pi-cloud-upload drop-icon" />
+      <div>Foto oder PDF hierher ziehen</div>
+    </div>
+
     <img v-if="preview" :src="preview" class="preview-image mt-4">
   </div>
 </template>
@@ -76,5 +100,25 @@ function triggerFileSelect(): void {
   max-height: 300px;
   max-width: 100%;
   object-fit: contain;
+}
+
+.drop-zone {
+  border: 2px dashed var(--p-surface-300);
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  color: var(--p-text-muted-color);
+  transition: all 0.2s;
+  margin-top: 1rem;
+}
+
+.drop-zone-active {
+  border-color: var(--p-primary-color);
+  background: var(--p-primary-50);
+}
+
+.drop-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
 }
 </style>

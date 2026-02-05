@@ -281,7 +281,8 @@ function getImageSrc(imageData: string): string {
               </div>
             </div>
             <div v-if="maintenancesStore.maintenances.length === 0" class="empty-state">
-              Keine Wartungseinträge vorhanden.
+              <i class="pi pi-wrench empty-icon" />
+              <p>Keine Wartungseinträge. Scanne eine Rechnung im Chat!</p>
             </div>
           </TabPanel>
 
@@ -306,7 +307,8 @@ function getImageSrc(imageData: string): string {
               </div>
             </div>
             <div v-if="invoicesStore.invoices.length === 0" class="empty-state">
-              Keine Rechnungen vorhanden.
+              <i class="pi pi-file empty-icon" />
+              <p>Keine Rechnungen. Scanne deine erste Werkstattrechnung!</p>
             </div>
           </TabPanel>
         </TabPanels>
@@ -544,8 +546,9 @@ function getImageSrc(imageData: string): string {
 }
 
 .vehicle-title {
-  font-size: 1.5rem;
-  font-weight: 500;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   margin: 0 0 0.25rem;
 }
 
@@ -663,8 +666,15 @@ function getImageSrc(imageData: string): string {
 
 .empty-state {
   text-align: center;
-  padding: 1rem;
+  padding: 2rem 1rem;
   color: var(--text-color-secondary);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  color: var(--p-primary-color);
+  opacity: 0.5;
+  margin-bottom: 0.5rem;
 }
 
 .dialog-header {

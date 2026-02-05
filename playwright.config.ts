@@ -10,13 +10,39 @@ export default defineConfig({
   workers: 1, // Run tests serially
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  webServer: {
-    command: 'npm run dev',
-    port: 5173,
-    reuseExistingServer: !process.env.CI,
-  },
-  use: {
-    baseURL: 'http://localhost:5173',
-    screenshot: 'only-on-failure',
-  },
+  webServer: [
+    {
+      command: 'npm run dev',
+      url: 'http://localhost:5173',
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: 'cd ~/instant/server && podman-compose -f docker-compose-dev.yml up',
+      url: 'http://localhost:8888',
+      reuseExistingServer: !process.env.CI,
+      timeout: 60000,
+    },
+  ],
+
+  projects: [
+    {
+      name: 'online',
+      testMatch: /.*\.spec\.ts/,
+      use: {
+        baseURL: 'http://localhost:5173',
+        screenshot: 'only-on-failure',
+        simulateOffline: false,
+      },
+    },
+    {
+      name: 'offline',
+      testMatch: /.*\.spec\.ts/,
+      use: {
+        baseURL: 'http://localhost:5173',
+        screenshot: 'only-on-failure',
+        simulateOffline: true,
+      },
+      dependencies: ['online'],
+    },
+  ],
 })

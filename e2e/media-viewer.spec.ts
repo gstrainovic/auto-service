@@ -1,7 +1,6 @@
 import path from 'node:path'
 import process from 'node:process'
-import { expect, test } from '@playwright/test'
-import { clearInstantDB } from './fixtures/db-cleanup'
+import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
 const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
@@ -68,13 +67,24 @@ test.describe('MediaViewer', () => {
 
     // Verify optimization hint is visible
     await expect(page.getByText('automatisch optimiert')).toBeVisible({ timeout: 5_000 })
+
+    // Close MediaViewer (press Escape) - this may also close the dialog
+    await page.keyboard.press('Escape')
+
+    // Wait a moment for any animations
+    await page.waitForTimeout(300)
+
+    // DELETE (cleanup) - use the header delete button (has visible text, not icon-only)
+    await page.locator('button:has-text("Löschen")').first().click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+    await expect(page.getByText('Test MediaViewer')).not.toBeVisible({ timeout: 5_000 })
   })
 
   test('MV-002: chat image shows OCR tab in MediaViewer', async ({ page }) => {
     test.skip(AI_PROVIDER !== 'mistral', 'OCR cache only available with Mistral provider')
 
     // Capture browser console logs
-    page.on('console', msg => console.log('[BROWSER]', msg.type(), msg.text()))
+    page.on('console', msg => console.warn('[BROWSER]', msg.type(), msg.text()))
 
     // Configure AI provider
     await page.goto('/')
@@ -93,7 +103,7 @@ test.describe('MediaViewer', () => {
     await fileInput.setInputFiles(path.join(import.meta.dirname, 'fixtures', 'test-invoice.png'))
     await expect(page.locator('[data-pc-name="chip"]')).toHaveCount(1, { timeout: 10_000 })
 
-    const input = page.locator('input[placeholder="Nachricht..."]')
+    const input = page.locator('[placeholder="Nachricht..."]')
     await input.fill('Was steht auf dieser Rechnung?')
     await page.locator('[data-pc-name="drawer"] button').filter({ has: page.locator('.pi-send') }).click()
 
@@ -122,7 +132,7 @@ test.describe('MediaViewer', () => {
       }
       return { found: false, count: 0, ids: [] }
     })
-    console.log('OCR cache status:', JSON.stringify(ocrCacheFound))
+    console.warn('OCR cache status:', JSON.stringify(ocrCacheFound))
     expect(ocrCacheFound.found, 'OCR cache should have been written by chat flow').toBe(true)
 
     // Click the image thumbnail to open MediaViewer
@@ -137,5 +147,10 @@ test.describe('MediaViewer', () => {
 
     // Verify optimization hint
     await expect(page.getByText('automatisch optimiert')).toBeVisible({ timeout: 5_000 })
+
+    // Close MediaViewer
+    await page.keyboard.press('Escape')
+
+    // No persistent data created - no cleanup needed
   })
 })

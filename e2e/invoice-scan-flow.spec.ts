@@ -1,7 +1,6 @@
 import path from 'node:path'
 import process from 'node:process'
-import { expect, test } from '@playwright/test'
-import { clearInstantDB } from './fixtures/db-cleanup'
+import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
 const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
@@ -77,5 +76,12 @@ test.describe('Invoice Scan Flow', () => {
     const mainSection = page.locator('main')
     await expect(mainSection.getByText('Ölwechsel')).toBeVisible({ timeout: 10_000 })
     await expect(mainSection.getByText(/Zuletzt:/).first()).toBeVisible()
+
+    // DELETE (cleanup) - use the header delete button (has visible text, not icon-only)
+    await page.goto('/vehicles')
+    await page.getByText('BMW 320d').click()
+    await page.locator('button:has-text("Löschen")').first().click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+    await expect(page.getByText('BMW 320d')).not.toBeVisible({ timeout: 5_000 })
   })
 })

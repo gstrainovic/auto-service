@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test'
-import { clearInstantDB } from './fixtures/db-cleanup'
+import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
 // Helper: create a vehicle via UI and navigate to its detail page
 async function createVehicleAndOpen(page: any, data: { make: string, model: string, year: string, mileage: string }) {
@@ -29,6 +28,14 @@ async function waitForDb(page: any) {
   await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 10_000 })
 }
 
+// Helper: delete vehicle via UI
+async function deleteVehicleViaUI(page: any) {
+  await page.locator('button:has-text("Löschen")').first().click()
+  await expect(page.getByText('Fahrzeug löschen?')).toBeVisible()
+  await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+  await expect(page).toHaveURL(/\/vehicles/)
+}
+
 test.describe('Schedule Hint', () => {
   test.beforeEach(async ({ page }) => {
     await clearInstantDB(page)
@@ -51,6 +58,11 @@ test.describe('Schedule Hint', () => {
     await expect(page.getByText('Fiat Punto')).toBeVisible()
     await expect(page.locator('.schedule-hint')).toBeVisible()
     await expect(page.locator('.schedule-hint')).toContainText('Allgemeine Wartungsintervalle')
+
+    // DELETE (cleanup)
+    await page.goto('/vehicles')
+    await page.getByText('Fiat Punto').click()
+    await deleteVehicleViaUI(page)
   })
 
   test('SH-002: hides warning banner when customSchedule exists', async ({ page }) => {
@@ -88,5 +100,10 @@ test.describe('Schedule Hint', () => {
     await page.goto('/')
     await expect(page.getByText('Honda Civic')).toBeVisible()
     await expect(page.locator('.schedule-hint')).not.toBeVisible()
+
+    // DELETE (cleanup)
+    await page.goto('/vehicles')
+    await page.getByText('Honda Civic').click()
+    await deleteVehicleViaUI(page)
   })
 })

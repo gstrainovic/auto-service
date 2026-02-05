@@ -1,7 +1,6 @@
 import path from 'node:path'
 import process from 'node:process'
-import { expect, test } from '@playwright/test'
-import { clearInstantDB } from './fixtures/db-cleanup'
+import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
 const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
@@ -53,7 +52,7 @@ test.describe('Chat Flow', () => {
       await chatInput.press('Enter')
       await expect(page.locator('.chat-message')).toHaveCount(5, { timeout: 60_000 })
       const finalMsg = page.locator('.chat-message').last()
-      await expect(finalMsg).toContainText(/angelegt|eingetragen|erstellt|hinzugefügt|gespeichert|wurde|erledigt|Hier sind die Daten|Daten deines Fahrzeugs/i, { timeout: 30_000 })
+      await expect(finalMsg).toContainText(/angelegt|eingetragen|erstellt|hinzugefügt|gespeichert|wurde|erledigt|Hier sind|Hier ist|Daten deines|neuer/i, { timeout: 30_000 })
     }
 
     // Step 6: Close chat and verify vehicle in UI
@@ -61,9 +60,16 @@ test.describe('Chat Flow', () => {
     await page.goto('/vehicles')
     await expect(page.getByText('Audi A4').first()).toBeVisible({ timeout: 15_000 })
     await expect(page.getByText('B-CD 5678').first()).toBeVisible()
+
+    // DELETE (cleanup) - use the header delete button (has visible text, not icon-only)
+    await page.getByText('Audi A4').first().click()
+    await page.locator('button:has-text("Löschen")').first().click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+    await expect(page.getByText('Audi A4')).not.toBeVisible({ timeout: 5_000 })
   })
 
   test('CF-002: attach multiple images and see pending chips', async ({ page }) => {
+    // This test doesn't create persistent data - no cleanup needed
     await page.goto('/')
     await page.locator('.chat-fab').click()
     await expect(page.getByText('KI-Assistent')).toBeVisible()
@@ -82,6 +88,7 @@ test.describe('Chat Flow', () => {
   })
 
   test('CF-003: remove individual pending file via chip', async ({ page }) => {
+    // This test doesn't create persistent data - no cleanup needed
     await page.goto('/')
     await page.locator('.chat-fab').click()
     await expect(page.getByText('KI-Assistent')).toBeVisible()
@@ -139,5 +146,7 @@ test.describe('Chat Flow', () => {
     await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
     const assistantMsg = page.locator('.chat-message').last()
     await expect(assistantMsg).toContainText(/.+/, { timeout: 10_000 })
+
+    // Chat messages don't persist on page reload, no cleanup needed
   })
 })

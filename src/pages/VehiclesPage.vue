@@ -31,7 +31,14 @@ async function onSave(data: any) {
     </div>
 
     <div v-if="store.vehicles.length === 0" class="empty-state">
-      Noch keine Fahrzeuge. Füge dein erstes Auto hinzu.
+      <i class="pi pi-car empty-icon" />
+      <div class="empty-title">
+        Keine Fahrzeuge
+      </div>
+      <div class="empty-text">
+        Füge dein erstes Fahrzeug hinzu.
+      </div>
+      <Button label="Erstes Fahrzeug anlegen" icon="pi pi-plus" @click="showForm = true" />
     </div>
 
     <VehicleCard
@@ -68,13 +75,31 @@ async function onSave(data: any) {
 
 .page-title {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 500;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .empty-state {
   text-align: center;
   padding: 3rem;
   color: var(--p-text-muted-color);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  color: var(--p-primary-color);
+  opacity: 0.5;
+  margin-bottom: 1rem;
+}
+
+.empty-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.empty-text {
+  margin-bottom: 1.5rem;
 }
 </style>

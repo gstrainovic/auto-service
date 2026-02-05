@@ -1,6 +1,5 @@
 import process from 'node:process'
-import { expect, test } from '@playwright/test'
-import { clearInstantDB } from './fixtures/db-cleanup'
+import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
 const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
@@ -36,7 +35,7 @@ test.describe('Chat Schedule Hint', () => {
     await page.locator('.chat-fab').click()
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
-    const input = page.locator('.chat-drawer input[placeholder="Nachricht..."]')
+    const input = page.locator('.chat-drawer [placeholder="Nachricht..."]')
     await input.fill('Was ist beim Yaris an Wartung fällig?')
     await page.locator('.chat-drawer button').filter({ has: page.locator('.pi-send') }).click()
 
@@ -46,6 +45,16 @@ test.describe('Chat Schedule Hint', () => {
     // AI should mention service book / allgemein / Service-Heft in its response
     const assistantMsg = page.locator('.chat-message').last()
     await expect(assistantMsg).toContainText(/Service-Heft|allgemein/i, { timeout: 30_000 })
+
+    // Close chat
+    await page.locator('.chat-header-actions button').filter({ has: page.locator('.pi-times') }).click()
+
+    // DELETE (cleanup) - use the header delete button (has visible text, not icon-only)
+    await page.goto('/vehicles')
+    await page.getByText('Toyota Yaris').first().click()
+    await page.locator('button:has-text("Löschen")').first().click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+    await expect(page.getByText('Toyota Yaris')).not.toBeVisible({ timeout: 5_000 })
   })
 
   test('CS-002: AI does NOT mention service book hint when customSchedule exists', async ({ page }) => {
@@ -91,7 +100,7 @@ test.describe('Chat Schedule Hint', () => {
     await page.locator('.chat-fab').click()
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
-    const input = page.locator('.chat-drawer input[placeholder="Nachricht..."]')
+    const input = page.locator('.chat-drawer [placeholder="Nachricht..."]')
     await input.fill('Was ist beim Mazda an Wartung fällig?')
     await page.locator('.chat-drawer button').filter({ has: page.locator('.pi-send') }).click()
 
@@ -106,5 +115,15 @@ test.describe('Chat Schedule Hint', () => {
     // The context shows "✅ Service-Heft" so AI should NOT suggest uploading it
     const msgText = await assistantMsg.textContent() || ''
     expect(msgText).not.toMatch(/Service-Heft.*fotograf|Service-Heft.*hochladen|Service-Heft.*schick/i)
+
+    // Close chat
+    await page.locator('.chat-header-actions button').filter({ has: page.locator('.pi-times') }).click()
+
+    // DELETE (cleanup) - use the header delete button (has visible text, not icon-only)
+    await page.goto('/vehicles')
+    await page.getByText('Mazda 3').first().click()
+    await page.locator('button:has-text("Löschen")').first().click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+    await expect(page.getByText('Mazda 3')).not.toBeVisible({ timeout: 5_000 })
   })
 })

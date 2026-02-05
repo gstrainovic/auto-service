@@ -1,7 +1,6 @@
 import path from 'node:path'
 import process from 'node:process'
-import { expect, test } from '@playwright/test'
-import { clearInstantDB } from './fixtures/db-cleanup'
+import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
 const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
@@ -48,6 +47,12 @@ test.describe('Vehicle Document Scan', () => {
     await expect(page).toHaveURL(/\/vehicles/, { timeout: 10_000 })
     await expect(page.getByText(/Volkswagen/i).first()).toBeVisible()
     await expect(page.getByText(/Golf/i).first()).toBeVisible()
+
+    // DELETE (cleanup)
+    await page.getByText(/Volkswagen.*Golf/i).first().click()
+    await page.locator('button:has-text("Löschen")').first().click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+    await expect(page.getByText(/Volkswagen.*Golf/i)).not.toBeVisible({ timeout: 5_000 })
   })
 
   test('VD-002: scan a Service-Heft and add to vehicle', async ({ page }) => {
@@ -100,5 +105,12 @@ test.describe('Vehicle Document Scan', () => {
     await expect(page.getByText('VW Golf VIII')).toBeVisible()
     const mainSection = page.locator('main')
     await expect(mainSection.getByText(/Zuletzt:/).first()).toBeVisible({ timeout: 10_000 })
+
+    // DELETE (cleanup)
+    await page.goto('/vehicles')
+    await page.getByText('VW Golf VIII').click()
+    await page.locator('button:has-text("Löschen")').first().click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+    await expect(page.getByText('VW Golf VIII')).not.toBeVisible({ timeout: 5_000 })
   })
 })

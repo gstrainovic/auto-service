@@ -6,9 +6,9 @@ import Button from 'primevue/button'
 import Chip from 'primevue/chip'
 import Divider from 'primevue/divider'
 import Drawer from 'primevue/drawer'
-import InputText from 'primevue/inputtext'
 import ProgressSpinner from 'primevue/progressspinner'
 import ScrollPanel from 'primevue/scrollpanel'
+import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
 import { nextTick, onMounted, ref, watch } from 'vue'
 import { autoRotateForDocument, resizeImage } from '../composables/useImageResize'
@@ -380,13 +380,16 @@ async function clearChat() {
           severity="secondary"
           @click="pickFile"
         />
-        <InputText
+        <Textarea
           v-model="input"
           class="chat-input"
           placeholder="Nachricht..."
-          @keyup.enter="send"
+          auto-resize
+          rows="1"
+          @keydown.enter.exact.prevent="send"
         />
         <Button
+          class="chat-fab-send"
           icon="pi pi-send"
           rounded
           :loading="loading"
@@ -479,14 +482,16 @@ async function clearChat() {
 }
 
 .bubble-user {
-  background: var(--p-primary-color);
+  background: linear-gradient(135deg, var(--p-primary-color), var(--p-primary-600));
   color: var(--p-primary-contrast-color);
   border-bottom-right-radius: 0.25rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .bubble-assistant {
-  background: var(--p-surface-100);
+  background: linear-gradient(135deg, var(--p-surface-100), var(--p-surface-50));
   color: var(--p-text-color);
+  border: 1px solid var(--p-surface-200);
   border-bottom-left-radius: 0.25rem;
 }
 

@@ -1,7 +1,6 @@
 import path from 'node:path'
 import process from 'node:process'
-import { expect, test } from '@playwright/test'
-import { clearInstantDB } from './fixtures/db-cleanup'
+import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
 const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
@@ -46,7 +45,7 @@ test.describe('Schedule Flow', () => {
     ])
     await expect(page.locator('.chat-drawer [data-pc-name="chip"]')).toHaveCount(1)
 
-    const input = page.locator('.chat-drawer input[placeholder="Nachricht..."]')
+    const input = page.locator('.chat-drawer [placeholder="Nachricht..."]')
     await input.fill('Lies die Wartungsintervalle aus dem Service-Heft für meinen VW Golf')
     await page.locator('.chat-drawer button').filter({ has: page.locator('.pi-send') }).click()
 
@@ -56,7 +55,7 @@ test.describe('Schedule Flow', () => {
     await expect(phase1Msg).toContainText(/intervall|wartung|km|monate/i, { timeout: 30_000 })
 
     // Step 5: Confirm to save
-    const chatInput = page.locator('.chat-drawer input[placeholder="Nachricht..."]')
+    const chatInput = page.locator('.chat-drawer [placeholder="Nachricht..."]')
     await chatInput.fill('Ja, bitte speichern')
     await chatInput.press('Enter')
 
@@ -72,5 +71,10 @@ test.describe('Schedule Flow', () => {
 
     // Switch to maintenance tab (already default)
     await expect(page.getByText('Fahrzeugspezifischer Wartungsplan').first()).toBeVisible({ timeout: 15_000 })
+
+    // DELETE (cleanup)
+    await page.locator('button:has-text("Löschen")').first().click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+    await expect(page.getByText('Volkswagen Golf VIII')).not.toBeVisible({ timeout: 5_000 })
   })
 })

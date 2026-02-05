@@ -1,7 +1,6 @@
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { expect, test } from '@playwright/test'
-import { clearInstantDB } from './fixtures/db-cleanup'
+import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
 test.describe('Settings Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -9,6 +8,7 @@ test.describe('Settings Flow', () => {
   })
 
   test('SE-001: select AI provider and enter API key', async ({ page }) => {
+    // This test doesn't create persistent data - no cleanup needed
     await page.goto('/settings')
     await expect(page.getByText('KI-Provider')).toBeVisible()
 
@@ -89,7 +89,7 @@ test.describe('Settings Flow', () => {
     }, testVehicleId)
     expect(restored).toEqual({ make: 'ExportTest', model: 'Roundtrip', mileage: 12345 })
 
-    // Cleanup: delete the test vehicle
+    // DELETE (cleanup)
     await page.evaluate(async (vId: string) => {
       const { db, tx } = (window as any).__instantdb
       await db.transact([tx.vehicles[vId].delete()])

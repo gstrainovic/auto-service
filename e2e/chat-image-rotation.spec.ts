@@ -1,6 +1,5 @@
 import path from 'node:path'
-import { expect, test } from '@playwright/test'
-import { clearInstantDB } from './fixtures/db-cleanup'
+import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
 const fixturesDir = path.join(import.meta.dirname, 'fixtures')
 
@@ -46,5 +45,7 @@ test.describe('Chat Image Auto-Rotation', () => {
     })
 
     expect(dimensions.h).toBeGreaterThan(dimensions.w)
+
+    // No persistent data created - no cleanup needed
   })
 })

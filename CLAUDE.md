@@ -50,7 +50,7 @@ podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;
 - **Entity-IDs müssen UUIDs sein** — keine beliebigen Strings (z.B. SHA-256 Hashes)
 - **Schemaless** — keine Schema-Definition nötig, Felder werden dynamisch erstellt
 - **Echtzeit-Sync** — Änderungen werden sofort an alle Clients gepusht
-- **Kein Offline-First** — braucht aktive Server-Verbindung
+- **Offline-First** — Daten in IndexedDB, Lesen+Schreiben funktionieren offline, Sync via CRDT bei Reconnect
 
 ## AI Providers
 Vier cloud Providers via Vercel AI SDK v6:
@@ -125,6 +125,17 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 
 ## E2E Testing
 
+### Architektur
+- **`beforeEach` + `clearInstantDB`**: Jeder Test startet mit leerer Datenbank
+- Tests folgen **CRUD-Paradigma**: Create → Read → Update → Delete
+- Tests laufen automatisch **zweimal**: online + offline (via Network-Blocking)
+- **Playwright startet Server automatisch** (Vite + InstantDB) — kein manuelles `podman-compose up` nötig
+- `npm run test:e2e` führt beide Projekt-Varianten aus (66 Tests: 33 online + 33 offline)
+
+### Offline-Testing
+Die `simulateOffline` Fixture blockiert alle Requests zu `localhost:8888` (InstantDB-Server).
+Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert und die App funktioniert ohne Server.
+
 ### Test-IDs (Präfix-Schema)
 | Präfix | Bereich | Beispiel |
 |--------|---------|----------|
@@ -143,14 +154,21 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 | CS | Chat Schedule | CS-001, CS-002 |
 | MV | MediaViewer | MV-001, MV-002 |
 
-**Gesamt: 33 Tests** — `npm run test:e2e --list` zeigt alle
+**Gesamt: 33 Tests pro Projekt** — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
-- Quasar icon-only buttons need CSS class selectors (.chat-fab), not getByRole
+- Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`
+- PrimeVue icon-only buttons need CSS class selectors (.chat-fab), not getByRole
 - .env loaded by playwright.config.ts, keys injected via page.evaluate → localStorage
 - Alle AI-Tests nutzen Mistral als Default (schnell, zuverlässig, ~3–6s für Vision+Tools)
 - Use .first() for assertions that may match multiple elements (AI can create duplicates)
 - Chat-Test: Assertion auf Tool-Ergebnis muss `erledigt` einschließen (Fallback wenn Model keinen eigenen Text generiert)
+
+### PrimeVue Selektor-Gotchas
+- `getByRole('button', { name: 'X' })` matcht Text-Buttons UND Icon-only-Buttons (beide haben aria-label)
+- Für Header-Buttons mit sichtbarem Text: `button:has-text("Löschen")` statt `getByRole`
+- Dialog Close-Button: `getByRole('button', { name: 'Close' })` (nicht `.pi-times` CSS-Klasse)
+- VehicleDetailPage hat mehrere "Löschen"-Buttons (Header + Item-Buttons) — `.first()` oder spezifischen Container verwenden
 
 ## Code Style
 - German UI text and AI schema descriptions
@@ -160,7 +178,6 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 ## InstantDB Gotchas
 - Entity-IDs müssen UUIDs sein — `id()` verwenden, Hashes als separates Feld speichern
 - `devtool: false` setzen — DevTools-Toggle blockiert UI-Klicks in Tests
-- DB-Cleanup in Tests via Client-API (`db.transact`) — direktes SQL umgeht WebSocket-Sync
 - OCR-Cache: `tx.ocrcache[id()].update({ hash, markdown, ... })` statt `tx.ocrcache[hash].update(...)`
 
 ## Gotchas

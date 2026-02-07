@@ -59,4 +59,59 @@ test.describe('Chat Tool Result Cards', () => {
     await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
     await expect(page.getByText('BMW 320d')).not.toBeVisible({ timeout: 5_000 })
   })
+
+  test('TC-002: tool result cards survive page reload', async ({ page }) => {
+    // Configure AI provider
+    await page.goto('/')
+    await page.evaluate(({ provider, key }) => {
+      localStorage.setItem('ai_provider', provider)
+      localStorage.setItem('ai_api_key', key)
+    }, { provider: AI_PROVIDER, key: AI_API_KEY })
+    await page.reload()
+
+    // Create vehicle via chat
+    await page.locator('.chat-fab').click()
+    await expect(page.getByText('KI-Assistent')).toBeVisible()
+
+    const input = page.locator('[data-pc-name="drawer"]').getByPlaceholder('Nachricht...')
+    await input.fill('Erstelle einen VW Golf Baujahr 2020 mit 60000 km')
+    await page.locator('[data-pc-name="drawer"]').locator('.chat-fab-send').click()
+
+    // Wait for AI response
+    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
+
+    // If AI asks for confirmation, confirm
+    const lastMsg = page.locator('.chat-message-assistant').last()
+    const text = await lastMsg.textContent() || ''
+    if (!/angelegt|erstellt|gespeichert|erledigt/i.test(text)) {
+      await input.fill('Ja, bitte eintragen')
+      await input.press('Enter')
+      await expect(page.locator('.chat-message')).toHaveCount(5, { timeout: 60_000 })
+    }
+
+    // Tool result card should be visible before reload
+    const toolCard = page.locator('[data-pc-name="drawer"] .tool-result-card')
+    await expect(toolCard.first()).toBeVisible({ timeout: 10_000 })
+    await expect(toolCard.first()).toContainText(/VW|Golf/i)
+
+    // Reload page completely (drawer closes automatically)
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+
+    // Reopen chat drawer
+    await page.locator('.chat-fab').click()
+    await expect(page.getByText('KI-Assistent')).toBeVisible()
+
+    // Tool result card should still be visible after reload
+    const toolCardAfter = page.locator('[data-pc-name="drawer"] .tool-result-card')
+    await expect(toolCardAfter.first()).toBeVisible({ timeout: 10_000 })
+    await expect(toolCardAfter.first()).toContainText(/VW|Golf/i)
+
+    // Cleanup
+    await page.goto('/vehicles')
+    await page.getByText('VW Golf').first().click()
+    await page.locator('button:has-text("Löschen")').first().click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+    await expect(page.getByText('VW Golf')).not.toBeVisible({ timeout: 5_000 })
+  })
 })

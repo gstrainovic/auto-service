@@ -114,7 +114,10 @@ WARTUNGSPLAN AUS SERVICE-HEFT:
   1. Lies die Intervalle sorgfältig ab (km und Zeitintervalle)
   2. Mappe zu Kategorien: oelwechsel, inspektion, bremsen, reifen, luftfilter, zahnriemen, bremsflüssigkeit, klimaanlage, tuev, kuehlung, fahrwerk, elektrik, sonstiges
   3. Zeige dem Benutzer eine Tabelle mit allen erkannten Intervallen
-  4. Nach Bestätigung: verwende set_maintenance_schedule
+  4. Nach Bestätigung: verwende IMMER set_maintenance_schedule (NICHT add_maintenance!)
+  WICHTIG: set_maintenance_schedule setzt die INTERVALLE (z.B. "Ölwechsel alle 15.000 km").
+  add_maintenance ist NUR für einzelne erledigte Wartungseinträge (z.B. "Ölwechsel am 15.03.2024").
+  Beim Service-Heft-Upload geht es um INTERVALLE → set_maintenance_schedule verwenden!
 - Typische Zuordnung:
   - Zündkerzen → elektrik
   - Getriebeöl/Differentialöl/Verteilergetriebeöl → sonstiges (Label beschreibt es genau)
@@ -643,8 +646,14 @@ function extractResult(result: any): { text?: string, toolResults?: ToolResult[]
     for (const tr of allStepResults) {
       // AI SDK v6: tool results have .output (not .result)
       const output = tr?.output ?? tr?.result
-      if (output?.data && tr?.toolName) {
+      if (!output?.success || !tr?.toolName)
+        continue
+      if (output.data) {
         toolResults.push({ tool: tr.toolName, data: output.data })
+      }
+      else if (output.schedule) {
+        // set_maintenance_schedule: schedule array als data
+        toolResults.push({ tool: tr.toolName, data: { schedule: output.schedule, message: output.message } })
       }
     }
   }

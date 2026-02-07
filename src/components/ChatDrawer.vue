@@ -62,6 +62,7 @@ onMounted(async () => {
           role: d.role,
           content: d.content,
           attachments: d.attachments?.length ? d.attachments : undefined,
+          toolResults: d.toolResults?.length ? d.toolResults : undefined,
         })),
       ]
     }
@@ -76,6 +77,7 @@ async function saveMessage(msg: ChatMessage) {
         role: msg.role,
         content: msg.content,
         attachments: msg.attachments || [],
+        toolResults: msg.toolResults || [],
         createdAt: Date.now(),
       }),
     ])

@@ -21,6 +21,8 @@ function summary(): string {
     return `${d.make} ${d.model} (${d.year})`
   if (d.workshopName)
     return `${d.workshopName} — ${d.totalAmount} ${d.currency || 'EUR'}`
+  if (d.schedule?.length)
+    return `${d.schedule.length} Wartungsintervalle`
   if (d.type && d.description)
     return `${d.description}`
   return meta.label
@@ -57,6 +59,10 @@ function fields(): { label: string, value: string }[] {
     f.push({ label: 'Datum', value: d.doneAt })
   if (d.items?.length)
     f.push({ label: 'Positionen', value: d.items.map((i: any) => `${i.description} (${i.amount})`).join(', ') })
+  if (d.schedule?.length) {
+    for (const s of d.schedule)
+      f.push({ label: s.label || s.type || 'Intervall', value: s.interval || s.description || '' })
+  }
   return f
 }
 </script>

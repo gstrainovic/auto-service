@@ -121,7 +121,9 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - PDF-Upload: max 50 MB, OCR pro Seite, Duplikat-Erkennung bei identischen Seiten
 - `scan_document` Tool wird ausgeblendet wenn Bilder im Message sind (Modell sieht Bilder direkt)
 - `add_maintenance` Tool: Wartung OHNE Rechnung eintragen (z.B. manuell berichtete Arbeiten)
-- Chat: Kamera-Button (capture="environment"), Drag & Drop, Multi-PDF-Upload
+- Chat: Kamera-Button (capture="environment"), Drag & Drop, Multi-PDF-Upload, Maximize mit 30/70 Split
+- Chat Tool Results: `sendChatMessage` gibt `{ text, toolResults? }` zurück, ToolResultCard als PrimeVue Panel
+- AI SDK v6: Tool-Ergebnisse in `tr.output` (nicht `tr.result`), `tr.toolName` für Tool-Name
 - z.enum(MAINTENANCE_CATEGORIES) enforces valid categories in AI schemas
 - InstantDB: Entity-IDs müssen UUIDs sein (nutze `id()` Funktion)
 
@@ -132,7 +134,7 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Tests folgen **CRUD-Paradigma**: Create → Read → Update → Delete
 - Tests laufen automatisch **zweimal**: online + offline (via Network-Blocking)
 - **Playwright startet Server automatisch** (Vite + InstantDB) — kein manuelles `podman-compose up` nötig
-- `npm run test:e2e` führt beide Projekt-Varianten aus (100 Tests: 50 online + 50 offline)
+- `npm run test:e2e` führt beide Projekt-Varianten aus (104 Tests: 52 online + 52 offline)
 
 ### Offline-Testing
 Die `simulateOffline` Fixture blockiert alle Requests zu `localhost:8888` (InstantDB-Server).
@@ -156,10 +158,12 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | SE | Settings Flow | SE-001 bis SE-004 |
 | CI | Chat Image | CI-001: rotation |
 | CS | Chat Schedule | CS-001, CS-002 |
+| TC | Tool Cards | TC-001: tool result card |
+| SL | Split Layout | SL-001: 30/70 split maximized |
 | MV | MediaViewer | MV-001, MV-002 |
 | DP | Dashboard Progress | DP-001: progress indicator |
 
-**Gesamt: 50 Tests pro Projekt** — `npm run test:e2e --list` zeigt alle
+**Gesamt: 52 Tests pro Projekt** — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`

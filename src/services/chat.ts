@@ -38,12 +38,18 @@ function correctCategory(description: string, aiCategory: string): string {
   return aiCategory
 }
 
+export interface ToolResult {
+  tool: string
+  data: Record<string, any>
+}
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
   attachment?: { type: 'image' | 'pdf', name: string, preview?: string }
   attachments?: { type: 'image' | 'pdf', name: string, preview?: string }[]
+  toolResults?: ToolResult[]
 }
 
 const SYSTEM_PROMPT = `Du bist der Auto-Service Assistent. Du hilfst beim Verwalten von Fahrzeugen und Wartungen.
@@ -629,17 +635,28 @@ function formatToolResult(r: any): string | undefined {
   return parts.length ? parts.join('\n') : undefined
 }
 
-function extractResult(result: any): string | undefined {
-  if (result.text)
-    return result.text
-  const allResults = result.steps
+function extractResult(result: any): { text?: string, toolResults?: ToolResult[] } {
+  const toolResults: ToolResult[] = []
+  const allStepResults = result.steps
     ?.flatMap((s: any) => s.toolResults ?? []) as any[] | undefined
-  if (!allResults?.length)
-    return undefined
-  const messages = allResults
-    .map((tr: any) => formatToolResult(tr?.result))
+  if (allStepResults?.length) {
+    for (const tr of allStepResults) {
+      // AI SDK v6: tool results have .output (not .result)
+      const output = tr?.output ?? tr?.result
+      if (output?.data && tr?.toolName) {
+        toolResults.push({ tool: tr.toolName, data: output.data })
+      }
+    }
+  }
+
+  if (result.text)
+    return { text: result.text, toolResults: toolResults.length ? toolResults : undefined }
+
+  const messages = (allStepResults ?? [])
+    .map((tr: any) => formatToolResult(tr?.output ?? tr?.result))
     .filter(Boolean)
-  return messages.length ? messages.join('\n') : undefined
+  const text = messages.length ? messages.join('\n') : undefined
+  return { text, toolResults: toolResults.length ? toolResults : undefined }
 }
 
 // Zwischenspeicher für Bilder/PDF-OCR zwischen Phase 1 (Analyse) und Phase 2 (Tool-Calls)
@@ -651,7 +668,7 @@ export async function sendChatMessage(
   opts: ChatOptions,
   imagesBase64?: string[],
   pdfBase64s?: string[],
-): Promise<string> {
+): Promise<{ text: string, toolResults?: ToolResult[] }> {
   const model = getModel({
     provider: opts.provider,
     apiKey: opts.apiKey,
@@ -696,7 +713,7 @@ Analysiere jede Seite einzeln. Zeige die erkannten Daten pro Seite strukturiert 
       messages: buildAiMessages(messages),
       stopWhen: stepCountIs(1),
     }))
-    return phase1.text || 'Keine Ergebnisse.'
+    return { text: phase1.text || 'Keine Ergebnisse.' }
   }
 
   if (imagesBase64?.length) {
@@ -750,7 +767,7 @@ Zeige die erkannten Daten strukturiert an — getrennt nach Fahrzeug-Daten und R
       messages: buildAiMessages(messages, visionImages),
       stopWhen: stepCountIs(1),
     }))
-    return phase1.text || 'Keine Ergebnisse.'
+    return { text: phase1.text || 'Keine Ergebnisse.' }
   }
 
   // Phase 2: Wenn Bilder oder PDF-OCR aus vorheriger Nachricht zwischengespeichert sind
@@ -813,5 +830,9 @@ Zeige die erkannten Daten strukturiert an — getrennt nach Fahrzeug-Daten und R
     tools,
     stopWhen: stepCountIs(maxSteps),
   }))
-  return extractResult(result) || 'Erledigt.'
+  const extracted = extractResult(result)
+  return {
+    text: extracted.text || 'Erledigt.',
+    toolResults: extracted.toolResults,
+  }
 }

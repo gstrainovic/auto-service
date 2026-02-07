@@ -10,13 +10,14 @@ import ProgressSpinner from 'primevue/progressspinner'
 import ScrollPanel from 'primevue/scrollpanel'
 import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
-import { nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { autoRotateForDocument, resizeImage } from '../composables/useImageResize'
 import { db, tx } from '../lib/instantdb'
 import { hashImage } from '../services/ai'
 import { sendChatMessage, WELCOME_MESSAGE } from '../services/chat'
 import { useSettingsStore } from '../stores/settings'
 import MediaViewer from './MediaViewer.vue'
+import ToolResultCard from './ToolResultCard.vue'
 
 const MAX_PDF_SIZE = 50 * 1024 * 1024 // 50 MB (Mistral OCR Limit)
 
@@ -81,6 +82,14 @@ async function saveMessage(msg: ChatMessage) {
   }
   catch {}
 }
+
+const allToolResults = computed(() =>
+  messages.value.flatMap(m =>
+    (m.toolResults || []).map(tr => ({ ...tr, msgId: m.id })),
+  ),
+)
+
+const showSplit = computed(() => maximized.value && allToolResults.value.length > 0)
 
 function scrollToBottom() {
   nextTick(() => {
@@ -228,7 +237,8 @@ async function send() {
     const assistantMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'assistant',
-      content: response || 'Erledigt.',
+      content: response.text || 'Erledigt.',
+      toolResults: response.toolResults,
     }
     messages.value.push(assistantMsg)
     await saveMessage(assistantMsg)
@@ -327,7 +337,81 @@ async function clearChat() {
       <div>Dateien hier ablegen</div>
     </div>
 
-    <ScrollPanel ref="scrollArea" class="chat-scroll">
+    <div v-if="showSplit" class="chat-split-layout">
+      <ScrollPanel class="chat-cards-panel">
+        <div class="chat-cards-list">
+          <ToolResultCard
+            v-for="(tr, ti) in allToolResults"
+            :key="ti"
+            :result="tr"
+          />
+        </div>
+      </ScrollPanel>
+      <ScrollPanel ref="scrollArea" class="chat-main-panel">
+        <div class="chat-messages">
+          <div
+            v-for="msg in messages"
+            :key="msg.id"
+            class="chat-message"
+            :class="msg.role === 'user' ? 'chat-message-user' : 'chat-message-assistant'"
+          >
+            <div class="chat-message-name">
+              {{ msg.role === 'user' ? 'Du' : 'Assistent' }}
+            </div>
+            <div class="chat-message-bubble" :class="msg.role === 'user' ? 'bubble-user' : 'bubble-assistant'">
+              <template v-if="msg.attachments?.length">
+                <div class="attachment-row">
+                  <template v-for="(att, i) in msg.attachments" :key="i">
+                    <img
+                      v-if="att.type === 'image' && att.preview"
+                      :src="att.preview"
+                      class="attachment-image"
+                      @click="openImageViewer(att.preview!)"
+                    >
+                    <div
+                      v-else-if="att.type === 'pdf'"
+                      class="attachment-pdf"
+                      @click="pdfDataByMsgId.has(msg.id) && openPdfViewer(pdfDataByMsgId.get(msg.id)!)"
+                    >
+                      <i class="pi pi-file-pdf" />
+                      {{ att.name }}
+                    </div>
+                  </template>
+                </div>
+              </template>
+              <template v-else-if="msg.attachment">
+                <img
+                  v-if="msg.attachment.type === 'image' && msg.attachment.preview"
+                  :src="msg.attachment.preview"
+                  class="attachment-image-large"
+                  @click="openImageViewer(msg.attachment!.preview!)"
+                >
+                <div
+                  v-if="msg.attachment.type === 'pdf'"
+                  class="attachment-pdf"
+                  @click="pdfDataByMsgId.has(msg.id) && openPdfViewer(pdfDataByMsgId.get(msg.id)!)"
+                >
+                  <i class="pi pi-file-pdf" />
+                  {{ msg.attachment.name }}
+                </div>
+              </template>
+              <div class="chat-markdown" v-html="renderMarkdown(msg.content)" />
+            </div>
+          </div>
+
+          <div v-if="loading" class="chat-message chat-message-assistant">
+            <div class="chat-message-name">
+              Assistent
+            </div>
+            <div class="chat-message-bubble bubble-assistant">
+              <ProgressSpinner style="width: 24px; height: 24px" stroke-width="4" />
+            </div>
+          </div>
+        </div>
+      </ScrollPanel>
+    </div>
+
+    <ScrollPanel v-else ref="scrollArea" class="chat-scroll">
       <div class="chat-messages">
         <div
           v-for="msg in messages"
@@ -376,6 +460,13 @@ async function clearChat() {
               </div>
             </template>
             <div class="chat-markdown" v-html="renderMarkdown(msg.content)" />
+            <template v-if="msg.toolResults?.length">
+              <ToolResultCard
+                v-for="(tr, ti) in msg.toolResults"
+                :key="ti"
+                :result="tr"
+              />
+            </template>
           </div>
         </div>
 
@@ -632,6 +723,38 @@ async function clearChat() {
 .chat-drop-hint:hover {
   border-color: var(--p-primary-color);
   color: var(--p-primary-color);
+}
+
+.chat-split-layout {
+  display: flex;
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+}
+
+.chat-cards-panel {
+  width: 30%;
+  min-width: 250px;
+  border-right: 1px solid color-mix(in srgb, var(--p-text-color) 15%, transparent);
+}
+
+.chat-cards-panel :deep(.p-scrollpanel-content) {
+  padding: 1rem;
+}
+
+.chat-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chat-main-panel {
+  flex: 1;
+  width: 70%;
+}
+
+.chat-main-panel :deep(.p-scrollpanel-content) {
+  padding: 1rem;
 }
 
 .chat-drop-overlay {

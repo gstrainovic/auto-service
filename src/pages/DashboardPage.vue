@@ -104,8 +104,9 @@ function getDueCounts(vehicleId: string): { due: number, total: number } {
         Füge dein erstes Fahrzeug hinzu um loszulegen.
       </div>
       <Button
-        label="Fahrzeuge"
-        @click="router.push('/vehicles')"
+        label="Fahrzeug hinzufügen"
+        icon="pi pi-plus"
+        @click="router.push('/vehicles?action=add')"
       />
     </div>
 

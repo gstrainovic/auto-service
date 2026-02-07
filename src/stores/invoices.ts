@@ -79,9 +79,11 @@ export const useInvoicesStore = defineStore('invoices', () => {
   }
 
   async function update(invoiceId: string, data: Partial<Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'>>) {
+    // Deep-clone to strip Vue reactive proxies (IDBObjectStore can't clone them)
+    const plain = JSON.parse(JSON.stringify(data))
     await db.transact([
       (tx.invoices as any)[invoiceId].update({
-        ...data,
+        ...plain,
         updatedAt: new Date().toISOString(),
       }),
     ])

@@ -162,4 +162,51 @@ test.describe('Chat Upload Enhancements', () => {
     await expect(page.getByText('test1.pdf')).toBeVisible()
     await expect(page.getByText('test2.pdf')).toBeVisible()
   })
+
+  test('CU-009: chat shows welcome suggestions on first open', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.chat-fab').click()
+    await expect(page.getByText('KI-Assistent')).toBeVisible()
+
+    // Welcome suggestions should be visible
+    const suggestions = page.locator('.chat-suggestions')
+    await expect(suggestions).toBeVisible()
+
+    // Should show clickable suggestion chips
+    const chips = page.locator('.chat-suggestion-chip')
+    await expect(chips).toHaveCount(3)
+    await expect(chips.filter({ hasText: 'Rechnung scannen' })).toBeVisible()
+    await expect(chips.filter({ hasText: 'Fahrzeug anlegen' })).toBeVisible()
+    await expect(chips.filter({ hasText: 'Wartungsstatus' })).toBeVisible()
+  })
+
+  test('CU-010: clicking a suggestion chip fills the input', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.chat-fab').click()
+    await expect(page.getByText('KI-Assistent')).toBeVisible()
+
+    // Click a suggestion chip
+    await page.getByText('Fahrzeug anlegen').click()
+
+    // Input should be filled with the suggestion text
+    const textarea = page.locator('[data-pc-name="drawer"]').getByPlaceholder('Nachricht...')
+    await expect(textarea).toHaveValue(/Fahrzeug/)
+  })
+
+  test('CU-011: suggestions disappear after sending a message', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.chat-fab').click()
+    await expect(page.getByText('KI-Assistent')).toBeVisible()
+
+    // Suggestions visible initially
+    await expect(page.locator('.chat-suggestions')).toBeVisible()
+
+    // Type and send a message (no AI needed, just checking UI)
+    const textarea = page.locator('[data-pc-name="drawer"]').getByPlaceholder('Nachricht...')
+    await textarea.fill('Test')
+    await page.locator('[data-pc-name="drawer"]').locator('.chat-fab-send').click()
+
+    // Suggestions should be hidden after a user message is sent
+    await expect(page.locator('.chat-suggestions')).not.toBeVisible()
+  })
 })

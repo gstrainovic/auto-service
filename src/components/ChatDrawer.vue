@@ -93,6 +93,19 @@ const allToolResults = computed(() =>
 
 const showSplit = computed(() => maximized.value && allToolResults.value.length > 0)
 
+// Show suggestions only when no chat history (just welcome message)
+const showSuggestions = computed(() => messages.value.length === 1 && messages.value[0].id === 'welcome')
+
+const suggestions = [
+  { icon: 'pi pi-receipt', label: 'Rechnung scannen', prompt: 'Ich möchte eine Rechnung scannen' },
+  { icon: 'pi pi-car', label: 'Fahrzeug anlegen', prompt: 'Neues Fahrzeug anlegen' },
+  { icon: 'pi pi-wrench', label: 'Wartungsstatus', prompt: 'Zeige den Wartungsstatus meiner Fahrzeuge' },
+]
+
+function applySuggestion(prompt: string) {
+  input.value = prompt
+}
+
 function scrollToBottom() {
   nextTick(() => {
     if (scrollArea.value) {
@@ -472,6 +485,18 @@ async function clearChat() {
           </div>
         </div>
 
+        <div v-if="showSuggestions" class="chat-suggestions">
+          <button
+            v-for="s in suggestions"
+            :key="s.label"
+            class="chat-suggestion-chip"
+            @click="applySuggestion(s.prompt)"
+          >
+            <i :class="s.icon" />
+            {{ s.label }}
+          </button>
+        </div>
+
         <div v-if="loading" class="chat-message chat-message-assistant">
           <div class="chat-message-name">
             Assistent
@@ -772,6 +797,37 @@ async function clearChat() {
   z-index: 10;
   color: var(--p-primary-color);
   font-weight: 500;
+}
+
+.chat-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.chat-suggestion-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 1.5rem;
+  border: 1px solid color-mix(in srgb, var(--p-primary-color) 40%, transparent);
+  background: color-mix(in srgb, var(--p-primary-color) 8%, transparent);
+  color: var(--p-primary-color);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.chat-suggestion-chip:hover {
+  background: color-mix(in srgb, var(--p-primary-color) 18%, transparent);
+  border-color: var(--p-primary-color);
+}
+
+.chat-suggestion-chip i {
+  font-size: 0.9rem;
 }
 </style>
 

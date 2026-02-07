@@ -10,9 +10,10 @@ export default defineConfig({
   workers: 1, // Run tests serially
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
+  maxFailures: process.env.CI ? 0 : 1,
   webServer: [
     {
-      command: 'npm run dev',
+      command: 'npm run dev:vite',
       url: 'http://localhost:5173',
       reuseExistingServer: !process.env.CI,
     },

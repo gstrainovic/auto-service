@@ -12,6 +12,21 @@ test.describe('Empty States', () => {
     await expect(page.getByRole('button', { name: 'Fahrzeug hinzufügen' })).toBeVisible()
   })
 
+  test('ES-003: dashboard CTA opens vehicle form directly', async ({ page }) => {
+    await page.goto('/')
+    // Dashboard empty state should show "Fahrzeug hinzufügen" button
+    await expect(page.getByRole('button', { name: 'Fahrzeug hinzufügen' })).toBeVisible()
+    await page.getByRole('button', { name: 'Fahrzeug hinzufügen' }).click()
+
+    // Should navigate to /vehicles AND open the form dialog immediately
+    await expect(page).toHaveURL(/\/vehicles\?action=add/)
+    await expect(page.getByText('Neues Fahrzeug')).toBeVisible({ timeout: 3_000 })
+
+    // Dialog should be functional (can fill form)
+    const dialog = page.locator('[data-pc-name="dialog"]')
+    await expect(dialog.getByLabel('Marke')).toBeVisible()
+  })
+
   test('ES-002: vehicle detail shows empty state in invoices tab', async ({ page }) => {
     // CREATE
     await page.goto('/vehicles')

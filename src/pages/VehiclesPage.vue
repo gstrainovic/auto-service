@@ -2,14 +2,20 @@
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import VehicleCard from '../components/VehicleCard.vue'
 import VehicleForm from '../components/VehicleForm.vue'
 import { useVehiclesStore } from '../stores/vehicles'
 
+const route = useRoute()
 const store = useVehiclesStore()
 const showForm = ref(false)
 
-onMounted(() => store.load())
+onMounted(async () => {
+  await store.load()
+  if (route.query.action === 'add')
+    showForm.value = true
+})
 
 async function onSave(data: any) {
   await store.add(data)
@@ -24,6 +30,7 @@ async function onSave(data: any) {
         Fahrzeuge
       </h2>
       <Button
+        v-if="store.vehicles.length > 0"
         icon="pi pi-plus"
         label="Hinzufügen"
         @click="showForm = true"
@@ -38,7 +45,7 @@ async function onSave(data: any) {
       <div class="empty-text">
         Füge dein erstes Fahrzeug hinzu.
       </div>
-      <Button label="Erstes Fahrzeug anlegen" icon="pi pi-plus" @click="showForm = true" />
+      <Button label="Fahrzeug hinzufügen" icon="pi pi-plus" @click="showForm = true" />
     </div>
 
     <VehicleCard

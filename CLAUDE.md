@@ -1,7 +1,8 @@
 # Auto-Service PWA
 
 ## Commands
-npm run dev          # Vite dev server on :5173
+npm run dev          # Vite dev server + auto-starts InstantDB if not running
+npm run dev:vite     # Vite dev server only (no InstantDB check)
 npm run build        # vue-tsc + vite build
 npm run lint         # ESLint (antfu config)
 npm run lint:fix     # ESLint autofix
@@ -151,19 +152,20 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | CR | CRUD Operations | CR-001 bis CR-009 |
 | RF | Rotation Flow | RF-001: auto-rotate |
 | CF | Chat Flow | CF-001 bis CF-006 |
-| CU | Chat Upload | CU-001 bis CU-008 |
+| CU | Chat Upload | CU-001 bis CU-011 |
 | CM | Chat Maintenance | CM-001: add without invoice |
 | SC | Schedule Flow | SC-001: chat tool |
 | SH | Schedule Hint | SH-001, SH-002 |
 | SE | Settings Flow | SE-001 bis SE-004 |
 | CI | Chat Image | CI-001: rotation |
 | CS | Chat Schedule | CS-001, CS-002 |
-| TC | Tool Cards | TC-001: tool result card |
+| TC | Tool Cards | TC-001, TC-002 |
+| ES | Empty States | ES-001 bis ES-003 |
 | SL | Split Layout | SL-001: 30/70 split maximized |
 | MV | MediaViewer | MV-001, MV-002 |
 | DP | Dashboard Progress | DP-001: progress indicator |
 
-**Gesamt: 52 Tests pro Projekt** — `npm run test:e2e --list` zeigt alle
+**Gesamt: 57 Tests pro Projekt** — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`
@@ -172,6 +174,8 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 - Alle AI-Tests nutzen Mistral als Default (schnell, zuverlässig, ~3–6s für Vision+Tools)
 - Use .first() for assertions that may match multiple elements (AI can create duplicates)
 - Chat-Test: Assertion auf Tool-Ergebnis muss `erledigt` einschließen (Fallback wenn Model keinen eigenen Text generiert)
+- Console-Error-Detection: Alle Tests failen automatisch bei unerwarteten console.error/pageerror (IGNORED_ERRORS in test-fixtures.ts)
+- Offline-Tests: Alle Console-Errors werden ignoriert (InstantDB WebSocket expected)
 
 ### PrimeVue Selektor-Gotchas
 - `getByRole('button', { name: 'X' })` matcht Text-Buttons UND Icon-only-Buttons (beide haben aria-label)

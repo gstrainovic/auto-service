@@ -132,7 +132,7 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Tests folgen **CRUD-Paradigma**: Create → Read → Update → Delete
 - Tests laufen automatisch **zweimal**: online + offline (via Network-Blocking)
 - **Playwright startet Server automatisch** (Vite + InstantDB) — kein manuelles `podman-compose up` nötig
-- `npm run test:e2e` führt beide Projekt-Varianten aus (90 Tests: 45 online + 45 offline)
+- `npm run test:e2e` führt beide Projekt-Varianten aus (100 Tests: 50 online + 50 offline)
 
 ### Offline-Testing
 Die `simulateOffline` Fixture blockiert alle Requests zu `localhost:8888` (InstantDB-Server).
@@ -148,8 +148,8 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | VD | Vehicle Document | VD-001: Kaufvertrag |
 | CR | CRUD Operations | CR-001 bis CR-009 |
 | RF | Rotation Flow | RF-001: auto-rotate |
-| CF | Chat Flow | CF-001 bis CF-005 |
-| CU | Chat Upload | CU-001 bis CU-004 |
+| CF | Chat Flow | CF-001 bis CF-006 |
+| CU | Chat Upload | CU-001 bis CU-008 |
 | CM | Chat Maintenance | CM-001: add without invoice |
 | SC | Schedule Flow | SC-001: chat tool |
 | SH | Schedule Hint | SH-001, SH-002 |
@@ -159,7 +159,7 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | MV | MediaViewer | MV-001, MV-002 |
 | DP | Dashboard Progress | DP-001: progress indicator |
 
-**Gesamt: 45 Tests pro Projekt** — `npm run test:e2e --list` zeigt alle
+**Gesamt: 50 Tests pro Projekt** — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`

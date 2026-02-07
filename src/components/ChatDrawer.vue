@@ -39,6 +39,7 @@ const scrollArea = ref<any>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const cameraInput = ref<HTMLInputElement | null>(null)
 const isDragging = ref(false)
+const maximized = ref(false)
 const mediaViewerOpen = ref(false)
 const mediaViewerImageSrc = ref('')
 const mediaViewerPdfBase64 = ref('')
@@ -162,6 +163,8 @@ function processFiles(files: FileList) {
           preview: '',
           base64,
         })
+        if (!input.value.trim())
+          input.value = 'Bitte erfassen'
       }
       reader.readAsDataURL(file)
     }
@@ -178,6 +181,8 @@ function processFiles(files: FileList) {
           preview: finalDataUrl,
           base64: finalBase64,
         })
+        if (!input.value.trim())
+          input.value = 'Bitte erfassen'
       })
     }
   }
@@ -293,8 +298,9 @@ async function clearChat() {
   <Drawer
     v-model:visible="open"
     position="right"
-    :style="{ width: '400px', maxWidth: '100vw' }"
+    :style="{ width: maximized ? '100vw' : '400px', maxWidth: '100vw' }"
     class="chat-drawer"
+    :class="{ 'chat-maximized': maximized }"
     @dragenter="onDragEnter"
     @dragover="onDragOver"
     @dragleave="onDragLeave"
@@ -398,6 +404,11 @@ async function clearChat() {
         />
       </div>
 
+      <div class="chat-drop-hint" @click="pickFile">
+        <i class="pi pi-cloud-upload" />
+        <span>Dateien hierher ziehen oder klicken</span>
+      </div>
+
       <div class="chat-input-row">
         <input
           ref="fileInput"
@@ -425,12 +436,13 @@ async function clearChat() {
           @click="pickCamera"
         />
         <Button
-          v-tooltip.top="'Fotos oder PDF anhängen (max. 50 MB)'"
-          icon="pi pi-paperclip"
+          v-tooltip.top="'Chat maximieren'"
+          :icon="maximized ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
           text
           rounded
           severity="secondary"
-          @click="pickFile"
+          class="chat-maximize-btn"
+          @click="maximized = !maximized"
         />
         <Textarea
           v-model="input"
@@ -601,6 +613,25 @@ async function clearChat() {
 
 .chat-input {
   flex: 1;
+}
+
+.chat-drop-hint {
+  border: 1px dashed var(--p-surface-300);
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--p-text-muted-color);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 0.5rem;
+}
+
+.chat-drop-hint:hover {
+  border-color: var(--p-primary-color);
+  color: var(--p-primary-color);
 }
 
 .chat-drop-overlay {

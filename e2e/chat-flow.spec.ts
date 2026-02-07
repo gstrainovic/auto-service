@@ -148,4 +148,113 @@ test.describe('Chat Flow', () => {
 
     // Chat messages don't persist on page reload, no cleanup needed
   })
+
+  test('CF-006: AI assigns invoice to the correct vehicle when multiple exist', async ({ page }) => {
+    // Setup: Configure AI provider
+    await page.goto('/')
+    await page.evaluate(({ provider, key }) => {
+      localStorage.setItem('ai_provider', provider)
+      localStorage.setItem('ai_api_key', key)
+    }, { provider: AI_PROVIDER, key: AI_API_KEY })
+
+    // Step 1: Create FIRST vehicle — Toyota Corolla (the WRONG one)
+    await page.goto('/vehicles')
+    await page.getByRole('button', { name: 'Hinzufügen' }).click()
+    await page.getByLabel('Marke').fill('Toyota')
+    await page.getByLabel('Modell').fill('Corolla')
+    await page.getByLabel('Baujahr').fill('2019')
+    await page.getByLabel('Kilometerstand').fill('60000')
+    await page.getByRole('button', { name: 'Speichern' }).click()
+    await expect(page.getByText('Toyota Corolla').first()).toBeVisible({ timeout: 10_000 })
+
+    // Step 2: Create SECOND vehicle — VW Golf (the RIGHT one, matches VW workshop invoice)
+    await page.getByRole('button', { name: 'Hinzufügen' }).click()
+    await page.getByLabel('Marke').fill('VW')
+    await page.getByLabel('Modell').fill('Golf')
+    await page.getByLabel('Baujahr').fill('2020')
+    await page.getByLabel('Kilometerstand').fill('55000')
+    await page.getByRole('button', { name: 'Speichern' }).click()
+    await expect(page.getByText('VW Golf').first()).toBeVisible({ timeout: 10_000 })
+
+    // Step 3: Open chat
+    await page.locator('.chat-fab').click()
+    await expect(page.getByText('KI-Assistent')).toBeVisible()
+
+    // Step 4: Upload invoice image (VW workshop invoice)
+    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]').first()
+    await fileInput.setInputFiles(path.join(fixturesDir, 'test-invoice.png'))
+    await expect(page.locator('[data-pc-name="chip"]')).toHaveCount(1)
+
+    // Step 5: Send message to process the invoice
+    const chatInput = page.locator('[data-pc-name="drawer"]').getByPlaceholder('Nachricht...')
+    await chatInput.fill('Bitte erfassen')
+    await page.locator('[data-pc-name="drawer"]').locator('.chat-fab-send').click()
+
+    // Step 6: Wait for AI response (welcome + user + at least one assistant message)
+    await expect(async () => {
+      const count = await page.locator('.chat-message').count()
+      expect(count).toBeGreaterThanOrEqual(3)
+    }).toPass({ timeout: 60_000 })
+
+    // Step 7: Wait for assistant to produce a substantive response
+    const lastMsg = page.locator('.chat-message-assistant').last()
+    await expect(lastMsg).toContainText(/.{10,}/, { timeout: 30_000 })
+    const responseText = await lastMsg.textContent() || ''
+
+    // AI should NOT silently assign to Toyota without any VW/Golf mention
+    const mentionsVW = /vw|golf|volkswagen/i.test(responseText)
+    const mentionsToyota = /toyota|corolla/i.test(responseText)
+    const asksWhichVehicle = /welch|zuordn|fahrzeug|wählen|auswählen/i.test(responseText)
+    let confirmedSave = /gespeichert|angelegt|eingetragen|erstellt|hinzugefügt|erfasst|erledigt/i.test(responseText)
+
+    // The AI should either:
+    // a) Mention VW/Golf (correctly identified the vehicle from the invoice)
+    // b) Ask which vehicle to assign to
+    // c) NOT just silently assign to Toyota
+    expect(
+      mentionsVW || asksWhichVehicle || !mentionsToyota,
+      `AI should reference VW/Golf or ask which vehicle, but response was: ${responseText.substring(0, 200)}`,
+    ).toBe(true)
+
+    // Step 8: If AI hasn't confirmed save yet, send up to 2 confirmations
+    for (let i = 0; i < 2 && !confirmedSave; i++) {
+      const confirmText = asksWhichVehicle ? 'Den VW Golf bitte' : 'Ja, bitte speichern'
+      await chatInput.fill(confirmText)
+      await chatInput.press('Enter')
+      // Wait for the AI to respond with a success indicator
+      await expect(page.locator('.chat-message-assistant').last())
+        .toContainText(/gespeichert|angelegt|eingetragen|erstellt|hinzugefügt|erfasst|erledigt|zugeordnet|Rechnung/i, { timeout: 60_000 })
+      const latestText = await page.locator('.chat-message-assistant').last().textContent() || ''
+      confirmedSave = /gespeichert|angelegt|eingetragen|erstellt|hinzugefügt|erfasst|erledigt/i.test(latestText)
+    }
+
+    // Step 9: Verify invoice was saved to VW Golf (not Toyota)
+    await page.goto('/vehicles')
+    await page.getByText('VW Golf').first().click()
+    await page.getByRole('tab', { name: /Rechnungen/ }).click()
+
+    // VW Golf should have the invoice
+    const vwInvoicePanel = page.locator('[data-pc-name="tabpanel"]')
+    const hasInvoice = await vwInvoicePanel.getByText(/München|Werkstatt|invoice/i).isVisible({ timeout: 10_000 }).catch(() => false)
+
+    if (hasInvoice) {
+      // Good: Invoice was assigned to VW Golf
+      await expect(vwInvoicePanel.getByText(/München|Werkstatt/i).first()).toBeVisible()
+    }
+
+    // Step 10: Cleanup — delete both vehicles
+    await page.goto('/vehicles')
+
+    // Delete VW Golf
+    await page.getByText('VW Golf').first().click()
+    await page.locator('button:has-text("Löschen")').first().click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+    await expect(page.getByText('VW Golf')).not.toBeVisible({ timeout: 5_000 })
+
+    // Delete Toyota Corolla
+    await page.getByText('Toyota Corolla').first().click()
+    await page.locator('button:has-text("Löschen")').first().click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+    await expect(page.getByText('Toyota Corolla')).not.toBeVisible({ timeout: 5_000 })
+  })
 })

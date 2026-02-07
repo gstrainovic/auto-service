@@ -60,6 +60,80 @@ test.describe('Chat Upload Enhancements', () => {
     await expect(page.getByText('test-invoice.png')).toBeVisible()
   })
 
+  test('CU-005: chat shows persistent drop hint, maximize button, no paperclip', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.chat-fab').click()
+    await expect(page.getByText('KI-Assistent')).toBeVisible()
+
+    // A mini drop zone hint should be visible below the input area
+    const dropHint = page.locator('[data-pc-name="drawer"] .chat-drop-hint')
+    await expect(dropHint).toBeVisible()
+
+    // It should have a dashed border and contain upload icon + text "hierher ziehen oder klicken"
+    await expect(dropHint.locator('.pi-cloud-upload')).toBeVisible()
+    await expect(dropHint.getByText(/hierher ziehen oder klicken/i)).toBeVisible()
+
+    // Clicking the drop hint should trigger file input
+    await expect(dropHint).toHaveCSS('cursor', 'pointer')
+
+    // Paperclip button should NOT exist
+    await expect(page.locator('[data-pc-name="drawer"] .pi-paperclip')).toHaveCount(0)
+
+    // Maximize button should exist
+    const maximizeBtn = page.locator('[data-pc-name="drawer"] .chat-maximize-btn')
+    await expect(maximizeBtn).toBeVisible()
+    await expect(maximizeBtn.locator('.pi-window-maximize')).toBeVisible()
+  })
+
+  test('CU-006: maximize toggle expands and collapses drawer', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.chat-fab').click()
+    await expect(page.getByText('KI-Assistent')).toBeVisible()
+
+    const drawer = page.locator('[data-pc-name="drawer"]')
+    const maximizeBtn = drawer.locator('.chat-maximize-btn')
+
+    // Initially not maximized
+    await expect(drawer).not.toHaveClass(/chat-maximized/)
+
+    // Click maximize
+    await maximizeBtn.click()
+    await expect(drawer).toHaveClass(/chat-maximized/)
+
+    // Click again to restore
+    await maximizeBtn.click()
+    await expect(drawer).not.toHaveClass(/chat-maximized/)
+  })
+
+  test('CU-007: uploading a file auto-fills prompt with "Bitte erfassen"', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.chat-fab').click()
+    await expect(page.getByText('KI-Assistent')).toBeVisible()
+
+    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]').first()
+    await fileInput.setInputFiles(path.join(fixturesDir, 'test-invoice.png'))
+
+    // Input should be auto-filled
+    const chatInput = page.locator('[data-pc-name="drawer"]').getByPlaceholder('Nachricht...')
+    await expect(chatInput).toHaveValue('Bitte erfassen')
+  })
+
+  test('CU-008: uploading a file does NOT overwrite existing prompt text', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.chat-fab').click()
+    await expect(page.getByText('KI-Assistent')).toBeVisible()
+
+    // Type something first
+    const chatInput = page.locator('[data-pc-name="drawer"]').getByPlaceholder('Nachricht...')
+    await chatInput.fill('Mein spezieller Text')
+
+    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]').first()
+    await fileInput.setInputFiles(path.join(fixturesDir, 'test-invoice.png'))
+
+    // Should keep existing text
+    await expect(chatInput).toHaveValue('Mein spezieller Text')
+  })
+
   test('CU-004: chat accepts multiple PDF files simultaneously', async ({ page }) => {
     await page.goto('/')
     await page.locator('.chat-fab').click()

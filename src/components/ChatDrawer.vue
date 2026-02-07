@@ -37,6 +37,8 @@ const loading = ref(false)
 const pendingFiles = ref<{ file: File, type: 'image' | 'pdf', name: string, preview: string, base64: string }[]>([])
 const scrollArea = ref<any>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
+const cameraInput = ref<HTMLInputElement | null>(null)
+const isDragging = ref(false)
 const mediaViewerOpen = ref(false)
 const mediaViewerImageSrc = ref('')
 const mediaViewerPdfBase64 = ref('')
@@ -96,12 +98,47 @@ function pickFile() {
   fileInput.value?.click()
 }
 
+function pickCamera() {
+  cameraInput.value?.click()
+}
+
 function onFileChange(event: Event) {
   const target = event.target as HTMLInputElement
   const files = target.files
   if (!files?.length)
     return
+  processFiles(files)
+  target.value = ''
+}
 
+function removePendingFile(index: number) {
+  pendingFiles.value.splice(index, 1)
+}
+
+function onDragEnter(e: DragEvent) {
+  e.preventDefault()
+  isDragging.value = true
+}
+
+function onDragOver(e: DragEvent) {
+  e.preventDefault()
+}
+
+function onDragLeave(e: DragEvent) {
+  e.preventDefault()
+  isDragging.value = false
+}
+
+function onDrop(e: DragEvent) {
+  e.preventDefault()
+  isDragging.value = false
+  const files = e.dataTransfer?.files
+  if (!files?.length)
+    return
+  processFiles(files)
+}
+
+function processFiles(files: FileList) {
   for (const file of Array.from(files)) {
     const isImage = file.type.startsWith('image/')
     if (!isImage) {
@@ -112,20 +149,19 @@ function onFileChange(event: Event) {
           detail: `PDF zu groß (${(file.size / 1024 / 1024).toFixed(0)} MB). Maximum: 50 MB.`,
           life: 5000,
         })
-        break
+        continue
       }
-      pendingFiles.value = []
       const reader = new FileReader()
       reader.onload = (e) => {
         const dataUrl = e.target?.result as string
         const base64 = dataUrl.split(',')[1] ?? ''
-        pendingFiles.value = [{
+        pendingFiles.value.push({
           file,
           type: 'pdf',
           name: file.name,
           preview: '',
           base64,
-        }]
+        })
       }
       reader.readAsDataURL(file)
     }
@@ -145,11 +181,6 @@ function onFileChange(event: Event) {
       })
     }
   }
-  target.value = ''
-}
-
-function removePendingFile(index: number) {
-  pendingFiles.value.splice(index, 1)
 }
 
 async function send() {
@@ -169,10 +200,10 @@ async function send() {
   }
 
   const imagesBase64 = files.filter(f => f.type === 'image').map(f => f.base64)
-  const pdfFile = files.find(f => f.type === 'pdf')
+  const pdfFiles = files.filter(f => f.type === 'pdf')
 
-  if (pdfFile)
-    pdfDataByMsgId.set(userMsg.id, pdfFile.base64)
+  if (pdfFiles.length === 1)
+    pdfDataByMsgId.set(userMsg.id, pdfFiles[0].base64)
 
   messages.value.push(userMsg)
   await saveMessage(userMsg)
@@ -180,12 +211,14 @@ async function send() {
   pendingFiles.value = []
   loading.value = true
 
+  const pdfBase64s = pdfFiles.map(f => f.base64)
+
   try {
     const response = await sendChatMessage(messages.value, {
       provider: settings.aiProvider,
       apiKey: settings.aiApiKey,
       model: settings.aiModel || undefined,
-    }, imagesBase64.length ? imagesBase64 : undefined, pdfFile?.base64)
+    }, imagesBase64.length ? imagesBase64 : undefined, pdfBase64s.length ? pdfBase64s : undefined)
 
     const assistantMsg: ChatMessage = {
       id: crypto.randomUUID(),
@@ -262,6 +295,10 @@ async function clearChat() {
     position="right"
     :style="{ width: '400px', maxWidth: '100vw' }"
     class="chat-drawer"
+    @dragenter="onDragEnter"
+    @dragover="onDragOver"
+    @dragleave="onDragLeave"
+    @drop="onDrop"
   >
     <template #header>
       <div class="chat-header">
@@ -275,16 +312,14 @@ async function clearChat() {
             severity="secondary"
             @click="clearChat"
           />
-          <Button
-            icon="pi pi-times"
-            text
-            rounded
-            severity="secondary"
-            @click="open = false"
-          />
         </div>
       </div>
     </template>
+
+    <div v-if="isDragging" class="chat-drop-overlay">
+      <i class="pi pi-cloud-upload" style="font-size: 2rem" />
+      <div>Dateien hier ablegen</div>
+    </div>
 
     <ScrollPanel ref="scrollArea" class="chat-scroll">
       <div class="chat-messages">
@@ -372,6 +407,23 @@ async function clearChat() {
           style="display: none"
           @change="onFileChange"
         >
+        <input
+          ref="cameraInput"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          style="display: none"
+          @change="onFileChange"
+        >
+        <Button
+          v-tooltip.top="'Foto aufnehmen'"
+          icon="pi pi-camera"
+          text
+          rounded
+          severity="secondary"
+          class="chat-camera-btn"
+          @click="pickCamera"
+        />
         <Button
           v-tooltip.top="'Fotos oder PDF anhängen (max. 50 MB)'"
           icon="pi pi-paperclip"
@@ -489,9 +541,9 @@ async function clearChat() {
 }
 
 .bubble-assistant {
-  background: linear-gradient(135deg, var(--p-surface-100), var(--p-surface-50));
+  background: color-mix(in srgb, var(--p-text-color) 10%, transparent);
   color: var(--p-text-color);
-  border: 1px solid var(--p-surface-200);
+  border: 1px solid color-mix(in srgb, var(--p-text-color) 15%, transparent);
   border-bottom-left-radius: 0.25rem;
 }
 
@@ -549,6 +601,21 @@ async function clearChat() {
 
 .chat-input {
   flex: 1;
+}
+
+.chat-drop-overlay {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--p-primary-color) 10%, var(--p-surface-ground));
+  border: 2px dashed var(--p-primary-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  z-index: 10;
+  color: var(--p-primary-color);
+  font-weight: 500;
 }
 </style>
 

@@ -99,7 +99,7 @@ test.describe('MediaViewer', () => {
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
     // Attach image and send
-    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]')
+    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]').first()
     await fileInput.setInputFiles(path.join(import.meta.dirname, 'fixtures', 'test-invoice.png'))
     await expect(page.locator('[data-pc-name="chip"]')).toHaveCount(1, { timeout: 10_000 })
 

@@ -89,6 +89,11 @@ KATEGORIEN bei add_invoice — wähle die passendste:
 - inspektion: Inspektion, Service, Durchsicht, HU-Vorbereitung
 - sonstiges: NUR wenn keine andere Kategorie passt (z.B. Lieferspesen, Reinigungsmaterial)
 
+WARTUNG OHNE RECHNUNG:
+- Wenn der Benutzer eine erledigte Wartung melden will OHNE Rechnung/Beleg, verwende add_maintenance (NICHT add_invoice).
+- add_invoice ist NUR für Rechnungen mit Werkstatt, Betrag und Positionen gedacht.
+- add_maintenance ist für einfache Wartungseinträge (z.B. "Ölwechsel gemacht", "Reifen gewechselt").
+
 FEEDBACK NACH AKTIONEN:
 Wenn du ein Tool erfolgreich ausgeführt hast, fasse IMMER zusammen was du getan hast:
 - **Fahrzeug angelegt**: Liste alle eingetragenen Felder auf (Marke, Modell, Baujahr, km, Kennzeichen)
@@ -491,6 +496,59 @@ function createTools(provider: AiProvider, apiKey: string, modelId?: string, ima
       },
     }),
 
+    add_maintenance: tool({
+      description: 'Trägt eine Wartung OHNE Rechnung ein. Verwende dies wenn der Benutzer eine erledigte Wartung melden will aber keine Rechnung hat.',
+      inputSchema: z.object({
+        vehicleId: z.string().describe('Fahrzeug-ID'),
+        type: z.enum(MAINTENANCE_CATEGORIES).describe(
+          'Kategorie — oelwechsel, bremsen, reifen, fahrwerk, auspuff, kuehlung, autoglas, elektrik, karosserie, inspektion, klimaanlage, zahnriemen, bremsflüssigkeit, luftfilter, tuev, sonstiges',
+        ),
+        description: z.string().describe('Beschreibung der Wartung'),
+        doneAt: z.string().describe('Datum im Format YYYY-MM-DD'),
+        mileageAtService: z.number().optional().describe('Kilometerstand bei der Wartung'),
+      }),
+      execute: async ({ vehicleId, type, description, doneAt, mileageAtService }) => {
+        const result = await db.queryOnce({ vehicles: {} })
+        const vehicles = result.data.vehicles || []
+        const vehicle = vehicles.find((v: any) => v.id === vehicleId)
+        if (!vehicle)
+          return { success: false, message: 'Fahrzeug nicht gefunden' }
+
+        const category = correctCategory(description, type)
+        const maintenanceId = instantId()
+        const transactions: any[] = [
+          tx.maintenances[maintenanceId].update({
+            vehicleId,
+            invoiceId: '',
+            type: category,
+            description,
+            doneAt,
+            mileageAtService: mileageAtService || 0,
+            nextDueDate: '',
+            nextDueMileage: 0,
+            status: 'done',
+            createdAt: Date.now(),
+          }),
+        ]
+
+        if (mileageAtService && mileageAtService > (vehicle.mileage || 0))
+          transactions.push(tx.vehicles[vehicleId].update({ mileage: mileageAtService }))
+
+        await db.transact(transactions)
+        return {
+          success: true,
+          message: `Wartung eingetragen`,
+          data: {
+            type: category,
+            description,
+            doneAt,
+            mileageAtService: mileageAtService || 0,
+            vehicle: `${vehicle.make} ${vehicle.model}`,
+          },
+        }
+      },
+    }),
+
     scan_document: tool({
       description: 'Analysiert ein Foto. Erkennt automatisch ob es eine Rechnung, ein Kaufvertrag, ein Fahrzeugschein oder eine Service-Heft-Seite ist. Das Bild muss als base64 übergeben werden.',
       inputSchema: z.object({
@@ -553,6 +611,8 @@ function formatToolResult(r: any): string | undefined {
       parts.push(`Werkstatt: ${d.workshopName}, Datum: ${d.date}, Betrag: ${d.totalAmount} ${d.currency}`)
     if (d.items?.length)
       parts.push(`Positionen: ${d.items.map((i: any) => `${i.description} (${i.amount})`).join(', ')}`)
+    if (d.type && d.doneAt && !d.workshopName)
+      parts.push(`Typ: ${d.type}, Beschreibung: ${d.description}, Datum: ${d.doneAt}${d.mileageAtService ? `, km: ${d.mileageAtService}` : ''}`)
   }
   if (r.changes) {
     const entries = Object.keys(r.changes.before || {})
@@ -590,7 +650,7 @@ export async function sendChatMessage(
   messages: ChatMessage[],
   opts: ChatOptions,
   imagesBase64?: string[],
-  pdfBase64?: string,
+  pdfBase64s?: string[],
 ): Promise<string> {
   const model = getModel({
     provider: opts.provider,
@@ -598,12 +658,17 @@ export async function sendChatMessage(
     model: opts.model,
   })
 
-  if (pdfBase64) {
-    // Phase 1 für PDF: OCR alle Seiten, dann Ergebnisse anzeigen
+  if (pdfBase64s?.length) {
+    // Phase 1 für PDF(s): OCR alle Seiten aller PDFs, dann Ergebnisse anzeigen
     pendingPdfOcrTexts = []
     pendingImages = []
 
-    const ocrPages = await withRetry(() => callMistralOcrPdf(pdfBase64, opts.apiKey))
+    const allOcrPages: string[] = []
+    for (const pdfBase64 of pdfBase64s) {
+      const ocrPages = await withRetry(() => callMistralOcrPdf(pdfBase64, opts.apiKey))
+      allOcrPages.push(...ocrPages)
+    }
+    const ocrPages = allOcrPages
     pendingPdfOcrTexts = ocrPages
 
     const ocrContext = ocrPages

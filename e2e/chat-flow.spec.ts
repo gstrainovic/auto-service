@@ -56,7 +56,6 @@ test.describe('Chat Flow', () => {
     }
 
     // Step 6: Close chat and verify vehicle in UI
-    await page.locator('[data-pc-name="drawer"]').locator('button:has(.pi-times)').click()
     await page.goto('/vehicles')
     await expect(page.getByText('Audi A4').first()).toBeVisible({ timeout: 15_000 })
     await expect(page.getByText('B-CD 5678').first()).toBeVisible()
@@ -75,7 +74,7 @@ test.describe('Chat Flow', () => {
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
     // Attach two images at once
-    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]')
+    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]').first()
     await fileInput.setInputFiles([
       path.join(fixturesDir, 'test-invoice.png'),
       path.join(fixturesDir, 'test-kaufvertrag.png'),
@@ -94,7 +93,7 @@ test.describe('Chat Flow', () => {
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
     // Attach two images
-    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]')
+    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]').first()
     await fileInput.setInputFiles([
       path.join(fixturesDir, 'test-invoice.png'),
       path.join(fixturesDir, 'test-kaufvertrag.png'),
@@ -123,7 +122,7 @@ test.describe('Chat Flow', () => {
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
     // Attach two images
-    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]')
+    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]').first()
     await fileInput.setInputFiles([
       path.join(fixturesDir, 'test-invoice.png'),
       path.join(fixturesDir, 'test-kaufvertrag.png'),

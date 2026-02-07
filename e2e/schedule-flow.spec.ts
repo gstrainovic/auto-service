@@ -39,7 +39,7 @@ test.describe('Schedule Flow', () => {
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
     // Step 3: Upload service book photo and ask to read intervals
-    const fileInput = page.locator('.chat-drawer input[type="file"]')
+    const fileInput = page.locator('.chat-drawer input[type="file"]').first()
     await fileInput.setInputFiles([
       path.join(fixturesDir, 'test-service-heft.png'),
     ])
@@ -64,8 +64,7 @@ test.describe('Schedule Flow', () => {
     const finalMsg = page.locator('.chat-message').last()
     await expect(finalMsg).toContainText(/gespeichert|wartungsplan|positionen|erledigt/i, { timeout: 30_000 })
 
-    // Step 7: Close chat and check VehicleDetailPage
-    await page.locator('.chat-header-actions button').filter({ has: page.locator('.pi-times') }).click()
+    // Step 7: Close chat via navigation and check VehicleDetailPage
     await page.goto('/vehicles')
     await page.getByText('Volkswagen Golf VIII').first().click()
 

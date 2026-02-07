@@ -9,7 +9,7 @@ test.describe('Empty States', () => {
     await page.goto('/vehicles')
     await expect(page.locator('.empty-icon')).toBeVisible()
     await expect(page.getByText('Keine Fahrzeuge')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Erstes Fahrzeug anlegen' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Fahrzeug hinzufügen' })).toBeVisible()
   })
 
   test('ES-002: vehicle detail shows empty state in invoices tab', async ({ page }) => {

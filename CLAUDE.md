@@ -120,6 +120,8 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Regelbasierte Kategorie-Korrektur: Keywords überschreiben AI-Zuordnung (z.B. "Auspuff" → auspuff)
 - PDF-Upload: max 50 MB, OCR pro Seite, Duplikat-Erkennung bei identischen Seiten
 - `scan_document` Tool wird ausgeblendet wenn Bilder im Message sind (Modell sieht Bilder direkt)
+- `add_maintenance` Tool: Wartung OHNE Rechnung eintragen (z.B. manuell berichtete Arbeiten)
+- Chat: Kamera-Button (capture="environment"), Drag & Drop, Multi-PDF-Upload
 - z.enum(MAINTENANCE_CATEGORIES) enforces valid categories in AI schemas
 - InstantDB: Entity-IDs müssen UUIDs sein (nutze `id()` Funktion)
 
@@ -130,7 +132,7 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Tests folgen **CRUD-Paradigma**: Create → Read → Update → Delete
 - Tests laufen automatisch **zweimal**: online + offline (via Network-Blocking)
 - **Playwright startet Server automatisch** (Vite + InstantDB) — kein manuelles `podman-compose up` nötig
-- `npm run test:e2e` führt beide Projekt-Varianten aus (66 Tests: 33 online + 33 offline)
+- `npm run test:e2e` führt beide Projekt-Varianten aus (90 Tests: 45 online + 45 offline)
 
 ### Offline-Testing
 Die `simulateOffline` Fixture blockiert alle Requests zu `localhost:8888` (InstantDB-Server).
@@ -146,15 +148,18 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | VD | Vehicle Document | VD-001: Kaufvertrag |
 | CR | CRUD Operations | CR-001 bis CR-009 |
 | RF | Rotation Flow | RF-001: auto-rotate |
-| CF | Chat Flow | CF-001 bis CF-004 |
+| CF | Chat Flow | CF-001 bis CF-005 |
+| CU | Chat Upload | CU-001 bis CU-004 |
+| CM | Chat Maintenance | CM-001: add without invoice |
 | SC | Schedule Flow | SC-001: chat tool |
 | SH | Schedule Hint | SH-001, SH-002 |
-| SE | Settings Flow | SE-001, SE-002 |
+| SE | Settings Flow | SE-001 bis SE-004 |
 | CI | Chat Image | CI-001: rotation |
 | CS | Chat Schedule | CS-001, CS-002 |
 | MV | MediaViewer | MV-001, MV-002 |
+| DP | Dashboard Progress | DP-001: progress indicator |
 
-**Gesamt: 33 Tests pro Projekt** — `npm run test:e2e --list` zeigt alle
+**Gesamt: 45 Tests pro Projekt** — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`

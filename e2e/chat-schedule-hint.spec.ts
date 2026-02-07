@@ -46,10 +46,7 @@ test.describe('Chat Schedule Hint', () => {
     const assistantMsg = page.locator('.chat-message').last()
     await expect(assistantMsg).toContainText(/Service-Heft|allgemein/i, { timeout: 30_000 })
 
-    // Close chat
-    await page.locator('.chat-header-actions button').filter({ has: page.locator('.pi-times') }).click()
-
-    // DELETE (cleanup) - use the header delete button (has visible text, not icon-only)
+    // Close chat via navigation
     await page.goto('/vehicles')
     await page.getByText('Toyota Yaris').first().click()
     await page.locator('button:has-text("Löschen")').first().click()
@@ -116,10 +113,7 @@ test.describe('Chat Schedule Hint', () => {
     const msgText = await assistantMsg.textContent() || ''
     expect(msgText).not.toMatch(/Service-Heft.*fotograf|Service-Heft.*hochladen|Service-Heft.*schick/i)
 
-    // Close chat
-    await page.locator('.chat-header-actions button').filter({ has: page.locator('.pi-times') }).click()
-
-    // DELETE (cleanup) - use the header delete button (has visible text, not icon-only)
+    // Close chat via navigation
     await page.goto('/vehicles')
     await page.getByText('Mazda 3').first().click()
     await page.locator('button:has-text("Löschen")').first().click()

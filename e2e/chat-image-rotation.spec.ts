@@ -16,7 +16,7 @@ test.describe('Chat Image Auto-Rotation', () => {
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
     // Attach landscape invoice image
-    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]')
+    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]').first()
     await fileInput.setInputFiles(path.join(fixturesDir, 'test-invoice-landscape.png'))
 
     // Send the image (no text needed — just the attachment)

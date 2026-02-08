@@ -15,12 +15,23 @@ const authReady = new Promise<void>((resolve) => {
   authReadyResolve = resolve
 })
 
+// E2E-Tests: Auth-Bypass im lokalen Modus (kein Magic Code nötig)
+const isLocal = import.meta.env.VITE_INSTANTDB_MODE === 'local'
+
 // Einmalig subscriben (Singleton)
 let initialized = false
 function initAuth() {
   if (initialized)
     return
   initialized = true
+
+  if (isLocal) {
+    // Lokaler Modus (E2E-Tests): Sofort als Test-User authentifizieren
+    user.value = { id: 'e2e-test-user', email: 'test@e2e.local' }
+    isLoading.value = false
+    authReadyResolve()
+    return
+  }
 
   db.subscribeAuth((auth: any) => {
     user.value = auth.user ?? null

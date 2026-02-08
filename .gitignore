@@ -45,3 +45,4 @@ tmp/
 !e2e/fixtures/*.png
 installer.sh
 .opencode/
+.vercel

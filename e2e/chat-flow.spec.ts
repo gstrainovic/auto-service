@@ -257,4 +257,59 @@ test.describe('Chat Flow', () => {
     await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
     await expect(page.getByText('Toyota Corolla')).not.toBeVisible({ timeout: 5_000 })
   })
+
+  test('CF-007: confirmation button "Ja, passt" appears after image analysis', async ({ page }) => {
+    // Setup: Configure AI provider
+    await page.goto('/')
+    await page.evaluate(({ provider, key }) => {
+      localStorage.setItem('ai_provider', provider)
+      localStorage.setItem('ai_api_key', key)
+    }, { provider: AI_PROVIDER, key: AI_API_KEY })
+    await page.reload()
+
+    // Step 1: Open chat
+    await page.locator('.chat-fab').click()
+    await expect(page.getByText('KI-Assistent')).toBeVisible()
+
+    // Step 2: Upload invoice image
+    const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]').first()
+    await fileInput.setInputFiles(path.join(fixturesDir, 'test-invoice.png'))
+    await expect(page.locator('[data-pc-name="chip"]')).toHaveCount(1)
+
+    // Step 3: Send the image for analysis
+    const chatInput = page.locator('[data-pc-name="drawer"]').getByPlaceholder('Nachricht...')
+    await chatInput.fill('Bitte erfassen')
+    await page.locator('[data-pc-name="drawer"]').locator('.chat-fab-send').click()
+
+    // Step 4: Wait for AI response (welcome + user + assistant message)
+    await expect(async () => {
+      const count = await page.locator('.chat-message').count()
+      expect(count).toBeGreaterThanOrEqual(3)
+    }).toPass({ timeout: 60_000 })
+
+    // Step 5: Verify the confirmation button "Ja, passt" is visible
+    // The button should appear because:
+    // - Last message is from assistant (after image analysis)
+    // - Second-to-last message is from user with attachments
+    const confirmButton = page.locator('.chat-suggestion-chip').filter({ hasText: /Ja|passt/i })
+    await expect(confirmButton).toBeVisible({ timeout: 10_000 })
+    await expect(confirmButton.locator('.pi-check')).toBeVisible()
+
+    // Step 6: Click the confirmation button
+    await confirmButton.click()
+
+    // Step 7: Verify "Ja" was sent
+    const messages = page.locator('.chat-message-user')
+    const userMessages = await messages.allTextContents()
+    // Should have sent a message containing "Ja"
+    const sentJa = userMessages.some(msg => /Ja/.test(msg))
+    expect(sentJa).toBe(true)
+
+    // Step 8: Wait for final AI response (tool execution or confirmation)
+    await expect(async () => {
+      const count = await page.locator('.chat-message').count()
+      // At least: welcome + user(image) + assistant(analysis) + user(ja) + assistant(result)
+      expect(count).toBeGreaterThanOrEqual(5)
+    }).toPass({ timeout: 60_000 })
+  })
 })

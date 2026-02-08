@@ -118,6 +118,26 @@ function applySuggestion(prompt: string) {
   input.value = prompt
 }
 
+function applyConfirmation() {
+  input.value = 'Ja'
+  send()
+}
+
+// Show "Ja" confirmation button after image/PDF analysis
+const showConfirmationButton = computed(() => {
+  if (messages.value.length < 2)
+    return false
+  const lastMsg = messages.value[messages.value.length - 1]
+  const secondLastMsg = messages.value[messages.value.length - 2]
+  // Show "Ja" button if last message is from assistant
+  // and second-to-last is from user with attachments (images/PDFs)
+  return (
+    lastMsg.role === 'assistant'
+    && secondLastMsg.role === 'user'
+    && (secondLastMsg.attachments?.length || secondLastMsg.attachment)
+  )
+})
+
 function scrollToBottom() {
   nextTick(() => {
     if (scrollArea.value) {
@@ -506,6 +526,13 @@ async function clearChat() {
           >
             <i :class="s.icon" />
             {{ s.label }}
+          </button>
+        </div>
+
+        <div v-if="showConfirmationButton" class="chat-suggestions">
+          <button class="chat-suggestion-chip" @click="applyConfirmation">
+            <i class="pi pi-check" />
+            Ja, passt
           </button>
         </div>
 

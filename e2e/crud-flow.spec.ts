@@ -1,7 +1,16 @@
 import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
 // Helper: create a vehicle via UI and navigate to its detail page
-async function createVehicleAndOpen(page: any, data: { make: string, model: string, year: string, mileage: string, plate?: string }) {
+async function createVehicleAndOpen(
+  page: any,
+  data: {
+    make: string
+    model: string
+    year: string
+    mileage: string
+    plate?: string
+  },
+) {
   await page.goto('/vehicles')
   await page.getByRole('button', { name: 'Hinzufügen' }).click()
 
@@ -27,7 +36,9 @@ async function createVehicleAndOpen(page: any, data: { make: string, model: stri
   await expect(page.getByText(`${data.make} ${data.model}`)).toBeVisible()
 
   // Click the vehicle card
-  await page.locator('.vehicle-card', { hasText: `${data.make} ${data.model}` }).click()
+  await page
+    .locator('.vehicle-card', { hasText: `${data.make} ${data.model}` })
+    .click()
   await expect(page).toHaveURL(/\/vehicles\/.+/, { timeout: 5_000 })
 }
 
@@ -40,7 +51,9 @@ function getVehicleIdFromUrl(page: any): string {
 
 // Helper: wait for __instantdb to be exposed on window (set by instantdb.ts in dev mode)
 async function waitForDb(page: any) {
-  await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 10_000 })
+  await page.waitForFunction(() => !!(window as any).__instantdb, {
+    timeout: 10_000,
+  })
 }
 
 // Helper: seed an invoice via page.evaluate into InstantDB
@@ -55,13 +68,13 @@ async function seedInvoice(page: any, vehicleId: string) {
         vehicleId: vId,
         workshopName: 'Werkstatt Schmidt',
         date: '2025-06-15',
-        totalAmount: 450.50,
-        currency: '€',
+        totalAmount: 450.5,
+        currency: 'EUR',
         mileageAtService: 52000,
         imageData: '',
         items: [
           { description: 'Ölwechsel', category: 'Wartung', amount: 120 },
-          { description: 'Bremsbeläge', category: 'Verschleiß', amount: 330.50 },
+          { description: 'Bremsbeläge', category: 'Verschleiß', amount: 330.5 },
         ],
         createdAt: now,
       }),
@@ -99,7 +112,10 @@ async function deleteVehicleViaUI(page: any) {
   // Use the button that contains text "Löschen" (not just aria-label)
   await page.locator('button:has-text("Löschen")').first().click()
   await expect(page.getByText('Fahrzeug löschen?')).toBeVisible()
-  await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+  await page
+    .locator('[data-pc-name="dialog"]')
+    .getByRole('button', { name: 'Löschen' })
+    .click()
   await expect(page).toHaveURL(/\/vehicles/)
 }
 
@@ -153,7 +169,10 @@ test.describe('Vehicle CRUD', () => {
     // DELETE (tests AND cleans up) - use the header delete button (has visible text, not icon-only)
     await page.locator('button:has-text("Löschen")').first().click()
     await expect(page.getByText('Fahrzeug löschen?')).toBeVisible()
-    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+    await page
+      .locator('[data-pc-name="dialog"]')
+      .getByRole('button', { name: 'Löschen' })
+      .click()
 
     await expect(page).toHaveURL(/\/vehicles/)
     await expect(page.getByText('Audi A3')).not.toBeVisible({ timeout: 5_000 })
@@ -178,19 +197,30 @@ test.describe('Invoice CRUD', () => {
 
     // Switch to invoices tab and wait for data (RxDB subscription is live)
     await page.getByText('Rechnungen').click()
-    await expect(page.getByText('Werkstatt Schmidt')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText('Werkstatt Schmidt')).toBeVisible({
+      timeout: 10_000,
+    })
 
     // Open invoice detail
     await page.getByText('Werkstatt Schmidt').click()
-    await expect(page.locator('[data-pc-name="dialog"]').getByText('450.50')).toBeVisible()
+    await expect(
+      page.locator('[data-pc-name="dialog"]').getByText('450.50'),
+    ).toBeVisible()
 
     // Click edit
-    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Bearbeiten' }).click()
+    await page
+      .locator('[data-pc-name="dialog"]')
+      .getByRole('button', { name: 'Bearbeiten' })
+      .click()
     await expect(page.getByText('Rechnung bearbeiten')).toBeVisible()
 
     // Verify pre-filled values
-    const editDialog = page.locator('[data-pc-name="dialog"]', { hasText: 'Rechnung bearbeiten' })
-    await expect(editDialog.locator('#invoice-workshop')).toHaveValue('Werkstatt Schmidt')
+    const editDialog = page.locator('[data-pc-name="dialog"]', {
+      hasText: 'Rechnung bearbeiten',
+    })
+    await expect(editDialog.locator('#invoice-workshop')).toHaveValue(
+      'Werkstatt Schmidt',
+    )
 
     // Change values
     await editDialog.locator('#invoice-workshop').fill('Autohaus Müller')
@@ -201,7 +231,9 @@ test.describe('Invoice CRUD', () => {
 
     // Verify updated values in the list
     await page.getByText('Rechnungen').click()
-    await expect(page.getByText('Autohaus Müller')).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByText('Autohaus Müller')).toBeVisible({
+      timeout: 5_000,
+    })
     await expect(page.getByText('550.00')).toBeVisible()
 
     // DELETE (cleanup)
@@ -220,24 +252,39 @@ test.describe('Invoice CRUD', () => {
     await seedInvoice(page, vehicleId)
 
     await page.getByText('Rechnungen').click()
-    await expect(page.getByText('Werkstatt Schmidt')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText('Werkstatt Schmidt')).toBeVisible({
+      timeout: 10_000,
+    })
 
     // Open detail, then edit
     await page.getByText('Werkstatt Schmidt').click()
-    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Bearbeiten' }).click()
+    await page
+      .locator('[data-pc-name="dialog"]')
+      .getByRole('button', { name: 'Bearbeiten' })
+      .click()
 
-    const editDialog = page.locator('[data-pc-name="dialog"]', { hasText: 'Rechnung bearbeiten' })
+    const editDialog = page.locator('[data-pc-name="dialog"]', {
+      hasText: 'Rechnung bearbeiten',
+    })
 
     // Should have 2 existing items
-    await expect(editDialog.getByPlaceholder('Beschreibung').first()).toHaveValue('Ölwechsel')
+    await expect(
+      editDialog.getByPlaceholder('Beschreibung').first(),
+    ).toHaveValue('Ölwechsel')
 
     // Add a new item
-    await editDialog.getByRole('button', { name: 'Position hinzufügen' }).click()
+    await editDialog
+      .getByRole('button', { name: 'Position hinzufügen' })
+      .click()
     const newDescInputs = editDialog.getByPlaceholder('Beschreibung')
     await newDescInputs.last().fill('Luftfilter')
 
     // Remove the first item (Ölwechsel)
-    await editDialog.locator('button').filter({ has: page.locator('.pi-minus-circle') }).first().click()
+    await editDialog
+      .locator('button')
+      .filter({ has: page.locator('.pi-minus-circle') })
+      .first()
+      .click()
 
     // Save
     await editDialog.getByRole('button', { name: 'Speichern' }).click()
@@ -245,10 +292,15 @@ test.describe('Invoice CRUD', () => {
     // Verify — reopen
     await page.getByText('Rechnungen').click()
     await page.getByText('Werkstatt Schmidt').click()
-    await expect(page.locator('[data-pc-name="dialog"]').getByText('Luftfilter')).toBeVisible({ timeout: 5_000 })
+    await expect(
+      page.locator('[data-pc-name="dialog"]').getByText('Luftfilter'),
+    ).toBeVisible({ timeout: 5_000 })
 
     // DELETE (cleanup) - close dialog first, then delete vehicle
-    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Close' }).click()
+    await page
+      .locator('[data-pc-name="dialog"]')
+      .getByRole('button', { name: 'Close' })
+      .click()
     await deleteVehicleViaUI(page)
   })
 
@@ -264,18 +316,28 @@ test.describe('Invoice CRUD', () => {
     await seedInvoice(page, vehicleId)
 
     await page.getByText('Rechnungen').click()
-    await expect(page.getByText('Werkstatt Schmidt')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText('Werkstatt Schmidt')).toBeVisible({
+      timeout: 10_000,
+    })
 
     // Open detail and delete
     await page.getByText('Werkstatt Schmidt').click()
-    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+    await page
+      .locator('[data-pc-name="dialog"]')
+      .getByRole('button', { name: 'Löschen' })
+      .click()
 
     // Confirm deletion
     await expect(page.getByText('Rechnung löschen?')).toBeVisible()
-    await page.locator('[data-pc-name="dialog"]', { hasText: 'Rechnung löschen?' }).getByRole('button', { name: 'Löschen' }).click()
+    await page
+      .locator('[data-pc-name="dialog"]', { hasText: 'Rechnung löschen?' })
+      .getByRole('button', { name: 'Löschen' })
+      .click()
 
     // Invoice should be gone from the list
-    await expect(page.locator('[data-pc-name="tabpanel"]').getByText('Werkstatt Schmidt')).not.toBeVisible({ timeout: 5_000 })
+    await expect(
+      page.locator('[data-pc-name="tabpanel"]').getByText('Werkstatt Schmidt'),
+    ).not.toBeVisible({ timeout: 5_000 })
     await expect(page.getByText(/keine rechnungen/i)).toBeVisible()
 
     // DELETE vehicle (cleanup)
@@ -288,7 +350,9 @@ test.describe('Invoice Duplicate Detection', () => {
     await clearInstantDB(page)
   })
 
-  test('CR-006: reject duplicate invoice with same date and workshop', async ({ page }) => {
+  test('CR-006: reject duplicate invoice with same date and workshop', async ({
+    page,
+  }) => {
     await createVehicleAndOpen(page, {
       make: 'Toyota',
       model: 'Corolla',
@@ -306,9 +370,12 @@ test.describe('Invoice Duplicate Detection', () => {
       // Check for existing invoices
       const queryResult = await db.queryOnce({ invoices: {} })
       const invoices = queryResult.data.invoices || []
-      const existing = invoices.filter((inv: any) => inv.vehicleId === vId && inv.date === '2025-06-15')
-      const duplicate = existing.find((inv: any) =>
-        inv.workshopName === 'Werkstatt Schmidt' || inv.totalAmount === 450.50,
+      const existing = invoices.filter(
+        (inv: any) => inv.vehicleId === vId && inv.date === '2025-06-15',
+      )
+      const duplicate = existing.find(
+        (inv: any) =>
+          inv.workshopName === 'Werkstatt Schmidt' || inv.totalAmount === 450.5,
       )
       return {
         hasDuplicate: !!duplicate,
@@ -324,8 +391,12 @@ test.describe('Invoice Duplicate Detection', () => {
 
     // Verify only one invoice is visible in the UI
     await page.getByText('Rechnungen').click()
-    await expect(page.getByText('Werkstatt Schmidt')).toBeVisible({ timeout: 10_000 })
-    const invoiceItems = page.locator('[data-pc-name="tabpanel"] .invoice-item')
+    await expect(page.getByText('Werkstatt Schmidt')).toBeVisible({
+      timeout: 10_000,
+    })
+    const invoiceItems = page.locator(
+      '[data-pc-name="tabpanel"] .invoice-item',
+    )
     await expect(invoiceItems).toHaveCount(1)
 
     // DELETE (cleanup)
@@ -350,28 +421,42 @@ test.describe('Maintenance CRUD', () => {
     await seedMaintenance(page, vehicleId)
 
     // Should be on maintenance tab by default
-    await expect(page.getByText('Motoröl 5W-30 gewechselt')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText('Motoröl 5W-30 gewechselt')).toBeVisible({
+      timeout: 10_000,
+    })
 
     // Click edit button within the maintenance list item (not the header Bearbeiten button)
-    const maintenanceItem = page.locator('.maintenance-item', { hasText: 'Motoröl 5W-30 gewechselt' })
+    const maintenanceItem = page.locator('.maintenance-item', {
+      hasText: 'Motoröl 5W-30 gewechselt',
+    })
     await maintenanceItem.getByRole('button', { name: 'Bearbeiten' }).click()
     await expect(page.getByText('Wartungseintrag bearbeiten')).toBeVisible()
 
-    const editDialog = page.locator('[data-pc-name="dialog"]', { hasText: 'Wartungseintrag bearbeiten' })
+    const editDialog = page.locator('[data-pc-name="dialog"]', {
+      hasText: 'Wartungseintrag bearbeiten',
+    })
 
     // Verify pre-filled
-    await expect(editDialog.locator('#maintenance-description')).toHaveValue('Motoröl 5W-30 gewechselt')
-    await expect(editDialog.locator('#maintenance-type')).toHaveValue('Ölwechsel')
+    await expect(editDialog.locator('#maintenance-description')).toHaveValue(
+      'Motoröl 5W-30 gewechselt',
+    )
+    await expect(editDialog.locator('#maintenance-type')).toHaveValue(
+      'Ölwechsel',
+    )
 
     // Change values
-    await editDialog.locator('#maintenance-description').fill('Vollsynthetisches Öl gewechselt')
+    await editDialog
+      .locator('#maintenance-description')
+      .fill('Vollsynthetisches Öl gewechselt')
     await editDialog.locator('#maintenance-mileage-input').fill('76000')
 
     // Save
     await editDialog.getByRole('button', { name: 'Speichern' }).click()
 
     // Verify update
-    await expect(page.getByText('Vollsynthetisches Öl gewechselt')).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByText('Vollsynthetisches Öl gewechselt')).toBeVisible(
+      { timeout: 5_000 },
+    )
     await expect(page.getByText('76.000 km')).toBeVisible()
 
     // DELETE (cleanup)
@@ -389,18 +474,29 @@ test.describe('Maintenance CRUD', () => {
     const vehicleId = getVehicleIdFromUrl(page)
     await seedMaintenance(page, vehicleId)
 
-    await expect(page.getByText('Motoröl 5W-30 gewechselt')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText('Motoröl 5W-30 gewechselt')).toBeVisible({
+      timeout: 10_000,
+    })
 
     // Click delete button within the maintenance list item
-    const maintenanceItem = page.locator('.maintenance-item', { hasText: 'Motoröl 5W-30 gewechselt' })
+    const maintenanceItem = page.locator('.maintenance-item', {
+      hasText: 'Motoröl 5W-30 gewechselt',
+    })
     await maintenanceItem.getByRole('button', { name: 'Löschen' }).click()
 
     // Confirm
     await expect(page.getByText('Wartungseintrag löschen?')).toBeVisible()
-    await page.locator('[data-pc-name="dialog"]', { hasText: 'Wartungseintrag löschen?' }).getByRole('button', { name: 'Löschen' }).click()
+    await page
+      .locator('[data-pc-name="dialog"]', {
+        hasText: 'Wartungseintrag löschen?',
+      })
+      .getByRole('button', { name: 'Löschen' })
+      .click()
 
     // Should be gone
-    await expect(page.getByText('Motoröl 5W-30 gewechselt')).not.toBeVisible({ timeout: 5_000 })
+    await expect(page.getByText('Motoröl 5W-30 gewechselt')).not.toBeVisible({
+      timeout: 5_000,
+    })
     await expect(page.getByText(/keine wartungseinträge/i)).toBeVisible()
 
     // DELETE vehicle (cleanup)
@@ -418,13 +514,19 @@ test.describe('Maintenance CRUD', () => {
     const vehicleId = getVehicleIdFromUrl(page)
     await seedMaintenance(page, vehicleId)
 
-    await expect(page.getByText('Motoröl 5W-30 gewechselt')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText('Motoröl 5W-30 gewechselt')).toBeVisible({
+      timeout: 10_000,
+    })
 
     // Open edit within the maintenance list item
-    const maintenanceItem = page.locator('.maintenance-item', { hasText: 'Motoröl 5W-30 gewechselt' })
+    const maintenanceItem = page.locator('.maintenance-item', {
+      hasText: 'Motoröl 5W-30 gewechselt',
+    })
     await maintenanceItem.getByRole('button', { name: 'Bearbeiten' }).click()
 
-    const editDialog = page.locator('[data-pc-name="dialog"]', { hasText: 'Wartungseintrag bearbeiten' })
+    const editDialog = page.locator('[data-pc-name="dialog"]', {
+      hasText: 'Wartungseintrag bearbeiten',
+    })
 
     // Change status to "Fällig"
     await editDialog.locator('#maintenance-status').click()

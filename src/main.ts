@@ -9,6 +9,8 @@ import App from './App.vue'
 import router from './router'
 
 import 'primeicons/primeicons.css'
+import './styles/design-tokens.css'
+import './styles/typography.css'
 
 // Theme sofort anwenden bevor Vue mountet (verhindert Light-Flash)
 void (() => {

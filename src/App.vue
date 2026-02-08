@@ -2,11 +2,17 @@
 import Button from 'primevue/button'
 import Drawer from 'primevue/drawer'
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import ChatDrawer from './components/ChatDrawer.vue'
 
+const router = useRouter()
 const drawer = ref(false)
 const chatOpen = ref(false)
+
+function openChat() {
+  drawer.value = false
+  router.push('/?chat=open')
+}
 </script>
 
 <template>
@@ -34,10 +40,10 @@ const chatOpen = ref(false)
           <i class="pi pi-car" />
           <span>Fahrzeuge</span>
         </RouterLink>
-        <RouterLink to="/?chat=open" class="nav-item" @click="drawer = false">
+        <a class="nav-item" href="#" @click.prevent="openChat">
           <i class="pi pi-comments" />
           <span>KI-Assistent</span>
-        </RouterLink>
+        </a>
         <RouterLink to="/settings" class="nav-item" @click="drawer = false">
           <i class="pi pi-cog" />
           <span>Einstellungen</span>

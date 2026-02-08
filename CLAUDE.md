@@ -23,7 +23,7 @@ src/
   services/       # ai.ts (multi-provider), chat.ts (tool-calling), maintenance-schedule.ts
   stores/         # Pinia: vehicles, invoices, maintenances, settings
   lib/            # instantdb.ts (DB-Client)
-  composables/    # useImageResize (client-side 1540px resize)
+  composables/    # useImageResize (client-side 1540px resize), useImageUpload, useFormValidation
 e2e/              # Playwright tests + fixtures/
 scripts/          # compare-ai.ts
 
@@ -167,8 +167,14 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | SL | Split Layout | SL-001: 30/70 split maximized |
 | MV | MediaViewer | MV-002: chat image OCR tab |
 | DP | Dashboard Progress | DP-001: progress indicator |
+| DS | Design System | DS-001, DS-002 |
+| UP | UI Primitives | UP-001, UP-002 |
+| IF | Invoice Form | IF-001: validation, IF-002: submit |
+| MF | Maintenance Form | MF-001: validation, MF-002: submit |
+| DB | Dashboard Stats | DB-001: total cost, DB-002: invoice count |
+| IU | Image Upload | IU-001: preview, IU-002: submit with image |
 
-**Gesamt: 55 Tests pro Projekt** — `npm run test:e2e --list` zeigt alle
+**Gesamt: 64 Tests pro Projekt** — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`

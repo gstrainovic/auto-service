@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Invoice, InvoiceItem } from '../stores/invoices'
 import type { Maintenance } from '../stores/maintenances'
+import type { InvoiceFormData, MaintenanceFormData } from '../types/forms'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputNumber from 'primevue/inputnumber'
@@ -14,6 +15,8 @@ import TabPanels from 'primevue/tabpanels'
 import Tabs from 'primevue/tabs'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import InvoiceFormDialog from '../components/InvoiceFormDialog.vue'
+import MaintenanceFormDialog from '../components/MaintenanceFormDialog.vue'
 import MediaViewer from '../components/MediaViewer.vue'
 import VehicleForm from '../components/VehicleForm.vue'
 import { db } from '../lib/instantdb'
@@ -40,6 +43,10 @@ const confirmResetSchedule = ref(false)
 const mediaViewerOpen = ref(false)
 const mediaViewerOcr = ref('')
 
+// New form dialogs
+const showAddInvoiceDialog = ref(false)
+const showAddMaintenanceDialog = ref(false)
+
 // Edit state
 const editVehicle = ref(false)
 const editInvoice = ref<Invoice | null>(null)
@@ -47,7 +54,7 @@ const editInvoiceForm = ref({
   workshopName: '',
   date: '',
   totalAmount: 0,
-  currency: '€',
+  currency: 'EUR',
   mileageAtService: 0,
   items: [] as InvoiceItem[],
 })
@@ -110,7 +117,7 @@ function openEditInvoice(inv: Invoice): void {
     workshopName: inv.workshopName || '',
     date: inv.date || '',
     totalAmount: inv.totalAmount || 0,
-    currency: inv.currency || '€',
+    currency: inv.currency || 'EUR',
     mileageAtService: inv.mileageAtService || 0,
     items: inv.items ? inv.items.map(i => ({ ...i })) : [],
   }
@@ -179,6 +186,48 @@ function getImageSrc(imageData: string): string {
     return `data:image/jpeg;base64,${imageData}`
   return `data:image/webp;base64,${imageData}`
 }
+
+async function handleAddInvoice(data: InvoiceFormData): Promise<void> {
+  if (!vehicle.value)
+    return
+
+  await invoicesStore.add({
+    vehicleId: vehicle.value.id,
+    workshopName: data.workshop,
+    date: data.date,
+    totalAmount: data.amount,
+    currency: data.currency || 'EUR',
+    mileageAtService: vehicle.value.mileage,
+    items: data.category
+      ? [{
+          description: data.description || '',
+          category: data.category,
+          amount: data.amount || 0,
+        }]
+      : [],
+    imageData: data.images?.[0],
+  })
+
+  showAddInvoiceDialog.value = false
+}
+
+async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
+  if (!vehicle.value)
+    return
+
+  const status = data.status === 'planned' ? 'due' : 'done'
+
+  await maintenancesStore.add({
+    vehicleId: vehicle.value.id,
+    type: data.category,
+    description: data.description,
+    doneAt: data.date,
+    mileageAtService: data.mileage || vehicle.value.mileage,
+    status,
+  })
+
+  showAddMaintenanceDialog.value = false
+}
 </script>
 
 <template>
@@ -213,13 +262,21 @@ function getImageSrc(imageData: string): string {
 
         <TabPanels>
           <TabPanel value="maintenance">
-            <Message v-if="!vehicle.customSchedule?.length" severity="warn" class="schedule-hint">
-              <template #icon>
-                <i class="pi pi-info-circle" />
-              </template>
-              Der Wartungsplan basiert auf allgemeinen Intervallen.
-              Fotografiere dein Service-Heft und schick es im Chat — dann werden die genauen Hersteller-Intervalle für dein Fahrzeug hinterlegt.
-            </Message>
+            <div class="tab-header">
+              <Message v-if="!vehicle.customSchedule?.length" severity="warn" class="schedule-hint">
+                <template #icon>
+                  <i class="pi pi-info-circle" />
+                </template>
+                Der Wartungsplan basiert auf allgemeinen Intervallen.
+                Fotografiere dein Service-Heft und schick es im Chat — dann werden die genauen Hersteller-Intervalle für dein Fahrzeug hinterlegt.
+              </Message>
+              <Button
+                icon="pi pi-plus"
+                label="Wartung hinzufügen"
+                severity="primary"
+                @click="showAddMaintenanceDialog = true"
+              />
+            </div>
 
             <div v-if="vehicle.customSchedule?.length" class="custom-schedule-section">
               <div class="section-title">
@@ -287,6 +344,14 @@ function getImageSrc(imageData: string): string {
           </TabPanel>
 
           <TabPanel value="invoices">
+            <div class="tab-header">
+              <Button
+                icon="pi pi-plus"
+                label="Rechnung hinzufügen"
+                severity="primary"
+                @click="showAddInvoiceDialog = true"
+              />
+            </div>
             <div class="invoices-list">
               <div
                 v-for="inv in invoicesStore.invoices"
@@ -300,7 +365,7 @@ function getImageSrc(imageData: string): string {
                     {{ inv.workshopName }}
                   </div>
                   <div class="invoice-caption">
-                    {{ inv.date }} · {{ inv.totalAmount?.toFixed(2) }} {{ inv.currency || '€' }}
+                    {{ inv.date }} · {{ inv.totalAmount?.toFixed(2) }} {{ inv.currency || 'EUR' }}
                   </div>
                 </div>
                 <i class="pi pi-chevron-right" />
@@ -328,7 +393,7 @@ function getImageSrc(imageData: string): string {
           {{ selectedInvoice.workshopName }}
         </div>
         <div class="dialog-subheader">
-          {{ selectedInvoice.date }} · {{ selectedInvoice.totalAmount?.toFixed(2) }} {{ selectedInvoice.currency || '€' }}
+          {{ selectedInvoice.date }} · {{ selectedInvoice.totalAmount?.toFixed(2) }} {{ selectedInvoice.currency || 'EUR' }}
         </div>
 
         <div v-if="selectedInvoice.imageData" class="invoice-image-section">
@@ -357,7 +422,7 @@ function getImageSrc(imageData: string): string {
                 </div>
               </div>
               <div class="position-amount">
-                {{ item.amount?.toFixed(2) }} {{ selectedInvoice.currency || '€' }}
+                {{ item.amount?.toFixed(2) }} {{ selectedInvoice.currency || 'EUR' }}
               </div>
             </div>
           </div>
@@ -525,6 +590,20 @@ function getImageSrc(imageData: string): string {
         <Button label="Löschen" severity="danger" @click="deleteVehicle" />
       </template>
     </Dialog>
+
+    <!-- Add invoice dialog -->
+    <InvoiceFormDialog
+      v-model:visible="showAddInvoiceDialog"
+      title="Neue Rechnung"
+      @submit="handleAddInvoice"
+    />
+
+    <!-- Add maintenance dialog -->
+    <MaintenanceFormDialog
+      v-model:visible="showAddMaintenanceDialog"
+      title="Neue Wartung"
+      @submit="handleAddMaintenance"
+    />
   </main>
 </template>
 
@@ -796,5 +875,12 @@ function getImageSrc(imageData: string): string {
 
 .amount-input {
   width: 6rem;
+}
+
+.tab-header {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 </style>

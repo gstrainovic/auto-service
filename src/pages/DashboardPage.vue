@@ -4,18 +4,22 @@ import Badge from 'primevue/badge'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import StatCard from '../components/StatCard.vue'
 import { db, tx } from '../lib/instantdb'
 import { checkDueMaintenances, getMaintenanceSchedule } from '../services/maintenance-schedule'
+import { useInvoicesStore } from '../stores/invoices'
 import { useVehiclesStore } from '../stores/vehicles'
 
 const router = useRouter()
 const vehiclesStore = useVehiclesStore()
+const invoicesStore = useInvoicesStore()
 const dueMap = ref<Record<string, DueResult[]>>({})
 const confirmDelete = ref<{ vehicleId: string, type: string, label: string } | null>(null)
 onMounted(async () => {
   await vehiclesStore.load()
+  await invoicesStore.load()
   await computeDue()
 })
 
@@ -23,7 +27,7 @@ watch(() => vehiclesStore.vehicles, computeDue, { deep: true })
 
 async function computeDue() {
   const result = await db.queryOnce({ maintenances: {} })
-  const allMaintenances = result.data.maintenances || []
+  const allMaintenances = result?.data?.maintenances || []
 
   for (const vehicle of vehiclesStore.vehicles) {
     const schedule = getMaintenanceSchedule(vehicle.customSchedule as any)
@@ -44,7 +48,7 @@ async function computeDue() {
 
 async function deleteMaintenance(vehicleId: string, type: string) {
   const result = await db.queryOnce({ maintenances: {} })
-  const maintenances = (result.data.maintenances || [])
+  const maintenances = (result?.data?.maintenances || [])
     .filter((m: any) => m.vehicleId === vehicleId && m.type === type)
   if (maintenances.length) {
     await db.transact(maintenances.map((m: any) => tx.maintenances[m.id].delete()))
@@ -90,6 +94,45 @@ function getDueCounts(vehicleId: string): { due: number, total: number } {
   const due = items.filter(i => i.status === 'due' || i.status === 'overdue').length
   return { due, total: items.length }
 }
+
+function getVehicleTotalCost(vehicleId: string): number {
+  return invoicesStore.getByVehicleId(vehicleId)
+    .reduce((sum, inv) => sum + (inv.totalAmount || 0), 0)
+}
+
+function getVehicleInvoiceCount(vehicleId: string): number {
+  return invoicesStore.getByVehicleId(vehicleId).length
+}
+
+function formatCurrency(value: number, currency: string = 'EUR') {
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency }).format(value)
+}
+
+// Group totals by currency
+const totalsByCurrency = computed(() => {
+  const totals: Record<string, number> = {}
+  for (const v of vehiclesStore.vehicles) {
+    for (const inv of invoicesStore.getByVehicleId(v.id)) {
+      const currency = inv.currency || 'EUR'
+      totals[currency] = (totals[currency] || 0) + (inv.totalAmount || 0)
+    }
+  }
+  return totals
+})
+
+const formattedTotalCost = computed(() => {
+  const entries = Object.entries(totalsByCurrency.value)
+  if (entries.length === 0)
+    return formatCurrency(0)
+  if (entries.length === 1)
+    return formatCurrency(entries[0]![1], entries[0]![0])
+  // Multiple currencies: show each
+  return entries.map(([currency, amount]) => formatCurrency(amount, currency)).join(' + ')
+})
+
+const totalInvoiceCount = computed(() =>
+  vehiclesStore.vehicles.reduce((sum, v) => sum + getVehicleInvoiceCount(v.id), 0),
+)
 </script>
 
 <template>
@@ -110,12 +153,29 @@ function getDueCounts(vehicleId: string): { due: number, total: number } {
       />
     </div>
 
+    <div v-if="vehiclesStore.vehicles.length > 0" class="stats-grid">
+      <StatCard
+        icon="pi-wallet"
+        label="Gesamtkosten"
+        :value="formattedTotalCost"
+      />
+      <StatCard
+        icon="pi-file"
+        :label="`${totalInvoiceCount} Rechnungen`"
+        :value="formattedTotalCost"
+        color="var(--status-info)"
+      />
+    </div>
+
     <div v-for="vehicle in vehiclesStore.vehicles" :key="vehicle.id" class="vehicle-section">
       <h3 class="vehicle-title">
         {{ vehicle.make }} {{ vehicle.model }}
       </h3>
       <div class="vehicle-subtitle">
-        {{ vehicle.mileage.toLocaleString('de-DE') }} km · {{ vehicle.licensePlate }}
+        {{ vehicle.mileage?.toLocaleString('de-DE') || 0 }} km · {{ vehicle.licensePlate }}
+        <span v-if="getVehicleTotalCost(vehicle.id) > 0" class="vehicle-cost">
+          {{ formatCurrency(getVehicleTotalCost(vehicle.id)) }} · {{ getVehicleInvoiceCount(vehicle.id) }} Rechnungen
+        </span>
         <Badge
           v-if="getDueCounts(vehicle.id).total > 0"
           class="vehicle-progress"
@@ -221,6 +281,18 @@ function getDueCounts(vehicleId: string): { due: number, total: number } {
 
 .empty-text {
   margin-bottom: 1rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.vehicle-cost {
+  color: var(--p-primary-color);
+  font-weight: 500;
 }
 
 .vehicle-section {

@@ -1,61 +1,85 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Drawer from 'primevue/drawer'
-import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { ref, watch } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ChatDrawer from './components/ChatDrawer.vue'
+import { useAuth } from './composables/useAuth'
 
 const router = useRouter()
+const route = useRoute()
 const drawer = ref(false)
 const chatOpen = ref(false)
+const { user, isLoading, signOut } = useAuth()
+
+// Nach Login → Dashboard, nach Logout → Login
+watch(user, (u) => {
+  if (u && route.path === '/login')
+    router.replace('/')
+  else if (!u && !isLoading.value && route.path !== '/login')
+    router.replace('/login')
+})
 
 function openChat() {
   drawer.value = false
   router.push('/?chat=open')
 }
+
+function handleSignOut() {
+  drawer.value = false
+  signOut()
+}
 </script>
 
 <template>
   <div class="app-layout">
-    <header class="app-header">
-      <div class="app-toolbar">
-        <Button
-          icon="pi pi-bars"
-          text
-          rounded
-          aria-label="Menu"
-          @click="drawer = !drawer"
-        />
-        <span class="app-title">Auto-Service</span>
-      </div>
-    </header>
+    <template v-if="user">
+      <header class="app-header">
+        <div class="app-toolbar">
+          <Button
+            icon="pi pi-bars"
+            text
+            rounded
+            aria-label="Menu"
+            @click="drawer = !drawer"
+          />
+          <span class="app-title">Auto-Service</span>
+        </div>
+      </header>
 
-    <Drawer v-model:visible="drawer" header="Navigation">
-      <nav class="nav-list">
-        <RouterLink to="/" class="nav-item" @click="drawer = false">
-          <i class="pi pi-home" />
-          <span>Dashboard</span>
-        </RouterLink>
-        <RouterLink to="/vehicles" class="nav-item" @click="drawer = false">
-          <i class="pi pi-car" />
-          <span>Fahrzeuge</span>
-        </RouterLink>
-        <a class="nav-item" href="#" @click.prevent="openChat">
-          <i class="pi pi-comments" />
-          <span>KI-Assistent</span>
-        </a>
-        <RouterLink to="/settings" class="nav-item" @click="drawer = false">
-          <i class="pi pi-cog" />
-          <span>Einstellungen</span>
-        </RouterLink>
-      </nav>
-    </Drawer>
+      <Drawer v-model:visible="drawer" header="Navigation">
+        <nav class="nav-list">
+          <RouterLink to="/" class="nav-item" @click="drawer = false">
+            <i class="pi pi-home" />
+            <span>Dashboard</span>
+          </RouterLink>
+          <RouterLink to="/vehicles" class="nav-item" @click="drawer = false">
+            <i class="pi pi-car" />
+            <span>Fahrzeuge</span>
+          </RouterLink>
+          <a class="nav-item" href="#" @click.prevent="openChat">
+            <i class="pi pi-comments" />
+            <span>KI-Assistent</span>
+          </a>
+          <RouterLink to="/settings" class="nav-item" @click="drawer = false">
+            <i class="pi pi-cog" />
+            <span>Einstellungen</span>
+          </RouterLink>
+          <a class="nav-item nav-signout" href="#" @click.prevent="handleSignOut">
+            <i class="pi pi-sign-out" />
+            <span>Abmelden</span>
+          </a>
+        </nav>
+      </Drawer>
 
-    <main class="app-main">
-      <router-view />
-    </main>
+      <main class="app-main">
+        <router-view />
+      </main>
 
-    <ChatDrawer v-model="chatOpen" />
+      <ChatDrawer v-model="chatOpen" />
+    </template>
+
+    <router-view v-else />
   </div>
 </template>
 
@@ -125,5 +149,12 @@ function openChat() {
 
 .nav-item i {
   font-size: 1.25rem;
+}
+
+.nav-signout {
+  margin-top: auto;
+  border-top: 1px solid var(--p-surface-border);
+  padding-top: 0.75rem;
+  color: var(--p-text-muted-color);
 }
 </style>

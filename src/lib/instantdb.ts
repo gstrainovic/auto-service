@@ -1,35 +1,34 @@
 /**
- * InstantDB Client für Self-Hosted Server
+ * InstantDB Client
  *
- * Konfiguration für lokalen InstantDB-Server.
- * Server läuft auf http://localhost:8888 (via podman-compose)
+ * Cloud: instantdb.com (Default)
+ * Self-Hosted: VITE_INSTANTDB_MODE=local für lokalen Server (localhost:8888)
  *
  * Schema: Schemaless - keine Schema-Definition nötig.
  * Daten werden dynamisch erstellt.
- *
- * Start Server: cd ~/instant/server && podman-compose -f docker-compose-dev.yml up -d
  */
 import { id, init, tx as instantTx } from '@instantdb/core'
 
-// Konfiguration für Self-Hosted InstantDB
-// HTTP API: Proxy für CORS (Vite leitet /instant-api → localhost:8888)
-// WebSocket: Direkt verbinden mit /runtime/session Pfad
 const isDev = import.meta.env.DEV
-const INSTANT_API_URI = isDev ? '/instant-api' : 'http://localhost:8888'
-const INSTANT_WS_URI = 'ws://localhost:8888/runtime/session'
+const isLocal = import.meta.env.VITE_INSTANTDB_MODE === 'local'
 
-// App-ID für lokale Instanz (in PostgreSQL erstellt)
-// podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;"
-const APP_ID = 'cd7e6912-773b-4ee1-be18-4d95c3b20e9f'
+// Cloud App-ID (instantdb.com)
+const CLOUD_APP_ID = '5d413a89-91ad-4a5a-ad71-d2df5fd81d88'
+// Self-Hosted App-ID (lokaler Server, für E2E-Tests)
+const LOCAL_APP_ID = 'cd7e6912-773b-4ee1-be18-4d95c3b20e9f'
+
+const APP_ID = isLocal ? LOCAL_APP_ID : CLOUD_APP_ID
 
 // InstantDB Client initialisieren
+// Cloud: Default-URIs (api.instantdb.com + wss://api.instantdb.com)
+// Local: Proxy + direkter WebSocket
 const db = init({
   appId: APP_ID,
-  apiURI: INSTANT_API_URI,
-  websocketURI: INSTANT_WS_URI,
-  // Keine Datumskonvertierung (wir handhaben das selbst)
+  ...(isLocal && {
+    apiURI: isDev ? '/instant-api' : 'http://localhost:8888',
+    websocketURI: 'ws://localhost:8888/runtime/session',
+  }),
   useDateObjects: false,
-  // DevTools deaktiviert - Toggle-Button blockiert UI-Klicks in Tests
   devtool: false,
 })
 

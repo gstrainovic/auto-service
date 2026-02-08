@@ -4,6 +4,7 @@ import { createMistral } from '@ai-sdk/mistral'
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { z } from 'zod'
+import { getCurrentUserId } from '../composables/useAuth'
 import { db, id, tx } from '../lib/instantdb'
 
 export const MAINTENANCE_CATEGORIES = [
@@ -230,7 +231,7 @@ export async function callMistralOcr(imageBase64: string, apiKey: string): Promi
   // In InstantDB persistieren (UUID als Entity-ID, hash als Feld)
   try {
     const entityId = id()
-    await db.transact([tx.ocrcache[entityId].update({ hash, markdown: text, createdAt: Date.now() })])
+    await db.transact([tx.ocrcache[entityId].update({ hash, markdown: text, creatorId: getCurrentUserId(), createdAt: Date.now() })])
   }
   catch (e) {
     console.error('[OCR] InstantDB cache write failed:', e)

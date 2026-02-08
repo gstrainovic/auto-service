@@ -1,6 +1,7 @@
 import type { AiProvider } from '../stores/settings'
 import { generateText, stepCountIs, tool } from 'ai'
 import { z } from 'zod'
+import { getCurrentUserId } from '../composables/useAuth'
 import { autoRotateForDocument } from '../composables/useImageResize'
 import { db, id as instantId, tx } from '../lib/instantdb'
 import { callMistralOcr, callMistralOcrPdf, getModel, hashImage, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument, withRetry } from './ai'
@@ -195,6 +196,7 @@ function createTools(provider: AiProvider, apiKey: string, modelId?: string, ima
             mileage: mileage || 0,
             licensePlate: licensePlate || '',
             vin: vin || '',
+            creatorId: getCurrentUserId(),
             createdAt: now,
           }),
         ])
@@ -413,6 +415,7 @@ function createTools(provider: AiProvider, apiKey: string, modelId?: string, ima
             imageData,
             ocrCacheId,
             items,
+            creatorId: getCurrentUserId(),
             createdAt: now,
           }),
         ]
@@ -433,6 +436,7 @@ function createTools(provider: AiProvider, apiKey: string, modelId?: string, ima
               nextDueDate: '',
               nextDueMileage: 0,
               status: 'done',
+              creatorId: getCurrentUserId(),
               createdAt: now,
             }),
           )
@@ -538,6 +542,7 @@ function createTools(provider: AiProvider, apiKey: string, modelId?: string, ima
             nextDueDate: '',
             nextDueMileage: 0,
             status: 'done',
+            creatorId: getCurrentUserId(),
             createdAt: Date.now(),
           }),
         ]

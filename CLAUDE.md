@@ -1,6 +1,5 @@
 # TODO:
 *.png aufräumen?
-podman-compose fehlt instantdb
 
 # Auto-Service PWA
 
@@ -27,8 +26,14 @@ src/
 e2e/              # Playwright tests + fixtures/
 scripts/          # compare-ai.ts
 
-## InstantDB (Self-Hosted)
+## InstantDB
 Backend-Datenbank mit Echtzeit-Sync via WebSocket. Ersetzt RxDB.
+
+### Cloud vs Local
+- **Cloud (Default):** instantdb.com — App-ID `5d413a89-91ad-4a5a-ad71-d2df5fd81d88`
+- **Local:** `VITE_INSTANTDB_MODE=local` — App-ID `cd7e6912-773b-4ee1-be18-4d95c3b20e9f`
+- E2E-Tests laufen IMMER gegen lokalen Server (Playwright setzt `VITE_INSTANTDB_MODE=local`)
+- `npm run dev` → Cloud, `npm run dev:vite` in Tests → Local
 
 ### Server starten
 ```bash
@@ -49,13 +54,29 @@ podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;
 - App-ID: `cd7e6912-773b-4ee1-be18-4d95c3b20e9f`
 - HTTP API: Via Vite-Proxy `/instant-api → localhost:8888`
 - WebSocket: `ws://localhost:8888/runtime/session`
+- Server-Config: `~/instant/server/resources/config/override.edn`
 - DevTools deaktiviert (Toggle-Button blockierte UI-Klicks)
+
+### Produktion (Hetzner)
+- Deployment-Anleitung: siehe `README.md` → "InstantDB auf Hetzner deployen"
+- Caddy als Reverse Proxy (auto-HTTPS)
+- Frontend-URIs in `src/lib/instantdb.ts` anpassen (apiURI, websocketURI)
+- Backup: `pg_dump -U instant instant`
 
 ### InstantDB vs RxDB Unterschiede
 - **Entity-IDs müssen UUIDs sein** — keine beliebigen Strings (z.B. SHA-256 Hashes)
 - **Schemaless** — keine Schema-Definition nötig, Felder werden dynamisch erstellt
 - **Echtzeit-Sync** — Änderungen werden sofort an alle Clients gepusht
 - **Offline-First** — Daten in IndexedDB, Lesen+Schreiben funktionieren offline, Sync via CRDT bei Reconnect
+
+### Auth (Magic Codes via Postmark)
+- **Postmark-Token** gehört in `~/instant/server/resources/config/override.edn` (NICHT in auto-service/.env!)
+- Format: `:postmark-token {:plain "dein-token"}` in der override.edn
+- Self-hosted InstantDB nutzt Postmark API, kein direktes SMTP
+- Free Tier: 100 Mails/Monat (reicht für Entwicklung + Solo-Nutzung)
+- Magic Code: 6-stellig, 24h TTL, Einmal-Verwendung
+- Frontend-SDK: `db.auth.sendMagicCode()`, `db.auth.signInWithMagicCode()`, `db.useAuth()`
+- Erweiterbar: Google/Apple/GitHub OAuth eingebaut, Passkeys via Custom Auth
 
 ## AI Providers
 Vier cloud Providers via Vercel AI SDK v6:

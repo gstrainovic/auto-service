@@ -12,6 +12,7 @@ import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { getCurrentUserId } from '../composables/useAuth'
 import { autoRotateForDocument, resizeImage } from '../composables/useImageResize'
 import { db, tx } from '../lib/instantdb'
 import { hashImage } from '../services/ai'
@@ -88,6 +89,7 @@ async function saveMessage(msg: ChatMessage) {
         content: msg.content,
         attachments: msg.attachments || [],
         toolResults: msg.toolResults || [],
+        creatorId: getCurrentUserId(),
         createdAt: Date.now(),
       }),
     ])

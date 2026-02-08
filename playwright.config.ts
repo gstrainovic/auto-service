@@ -13,7 +13,7 @@ export default defineConfig({
   maxFailures: process.env.CI ? 0 : 1,
   webServer: [
     {
-      command: 'npm run dev:vite',
+      command: 'VITE_INSTANTDB_MODE=local npm run dev:vite',
       url: 'http://localhost:5173',
       reuseExistingServer: !process.env.CI,
     },

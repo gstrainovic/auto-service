@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
+import { getCurrentUserId } from '../composables/useAuth'
 import { db, id, tx } from '../lib/instantdb'
 
 export interface Maintenance {
@@ -59,6 +60,7 @@ export const useMaintenancesStore = defineStore('maintenances', () => {
     await db.transact([
       (tx.maintenances as any)[newId].update({
         ...maintenance,
+        creatorId: getCurrentUserId(),
         createdAt: now,
         updatedAt: now,
       }),

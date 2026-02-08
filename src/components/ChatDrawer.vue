@@ -11,6 +11,7 @@ import ScrollPanel from 'primevue/scrollpanel'
 import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { autoRotateForDocument, resizeImage } from '../composables/useImageResize'
 import { db, tx } from '../lib/instantdb'
 import { hashImage } from '../services/ai'
@@ -29,6 +30,7 @@ function renderMarkdown(text: string): string {
 
 const open = defineModel<boolean>({ default: false })
 
+const route = useRoute()
 const toast = useToast()
 const settings = useSettingsStore()
 
@@ -70,6 +72,14 @@ onMounted(async () => {
   catch {}
 })
 
+// Query-Parameter ?chat=open → Drawer öffnen + maximieren
+watch(() => route.query.chat, (chatParam) => {
+  if (chatParam === 'open') {
+    open.value = true
+    maximized.value = true
+  }
+}, { immediate: true })
+
 async function saveMessage(msg: ChatMessage) {
   try {
     await db.transact([
@@ -94,7 +104,7 @@ const allToolResults = computed(() =>
 const showSplit = computed(() => maximized.value && allToolResults.value.length > 0)
 
 // Show suggestions only when no chat history (just welcome message)
-const showSuggestions = computed(() => messages.value.length === 1 && messages.value[0].id === 'welcome')
+const showSuggestions = computed(() => messages.value.length === 1 && messages.value[0]?.id === 'welcome')
 
 const suggestions = [
   { icon: 'pi pi-receipt', label: 'Rechnung scannen', prompt: 'Ich möchte eine Rechnung scannen' },
@@ -231,7 +241,7 @@ async function send() {
   const imagesBase64 = files.filter(f => f.type === 'image').map(f => f.base64)
   const pdfFiles = files.filter(f => f.type === 'pdf')
 
-  if (pdfFiles.length === 1)
+  if (pdfFiles.length === 1 && pdfFiles[0])
     pdfDataByMsgId.set(userMsg.id, pdfFiles[0].base64)
 
   messages.value.push(userMsg)

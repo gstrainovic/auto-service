@@ -1,3 +1,7 @@
+# TODO:
+*.png aufräumen?
+podman-compose fehlt instantdb
+
 # Auto-Service PWA
 
 ## Commands
@@ -14,8 +18,8 @@ npx tsx scripts/compare-ai.ts  # Compare AI providers on test invoice
 Vue 3 + Quasar + Pinia + **InstantDB** (self-hosted) + Vercel AI SDK v6 + PWA
 
 src/
-  pages/          # DashboardPage, VehiclesPage, VehicleDetailPage, ScanPage, SettingsPage
-  components/     # ChatDrawer, InvoiceResult, InvoiceScanner, VehicleCard, VehicleForm
+  pages/          # DashboardPage, VehiclesPage, VehicleDetailPage, SettingsPage
+  components/     # ChatDrawer, VehicleCard, VehicleForm
   services/       # ai.ts (multi-provider), chat.ts (tool-calling), maintenance-schedule.ts
   stores/         # Pinia: vehicles, invoices, maintenances, settings
   lib/            # instantdb.ts (DB-Client)
@@ -146,8 +150,7 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 |--------|---------|----------|
 | VF | Vehicle Flow | VF-001: add a vehicle |
 | DF | Delete Flow | DF-001: delete with dialog |
-| SF | Scan Flow | SF-001: scanner UI |
-| IS | Invoice Scan | IS-001: AI scan + save |
+| SR | Scan Redirect | SR-001: redirect to chat, SR-002: navigation |
 | VD | Vehicle Document | VD-001: Kaufvertrag |
 | CR | CRUD Operations | CR-001 bis CR-009 |
 | RF | Rotation Flow | RF-001: auto-rotate |
@@ -162,10 +165,10 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | TC | Tool Cards | TC-001, TC-002 |
 | ES | Empty States | ES-001 bis ES-003 |
 | SL | Split Layout | SL-001: 30/70 split maximized |
-| MV | MediaViewer | MV-001, MV-002 |
+| MV | MediaViewer | MV-002: chat image OCR tab |
 | DP | Dashboard Progress | DP-001: progress indicator |
 
-**Gesamt: 57 Tests pro Projekt** — `npm run test:e2e --list` zeigt alle
+**Gesamt: 55 Tests pro Projekt** — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`
@@ -176,6 +179,7 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 - Chat-Test: Assertion auf Tool-Ergebnis muss `erledigt` einschließen (Fallback wenn Model keinen eigenen Text generiert)
 - Console-Error-Detection: Alle Tests failen automatisch bei unerwarteten console.error/pageerror (IGNORED_ERRORS in test-fixtures.ts)
 - Offline-Tests: Alle Console-Errors werden ignoriert (InstantDB WebSocket expected)
+- **SPA-Navigation testen:** `page.goto()` macht Full-Page-Load (triggert `onMounted`). Für echte SPA-Navigation: User-Interaktionen (Klicks) statt goto verwenden. Vue `onMounted` läuft nur einmal → `watch(() => route.query)` für Query-Parameter-Reaktivität
 
 ### PrimeVue Selektor-Gotchas
 - `getByRole('button', { name: 'X' })` matcht Text-Buttons UND Icon-only-Buttons (beide haben aria-label)

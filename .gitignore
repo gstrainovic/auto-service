@@ -39,3 +39,9 @@ tmp/
 # Tesseract.js cached language data
 *.traineddata
 .serena/
+
+# Screenshots and temp files
+*.png
+!e2e/fixtures/*.png
+installer.sh
+.opencode/

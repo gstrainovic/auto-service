@@ -32,24 +32,4 @@ test.describe('Delete Flow', () => {
     await expect(page).toHaveURL(/\/vehicles/)
     await expect(page.getByText('VW Golf')).not.toBeVisible({ timeout: 5_000 })
   })
-
-  test('DF-002: scan page has document type tabs', async ({ page }) => {
-    // This test doesn't create persistent data - no cleanup needed
-    await page.goto('/scan')
-    await expect(page.getByRole('heading', { name: 'Dokument scannen' })).toBeVisible()
-
-    // Verify tabs exist
-    await expect(page.getByRole('tab', { name: 'Rechnung' })).toBeVisible()
-    await expect(page.getByRole('tab', { name: /Kaufvertrag/ })).toBeVisible()
-    await expect(page.getByRole('tab', { name: 'Service-Heft' })).toBeVisible()
-
-    // Switch tabs
-    await page.getByRole('tab', { name: /Kaufvertrag/ }).click()
-    // Vehicle selector should NOT be visible for Kaufvertrag tab
-    await expect(page.getByLabel('Fahrzeug wählen')).not.toBeVisible()
-
-    // Switch to Service-Heft tab - vehicle selector should reappear
-    await page.getByRole('tab', { name: 'Service-Heft' }).click()
-    await expect(page.getByLabel('Fahrzeug wählen')).toBeVisible()
-  })
 })

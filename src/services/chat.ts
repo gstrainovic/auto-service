@@ -706,8 +706,13 @@ export async function sendChatMessage(
     const phase1System = `${SYSTEM_PROMPT}
 
 Der Benutzer hat ein PDF-Dokument mit ${ocrPages.length} Seite(n) hochgeladen.
-Jede Seite kann eine separate Rechnung oder ein separates Dokument sein.
+Jede Seite kann eine separate Rechnung, ein Service-Heft, ein Kaufvertrag oder ein anderes Dokument sein.
 Wenn zwei Seiten identisch oder sehr ähnlich sind, weise darauf hin (Duplikat).
+
+Bestimme ZUERST den Dokumenttyp jeder Seite:
+- **Rechnung**: Werkstattname, Beträge, Positionen mit Preisen
+- **Service-Heft/Wartungsplan**: Wartungsintervalle, Inspektionsplan, Wartungsnachweis
+- **Kaufvertrag/Fahrzeugschein**: Fahrzeugdaten, Halter, Erstzulassung
 
 --- OCR-ERGEBNIS (exakter Text vom Dokument) ---
 ${ocrContext}
@@ -715,7 +720,7 @@ ${ocrContext}
 
 Der OCR-Text oben ist maschinengelesen und daher bei Zahlen, Tabellen und Beträgen GENAUER als deine eigene Bilderkennung. Verwende die Werte aus dem OCR-Text.
 
-Analysiere jede Seite einzeln. Zeige die erkannten Daten pro Seite strukturiert an — getrennt nach Fahrzeug-Daten und Rechnungs-Daten. Frage den Benutzer ob die Daten korrekt sind bevor du fortfährst.`
+Analysiere jede Seite einzeln. Nenne den Dokumenttyp. Zeige die erkannten Daten pro Seite strukturiert an. Frage den Benutzer ob die Daten korrekt sind bevor du fortfährst.`
 
     const phase1 = await withRetry(() => generateText({
       model,
@@ -749,24 +754,41 @@ Analysiere jede Seite einzeln. Zeige die erkannten Daten pro Seite strukturiert 
 
 Analysiere das Bild sorgfältig. Das Bild kann gedreht sein (90° oder 180°) — lies den Text in der richtigen Leserichtung.
 
-KENNZEICHEN vs. FAHRGESTELLNUMMER:
-- Kennzeichen (license plate): Kürzel + Zahlen, z.B. "SG 218574" (Schweizer Kanton St. Gallen), "M-AB 1234". Steht oft neben dem Fahrzeugnamen auf der Rechnung.
-- Fahrgestellnummer/VIN: Genau 17 Zeichen, beginnt mit W, V, etc. z.B. "WP1ZZZ9PZ8LA14872"
-- "SG 218574" ist ein SCHWEIZER KENNZEICHEN, NICHT eine Fahrgestellnummer!
+SCHRITT 1 — DOKUMENTTYP ERKENNEN:
+Bestimme ZUERST den Dokumenttyp anhand des Inhalts:
+- **Rechnung/Quittung**: Werkstattname, Beträge, Positionen mit Preisen, MwSt.
+- **Service-Heft/Wartungsplan**: Wartungsintervalle (km/Monate), Inspektionsplan, Wartungsnachweis, "Kleine/Große Wartung", Stempelfelder
+- **Kaufvertrag/Fahrzeugschein**: Fahrzeugdaten, Halter, Erstzulassung
+Nenne den erkannten Dokumenttyp EXPLIZIT am Anfang deiner Antwort.
+WICHTIG: Ein Service-Heft enthält Wartungsintervalle und Stempel — auch wenn eine Werkstatt-Adresse (z.B. "Porsche Zentrum") darauf steht, ist es KEINE Rechnung!
 
-POSITIONEN KORREKT LESEN:
-- Lies die Tabellenspalten sorgfältig: Beschreibung | Menge | Einheit | Einzelpreis | Betrag
-- Betrag pro Position = Menge × Einzelpreis. Wenn es nicht aufgeht, hast du falsch gelesen.
-- "Summe Arbeiten" und "Summe Teile" sind Zwischensummen — KEINE eigenen Positionen
-- Kontrolliere: Summe aller Positions-Beträge ≈ Netto-Gesamtbetrag (vor MwSt.)
-- Wenn die Summe nicht stimmt, lies die Tabelle nochmal und korrigiere.
+SCHRITT 2 — DATEN EXTRAHIEREN:
 
-WÄHRUNG:
-- "CHF" oder "Totalbetrag CHF" → CHF (Schweizer Franken)
-- "€" oder "EUR" → EUR
+Falls RECHNUNG:
+- KENNZEICHEN vs. FAHRGESTELLNUMMER:
+  - Kennzeichen (license plate): Kürzel + Zahlen, z.B. "SG 218574" (Schweizer Kanton St. Gallen), "M-AB 1234"
+  - Fahrgestellnummer/VIN: Genau 17 Zeichen, beginnt mit W, V, etc. z.B. "WP1ZZZ9PZ8LA14872"
+  - "SG 218574" ist ein SCHWEIZER KENNZEICHEN, NICHT eine Fahrgestellnummer!
+- POSITIONEN KORREKT LESEN:
+  - Lies die Tabellenspalten sorgfältig: Beschreibung | Menge | Einheit | Einzelpreis | Betrag
+  - Betrag pro Position = Menge × Einzelpreis. Wenn es nicht aufgeht, hast du falsch gelesen.
+  - MwSt./MWST/USt. Zeilen sind KEINE eigenen Positionen — NIEMALS als Position auflisten!
+  - "Summe Arbeiten", "Summe Teile", "Nettobetrag", "Zwischensumme" sind KEINE Positionen
+  - Nur tatsächliche Arbeiten und Teile sind Positionen
+  - Kontrolliere: Summe aller Positions-Beträge ≈ Netto-Gesamtbetrag (vor MwSt.)
+- WÄHRUNG: "CHF" → CHF, "€" oder "EUR" → EUR
+
+Falls SERVICE-HEFT/WARTUNGSPLAN:
+- Lies alle Wartungsintervalle ab (km UND Zeitintervalle)
+- Zeige eine Tabelle: Wartungsart | km-Intervall | Zeit-Intervall
+- Zeige auch durchgeführte Wartungen (Stempel/Einträge) falls vorhanden
+- Erwähne das Fahrzeugmodell falls erkennbar (z.B. "Cayenne V6")
+
+Falls KAUFVERTRAG/FAHRZEUGSCHEIN:
+- Zeige alle Fahrzeugdaten: Marke, Modell, Baujahr, Fahrgestellnummer, Kennzeichen, Erstzulassung
 ${ocrContext}
 
-Zeige die erkannten Daten strukturiert an — getrennt nach Fahrzeug-Daten und Rechnungs-Daten. Frage den Benutzer ob die Daten korrekt sind bevor du fortfährst.`
+Zeige die erkannten Daten strukturiert an. Frage den Benutzer ob die Daten korrekt sind bevor du fortfährst.`
 
     // Vision-Modell: max 8 Bilder. Bei >8 nur OCR-Text verwenden (kein Bild im Request)
     const visionImages = imagesBase64.length <= 8 ? imagesBase64 : undefined
@@ -814,13 +836,13 @@ Zeige die erkannten Daten strukturiert an — getrennt nach Fahrzeug-Daten und R
       .join('\n\n')
     aiMessages.push({
       role: 'user' as any,
-      content: `Kontext: PDF mit ${storedPdfOcr.length} Seite(n) wurde analysiert. Jede Seite kann eine separate Rechnung sein. Trage jede Rechnung einzeln ein.\n\n--- OCR-TEXT ---\n${pdfContext}\n--- ENDE ---\n\n${vehicleContext}\n\nWICHTIG: Verwende NUR die exakten Fahrzeug-IDs aus der Liste oben oder aus dem Ergebnis von add_vehicle. Erfinde KEINE IDs.`,
+      content: `Kontext: PDF mit ${storedPdfOcr.length} Seite(n) wurde analysiert. Jede Seite kann eine separate Rechnung oder ein anderes Dokument (Service-Heft, Kaufvertrag) sein. Verwende das passende Tool je nach Dokumenttyp.\n\n--- OCR-TEXT ---\n${pdfContext}\n--- ENDE ---\n\n${vehicleContext}\n\nWICHTIG: Verwende NUR die exakten Fahrzeug-IDs aus der Liste oben oder aus dem Ergebnis von add_vehicle. Erfinde KEINE IDs.`,
     })
   }
   else if (storedImages?.length) {
     aiMessages.push({
       role: 'user' as any,
-      content: `Kontext: Es wurden ${storedImages.length} Bilder gesendet (Index 0–${storedImages.length - 1}). Nutze imageIndex bei add_invoice um das Bild zu speichern.\n\n${vehicleContext}\n\nWICHTIG: Verwende NUR die exakten Fahrzeug-IDs aus der Liste oben oder aus dem Ergebnis von add_vehicle. Erfinde KEINE IDs.`,
+      content: `Kontext: Es wurden ${storedImages.length} Bilder gesendet (Index 0–${storedImages.length - 1}). Nutze das passende Tool je nach Dokumenttyp: add_invoice für Rechnungen, set_maintenance_schedule für Service-Hefte, add_vehicle für Kaufverträge/Fahrzeugscheine. Bei Rechnungen: nutze imageIndex um das Bild zu speichern.\n\n${vehicleContext}\n\nWICHTIG: Verwende NUR die exakten Fahrzeug-IDs aus der Liste oben oder aus dem Ergebnis von add_vehicle. Erfinde KEINE IDs.`,
     })
   }
   else {

@@ -34,9 +34,9 @@ const chatOpen = ref(false)
           <i class="pi pi-car" />
           <span>Fahrzeuge</span>
         </RouterLink>
-        <RouterLink to="/scan" class="nav-item" @click="drawer = false">
-          <i class="pi pi-file-import" />
-          <span>Dokument scannen</span>
+        <RouterLink to="/?chat=open" class="nav-item" @click="drawer = false">
+          <i class="pi pi-comments" />
+          <span>KI-Assistent</span>
         </RouterLink>
         <RouterLink to="/settings" class="nav-item" @click="drawer = false">
           <i class="pi pi-cog" />

@@ -7,8 +7,8 @@ test.describe('Scan Redirect Flow', () => {
 
   test('SR-001: /scan redirects to chat and opens maximized', async ({ page }) => {
     await page.goto('/scan')
-    // Sollte auf / redirecten mit chat=open
-    await expect(page).toHaveURL(/\/\?chat=open/)
+    // Sollte auf /dashboard redirecten mit chat=open
+    await expect(page).toHaveURL(/\/dashboard\?chat=open/)
     // Chat-Drawer sollte offen und maximiert sein
     const drawer = page.locator('[data-pc-name="drawer"]')
     await expect(drawer).toBeVisible()

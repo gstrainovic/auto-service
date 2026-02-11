@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Drawer from 'primevue/drawer'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ChatDrawer from './components/ChatDrawer.vue'
 import { useAuth } from './composables/useAuth'
@@ -12,17 +12,20 @@ const drawer = ref(false)
 const chatOpen = ref(false)
 const { user, isLoading, signOut } = useAuth()
 
+const isPublicRoute = computed(() => route.meta.public === true)
+const showAppLayout = computed(() => user.value && !isPublicRoute.value)
+
 // Nach Login → Dashboard, nach Logout → Login
 watch(user, (u) => {
   if (u && route.path === '/login')
-    router.replace('/')
-  else if (!u && !isLoading.value && route.path !== '/login')
+    router.replace('/dashboard')
+  else if (!u && !isLoading.value && !isPublicRoute.value)
     router.replace('/login')
 })
 
 function openChat() {
   drawer.value = false
-  router.push('/?chat=open')
+  router.push('/dashboard?chat=open')
 }
 
 function handleSignOut() {
@@ -33,7 +36,7 @@ function handleSignOut() {
 
 <template>
   <div class="app-layout">
-    <template v-if="user">
+    <template v-if="showAppLayout">
       <header class="app-header">
         <div class="app-toolbar">
           <Button
@@ -49,7 +52,7 @@ function handleSignOut() {
 
       <Drawer v-model:visible="drawer" header="Navigation">
         <nav class="nav-list">
-          <RouterLink to="/" class="nav-item" @click="drawer = false">
+          <RouterLink to="/dashboard" class="nav-item" @click="drawer = false">
             <i class="pi pi-home" />
             <span>Dashboard</span>
           </RouterLink>

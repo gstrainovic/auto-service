@@ -127,8 +127,11 @@ function applyConfirmation() {
 const showConfirmationButton = computed(() => {
   if (messages.value.length < 2)
     return false
-  const lastMsg = messages.value[messages.value.length - 1]
-  const secondLastMsg = messages.value[messages.value.length - 2]
+  const msgs = messages.value
+  const lastMsg = msgs[msgs.length - 1]
+  const secondLastMsg = msgs[msgs.length - 2]
+  if (!lastMsg || !secondLastMsg)
+    return false
   // Show "Ja" button if last message is from assistant
   // and second-to-last is from user with attachments (images/PDFs)
   return (

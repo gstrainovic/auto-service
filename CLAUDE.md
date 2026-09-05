@@ -194,8 +194,9 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | MF | Maintenance Form | MF-001: validation, MF-002: submit |
 | DB | Dashboard Stats | DB-001: total cost, DB-002: invoice count |
 | IU | Image Upload | IU-001: preview, IU-002: submit with image |
+| IC | Icons | IC-001: all pi-* classes exist in PrimeIcons |
 
-**Gesamt: 64 Tests pro Projekt** — `npm run test:e2e --list` zeigt alle
+**Gesamt: 65 Tests pro Projekt** — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`

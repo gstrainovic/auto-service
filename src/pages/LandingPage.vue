@@ -122,7 +122,7 @@ function goToApp() {
           </div>
           <div class="feature-card">
             <div class="feature-icon">
-              <i class="pi pi-wifi-off" />
+              <i class="pi pi-sync" />
             </div>
             <h3>Offline-First</h3>
             <p>Volle Funktionalität ohne Internet. Automatischer Sync wenn du wieder online bist.</p>

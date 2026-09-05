@@ -18,7 +18,7 @@ const iconMap: Record<MaintenanceCategory, string> = {
   reifen: 'pi-circle',
   luftfilter: 'pi-filter',
   zahnriemen: 'pi-sync',
-  bremsflüssigkeit: 'pi-droplet',
+  bremsflüssigkeit: 'pi-minus-circle',
   klimaanlage: 'pi-sun',
   tuev: 'pi-verified',
   karosserie: 'pi-car',

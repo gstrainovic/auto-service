@@ -17,18 +17,6 @@ function readAll(files: string[]): string {
   return files.map(f => readFileSync(f, 'utf8')).join('\n')
 }
 
-// Bekannt ungenutzt, Entscheidung offen (Design-System-Primitives + alte Karten).
-const UNUSED_COMPONENTS_ALLOWED = new Set([
-  'InvoiceCard.vue',
-  'MaintenanceCard.vue',
-  'ui/Button.vue',
-  'ui/Card.vue',
-  'ui/Divider.vue',
-  'ui/Heading.vue',
-  'ui/Section.vue',
-  'ui/Text.vue',
-])
-
 test.describe('Hygiene', () => {
   test('HY-001: every runtime dependency is imported somewhere', async () => {
     const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { dependencies: Record<string, string> }
@@ -52,9 +40,6 @@ test.describe('Hygiene', () => {
     const source = readAll(collectFiles('src', /\.(?:vue|ts)$/))
 
     const unused = components.filter((file) => {
-      const rel = file.replace(/^src\/components\//, '')
-      if (UNUSED_COMPONENTS_ALLOWED.has(rel))
-        return false
       const name = basename(file)
       const escaped = name.replace(/\./g, '\\.')
       const importedElsewhere = new RegExp(`from '[^']*/${escaped}'`, 'g')

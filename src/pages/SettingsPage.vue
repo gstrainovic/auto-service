@@ -13,7 +13,6 @@ import { exportDatabase, importDatabase } from '../services/db-export'
 import { useSettingsStore } from '../stores/settings'
 
 type UsageInfo = Awaited<ReturnType<typeof fetchUsage>>
-type PlanId = keyof typeof PLANS
 type LimitKind = keyof typeof LIMIT_LABELS
 
 const settings = useSettingsStore()
@@ -24,7 +23,7 @@ const importInput = ref<HTMLInputElement | null>(null)
 // Abo & Nutzung (über den AI-Proxy)
 const usage = ref<UsageInfo | null>(null)
 const usageError = ref('')
-const checkoutBusy = ref<PlanId | null>(null)
+const checkoutBusy = ref<string | null>(null)
 const currentPlan = computed(() => PLANS[usage.value?.plan ?? 'free'])
 const upgradePlans = computed(() => Object.values(PLANS).filter(p => p.priceChfPerMonth > currentPlan.value.priceChfPerMonth))
 const limitKinds = Object.keys(LIMIT_LABELS) as LimitKind[]
@@ -49,7 +48,7 @@ async function refreshUsage(): Promise<void> {
   }
 }
 
-async function upgrade(plan: PlanId): Promise<void> {
+async function upgrade(plan: string): Promise<void> {
   checkoutBusy.value = plan
   try {
     window.location.href = await startCheckout(plan)

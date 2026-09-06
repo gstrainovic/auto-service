@@ -58,7 +58,7 @@ export async function fetchUsage(): Promise<UsageInfo> {
 }
 
 /** Startet Stripe Checkout für einen Plan; gibt die Checkout-URL zurück. */
-export async function startCheckout(plan: PlanId): Promise<string> {
+export async function startCheckout(plan: string): Promise<string> {
   const res = await proxyFetch('/billing/checkout', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

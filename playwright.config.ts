@@ -29,6 +29,7 @@ export default defineConfig({
     {
       name: 'online',
       testMatch: /.*\.spec\.ts/,
+      grepInvert: /@soft/,
       use: {
         baseURL: 'http://localhost:5173',
         screenshot: 'only-on-failure',
@@ -38,12 +39,24 @@ export default defineConfig({
     {
       name: 'offline',
       testMatch: /.*\.spec\.ts/,
+      grepInvert: /@soft/,
       use: {
         baseURL: 'http://localhost:5173',
         screenshot: 'only-on-failure',
         simulateOffline: true,
       },
       dependencies: ['online'],
+    },
+    {
+      // Weiche KI-Tests (Formulierung statt Endzustand): nur auf Anfrage via npm run test:e2e:soft
+      name: 'ai-soft',
+      testMatch: /.*\.spec\.ts/,
+      grep: /@soft/,
+      use: {
+        baseURL: 'http://localhost:5173',
+        screenshot: 'only-on-failure',
+        simulateOffline: false,
+      },
     },
   ],
 })

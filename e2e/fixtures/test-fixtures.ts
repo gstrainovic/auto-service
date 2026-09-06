@@ -16,6 +16,28 @@ const IGNORED_ERRORS = [
  * Clears all InstantDB data via the app's client API.
  * Used to ensure clean state before each test.
  */
+/** Zählt Entitäten direkt in InstantDB (Endzustand statt KI-Text prüfen). */
+export async function countEntities(page: Page, entity: string): Promise<number> {
+  return page.evaluate(async (name) => {
+    const idb = (window as any).__instantdb
+    if (!idb)
+      return 0
+    const result = await idb.db.queryOnce({ [name]: {} })
+    return (result.data[name] || []).length
+  }, entity)
+}
+
+/** Wartet bis mindestens eine Entität existiert, gibt false zurück wenn nicht innerhalb timeoutMs. */
+export async function waitForEntity(page: Page, entity: string, timeoutMs: number): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    if (await countEntities(page, entity) > 0)
+      return true
+    await page.waitForTimeout(500)
+  }
+  return false
+}
+
 export async function clearInstantDB(page: Page) {
   // Navigate to app first to initialize InstantDB client
   await page.goto('/')

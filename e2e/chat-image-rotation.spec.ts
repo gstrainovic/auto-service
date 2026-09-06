@@ -30,7 +30,7 @@ test.describe('Chat Image Auto-Rotation', () => {
     await page.locator('[data-pc-name="drawer"]').locator('button:has(.pi-send)').click()
 
     // User message should contain an image thumbnail
-    const userMsg = page.locator('.chat-message').nth(1) // index 0 = welcome
+    const userMsg = page.locator('.chat-message:not(.chat-message-loading)').nth(1) // index 0 = welcome
     const img = userMsg.locator('img')
     await expect(img).toBeVisible({ timeout: 10_000 })
 

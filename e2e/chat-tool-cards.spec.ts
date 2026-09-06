@@ -1,24 +1,22 @@
 import process from 'node:process'
 import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
-const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
 
 test.describe('Chat Tool Result Cards', () => {
   test.setTimeout(120_000)
-  test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
+  test.skip(!AI_API_KEY, 'No API key set')
 
   test.beforeEach(async ({ page }) => {
     await clearInstantDB(page)
   })
 
   test('TC-001: creating a vehicle via chat shows a tool result card', async ({ page }) => {
-    // Configure AI provider
+    // Configure Mistral API key
     await page.goto('/')
-    await page.evaluate(({ provider, key }) => {
-      localStorage.setItem('ai_provider', provider)
+    await page.evaluate(({ key }) => {
       localStorage.setItem('ai_api_key', key)
-    }, { provider: AI_PROVIDER, key: AI_API_KEY })
+    }, { key: AI_API_KEY })
     await page.reload()
 
     // Create vehicle via chat
@@ -30,15 +28,15 @@ test.describe('Chat Tool Result Cards', () => {
     await page.locator('[data-pc-name="drawer"]').locator('.chat-fab-send').click()
 
     // Wait for AI response
-    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
+    await expect(page.locator('.chat-message:not(.chat-message-loading)')).toHaveCount(3, { timeout: 60_000 })
 
     // If AI asks for confirmation, confirm
-    const lastMsg = page.locator('.chat-message-assistant').last()
+    const lastMsg = page.locator('.chat-message-assistant:not(.chat-message-loading)').last()
     const text = await lastMsg.textContent() || ''
     if (!/angelegt|erstellt|gespeichert|erledigt/i.test(text)) {
       await input.fill('Ja, bitte eintragen')
       await input.press('Enter')
-      await expect(page.locator('.chat-message')).toHaveCount(5, { timeout: 60_000 })
+      await expect(page.locator('.chat-message:not(.chat-message-loading)')).toHaveCount(5, { timeout: 60_000 })
     }
 
     // A tool result card should be visible in any assistant message
@@ -61,12 +59,11 @@ test.describe('Chat Tool Result Cards', () => {
   })
 
   test('TC-002: tool result cards survive page reload', async ({ page }) => {
-    // Configure AI provider
+    // Configure Mistral API key
     await page.goto('/')
-    await page.evaluate(({ provider, key }) => {
-      localStorage.setItem('ai_provider', provider)
+    await page.evaluate(({ key }) => {
       localStorage.setItem('ai_api_key', key)
-    }, { provider: AI_PROVIDER, key: AI_API_KEY })
+    }, { key: AI_API_KEY })
     await page.reload()
 
     // Create vehicle via chat
@@ -78,15 +75,15 @@ test.describe('Chat Tool Result Cards', () => {
     await page.locator('[data-pc-name="drawer"]').locator('.chat-fab-send').click()
 
     // Wait for AI response
-    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
+    await expect(page.locator('.chat-message:not(.chat-message-loading)')).toHaveCount(3, { timeout: 60_000 })
 
     // If AI asks for confirmation, confirm
-    const lastMsg = page.locator('.chat-message-assistant').last()
+    const lastMsg = page.locator('.chat-message-assistant:not(.chat-message-loading)').last()
     const text = await lastMsg.textContent() || ''
     if (!/angelegt|erstellt|gespeichert|erledigt/i.test(text)) {
       await input.fill('Ja, bitte eintragen')
       await input.press('Enter')
-      await expect(page.locator('.chat-message')).toHaveCount(5, { timeout: 60_000 })
+      await expect(page.locator('.chat-message:not(.chat-message-loading)')).toHaveCount(5, { timeout: 60_000 })
     }
 
     // Tool result card should be visible before reload

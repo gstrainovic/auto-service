@@ -1,7 +1,5 @@
-import type { AiProvider } from '../stores/settings'
-import { createAnthropic } from '@ai-sdk/anthropic'
+import type { AiAccess } from './ai-access'
 import { createMistral } from '@ai-sdk/mistral'
-import { createOpenAI } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import { getCurrentUserId } from '../composables/useAuth'
@@ -84,40 +82,16 @@ const serviceBookSchema = z.object({
 
 export type ParsedServiceBook = z.infer<typeof serviceBookSchema>
 
-const DEFAULT_MODELS: Record<AiProvider, string> = {
-  'mistral': 'mistral-small-latest',
-  'anthropic': 'claude-sonnet-4-20250514',
-  'openai': 'gpt-4o-mini',
-  'meta-llama': 'meta-llama/llama-4-maverick',
-  'ollama': 'qwen3-vl:2b',
-}
+export const DEFAULT_MODEL = 'mistral-small-latest'
 
 interface ModelOptions {
-  provider: AiProvider
-  apiKey: string
+  access: AiAccess
   model?: string
 }
 
 export function getModel(opts: ModelOptions) {
-  const modelId = opts.model || DEFAULT_MODELS[opts.provider]
-  switch (opts.provider) {
-    case 'anthropic':
-      return createAnthropic({ apiKey: opts.apiKey })(modelId)
-    case 'openai':
-      return createOpenAI({ apiKey: opts.apiKey })(modelId)
-    case 'mistral':
-      return createMistral({ apiKey: opts.apiKey })(modelId)
-    case 'meta-llama':
-      return createOpenAI({
-        baseURL: 'https://openrouter.ai/api/v1',
-        apiKey: opts.apiKey,
-      })(modelId)
-    case 'ollama':
-      return createOpenAI({
-        baseURL: 'http://localhost:11434/v1',
-        apiKey: 'ollama',
-      })(modelId)
-  }
+  const { baseURL, apiKey, headers } = opts.access
+  return createMistral({ apiKey, baseURL, headers })(opts.model || DEFAULT_MODEL)
 }
 
 export async function withRetry<T>(fn: () => Promise<T>, maxRetries = 4): Promise<T> {
@@ -170,7 +144,7 @@ export interface OcrResult {
   cacheId: string
 }
 
-export async function callMistralOcr(imageBase64: string, apiKey: string): Promise<OcrResult> {
+export async function callMistralOcr(imageBase64: string, access: AiAccess): Promise<OcrResult> {
   const hash = await hashImage(imageBase64)
 
   // 1. In-Memory-Cache (schnellste Stufe)
@@ -194,10 +168,11 @@ export async function callMistralOcr(imageBase64: string, apiKey: string): Promi
     console.error('[OCR] InstantDB query failed:', e)
   }
 
-  const resp = await fetch('https://api.mistral.ai/v1/ocr', {
+  const resp = await fetch(`${access.baseURL}/ocr`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      ...access.headers,
+      'Authorization': `Bearer ${access.apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -245,11 +220,12 @@ export async function callMistralOcr(imageBase64: string, apiKey: string): Promi
  * Gibt ein Array von Markdown-Texten zurück (einer pro Seite).
  * Mistral OCR: max 50 MB Dateigröße, max 1000 Seiten.
  */
-export async function callMistralOcrPdf(pdfBase64: string, apiKey: string): Promise<string[]> {
-  const resp = await fetch('https://api.mistral.ai/v1/ocr', {
+export async function callMistralOcrPdf(pdfBase64: string, access: AiAccess): Promise<string[]> {
+  const resp = await fetch(`${access.baseURL}/ocr`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      ...access.headers,
+      'Authorization': `Bearer ${access.apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -289,17 +265,18 @@ export async function callMistralOcrPdf(pdfBase64: string, apiKey: string): Prom
  */
 async function parseWithOcrPipeline<T>(
   imageBase64: string,
-  apiKey: string,
+  access: AiAccess,
   schema: z.ZodType<T>,
   prompt: string,
   modelId?: string,
 ): Promise<T> {
-  const { markdown: ocrText } = await withRetry(() => callMistralOcr(imageBase64, apiKey))
-  const model = getModel({ provider: 'mistral', apiKey, model: modelId })
+  const { markdown: ocrText } = await withRetry(() => callMistralOcr(imageBase64, access))
+  const model = getModel({ access, model: modelId })
 
   const { object } = await withRetry(() => generateObject({
     model,
     maxRetries: 0,
+    temperature: 0,
     schema,
     messages: [{
       role: 'user',
@@ -348,93 +325,28 @@ Extrahiere alle Daten. Antworte auf Deutsch.`
 
 export async function parseInvoice(
   imageBase64: string,
-  provider: AiProvider,
-  apiKey: string,
+  access: AiAccess,
   modelId?: string,
 ): Promise<ParsedInvoice> {
-  // Mistral: OCR-Pipeline (perfekte Tabellenextraktion → JSON-Parsing)
-  if (provider === 'mistral') {
-    return parseWithOcrPipeline(imageBase64, apiKey, invoiceSchema, INVOICE_PROMPT, modelId)
-  }
-
-  // Andere Provider: direkte Bild-Analyse
-  const model = getModel({ provider, apiKey, model: modelId })
-  const { object } = await withRetry(() => generateObject({
-    model,
-    maxRetries: 0,
-    schema: invoiceSchema,
-    messages: [{
-      role: 'user',
-      content: [
-        {
-          type: 'text',
-          text: `${INVOICE_PROMPT}\n\nDas Bild kann gedreht sein (90° oder 180°) — lies den Text in der richtigen Leserichtung.`,
-        },
-        {
-          type: 'image',
-          image: imageBase64,
-        },
-      ],
-    }],
-  }))
-
-  return object
+  return parseWithOcrPipeline(imageBase64, access, invoiceSchema, INVOICE_PROMPT, modelId)
 }
 
 const VEHICLE_DOC_PROMPT = 'Analysiere dieses Fahrzeugdokument (Kaufvertrag, Fahrzeugschein oder Zulassungsbescheinigung). Extrahiere alle Fahrzeugdaten. Antworte auf Deutsch.'
 
 export async function parseVehicleDocument(
   imageBase64: string,
-  provider: AiProvider,
-  apiKey: string,
+  access: AiAccess,
   modelId?: string,
 ): Promise<ParsedVehicleDocument> {
-  if (provider === 'mistral') {
-    return parseWithOcrPipeline(imageBase64, apiKey, vehicleDocumentSchema, VEHICLE_DOC_PROMPT, modelId)
-  }
-
-  const model = getModel({ provider, apiKey, model: modelId })
-  const { object } = await withRetry(() => generateObject({
-    model,
-    maxRetries: 0,
-    schema: vehicleDocumentSchema,
-    messages: [{
-      role: 'user',
-      content: [
-        { type: 'text', text: VEHICLE_DOC_PROMPT },
-        { type: 'image', image: imageBase64 },
-      ],
-    }],
-  }))
-
-  return object
+  return parseWithOcrPipeline(imageBase64, access, vehicleDocumentSchema, VEHICLE_DOC_PROMPT, modelId)
 }
 
 const SERVICE_BOOK_PROMPT = 'Analysiere diese Service-Heft Seite. Extrahiere alle Wartungseinträge mit Datum, Kilometerstand und durchgeführten Arbeiten. Falls Hersteller-Wartungsintervalle sichtbar sind, extrahiere diese ebenfalls. Antworte auf Deutsch.'
 
 export async function parseServiceBook(
   imageBase64: string,
-  provider: AiProvider,
-  apiKey: string,
+  access: AiAccess,
   modelId?: string,
 ): Promise<ParsedServiceBook> {
-  if (provider === 'mistral') {
-    return parseWithOcrPipeline(imageBase64, apiKey, serviceBookSchema, SERVICE_BOOK_PROMPT, modelId)
-  }
-
-  const model = getModel({ provider, apiKey, model: modelId })
-  const { object } = await withRetry(() => generateObject({
-    model,
-    maxRetries: 0,
-    schema: serviceBookSchema,
-    messages: [{
-      role: 'user',
-      content: [
-        { type: 'text', text: SERVICE_BOOK_PROMPT },
-        { type: 'image', image: imageBase64 },
-      ],
-    }],
-  }))
-
-  return object
+  return parseWithOcrPipeline(imageBase64, access, serviceBookSchema, SERVICE_BOOK_PROMPT, modelId)
 }

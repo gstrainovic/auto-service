@@ -1,6 +1,3 @@
-# TODO:
-*.png aufräumen?
-
 # Auto-Service PWA
 
 ## Commands
@@ -11,27 +8,36 @@ npm run lint         # ESLint (antfu config)
 npm run lint:fix     # ESLint autofix
 npm run test:e2e     # Playwright E2E (loads .env via dotenv)
 npm run test:e2e:ui  # Playwright UI mode
-npx tsx scripts/compare-ai.ts  # Compare AI providers on test invoice
+npm run test:e2e:soft # Weiche KI-Tests (@soft), nicht Teil der Standard-Suite
+npm run test:unit    # Vitest: src/**/*.test.ts (die AI-Proxy-Tests liegen im Repo ~/projects/ai-proxy)
+npm run dev:proxy    # AI-Proxy lokal aus node_modules/@strainovic/ai-proxy (liest .env, Port 8787)
 
 ## Architecture
-Vue 3 + Quasar + Pinia + **InstantDB** (self-hosted) + Vercel AI SDK v6 + PWA
+Vue 3 + PrimeVue + Pinia + **InstantDB** (self-hosted) + Vercel AI SDK v6 + PWA + **AI-Proxy** (eigenes Repo `~/projects/ai-proxy`, Paket `@strainovic/ai-proxy` via `file:../ai-proxy`)
 
 src/
-  pages/          # DashboardPage, VehiclesPage, VehicleDetailPage, SettingsPage
-  components/     # ChatDrawer, VehicleCard, VehicleForm
-  services/       # ai.ts (multi-provider), chat.ts (tool-calling), maintenance-schedule.ts
+  pages/          # LandingPage, LoginPage, DashboardPage, VehiclesPage, VehicleDetailPage, SettingsPage, ImpressumPage, DatenschutzPage
+  components/     # ChatDrawer, MediaViewer, ToolResultCard, StatCard, VehicleCard, VehicleForm, Invoice*/Maintenance* (Form + FormDialog)
+  services/       # ai.ts (Mistral: OCR-Pipeline + Modell-Factory), chat.ts (tool-calling), maintenance-schedule.ts
   stores/         # Pinia: vehicles, invoices, maintenances, settings
-  lib/            # instantdb.ts (DB-Client)
+  lib/            # instantdb.ts (DB-Client), instant-config.ts (Modus cloud/local/selfhosted, reine Funktion)
+../ai-proxy/      # AI-Proxy (eigenes Repo): app.ts (Hono, DI), auth/instant.ts, billing.ts (Stripe), limits.ts,
+                  # plans.ts (Frontend importiert '@strainovic/ai-proxy/plans'), stores/ (memory, instant), Dockerfile
+deploy/           # docker-compose.yml (ai-proxy + caddy für PWA), Caddyfile, .env.example
   composables/    # useImageResize (client-side 1540px resize), useImageUpload, useFormValidation
 e2e/              # Playwright tests + fixtures/
-scripts/          # compare-ai.ts
+scripts/          # dev.sh (Vite + InstantDB), test-9-images.ts (manueller OCR-Pipeline-Test)
+tmp/              # Testbilder + 9-Seiten-PDF für manuelle Tests (gitignored, NICHT löschen)
 
 ## InstantDB
 Backend-Datenbank mit Echtzeit-Sync via WebSocket. Ersetzt RxDB.
 
-### Cloud vs Local
-- **Cloud (Default):** instantdb.com — App-ID `5d413a89-91ad-4a5a-ad71-d2df5fd81d88`
-- **Local:** `VITE_INSTANTDB_MODE=local` — App-ID `cd7e6912-773b-4ee1-be18-4d95c3b20e9f`
+### Modi (`src/lib/instant-config.ts`)
+- **Cloud (Default, Auslaufmodell):** instantdb.com — App-ID `5d413a89-91ad-4a5a-ad71-d2df5fd81d88`.
+  Instant-Team ging 2026 zu OpenAI, keine neuen Signups, **Cloud-Abschaltung 31.08.2027**.
+- **Local:** `VITE_INSTANTDB_MODE=local` — App-ID `cd7e6912-773b-4ee1-be18-4d95c3b20e9f`, Auth-Bypass (E2E)
+- **Selfhosted (Produktion):** `VITE_INSTANTDB_MODE=selfhosted` + `VITE_INSTANT_APP_ID`, `VITE_INSTANT_API_URI`,
+  optional `VITE_INSTANT_WS_URI` (sonst aus API-URI abgeleitet). Echte Auth, kein Bypass.
 - E2E-Tests laufen IMMER gegen lokalen Server (Playwright setzt `VITE_INSTANTDB_MODE=local`)
 - `npm run dev` → Cloud, `npm run dev:vite` in Tests → Local
 
@@ -58,10 +64,12 @@ podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;
 - DevTools deaktiviert (Toggle-Button blockierte UI-Klicks)
 
 ### Produktion (Hetzner)
-- Deployment-Anleitung: siehe `README.md` → "InstantDB auf Hetzner deployen"
-- Caddy als Reverse Proxy (auto-HTTPS)
-- Frontend-URIs in `src/lib/instantdb.ts` anpassen (apiURI, websocketURI)
+- Anleitung: `README.md` → "Produktion auf Hetzner". InstantDB nach offiziellem VPS-Guide
+  (instantdb.com/docs/self-hosting/vps), PWA + AI-Proxy über `deploy/docker-compose.yml`.
+- Frontend-URIs kommen aus `VITE_INSTANT_*` (Modus selfhosted), nicht mehr aus dem Quellcode
 - Backup: `pg_dump -U instant instant`
+- Admin-SDK `@instantdb/admin` ist auf **0.22.121** gepinnt (gleiche Version wie `@instantdb/core` und der
+  lokale Server-Checkout vom Feb 2026). npm-latest ist 1.x → nur zusammen mit Server + Core upgraden.
 
 ### InstantDB vs RxDB Unterschiede
 - **Entity-IDs müssen UUIDs sein** — keine beliebigen Strings (z.B. SHA-256 Hashes)
@@ -78,33 +86,23 @@ podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;
 - Frontend-SDK: `db.auth.sendMagicCode()`, `db.auth.signInWithMagicCode()`, `db.useAuth()`
 - Erweiterbar: Google/Apple/GitHub OAuth eingebaut, Passkeys via Custom Auth
 
-## AI Providers
-Vier cloud Providers via Vercel AI SDK v6:
-- **mistral** (mistral-small-latest) — primary, vision+chat+tools, schnell (~3s), zuverlässiges Tool-Calling
-- **anthropic** (claude-sonnet-4-20250514)
-- **openai** (gpt-4o-mini)
-- **meta-llama** (meta-llama/llama-4-maverick via OpenRouter) — vision+chat+tools
+## AI Provider: nur Mistral
+Seit 2026-09-05 ist Mistral der einzige Provider (Vercel AI SDK v6, `@ai-sdk/mistral`).
+- Chat/Vision-Modell: `mistral-small-latest` (`DEFAULT_MODEL` in `ai.ts`, in Settings überschreibbar)
+- OCR: `mistral-ocr-latest` per direktem Fetch auf `/v1/ocr`
+- Alle Dokument-Parser laufen über die Zwei-Stufen-Pipeline OCR → Chat (`parseWithOcrPipeline`)
+- API-Key in localStorage (`ai_api_key`, Settings page). `.env` nur für E2E-Tests (`VITE_AI_API_KEY`).
+- Kein Provider-Switch mehr: `getModel({ apiKey, model? })`, `sendChatMessage(messages, { apiKey, model? })`
 
-Entfernte Provider: OpenRouter+Gemini (SDK-Inkompatibilitäten mit neuen Gemini-Response-Feldern wie `reasoning`, `file_search_call`; Gemini narrated Tool-Calls statt sie auszuführen), Google direct (Quota-Limits), Groq (Vision eingestellt).
+Entfernt (2026-09-05): Anthropic, OpenAI, Meta Llama via OpenRouter, Ollama. Grund: nur Mistral
+hatte die OCR-Pipeline, alle anderen liefen über den unzuverlässigeren Direkt-Vision-Pfad. Kosten
+bei Mistral liegen bei ~0.5 Cent pro Rechnungsscan, eigenes GPU-Hosting lohnt sich nicht.
+Früher schon entfernt: OpenRouter+Gemini (SDK-Inkompatibilitäten), Google direct (Quota), Groq (Vision eingestellt).
 
-Provider + API key in localStorage (Settings page). .env nur für E2E-Tests.
-
-## Privacy / Datenschutz der Provider
-WICHTIG: Bei kostenlosen API-Tiers bezahlt man mit seinen Daten.
-- **OpenRouter + Gemini Free**: Google trainiert mit Free-Tier-Daten. In EU nicht erlaubt ohne Paid Tier.
-- **Mistral Experiment (Free)**: Daten werden standardmäßig für Training verwendet. Opt-out möglich. Scale-Plan für Produktion nötig.
-- **Meta Llama API**: Kein Training mit API-Daten, ABER multimodale Modelle in EU eingeschränkt.
-- **Anthropic API**: Kein Training mit API-Daten. 7 Tage Retention. Nicht kostenlos.
-- **OpenAI API**: Kein Training seit März 2023. Nicht kostenlos.
-- **Ollama (lokal)**: 100% privat — keine Daten verlassen den Rechner. Braucht GPU für akzeptable Geschwindigkeit.
-
-## Ollama (lokaler Provider)
-Getestetes Setup (Jan 2026): Ollama 0.15.2, qwen3-vl:2b, Quadro P1000 (4 GB VRAM), CUDA 13.0.
-- Vision (Rechnungsscan): ~13s — korrekt (Werkstatt, Datum, Betrag)
-- Tool Calling: ~7s — korrekt (list_vehicles)
-- GPU wird im "low VRAM mode" genutzt (unter 20 GiB = Mischung GPU+CPU)
-- qwen3-vl:4b (3.3 GB) hängt bei Vision auf 4 GB VRAM — 2b empfohlen
-- Ollama API: http://localhost:11434, OpenAI-kompatibel via /v1/chat/completions
+## Privacy / Datenschutz (Mistral)
+- **Experiment (Free)**: Daten werden standardmäßig für Training verwendet. Opt-out möglich.
+- **Scale (Paid)**: kein Training, reine Nutzungsabrechnung ohne Grundgebühr. Für Produktion nötig.
+- Standort Frankreich (EU). Vertrag besteht direkt zwischen Nutzer und Mistral (eigener API-Key).
 
 ## Mistral Vision Limits (Chat-Modell: mistral-small-latest)
 Quelle: docs.mistral.ai/capabilities/vision
@@ -125,7 +123,7 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Tabellen: `table_format` = `null` | `markdown` | `html`
 - Header/Footer-Extraktion optional (`extract_header`, `extract_footer`)
 - **Kein** Character-Formatting (bold, italic, underline) — aber Fußnoten (Superscript)
-- Pricing: ~$0.001 pro Seite ($1/1.000 Seiten)
+- Pricing (Stand 2026-09-05, docs.mistral.ai/inference/pricing): $4 pro 1.000 Seiten (OCR 4.x); Mistral Small 4: $0.15/M Input, $0.60/M Output
 - Rate-Limit: 2.000 Seiten/Minute (Scale-Tier)
 - Azure/Foundry: max 30 MB, max 30 Seiten
 - Zwei-Stufen-Pipeline (OCR → Chat) ist zuverlässiger als Document Annotation (Ein-Stufe halluziniert)
@@ -152,6 +150,10 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - AI SDK v6: Tool-Ergebnisse in `tr.output` (nicht `tr.result`), `tr.toolName` für Tool-Name
 - z.enum(MAINTENANCE_CATEGORIES) enforces valid categories in AI schemas
 - InstantDB: Entity-IDs müssen UUIDs sein (nutze `id()` Funktion)
+- Alle Modell-Aufrufe mit `temperature: 0` (Tool-Entscheidungen reproduzierbarer)
+- Guard `claimsActionWithoutTool` in `sendChatMessage`: behauptet das Modell "wurde eingetragen" ohne Tool-Aufruf, wird einmal mit `toolChoice: 'required'` nachgefasst
+- System-Prompt: keine wörtlichen Erfolgssätze als Beispiele — Mistral kopiert sie sonst ohne Tool-Aufruf (nur Format beschreiben)
+- Lade-Blase im Chat hat zusätzlich die Klasse `chat-message-loading` (für Test-Selektoren)
 
 ## E2E Testing
 
@@ -160,7 +162,9 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Tests folgen **CRUD-Paradigma**: Create → Read → Update → Delete
 - Tests laufen automatisch **zweimal**: online + offline (via Network-Blocking)
 - **Playwright startet Server automatisch** (Vite + InstantDB) — kein manuelles `podman-compose up` nötig
-- `npm run test:e2e` führt beide Projekt-Varianten aus (104 Tests: 52 online + 52 offline)
+- `npm run test:e2e` führt beide Projekt-Varianten aus (146 Tests: 73 online + 73 offline; 2 weitere nur via `test:e2e:soft`)
+- Playwright startet drei Server: Vite (`VITE_INSTANTDB_MODE=local`, `VITE_AI_PROXY_URL=http://localhost:8787`),
+  InstantDB (podman-compose) und den AI-Proxy (`npm run dev:proxy` im Auth-Bypass, Key aus `.env` explizit per `env`)
 
 ### Offline-Testing
 Die `simulateOffline` Fixture blockiert alle Requests zu `localhost:8888` (InstantDB-Server).
@@ -175,14 +179,14 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | VD | Vehicle Document | VD-001: Kaufvertrag |
 | CR | CRUD Operations | CR-001 bis CR-009 |
 | RF | Rotation Flow | RF-001: auto-rotate |
-| CF | Chat Flow | CF-001 bis CF-006 |
+| CF | Chat Flow | CF-001 bis CF-007 |
 | CU | Chat Upload | CU-001 bis CU-011 |
 | CM | Chat Maintenance | CM-001: add without invoice |
 | SC | Schedule Flow | SC-001: chat tool |
 | SH | Schedule Hint | SH-001, SH-002 |
 | SE | Settings Flow | SE-001 bis SE-004 |
 | CI | Chat Image | CI-001: rotation |
-| CS | Chat Schedule | CS-001, CS-002 |
+| CS | Chat Schedule | CS-001, CS-002 (`@soft`, nur `npm run test:e2e:soft`) |
 | TC | Tool Cards | TC-001, TC-002 |
 | ES | Empty States | ES-001 bis ES-003 |
 | SL | Split Layout | SL-001: 30/70 split maximized |
@@ -195,8 +199,11 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | DB | Dashboard Stats | DB-001: total cost, DB-002: invoice count |
 | IU | Image Upload | IU-001: preview, IU-002: submit with image |
 | IC | Icons | IC-001: all pi-* classes exist in PrimeIcons |
+| PP | Public Pages | PP-001 bis PP-004: Impressum, Datenschutz, Navigation, Redirect |
+| HY | Hygiene | HY-001: keine ungenutzten Dependencies, HY-002: keine ungenutzten Komponenten |
+| AP | AI Proxy | AP-001: Chat via Proxy zählt Tokens, AP-002: Monatslimit-Meldung, AP-003: Settings zeigen Abo & Nutzung |
 
-**Gesamt: 65 Tests pro Projekt** — `npm run test:e2e --list` zeigt alle
+**Gesamt: 73 Tests pro Projekt** (+2 `@soft`) — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`
@@ -204,7 +211,12 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 - .env loaded by playwright.config.ts, keys injected via page.evaluate → localStorage
 - Alle AI-Tests nutzen Mistral als Default (schnell, zuverlässig, ~3–6s für Vision+Tools)
 - Use .first() for assertions that may match multiple elements (AI can create duplicates)
+- **KI-Tests prüfen Endzustand, nicht Formulierung:** `countEntities(page, 'vehicles')` / `waitForEntity` aus den Fixtures statt Regex auf den Antworttext. Fragt das Modell nach Bestätigung, in einer Schleife bestätigen (max. 2 Runden) und danach die DB prüfen (CF-001 als Vorlage)
+- **AI-Proxy in E2E:** `clearInstantDB` löscht auch `usage`/`subscriptions` → jeder Test startet im Free-Plan bei 0.
+  Nutzung setzen: `PUT http://localhost:8787/test/usage` (nur im Bypass). Der 402-Netzwerk-Log ist in IGNORED_ERRORS.
+- **Weiche KI-Tests** (prüfen nur, was das Modell sagt oder nicht sagt, ohne harten Endzustand): `test.describe(..., { tag: '@soft' }, ...)`. Laufen nur im Projekt `ai-soft` via `npm run test:e2e:soft`, nicht in online/offline
 - Chat-Test: Assertion auf Tool-Ergebnis muss `erledigt` einschließen (Fallback wenn Model keinen eigenen Text generiert)
+- **Chat-Nachrichten zählen:** immer `.chat-message:not(.chat-message-loading)` — die Lade-Blase trägt sonst `.chat-message` mit und der Test bestätigt, bevor die Antwort da ist (Race, führte zu doppelten Rückfragen)
 - Console-Error-Detection: Alle Tests failen automatisch bei unerwarteten console.error/pageerror (IGNORED_ERRORS in test-fixtures.ts)
 - Offline-Tests: Alle Console-Errors werden ignoriert (InstantDB WebSocket expected)
 - **SPA-Navigation testen:** `page.goto()` macht Full-Page-Load (triggert `onMounted`). Für echte SPA-Navigation: User-Interaktionen (Klicks) statt goto verwenden. Vue `onMounted` läuft nur einmal → `watch(() => route.query)` für Query-Parameter-Reaktivität
@@ -214,6 +226,9 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 - Für Header-Buttons mit sichtbarem Text: `button:has-text("Löschen")` statt `getByRole`
 - Dialog Close-Button: `getByRole('button', { name: 'Close' })` (nicht `.pi-times` CSS-Klasse)
 - VehicleDetailPage hat mehrere "Löschen"-Buttons (Header + Item-Buttons) — `.first()` oder spezifischen Container verwenden
+- InputNumber: Label nur mit `input-id` verknüpft, nicht mit `id`
+- `v-tooltip` Direktive muss in `main.ts` registriert werden: `app.directive('tooltip', Tooltip)`
+- Labels mit `*` brechen `getByLabel` — Labels ohne `*` oder Regex verwenden
 
 ## Code Style
 - German UI text and AI schema descriptions
@@ -225,7 +240,17 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 - `devtool: false` setzen — DevTools-Toggle blockiert UI-Klicks in Tests
 - OCR-Cache: `tx.ocrcache[id()].update({ hash, markdown, ... })` statt `tx.ocrcache[hash].update(...)`
 
+## Unit-Tests (Vitest)
+- `src/**/*.test.ts`, Konfig `vitest.config.ts`. Proxy-Tests im Repo ai-proxy: `createApp(deps)` nimmt alles per DI
+  (fetch, Store, verifyToken) → Proxy-Logik ohne Netz testbar. Stripe-Webhooks mit `generateTestHeaderString` signiert.
+- Integrationstests im Repo ai-proxy (`src/stores/instant.test.ts`, `src/auth/instant.test.ts`) laufen gegen den lokalen InstantDB-Server
+  und werden übersprungen, wenn er nicht läuft. Test-Token: `db.auth.createToken(email)` (Admin-SDK 0.22).
+
 ## Gotchas
-- Lint errors in docs/plans/*.md are false positives (code blocks parsed as JS)
-- Mistral ist der primäre E2E-Test-Provider — andere Provider können abweichendes Tool-Calling-Verhalten zeigen
 - Fedora: `podman-compose` statt `docker-compose` verwenden
+- Node `--env-file` überschreibt bereits exportierte Shell-Variablen **nicht**. Ein in der Shell gesetzter
+  `MISTRAL_API_KEY` würde `npm run dev:proxy` übersteuern (war bis 2026-09-06 in `~/.bashrc` mit ungültigem Key,
+  entfernt). Playwright gibt den `.env`-Key deshalb explizit per `env` mit.
+- Der Proxy läuft mit Node-nativem Type-Stripping: relative Imports **mit `.ts`-Endung** (`./app.ts`), kein Build.
+- **Kein Browser-BYOK mehr** (seit 06.09.2026): Der Client kennt keinen Mistral-Key und kein Modell, alles läuft über den Proxy. `VITE_AI_PROXY_URL` ist Pflicht.
+- `pkill -f "node.ts"` killt die eigene Shell, wenn der Suchstring im Befehl steht → `pgrep -f "^node .*ai-proxy/src/node\.ts"`.

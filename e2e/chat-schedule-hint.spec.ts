@@ -1,24 +1,22 @@
 import process from 'node:process'
 import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
-const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
 
-test.describe('Chat Schedule Hint', () => {
+test.describe('Chat Schedule Hint', { tag: '@soft' }, () => {
   test.setTimeout(120_000)
-  test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
+  test.skip(!AI_API_KEY, 'No API key set')
 
   test.beforeEach(async ({ page }) => {
     await clearInstantDB(page)
   })
 
   test('CS-001: AI mentions service book hint when asking about maintenance status', async ({ page }) => {
-    // Configure AI provider
+    // Configure Mistral API key
     await page.goto('/')
-    await page.evaluate(({ provider, key }) => {
-      localStorage.setItem('ai_provider', provider)
+    await page.evaluate(({ key }) => {
       localStorage.setItem('ai_api_key', key)
-    }, { provider: AI_PROVIDER, key: AI_API_KEY })
+    }, { key: AI_API_KEY })
     await page.reload()
 
     // Create a vehicle without customSchedule
@@ -40,10 +38,10 @@ test.describe('Chat Schedule Hint', () => {
     await page.locator('.chat-drawer button').filter({ has: page.locator('.pi-send') }).click()
 
     // Wait for AI response (welcome + user + assistant = 3 messages minimum)
-    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
+    await expect(page.locator('.chat-message:not(.chat-message-loading)')).toHaveCount(3, { timeout: 60_000 })
 
     // AI should mention service book / allgemein / Service-Heft in its response
-    const assistantMsg = page.locator('.chat-message').last()
+    const assistantMsg = page.locator('.chat-message:not(.chat-message-loading)').last()
     await expect(assistantMsg).toContainText(/Service-Heft|allgemein/i, { timeout: 30_000 })
 
     // Close chat via navigation
@@ -55,12 +53,11 @@ test.describe('Chat Schedule Hint', () => {
   })
 
   test('CS-002: AI does NOT mention service book hint when customSchedule exists', async ({ page }) => {
-    // Configure AI provider
+    // Configure Mistral API key
     await page.goto('/')
-    await page.evaluate(({ provider, key }) => {
-      localStorage.setItem('ai_provider', provider)
+    await page.evaluate(({ key }) => {
       localStorage.setItem('ai_api_key', key)
-    }, { provider: AI_PROVIDER, key: AI_API_KEY })
+    }, { key: AI_API_KEY })
     await page.reload()
 
     // Create a vehicle with customSchedule
@@ -102,10 +99,10 @@ test.describe('Chat Schedule Hint', () => {
     await page.locator('.chat-drawer button').filter({ has: page.locator('.pi-send') }).click()
 
     // Wait for AI response
-    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
+    await expect(page.locator('.chat-message:not(.chat-message-loading)')).toHaveCount(3, { timeout: 60_000 })
 
     // AI should show maintenance status but NOT mention service book hint
-    const assistantMsg = page.locator('.chat-message').last()
+    const assistantMsg = page.locator('.chat-message:not(.chat-message-loading)').last()
     // Should contain maintenance-related content
     await expect(assistantMsg).toContainText(/Wartung|Ölwechsel|Fällig|Status|erledigt/i, { timeout: 30_000 })
 

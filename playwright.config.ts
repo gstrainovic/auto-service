@@ -27,7 +27,7 @@ export default defineConfig({
       env: {
         AI_PROXY_AUTH_BYPASS: '1',
         PORT: '8787',
-        MISTRAL_API_KEY: envFile.MISTRAL_API_KEY ?? envFile.VITE_AI_API_KEY ?? '',
+        MISTRAL_API_KEY: envFile.MISTRAL_API_KEY ?? '',
         INSTANT_API_URI: envFile.INSTANT_API_URI ?? 'http://localhost:8888',
         INSTANT_APP_ID: envFile.INSTANT_APP_ID ?? '',
         INSTANT_ADMIN_TOKEN: envFile.INSTANT_ADMIN_TOKEN ?? '',

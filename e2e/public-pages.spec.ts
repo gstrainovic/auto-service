@@ -22,9 +22,9 @@ test.describe('Public Pages', () => {
     await expect(page.getByRole('heading', { name: /KI-gestützte Verarbeitung/ })).toBeVisible()
     await expect(page.getByRole('heading', { name: /Ihre Rechte/ })).toBeVisible()
     await expect(page.getByRole('heading', { name: /Cookies/ })).toBeVisible()
-    // AI provider table
-    await expect(page.getByText('Mistral AI')).toBeVisible()
-    await expect(page.getByText('Ollama (lokal)')).toBeVisible()
+    // AI provider table: Mistral only
+    await expect(page.getByRole('cell', { name: 'Mistral AI' })).toBeVisible()
+    await expect(page.getByText(/Anthropic|OpenAI|OpenRouter|Ollama/)).toHaveCount(0)
     // EDÖB reference
     await expect(page.getByText('EDÖB')).toBeVisible()
     // Footer-Links

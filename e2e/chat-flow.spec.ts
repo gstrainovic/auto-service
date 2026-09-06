@@ -1,27 +1,25 @@
 import path from 'node:path'
 import process from 'node:process'
-import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
+import { clearInstantDB, countEntities, expect, test, waitForEntity } from './fixtures/test-fixtures'
 
-const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
 
 const fixturesDir = path.join(import.meta.dirname, 'fixtures')
 
 test.describe('Chat Flow', () => {
   test.setTimeout(120_000)
-  test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
+  test.skip(!AI_API_KEY, 'No API key set')
 
   test.beforeEach(async ({ page }) => {
     await clearInstantDB(page)
   })
 
   test('CF-001: open chat and create a vehicle via tool-calling', async ({ page }) => {
-    // Configure AI provider
+    // Configure Mistral API key
     await page.goto('/')
-    await page.evaluate(({ provider, key }) => {
-      localStorage.setItem('ai_provider', provider)
+    await page.evaluate(({ key }) => {
       localStorage.setItem('ai_api_key', key)
-    }, { provider: AI_PROVIDER, key: AI_API_KEY })
+    }, { key: AI_API_KEY })
     await page.reload()
 
     // Step 1: Open chat via FAB
@@ -37,23 +35,23 @@ test.describe('Chat Flow', () => {
     await page.locator('[data-pc-name="drawer"]').locator('button:has(.pi-send)').click()
 
     // Step 4: Wait for AI response (at least 3 messages: welcome + user + assistant)
-    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
+    await expect(page.locator('.chat-message:not(.chat-message-loading)')).toHaveCount(3, { timeout: 60_000 })
 
-    // Step 5: Wait for assistant response with substantial text
-    const lastMsg = page.locator('.chat-message').last()
+    // Step 5: Antwort muss das Fahrzeug erwähnen (weiche Prüfung)
+    const lastMsg = page.locator('.chat-message:not(.chat-message-loading)').last()
     await expect(lastMsg).toContainText(/Audi/i, { timeout: 30_000 })
 
-    // Check if model created directly or asked for confirmation
-    const lastMsgText = await lastMsg.textContent() || ''
-    if (!/angelegt|eingetragen|erstellt|hinzugefügt|gespeichert|erfasst|erledigt|Hier sind die Daten|Daten deines Fahrzeugs/i.test(lastMsgText)) {
-      // Model asked for confirmation — send "Ja, bitte eintragen"
-      const chatInput = page.locator('[data-pc-name="drawer"]').getByPlaceholder('Nachricht...')
+    // Endzustand statt KI-Formulierung prüfen: Fahrzeug in InstantDB?
+    // Fragt das Modell nach Bestätigung, bis zu zweimal bestätigen.
+    const chatInput = page.locator('[data-pc-name="drawer"]').getByPlaceholder('Nachricht...')
+    for (let round = 1; round <= 2; round++) {
+      if (await waitForEntity(page, 'vehicles', 3_000))
+        break
       await chatInput.fill('Ja, bitte eintragen')
       await chatInput.press('Enter')
-      await expect(page.locator('.chat-message')).toHaveCount(5, { timeout: 60_000 })
-      const finalMsg = page.locator('.chat-message').last()
-      await expect(finalMsg).toContainText(/angelegt|eingetragen|erstellt|hinzugefügt|gespeichert|wurde|erledigt|Hier sind|Hier ist|Daten deines|neuer/i, { timeout: 30_000 })
+      await expect(page.locator('.chat-message:not(.chat-message-loading)')).toHaveCount(3 + 2 * round, { timeout: 60_000 })
     }
+    expect(await countEntities(page, 'vehicles')).toBeGreaterThan(0)
 
     // Step 6: Close chat and verify vehicle in UI
     await page.goto('/vehicles')
@@ -112,10 +110,9 @@ test.describe('Chat Flow', () => {
 
   test('CF-004: send multiple images shows thumbnail grid in message', async ({ page }) => {
     await page.goto('/')
-    await page.evaluate(({ provider, key }) => {
-      localStorage.setItem('ai_provider', provider)
+    await page.evaluate(({ key }) => {
       localStorage.setItem('ai_api_key', key)
-    }, { provider: AI_PROVIDER, key: AI_API_KEY })
+    }, { key: AI_API_KEY })
     await page.reload()
 
     await page.locator('.chat-fab').click()
@@ -142,20 +139,19 @@ test.describe('Chat Flow', () => {
     await expect(userMsg.locator('img')).toHaveCount(2)
 
     // Wait for AI response
-    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
-    const assistantMsg = page.locator('.chat-message').last()
+    await expect(page.locator('.chat-message:not(.chat-message-loading)')).toHaveCount(3, { timeout: 60_000 })
+    const assistantMsg = page.locator('.chat-message:not(.chat-message-loading)').last()
     await expect(assistantMsg).toContainText(/.+/, { timeout: 10_000 })
 
     // Chat messages don't persist on page reload, no cleanup needed
   })
 
   test('CF-006: AI assigns invoice to the correct vehicle when multiple exist', async ({ page }) => {
-    // Setup: Configure AI provider
+    // Setup: Configure Mistral API key
     await page.goto('/')
-    await page.evaluate(({ provider, key }) => {
-      localStorage.setItem('ai_provider', provider)
+    await page.evaluate(({ key }) => {
       localStorage.setItem('ai_api_key', key)
-    }, { provider: AI_PROVIDER, key: AI_API_KEY })
+    }, { key: AI_API_KEY })
 
     // Step 1: Create FIRST vehicle — Toyota Corolla (the WRONG one)
     await page.goto('/vehicles')
@@ -192,12 +188,12 @@ test.describe('Chat Flow', () => {
 
     // Step 6: Wait for AI response (welcome + user + at least one assistant message)
     await expect(async () => {
-      const count = await page.locator('.chat-message').count()
+      const count = await page.locator('.chat-message:not(.chat-message-loading)').count()
       expect(count).toBeGreaterThanOrEqual(3)
     }).toPass({ timeout: 60_000 })
 
     // Step 7: Wait for assistant to produce a substantive response
-    const lastMsg = page.locator('.chat-message-assistant').last()
+    const lastMsg = page.locator('.chat-message-assistant:not(.chat-message-loading)').last()
     await expect(lastMsg).toContainText(/.{10,}/, { timeout: 30_000 })
     const responseText = await lastMsg.textContent() || ''
 
@@ -222,9 +218,9 @@ test.describe('Chat Flow', () => {
       await chatInput.fill(confirmText)
       await chatInput.press('Enter')
       // Wait for the AI to respond with a success indicator
-      await expect(page.locator('.chat-message-assistant').last())
+      await expect(page.locator('.chat-message-assistant:not(.chat-message-loading)').last())
         .toContainText(/gespeichert|angelegt|eingetragen|erstellt|hinzugefügt|erfasst|erledigt|zugeordnet|Rechnung/i, { timeout: 60_000 })
-      const latestText = await page.locator('.chat-message-assistant').last().textContent() || ''
+      const latestText = await page.locator('.chat-message-assistant:not(.chat-message-loading)').last().textContent() || ''
       confirmedSave = /gespeichert|angelegt|eingetragen|erstellt|hinzugefügt|erfasst|erledigt/i.test(latestText)
     }
 
@@ -259,12 +255,11 @@ test.describe('Chat Flow', () => {
   })
 
   test('CF-007: confirmation button "Ja, passt" appears after image analysis', async ({ page }) => {
-    // Setup: Configure AI provider
+    // Setup: Configure Mistral API key
     await page.goto('/')
-    await page.evaluate(({ provider, key }) => {
-      localStorage.setItem('ai_provider', provider)
+    await page.evaluate(({ key }) => {
       localStorage.setItem('ai_api_key', key)
-    }, { provider: AI_PROVIDER, key: AI_API_KEY })
+    }, { key: AI_API_KEY })
     await page.reload()
 
     // Step 1: Open chat
@@ -283,7 +278,7 @@ test.describe('Chat Flow', () => {
 
     // Step 4: Wait for AI response (welcome + user + assistant message)
     await expect(async () => {
-      const count = await page.locator('.chat-message').count()
+      const count = await page.locator('.chat-message:not(.chat-message-loading)').count()
       expect(count).toBeGreaterThanOrEqual(3)
     }).toPass({ timeout: 60_000 })
 
@@ -307,7 +302,7 @@ test.describe('Chat Flow', () => {
 
     // Step 8: Wait for final AI response (tool execution or confirmation)
     await expect(async () => {
-      const count = await page.locator('.chat-message').count()
+      const count = await page.locator('.chat-message:not(.chat-message-loading)').count()
       // At least: welcome + user(image) + assistant(analysis) + user(ja) + assistant(result)
       expect(count).toBeGreaterThanOrEqual(5)
     }).toPass({ timeout: 60_000 })

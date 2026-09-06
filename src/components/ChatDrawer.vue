@@ -16,8 +16,8 @@ import { getCurrentUserId } from '../composables/useAuth'
 import { autoRotateForDocument, resizeImage } from '../composables/useImageResize'
 import { db, tx } from '../lib/instantdb'
 import { hashImage } from '../services/ai'
+import { getAiAccess } from '../services/ai-access'
 import { sendChatMessage, WELCOME_MESSAGE } from '../services/chat'
-import { useSettingsStore } from '../stores/settings'
 import MediaViewer from './MediaViewer.vue'
 import ToolResultCard from './ToolResultCard.vue'
 
@@ -33,7 +33,6 @@ const open = defineModel<boolean>({ default: false })
 
 const route = useRoute()
 const toast = useToast()
-const settings = useSettingsStore()
 
 const messages = ref<ChatMessage[]>([WELCOME_MESSAGE])
 const input = ref('')
@@ -279,9 +278,7 @@ async function send() {
 
   try {
     const response = await sendChatMessage(messages.value, {
-      provider: settings.aiProvider,
-      apiKey: settings.aiApiKey,
-      model: settings.aiModel || undefined,
+      access: await getAiAccess(),
     }, imagesBase64.length ? imagesBase64 : undefined, pdfBase64s.length ? pdfBase64s : undefined)
 
     const assistantMsg: ChatMessage = {
@@ -449,7 +446,7 @@ async function clearChat() {
             </div>
           </div>
 
-          <div v-if="loading" class="chat-message chat-message-assistant">
+          <div v-if="loading" class="chat-message chat-message-assistant chat-message-loading">
             <div class="chat-message-name">
               Assistent
             </div>
@@ -539,7 +536,7 @@ async function clearChat() {
           </button>
         </div>
 
-        <div v-if="loading" class="chat-message chat-message-assistant">
+        <div v-if="loading" class="chat-message chat-message-assistant chat-message-loading">
           <div class="chat-message-name">
             Assistent
           </div>

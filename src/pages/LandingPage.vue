@@ -63,8 +63,8 @@ function goToApp() {
             <span>Kein Internet nötig</span>
           </div>
           <div class="hero-stat">
-            <strong>5 AI-Provider</strong>
-            <span>Du wählst den Datenschutz</span>
+            <strong>KI aus der EU</strong>
+            <span>Mistral AI, Frankreich</span>
           </div>
         </div>
       </div>
@@ -131,8 +131,8 @@ function goToApp() {
             <div class="feature-icon">
               <i class="pi pi-shield" />
             </div>
-            <h3>Datenschutz wählbar</h3>
-            <p>5 AI-Provider zur Wahl. Oder komplett lokal mit Ollama — keine Daten verlassen deinen Rechner.</p>
+            <h3>Datenschutz</h3>
+            <p>KI-Verarbeitung durch Mistral AI in Frankreich, mit deinem eigenen API-Key. Im Scale-Tier kein Training mit deinen Daten.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">

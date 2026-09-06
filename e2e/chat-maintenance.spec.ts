@@ -1,12 +1,11 @@
 import process from 'node:process'
 import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
-const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
 
 test.describe('Chat Maintenance Tool', () => {
   test.setTimeout(120_000)
-  test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
+  test.skip(!AI_API_KEY, 'No API key set')
 
   test.beforeEach(async ({ page }) => {
     await clearInstantDB(page)
@@ -15,10 +14,9 @@ test.describe('Chat Maintenance Tool', () => {
   test('CM-001: add maintenance entry via chat without invoice', async ({ page }) => {
     // Setup: Create a vehicle and configure AI
     await page.goto('/')
-    await page.evaluate(({ provider, key }) => {
-      localStorage.setItem('ai_provider', provider)
+    await page.evaluate(({ key }) => {
       localStorage.setItem('ai_api_key', key)
-    }, { provider: AI_PROVIDER, key: AI_API_KEY })
+    }, { key: AI_API_KEY })
     await page.reload()
 
     // Create a vehicle first
@@ -40,18 +38,18 @@ test.describe('Chat Maintenance Tool', () => {
     await page.locator('[data-pc-name="drawer"]').locator('.chat-fab-send').click()
 
     // Wait for AI response — may need multiple confirmations
-    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
+    await expect(page.locator('.chat-message:not(.chat-message-loading)')).toHaveCount(3, { timeout: 60_000 })
 
     // Check if AI completed or needs confirmation — send up to 2 confirmations
     for (let i = 0; i < 2; i++) {
-      const lastMsg = page.locator('.chat-message-assistant').last()
+      const lastMsg = page.locator('.chat-message-assistant:not(.chat-message-loading)').last()
       const text = await lastMsg.textContent() || ''
       if (/eingetragen|erstellt|hinzugefügt|gespeichert|erledigt|Wartung.*erfasst/i.test(text))
         break
       await chatInput.fill('Ja, bitte so eintragen')
       await chatInput.press('Enter')
       const expectedCount = 3 + (i + 1) * 2
-      await expect(page.locator('.chat-message')).toHaveCount(expectedCount, { timeout: 60_000 })
+      await expect(page.locator('.chat-message:not(.chat-message-loading)')).toHaveCount(expectedCount, { timeout: 60_000 })
     }
 
     // Close chat via navigation (more reliable than Close button)

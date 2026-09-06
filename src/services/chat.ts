@@ -1,4 +1,4 @@
-import type { AiProvider } from '../stores/settings'
+import type { AiAccess } from './ai-access'
 import { generateText, stepCountIs, tool } from 'ai'
 import { z } from 'zod'
 import { getCurrentUserId } from '../composables/useAuth'
@@ -70,13 +70,18 @@ FAHRZEUG-ERKENNUNG:
 - Rufe NIEMALS den Benutzer auf eine ID zu nennen.
 
 WICHTIGE REGELN:
-1. Bevor du ein Fahrzeug anlegst, zeige ALLE Felder dem Benutzer und warte auf Bestätigung:
+1. Bevor du ein Fahrzeug anlegst, zeige die Felder dem Benutzer und warte auf Bestätigung:
    - Marke, Modell, Baujahr, Kilometerstand, Kennzeichen, Fahrgestellnummer
+   - Kennzeichen und Fahrgestellnummer sind OPTIONAL: Wenn nicht genannt, zeige "nicht angegeben" und frage NICHT danach.
 2. Bevor du eine Rechnung einträgst, zeige ALLE Felder dem Benutzer und warte auf Bestätigung:
    - Werkstatt, Datum, Gesamtbetrag, Währung, Kilometerstand, alle Positionen (Beschreibung, Kategorie, Betrag)
-3. Führe KEINE Tools aus bevor der Benutzer die Daten bestätigt hat.
+3. Führe add_vehicle und add_invoice NICHT aus bevor der Benutzer die Daten bestätigt hat.
 4. Wenn du unsicher bist über ein Feld, zeige was du erkannt hast und frage nach.
 5. Bei einfachen Änderungen (z.B. "ändere Baujahr auf 2008") ist keine Bestätigung nötig — führe es direkt aus.
+6. Sobald der Benutzer bestätigt ("Ja", "passt", "eintragen", "ok", "mach das"), rufe SOFORT das Tool auf.
+   Frage NIEMALS ein zweites Mal nach Bestätigung und stelle keine Rückfragen zu optionalen Feldern.
+7. Aktionen passieren AUSSCHLIESSLICH über Tool-Aufrufe. Schreibe NIEMALS "wurde angelegt/eingetragen/gespeichert",
+   wenn du das entsprechende Tool nicht in diesem Schritt aufgerufen hast — das wäre eine Falschaussage.
 
 RECHNUNGSPOSITIONEN:
 - MwSt./MWST/USt. Zeilen sind KEINE eigenen Positionen — nicht eintragen!
@@ -100,16 +105,13 @@ WARTUNG OHNE RECHNUNG:
 - Wenn der Benutzer eine erledigte Wartung melden will OHNE Rechnung/Beleg, verwende add_maintenance (NICHT add_invoice).
 - add_invoice ist NUR für Rechnungen mit Werkstatt, Betrag und Positionen gedacht.
 - add_maintenance ist für einfache Wartungseinträge (z.B. "Ölwechsel gemacht", "Reifen gewechselt").
+- Sind Fahrzeug, Art und Datum klar, rufe add_maintenance DIREKT auf — ohne Bestätigungsrunde und ohne Erfolgsmeldung vorab.
 
-FEEDBACK NACH AKTIONEN:
+FEEDBACK NACH AKTIONEN (gilt NUR für den Text NACH einem erfolgreichen Tool-Aufruf):
 Die Tool-Ergebnisse werden automatisch als strukturierte Cards angezeigt. Wiederhole die Daten NICHT nochmal als Liste!
-Schreibe stattdessen eine KURZE Bestätigung (1-2 Sätze) mit Emoji-Icons:
-- 🚗 **Fahrzeug angelegt**: "🚗 Dein Porsche Cayenne (2017) wurde angelegt."
-- 🧾 **Rechnung erfasst**: "🧾 Rechnung von Seestern-Garage (1.014,80 CHF) wurde gespeichert."
-- 🔧 **Wartung eingetragen**: "🔧 Ölwechsel am 15.03.2024 wurde eingetragen."
-- ✏️ **Änderung**: Zeige NUR die Änderungen: "✏️ Kilometerstand: 45.000 → 48.000 km"
-- 🗑️ **Löschung**: "🗑️ Rechnung von ATU gelöscht."
-- ⚠️ **Duplikat erkannt**: Erkläre welcher existierende Eintrag gefunden wurde
+Schreibe stattdessen eine KURZE Bestätigung (1-2 Sätze) mit einem passenden Emoji (🚗 Fahrzeug, 🧾 Rechnung, 🔧 Wartung, ✏️ Änderung, 🗑️ Löschung).
+Bei Änderungen nur die geänderten Werte nennen (alt → neu). Bei erkannten Duplikaten (⚠️) erklären, welcher Eintrag bereits existiert.
+Diese Bestätigung ist NUR erlaubt, wenn in diesem Schritt ein Tool-Ergebnis vorliegt.
 WICHTIG: Keine Listen mit Marke/Modell/Baujahr/etc. — das steht alles in der Card!
 
 WARTUNGSPLAN AUS SERVICE-HEFT:
@@ -156,7 +158,7 @@ export const WELCOME_MESSAGE: ChatMessage = {
 Schick mir einfach eine Nachricht oder ein Foto!`,
 }
 
-function createTools(provider: AiProvider, apiKey: string, modelId?: string, imagesBase64?: string[]) {
+function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]) {
   return {
     list_vehicles: tool({
       description: 'Listet alle Fahrzeuge auf',
@@ -574,15 +576,15 @@ function createTools(provider: AiProvider, apiKey: string, modelId?: string, ima
       }),
       execute: async ({ imageBase64, documentType }) => {
         if (documentType === 'rechnung') {
-          const result = await parseInvoice(imageBase64, provider, apiKey, modelId)
+          const result = await parseInvoice(imageBase64, access, modelId)
           return { type: 'rechnung', data: result }
         }
         else if (documentType === 'serviceheft') {
-          const result = await parseServiceBook(imageBase64, provider, apiKey, modelId)
+          const result = await parseServiceBook(imageBase64, access, modelId)
           return { type: 'serviceheft', data: result }
         }
         else {
-          const result = await parseVehicleDocument(imageBase64, provider, apiKey, modelId)
+          const result = await parseVehicleDocument(imageBase64, access, modelId)
           return { type: 'fahrzeugdokument', data: result }
         }
       },
@@ -591,8 +593,7 @@ function createTools(provider: AiProvider, apiKey: string, modelId?: string, ima
 }
 
 export interface ChatOptions {
-  provider: AiProvider
-  apiKey: string
+  access: AiAccess
   model?: string
 }
 
@@ -686,8 +687,7 @@ export async function sendChatMessage(
   pdfBase64s?: string[],
 ): Promise<{ text: string, toolResults?: ToolResult[] }> {
   const model = getModel({
-    provider: opts.provider,
-    apiKey: opts.apiKey,
+    access: opts.access,
     model: opts.model,
   })
 
@@ -698,7 +698,7 @@ export async function sendChatMessage(
 
     const allOcrPages: string[] = []
     for (const pdfBase64 of pdfBase64s) {
-      const ocrPages = await withRetry(() => callMistralOcrPdf(pdfBase64, opts.apiKey))
+      const ocrPages = await withRetry(() => callMistralOcrPdf(pdfBase64, opts.access))
       allOcrPages.push(...ocrPages)
     }
     const ocrPages = allOcrPages
@@ -730,6 +730,7 @@ Analysiere jede Seite einzeln. Nenne den Dokumenttyp. Zeige die erkannten Daten 
     const phase1 = await withRetry(() => generateText({
       model,
       maxRetries: 0,
+      temperature: 0,
       system: phase1System,
       messages: buildAiMessages(messages),
       stopWhen: stepCountIs(1),
@@ -742,14 +743,11 @@ Analysiere jede Seite einzeln. Nenne den Dokumenttyp. Zeige die erkannten Daten 
     pendingImages = imagesBase64
     pendingPdfOcrTexts = []
 
-    // Mistral: OCR-Vorverarbeitung für perfekte Texterkennung (Tabellen, Spalten, Beträge)
-    let ocrTexts: string[] = []
-    if (opts.provider === 'mistral') {
-      const ocrResults = await Promise.all(
-        imagesBase64.map(img => withRetry(() => callMistralOcr(img, opts.apiKey)).catch(() => ({ markdown: '', cacheId: '' }))),
-      )
-      ocrTexts = ocrResults.map(r => r.markdown)
-    }
+    // OCR-Vorverarbeitung für perfekte Texterkennung (Tabellen, Spalten, Beträge)
+    const ocrResults = await Promise.all(
+      imagesBase64.map(img => withRetry(() => callMistralOcr(img, opts.access)).catch(() => ({ markdown: '', cacheId: '' }))),
+    )
+    const ocrTexts = ocrResults.map(r => r.markdown)
 
     const ocrContext = ocrTexts.filter(Boolean).length
       ? `\n\n--- OCR-ERGEBNIS (exakter Text vom Dokument) ---\n${ocrTexts.map((t, i) => `Bild ${i + 1}:\n${t}`).join('\n\n')}\n--- ENDE OCR ---\n\nDer OCR-Text oben ist maschinengelesen und daher bei Zahlen, Tabellen und Beträgen GENAUER als deine eigene Bilderkennung. Verwende die Werte aus dem OCR-Text.`
@@ -801,6 +799,7 @@ Zeige die erkannten Daten strukturiert an. Frage den Benutzer ob die Daten korre
     const phase1 = await withRetry(() => generateText({
       model,
       maxRetries: 0,
+      temperature: 0,
       system: phase1System,
       messages: buildAiMessages(messages, visionImages),
       stopWhen: stepCountIs(1),
@@ -816,7 +815,7 @@ Zeige die erkannten Daten strukturiert an. Frage den Benutzer ob die Daten korre
   if (storedPdfOcr?.length)
     pendingPdfOcrTexts = []
 
-  const allTools = createTools(opts.provider, opts.apiKey, opts.model, storedImages)
+  const allTools = createTools(opts.access, opts.model, storedImages)
   const { scan_document: _, ...toolsWithoutScan } = allTools
   const tools = (storedImages?.length || storedPdfOcr?.length) ? toolsWithoutScan : allTools
 
@@ -860,17 +859,45 @@ Zeige die erkannten Daten strukturiert an. Frage den Benutzer ob die Daten korre
   // Mehr Steps für PDF mit vielen Seiten (jede Seite = mind. 1 add_invoice + 1 add_vehicle)
   const maxSteps = storedPdfOcr?.length ? Math.max(5, storedPdfOcr.length * 2 + 2) : 5
 
-  const result = await withRetry(() => generateText({
+  let result = await withRetry(() => generateText({
     model,
     maxRetries: 0,
+    temperature: 0,
     system: SYSTEM_PROMPT,
     messages: aiMessages,
     tools,
     stopWhen: stepCountIs(maxSteps),
   }))
+
+  // Guard: Das Modell behauptet eine Aktion ("wurde eingetragen"), hat aber kein Tool aufgerufen.
+  // Dann einmal mit Tool-Zwang nachfassen, statt eine Falschaussage anzuzeigen.
+  if (claimsActionWithoutTool(result)) {
+    console.warn('[chat] Aktion behauptet ohne Tool-Aufruf — erneuter Versuch mit toolChoice=required')
+    result = await withRetry(() => generateText({
+      model,
+      maxRetries: 0,
+      temperature: 0,
+      system: SYSTEM_PROMPT,
+      messages: [
+        ...aiMessages,
+        { role: 'user' as const, content: '[System] Du hast eine Aktion beschrieben, aber kein Tool aufgerufen. Führe die Aktion JETZT mit dem passenden Tool aus.' },
+      ],
+      tools,
+      toolChoice: 'required',
+      stopWhen: stepCountIs(maxSteps),
+    }))
+  }
+
   const extracted = extractResult(result)
   return {
     text: extracted.text || 'Erledigt.',
     toolResults: extracted.toolResults,
   }
+}
+
+const ACTION_CLAIM = /\b(?:wurde|wurden|habe ich|ist|sind)\b[^.]{1,80}\b(?:angelegt|eingetragen|gespeichert|erfasst|gelöscht|aktualisiert|erstellt|hinzugefügt)\b|\*\*(?:Wartung eingetragen|Fahrzeug angelegt|Rechnung erfasst|Löschung|Änderung)\*\*/i
+
+function claimsActionWithoutTool(result: { text: string, steps?: Array<{ toolCalls?: unknown[] }> }): boolean {
+  const anyToolCall = (result.steps ?? []).some(s => (s.toolCalls?.length ?? 0) > 0)
+  return !anyToolCall && ACTION_CLAIM.test(result.text || '')
 }

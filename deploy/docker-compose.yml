@@ -1,10 +1,11 @@
 # PWA + AI-Proxy auf der Hetzner-VM. InstantDB läuft separat (offizieller VPS-Guide).
+# Der AI-Proxy kommt aus dem Repo gstrainovic/ai-proxy, das neben auto-service ausgecheckt sein muss (../../ai-proxy).
 # Start: docker compose --env-file .env up -d   (im Ordner deploy/, dist/ vorher per rsync nach ./dist)
 services:
   ai-proxy:
     build:
-      context: ..
-      dockerfile: server/Dockerfile
+      context: ../../ai-proxy
+      dockerfile: Dockerfile
     restart: unless-stopped
     environment:
       PORT: 8787

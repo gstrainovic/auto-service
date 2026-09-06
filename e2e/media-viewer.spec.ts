@@ -2,29 +2,25 @@ import path from 'node:path'
 import process from 'node:process'
 import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
-const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
 
 test.describe('MediaViewer', () => {
   test.setTimeout(120_000)
-  test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
+  test.skip(!AI_API_KEY, 'No API key set')
 
   test.beforeEach(async ({ page }) => {
     await clearInstantDB(page)
   })
 
   test('MV-002: chat image shows OCR tab in MediaViewer', async ({ page }) => {
-    test.skip(AI_PROVIDER !== 'mistral', 'OCR cache only available with Mistral provider')
-
     // Capture browser console logs
     page.on('console', msg => console.warn('[BROWSER]', msg.type(), msg.text()))
 
-    // Configure AI provider
+    // Configure Mistral API key
     await page.goto('/')
-    await page.evaluate(({ provider, key }) => {
-      localStorage.setItem('ai_provider', provider)
+    await page.evaluate(({ key }) => {
       localStorage.setItem('ai_api_key', key)
-    }, { provider: AI_PROVIDER, key: AI_API_KEY })
+    }, { key: AI_API_KEY })
     await page.reload()
 
     // Open chat
@@ -41,9 +37,9 @@ test.describe('MediaViewer', () => {
     await page.locator('[data-pc-name="drawer"] button').filter({ has: page.locator('.pi-send') }).click()
 
     // Wait for AI response (OCR + tool-calling takes time)
-    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
+    await expect(page.locator('.chat-message:not(.chat-message-loading)')).toHaveCount(3, { timeout: 60_000 })
     // Ensure assistant message has content (OCR cache write should be complete by now)
-    const assistantMsg = page.locator('.chat-message').last()
+    const assistantMsg = page.locator('.chat-message:not(.chat-message-loading)').last()
     await expect(assistantMsg).toContainText(/.+/, { timeout: 10_000 })
 
     // Wait for OCR cache to be written - poll until cache is populated
@@ -69,7 +65,7 @@ test.describe('MediaViewer', () => {
     expect(ocrCacheFound.found, 'OCR cache should have been written by chat flow').toBe(true)
 
     // Click the image thumbnail to open MediaViewer
-    const userMsg = page.locator('.chat-message').nth(1)
+    const userMsg = page.locator('.chat-message:not(.chat-message-loading)').nth(1)
     const thumbnail = userMsg.locator('img')
     await expect(thumbnail).toBeVisible({ timeout: 5_000 })
     await thumbnail.click()

@@ -7,17 +7,13 @@ test.describe('Settings Flow', () => {
     await clearInstantDB(page)
   })
 
-  test('SE-001: select AI provider and enter API key', async ({ page }) => {
-    // This test doesn't create persistent data - no cleanup needed
+  test('SE-001: settings show subscription card in proxy mode (no API key field)', async ({ page }) => {
     await page.goto('/settings')
-    await expect(page.getByText('KI-Provider')).toBeVisible()
+    await expect(page.getByText('Einstellungen')).toBeVisible()
 
-    // Check provider dropdown is visible (PrimeVue Select renders as combobox)
-    await expect(page.getByRole('combobox').first()).toBeVisible()
-
-    // Check API key input exists (password type input)
-    const apiKeyInput = page.locator('input[type="password"]')
-    await expect(apiKeyInput).toBeVisible()
+    // Abo-Modus: Mistral läuft über den Proxy, kein API-Key im Browser
+    await expect(page.locator('.settings-card', { hasText: 'Abo & Nutzung' })).toBeVisible()
+    await expect(page.locator('input[type="password"]')).toHaveCount(0)
   })
 
   test('SE-003: default theme is dark', async ({ page }) => {

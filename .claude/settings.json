@@ -1,4 +1,8 @@
 {
+  "disableClaudeAiConnectors": true,
+  "skillOverrides": {
+    "zig": "off"
+  },
   "hooks": {
     "PostToolUse": [
       {
@@ -22,5 +26,18 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "playwright@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": false,
+    "claude-security@claude-plugins-official": false,
+    "claude-code-setup@claude-plugins-official": false,
+    "rust-analyzer-lsp@claude-plugins-official": false,
+    "context7@claude-plugins-official": true,
+    "modern-web-guidance@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true
   }
 }

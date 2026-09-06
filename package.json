@@ -10,30 +10,28 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e": "playwright test --project=online --project=offline",
+    "test:e2e:soft": "playwright test --project=ai-soft",
+    "test:e2e:ui": "playwright test --ui",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "dev:proxy": "node --env-file-if-exists=.env node_modules/@strainovic/ai-proxy/src/node.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.33",
     "@ai-sdk/mistral": "^3.0.17",
-    "@ai-sdk/openai": "^3.0.23",
     "@instantdb/core": "^0.22.121",
     "@primeuix/themes": "^2.0.3",
-    "@primevue/themes": "^4.5.4",
-    "@supabase/supabase-js": "^2.93.3",
-    "@types/dompurify": "^3.0.5",
+    "@strainovic/ai-proxy": "file:../ai-proxy",
     "ai": "^6.0.63",
     "dompurify": "^3.3.1",
     "marked": "^17.0.1",
     "pinia": "^3.0.4",
     "primeicons": "^7.0.0",
     "primevue": "^4.5.4",
-    "rxjs": "^7.8.2",
     "tesseract.js": "^7.0.0",
     "vite-plugin-pwa": "^1.2.0",
     "vue": "^3.5.24",
     "vue-router": "^4.6.4",
-    "workbox-precaching": "^7.4.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -47,6 +45,7 @@
     "sass-embedded": "^1.97.3",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
+    "vitest": "^4.1.11",
     "vue-tsc": "^3.1.4"
   }
 }

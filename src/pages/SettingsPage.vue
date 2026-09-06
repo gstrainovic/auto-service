@@ -1,20 +1,66 @@
 <script setup lang="ts">
+import { LIMIT_LABELS, PLANS } from '@strainovic/ai-proxy/plans'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
-import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
+import ProgressBar from 'primevue/progressbar'
 import Select from 'primevue/select'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
 import { db, tx } from '../lib/instantdb'
+import { fetchUsage, startCheckout } from '../services/ai-access'
 import { exportDatabase, importDatabase } from '../services/db-export'
 import { useSettingsStore } from '../stores/settings'
 
+type UsageInfo = Awaited<ReturnType<typeof fetchUsage>>
+type PlanId = keyof typeof PLANS
+type LimitKind = keyof typeof LIMIT_LABELS
+
 const settings = useSettingsStore()
 const toast = useToast()
-const showKey = ref(false)
 const ocrCacheCount = ref(0)
 const importInput = ref<HTMLInputElement | null>(null)
+
+// Abo & Nutzung (über den AI-Proxy)
+const usage = ref<UsageInfo | null>(null)
+const usageError = ref('')
+const checkoutBusy = ref<PlanId | null>(null)
+const currentPlan = computed(() => PLANS[usage.value?.plan ?? 'free'])
+const upgradePlans = computed(() => Object.values(PLANS).filter(p => p.priceChfPerMonth > currentPlan.value.priceChfPerMonth))
+const limitKinds = Object.keys(LIMIT_LABELS) as LimitKind[]
+
+function formatNumber(n: number): string {
+  return new Intl.NumberFormat('de-CH').format(n)
+}
+
+function usagePercent(kind: LimitKind): number {
+  if (!usage.value)
+    return 0
+  return Math.min(100, Math.round((usage.value.usage[kind] / usage.value.limits[kind]) * 100))
+}
+
+async function refreshUsage(): Promise<void> {
+  try {
+    usage.value = await fetchUsage()
+    usageError.value = ''
+  }
+  catch (e: any) {
+    usageError.value = e.message
+  }
+}
+
+async function upgrade(plan: PlanId): Promise<void> {
+  checkoutBusy.value = plan
+  try {
+    window.location.href = await startCheckout(plan)
+  }
+  catch (e: any) {
+    toast.add({ severity: 'warn', summary: e.message, life: 5000 })
+  }
+  finally {
+    checkoutBusy.value = null
+  }
+}
 
 async function refreshCacheCount(): Promise<void> {
   try {
@@ -26,7 +72,10 @@ async function refreshCacheCount(): Promise<void> {
   }
 }
 
-onMounted(() => refreshCacheCount())
+onMounted(() => {
+  refreshCacheCount()
+  refreshUsage()
+})
 
 async function handleExport(): Promise<void> {
   const json = await exportDatabase()
@@ -78,61 +127,6 @@ const themeOptions = [
   { label: 'Hell', value: 'light' },
   { label: 'System', value: 'system' },
 ]
-
-const defaultModels: Record<string, string> = {
-  'mistral': 'mistral-small-latest',
-  'anthropic': 'claude-sonnet-4-20250514',
-  'openai': 'gpt-4o-mini',
-  'meta-llama': 'meta-llama/llama-4-maverick',
-  'ollama': 'qwen3-vl:2b',
-}
-
-const defaultModel = computed(() => defaultModels[settings.aiProvider] || '')
-
-const providerOptions = [
-  { label: 'Mistral (mistral-small-latest)', value: 'mistral' },
-  { label: 'Anthropic Claude', value: 'anthropic' },
-  { label: 'OpenAI', value: 'openai' },
-  { label: 'Meta Llama 4 Maverick (via OpenRouter)', value: 'meta-llama' },
-  { label: 'Ollama lokal (qwen3-vl:2b) - 100% privat', value: 'ollama' },
-]
-
-const providerInfo = computed(() => {
-  switch (settings.aiProvider) {
-    case 'mistral':
-      return {
-        text: 'Mistral Small - schnell, Chat + Tool Calling. Direkte Mistral-API.',
-        warn: true,
-        warnText: 'Mistral Free Tier (Experiment Plan): Deine Daten werden standardmassig fur Modell-Training verwendet. Opt-out in den Mistral-Kontoeinstellungen moglich.',
-      }
-    case 'anthropic':
-      return {
-        text: 'Claude Sonnet - Vision + Chat + Tool Calling. API-Daten werden nicht fur Training verwendet.',
-        warn: false,
-        warnText: '',
-      }
-    case 'openai':
-      return {
-        text: 'GPT-4o Mini - Chat + Tool Calling. API-Daten werden seit Marz 2023 nicht fur Training verwendet.',
-        warn: false,
-        warnText: '',
-      }
-    case 'meta-llama':
-      return {
-        text: 'Llama 4 Maverick - Vision + Chat + Tool Calling (via OpenRouter).',
-        warn: true,
-        warnText: 'Meta Llama: API-Daten werden nicht fur Training verwendet, aber multimodale Modelle (Vision) sind in der EU rechtlich eingeschrankt.',
-      }
-    case 'ollama':
-      return {
-        text: 'qwen3-vl:2b - Vision + Chat + Tool Calling, 100% lokal. Ollama muss auf localhost:11434 laufen. Kein API-Key notig.',
-        warn: false,
-        warnText: '',
-      }
-    default:
-      return { text: '', warn: false, warnText: '' }
-  }
-})
 </script>
 
 <template>
@@ -161,55 +155,43 @@ const providerInfo = computed(() => {
 
     <Card class="settings-card">
       <template #title>
-        KI-Provider
+        Abo & Nutzung
       </template>
       <template #content>
-        <div class="form-field">
-          <label>Provider</label>
-          <Select
-            v-model="settings.aiProvider"
-            :options="providerOptions"
-            option-label="label"
-            option-value="value"
-            class="w-full"
-          />
-        </div>
-
-        <div class="form-field">
-          <label>API Key</label>
-          <div class="input-with-toggle">
-            <InputText
-              v-model="settings.aiApiKey"
-              :type="showKey ? 'text' : 'password'"
-              class="w-full"
-            />
-            <Button
-              :icon="showKey ? 'pi pi-eye-slash' : 'pi pi-eye'"
-              text
-              @click="showKey = !showKey"
-            />
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label>Model (leer = Standard)</label>
-          <InputText
-            v-model="settings.aiModel"
-            :placeholder="defaultModel"
-            class="w-full"
-          />
-        </div>
-
-        <div class="provider-info">
-          {{ providerInfo.text }}
-        </div>
-
-        <Message v-if="providerInfo.warn" severity="warn" class="provider-warning">
-          <template #icon>
-            <i class="pi pi-exclamation-triangle" />
-          </template>
-          {{ providerInfo.warnText }}
+        <Message v-if="usageError" severity="error">
+          {{ usageError }}
         </Message>
+        <template v-else-if="usage">
+          <div class="plan-line">
+            <span>Aktueller Plan: <strong>{{ currentPlan.name }}</strong></span>
+            <span class="plan-price">{{ currentPlan.priceChfPerMonth }} CHF/Monat</span>
+          </div>
+          <div v-for="kind in limitKinds" :key="kind" class="usage-row">
+            <div class="usage-label">
+              <span>{{ LIMIT_LABELS[kind] }}</span>
+              <span>{{ formatNumber(usage.usage[kind]) }} / {{ formatNumber(usage.limits[kind]) }}</span>
+            </div>
+            <ProgressBar :value="usagePercent(kind)" :show-value="false" style="height: 0.5rem" />
+          </div>
+          <div class="provider-info">
+            Zähler gelten für den Monat {{ usage.month }}. KI-Verarbeitung über Mistral (Frankreich, EU) ist im Abo enthalten, kein eigener API-Key nötig.
+          </div>
+          <div v-if="upgradePlans.length" class="upgrade-list">
+            <div v-for="plan in upgradePlans" :key="plan.id" class="upgrade-row">
+              <div>
+                <strong>{{ plan.name }}</strong> · {{ plan.priceChfPerMonth }} CHF/Monat ·
+                {{ formatNumber(plan.limits.ocrPages) }} Scans, {{ formatNumber(plan.limits.chatTokens) }} Chat-Tokens
+              </div>
+              <Button
+                :label="`Upgrade auf ${plan.name}`"
+                size="small"
+                :loading="checkoutBusy === plan.id"
+                @click="upgrade(plan.id)"
+              />
+            </div>
+          </div>
+        </template>
+        <ProgressBar v-else mode="indeterminate" style="height: 0.5rem" />
       </template>
     </Card>
 
@@ -262,6 +244,36 @@ const providerInfo = computed(() => {
 </template>
 
 <style scoped>
+.plan-line {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.plan-price {
+  color: var(--p-text-muted-color);
+}
+.usage-row {
+  margin-bottom: 0.75rem;
+}
+.usage-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+.upgrade-list {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.upgrade-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
 .page-container {
   padding: 1rem;
   max-width: 800px;

@@ -2,26 +2,24 @@ import path from 'node:path'
 import process from 'node:process'
 import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
-const AI_PROVIDER = process.env.VITE_AI_PROVIDER || 'mistral'
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
 
 const fixturesDir = path.join(import.meta.dirname, 'fixtures')
 
 test.describe('Schedule Flow', () => {
   test.setTimeout(120_000)
-  test.skip(AI_PROVIDER !== 'ollama' && !AI_API_KEY, 'No API key set and not using Ollama')
+  test.skip(!AI_API_KEY, 'No API key set')
 
   test.beforeEach(async ({ page }) => {
     await clearInstantDB(page)
   })
 
   test('SC-001: set custom schedule via chat tool', async ({ page }) => {
-    // Configure AI provider
+    // Configure Mistral API key
     await page.goto('/')
-    await page.evaluate(({ provider, key }) => {
-      localStorage.setItem('ai_provider', provider)
+    await page.evaluate(({ key }) => {
       localStorage.setItem('ai_api_key', key)
-    }, { provider: AI_PROVIDER, key: AI_API_KEY })
+    }, { key: AI_API_KEY })
     await page.reload()
 
     // Step 1: Create a vehicle (VW Golf VIII, 38.500 km — matches test-service-heft.png)
@@ -50,8 +48,8 @@ test.describe('Schedule Flow', () => {
     await page.locator('.chat-drawer button').filter({ has: page.locator('.pi-send') }).click()
 
     // Step 4: Wait for AI response with intervals (Phase 1 analysis)
-    await expect(page.locator('.chat-message')).toHaveCount(3, { timeout: 60_000 })
-    const phase1Msg = page.locator('.chat-message').last()
+    await expect(page.locator('.chat-message:not(.chat-message-loading)')).toHaveCount(3, { timeout: 60_000 })
+    const phase1Msg = page.locator('.chat-message:not(.chat-message-loading)').last()
     await expect(phase1Msg).toContainText(/intervall|wartung|km|monate/i, { timeout: 30_000 })
 
     // Step 5: Confirm to save
@@ -60,8 +58,8 @@ test.describe('Schedule Flow', () => {
     await chatInput.press('Enter')
 
     // Step 6: Wait for tool execution result (set_maintenance_schedule)
-    await expect(page.locator('.chat-message')).toHaveCount(5, { timeout: 60_000 })
-    const finalMsg = page.locator('.chat-message').last()
+    await expect(page.locator('.chat-message:not(.chat-message-loading)')).toHaveCount(5, { timeout: 60_000 })
+    const finalMsg = page.locator('.chat-message:not(.chat-message-loading)').last()
     await expect(finalMsg).toContainText(/gespeichert|wartungsplan|positionen|erledigt/i, { timeout: 30_000 })
 
     // Step 7: Close chat via navigation and check VehicleDetailPage

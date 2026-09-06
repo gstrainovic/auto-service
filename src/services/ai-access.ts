@@ -1,11 +1,9 @@
 /**
- * Zugriff auf die Mistral-API: entweder über den eigenen AI-Proxy (Abo-Modus, `VITE_AI_PROXY_URL` gesetzt)
- * oder direkt mit eigenem Key (Bring-your-own-key, Fallback für Entwicklung).
- *
- * Proxy-Modus: Bearer = InstantDB-Refresh-Token des Nutzers, der Proxy hält den Mistral-Key.
+ * Zugriff auf die Mistral-API, immer über den eigenen AI-Proxy (`VITE_AI_PROXY_URL`).
+ * Der Browser sieht nie einen Mistral-Key: Bearer = InstantDB-Refresh-Token des Nutzers, der Proxy hält den Key.
  * Lokaler Modus (E2E): kein echtes Token, User-ID per `x-user-id` (Proxy läuft im Auth-Bypass).
  */
-import type { LimitKind, PlanId } from '../shared/plans'
+import type { LimitKind, PlanId } from '@strainovic/ai-proxy/plans'
 import { getCurrentUserId } from '../composables/useAuth'
 import { db } from '../lib/instantdb'
 
@@ -16,16 +14,11 @@ export interface AiAccess {
 }
 
 export const AI_PROXY_URL = ((import.meta.env.VITE_AI_PROXY_URL as string | undefined) ?? '').replace(/\/$/, '')
-export const isProxyMode = AI_PROXY_URL !== ''
 const isLocal = import.meta.env.VITE_INSTANTDB_MODE === 'local'
 
-export function byokAccess(apiKey: string): AiAccess {
-  return { baseURL: 'https://api.mistral.ai/v1', apiKey }
-}
-
-export async function getAiAccess(byokKey: string): Promise<AiAccess> {
-  if (!isProxyMode)
-    return byokAccess(byokKey)
+export async function getAiAccess(): Promise<AiAccess> {
+  if (!AI_PROXY_URL)
+    throw new Error('VITE_AI_PROXY_URL fehlt. Die App spricht Mistral nur über den AI-Proxy an.')
 
   const headers: Record<string, string> = {}
   let token = ''
@@ -46,7 +39,7 @@ export interface UsageInfo {
 }
 
 async function proxyFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  const access = await getAiAccess('')
+  const access = await getAiAccess()
   return fetch(`${AI_PROXY_URL}${path}`, {
     ...init,
     headers: {

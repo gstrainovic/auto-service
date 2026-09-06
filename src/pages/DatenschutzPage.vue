@@ -107,9 +107,9 @@ const router = useRouter()
 
       <h2>5. KI-gestützte Verarbeitung</h2>
       <p>
-        Auto-Service nutzt KI-Dienste zur Extraktion von Daten aus Rechnungsfotos und
-        Dokumenten. Dabei werden Bilder an den vom Nutzer gewählten KI-Anbieter
-        übermittelt:
+        Auto-Service nutzt einen KI-Dienst zur Extraktion von Daten aus Rechnungsfotos und
+        Dokumenten sowie für den Chat-Assistenten. Dabei werden Bilder, PDFs und
+        Chat-Nachrichten an folgenden Anbieter übermittelt:
       </p>
       <table>
         <thead>
@@ -125,32 +125,14 @@ const router = useRouter()
             <td>Frankreich (EU)</td>
             <td>Opt-out möglich (Free Tier); kein Training (Scale Tier)</td>
           </tr>
-          <tr>
-            <td>Anthropic</td>
-            <td>USA</td>
-            <td>Kein Training mit API-Daten</td>
-          </tr>
-          <tr>
-            <td>OpenAI</td>
-            <td>USA</td>
-            <td>Kein Training mit API-Daten (seit März 2023)</td>
-          </tr>
-          <tr>
-            <td>Meta (via OpenRouter)</td>
-            <td>USA</td>
-            <td>Kein Training mit API-Daten</td>
-          </tr>
-          <tr>
-            <td>Ollama (lokal)</td>
-            <td>Ihr Gerät</td>
-            <td>Keine Datenübermittlung</td>
-          </tr>
         </tbody>
       </table>
       <p>
-        <strong>Wichtig:</strong> Sie wählen den KI-Anbieter selbst in den Einstellungen.
-        Wenn Sie maximalen Datenschutz wünschen, nutzen Sie Ollama — dabei verlassen
-        keine Daten Ihr Gerät.
+        <strong>Wichtig:</strong> Die Verarbeitung erfolgt mit Ihrem eigenen Mistral-API-Key,
+        den Sie in den Einstellungen hinterlegen. Im kostenlosen Experiment-Tier von Mistral
+        werden Daten standardmässig für das Modell-Training verwendet; im bezahlten Scale-Tier
+        findet kein Training statt. Die Vertragsbeziehung zu Mistral AI besteht direkt zwischen
+        Ihnen und Mistral AI.
       </p>
 
       <h2>6. Datenspeicherung</h2>

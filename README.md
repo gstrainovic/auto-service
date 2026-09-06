@@ -8,7 +8,7 @@ Offline-fähige PWA zur Verwaltung von Fahrzeugen, Wartungen und Werkstattrechnu
 - **KI-Dokumenten-Scanner** — Rechnungen, Kaufverträge, Fahrzeugscheine und Service-Hefte per Foto analysieren
 - **Wartungs-Dashboard** — Übersicht über fällige, überfällige und erledigte Wartungen pro Fahrzeug
 - **KI-Chat-Assistent** — Floating Chat mit Tool-Calling: Fahrzeuge verwalten, Dokumente scannen, Wartungsstatus abfragen
-- **Multi-Provider AI** — Mistral, Anthropic Claude, OpenAI, Meta Llama (via OpenRouter)
+- **KI durch Mistral AI** — OCR + Chat-Modell aus Frankreich (EU), mit eigenem API-Key
 - **Echtzeit-Sync** — InstantDB als Backend mit WebSocket-Sync
 - **Offline-First** — Daten in IndexedDB, App funktioniert ohne Server (CRDT-Sync bei Reconnect)
 - **PWA** — Installierbar auf Smartphone und Desktop
@@ -17,7 +17,8 @@ Offline-fähige PWA zur Verwaltung von Fahrzeugen, Wartungen und Werkstattrechnu
 
 | Bereich | Technologie |
 |---------|-------------|
-| Frontend | Vue 3, Quasar, Pinia, Vue Router |
+| Frontend | Vue 3, PrimeVue, Pinia, Vue Router |
+| AI-Proxy | Hono auf Node 24, eigenes Repo [ai-proxy](https://github.com/gstrainovic/ai-proxy), Nutzungszähler + Plan-Limits, Stripe |
 | Datenbank | InstantDB (self-hosted, PostgreSQL + WebSocket) |
 | AI | Vercel AI SDK v6, Zod |
 | Build | Vite, TypeScript, PWA (Workbox) |
@@ -47,9 +48,9 @@ Die App läuft auf http://localhost:5173.
 
 ### AI konfigurieren
 
-1. App öffnen -> Einstellungen
-2. AI-Provider wählen (empfohlen: Mistral)
-3. API-Key eingeben
+1. Mistral-API-Key unter console.mistral.ai erstellen
+2. App öffnen -> Einstellungen
+3. API-Key eingeben (Modell optional, Standard: mistral-small-latest)
 
 ## Befehle
 
@@ -69,12 +70,12 @@ npm run test:e2e:ui  # Playwright im UI-Modus
 src/
   pages/          DashboardPage, VehiclesPage, VehicleDetailPage, SettingsPage
   components/     ChatDrawer, VehicleCard, VehicleForm
-  services/       ai.ts (Multi-Provider), chat.ts (Tool-Calling), maintenance-schedule.ts
+  services/       ai.ts (Mistral OCR-Pipeline + Modell), chat.ts (Tool-Calling), maintenance-schedule.ts
   stores/         Pinia: vehicles, invoices, maintenances, settings
   lib/            instantdb.ts (DB-Client)
   composables/    useImageResize, useImageUpload, useFormValidation
 e2e/              Playwright Tests + Fixtures
-scripts/          compare-ai.ts
+scripts/          dev.sh, Test-Hilfsskripte
 ```
 
 ## InstantDB (Self-Hosted)
@@ -119,106 +120,77 @@ podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;
 - **WebSocket:** `ws://localhost:8888/runtime/session`
 - **Server-Config:** `~/instant/server/resources/config/override.edn`
 
-## InstantDB auf Hetzner deployen (Produktion)
+## Produktion auf Hetzner (InstantDB + PWA + AI-Proxy)
 
-### Systemvoraussetzungen
+Alles läuft auf einer VM (2 vCPU, 4 GB RAM reichen für den Start). Drei Bausteine:
 
-- **VPS:** Hetzner CX22+ (2 vCPU, 4 GB RAM) reicht fuer kleine Nutzerzahlen
-- **OS:** Ubuntu 24.04 oder Fedora 41+
-- **Docker** + Compose (oder Podman + podman-compose)
-- **Domain** mit DNS A-Record -> Server-IP
-- **Reverse Proxy:** Caddy (empfohlen, auto-HTTPS via Let's Encrypt)
+| Baustein | Woher | Domains |
+|----------|-------|---------|
+| InstantDB (Backend, Dashboard, PostgreSQL, MinIO, Caddy) | Offizieller VPS-Guide: https://www.instantdb.com/docs/self-hosting/vps | `api.`, `dash.`, `files.` |
+| PWA (statisches `dist/`) + AI-Proxy (Repo `ai-proxy`, daneben ausgecheckt) | Dieses Repo, `deploy/docker-compose.yml` | `app.`, `ai.` |
+| Mistral | Scale-Tier (kein Training), Key liegt nur im AI-Proxy | – |
 
-### 1. Server vorbereiten
+> InstantDB Cloud (instantdb.com) nimmt keine neuen Apps mehr an und wird am 31.08.2027 abgeschaltet.
+> Produktion läuft deshalb ausschliesslich self-hosted.
 
-```bash
-# Docker installieren (Ubuntu)
-curl -fsSL https://get.docker.com | sh
+### 1. InstantDB nach offiziellem Guide aufsetzen
 
-# Oder Podman (Fedora)
-sudo dnf install podman podman-compose
+Dem VPS-Guide folgen (`docker-compose.with-caddy.yml`, `.env` mit `BACKEND_DOMAIN`, `DASHBOARD_DOMAIN`,
+`STORAGE_DOMAIN`). Danach im Dashboard eine App anlegen und notieren: **App-ID** und **Admin-Token**.
+Wichtig aus dem Guide: `JAVA_OPTS=-Xmx2g -Xms2g`, `INSTANT_SUPERUSER_EMAIL` setzen, Dashboard-Signups auf
+"Closed", "Allow temporary app creation" aus, E-Mail-Provider (Postmark/SendGrid/Resend) konfigurieren.
 
-# InstantDB klonen
-git clone https://github.com/instantdb/instant.git
-cd instant/server
-```
-
-### 2. Config erstellen
+Berechtigungen aus `instant.perms.ts` auf die Instanz pushen:
 
 ```bash
-# Bootstrap-Config generieren (erstellt override.edn mit Encryption-Keys)
-make bootstrap-oss
+INSTANT_CLI_API_URI=https://api.example.ch INSTANT_CLI_DASH_URI=https://dash.example.ch npx instant-cli@latest login
+INSTANT_CLI_API_URI=https://api.example.ch INSTANT_CLI_DASH_URI=https://dash.example.ch npx instant-cli@latest push perms
 ```
 
-Die generierte `resources/config/override.edn` enthaelt den Encryption-Key.
-Postmark-Token fuer Auth hinzufuegen (siehe Authentifizierung weiter unten):
-
-```edn
-{:aead-keyset {:encrypted? false, :json "{...}"}
- :postmark-token {:plain "dein-postmark-server-api-token"}}
-```
-
-### 3. Server starten
+### 2. PWA bauen
 
 ```bash
-# Mit Docker
-docker compose -f docker-compose-dev.yml up -d
-
-# Mit Podman
-podman-compose -f docker-compose-dev.yml up -d
+cp .env.example .env   # VITE_INSTANTDB_MODE=selfhosted, VITE_INSTANT_*, VITE_AI_PROXY_URL setzen
+npm run build          # dist/
+rsync -av --delete dist/ user@vm:/opt/auto-service/deploy/dist/
 ```
 
-Server laeuft auf Port 8888 (HTTP + WebSocket).
-
-### 4. Reverse Proxy (Caddy)
+### 3. AI-Proxy + Caddy starten
 
 ```bash
-sudo apt install caddy   # Ubuntu
-sudo dnf install caddy   # Fedora
+# auf der VM, Repo liegt unter /opt/auto-service
+cd /opt/auto-service/deploy
+cp .env.example .env   # Domains, MISTRAL_API_KEY, INSTANT_APP_ID, INSTANT_ADMIN_TOKEN, optional Stripe
+docker compose --env-file .env up -d --build
+curl -fsS https://ai.example.ch/health   # {"ok":true}
 ```
 
-`/etc/caddy/Caddyfile`:
-```
-deine-domain.de {
-    reverse_proxy localhost:8888
-}
-```
+Der Proxy (Repo `ai-proxy`, Hono auf Node 24) hält den Mistral-Key, prüft das InstantDB-Refresh-Token des
+Nutzers per Admin-SDK, reicht `/v1/chat/completions` und `/v1/ocr` durch, zählt Tokens und OCR-Seiten
+pro Nutzer und Monat in InstantDB (`usage`) und setzt die Plan-Limits aus `@strainovic/ai-proxy/plans` durch.
+
+### 4. Stripe (Abo-Zahlung, optional)
+
+1. Produkte mit monatlichen Preisen in CHF anlegen (Basic, Pro) → Price-IDs in `STRIPE_PRICE_BASIC` / `STRIPE_PRICE_PRO`.
+2. Webhook auf `https://ai.example.ch/stripe/webhook` mit Events `checkout.session.completed`,
+   `customer.subscription.updated`, `customer.subscription.deleted` → Secret in `STRIPE_WEBHOOK_SECRET`.
+3. Customer Portal im Stripe-Dashboard aktivieren (Kündigung, Zahlungsmittel).
+
+Ohne Stripe-Konfiguration antworten `/billing/*` mit 501, alle Nutzer bleiben im Free-Plan.
+
+### 5. Backup
 
 ```bash
-sudo systemctl enable --now caddy
+# InstantDB-Postgres (Container-Name aus dem offiziellen Compose)
+docker exec <postgres-container> pg_dump -U instant instant | gzip > backup_$(date +%Y%m%d).sql.gz
 ```
 
-Caddy holt automatisch ein Let's Encrypt Zertifikat (HTTPS + WSS).
+Täglich per Cron auf eine Hetzner Storage Box kopieren, Restore einmal durchspielen.
 
-### 5. Frontend-Config anpassen
+### 6. Health-Checks
 
-In `src/lib/instantdb.ts` die URIs fuer Produktion umstellen:
-
-```typescript
-const INSTANT_API_URI = 'https://deine-domain.de'
-const INSTANT_WS_URI = 'wss://deine-domain.de/runtime/session'
-```
-
-### 6. Daten-Backup
-
-```bash
-# PostgreSQL Dump erstellen
-docker exec <postgres-container> pg_dump -U instant instant > backup_$(date +%Y%m%d).sql
-
-# Restore
-cat backup.sql | docker exec -i <postgres-container> psql -U instant instant
-```
-
-### 7. App-ID fuer neue Instanz
-
-Bei einer frischen InstantDB-Installation wird die App beim ersten Client-Connect
-automatisch erstellt. App-ID auslesen:
-
-```bash
-docker exec <postgres-container> psql -U instant -d instant -c "SELECT id, title FROM apps;"
-```
-
-Die App-ID in `src/lib/instantdb.ts` eintragen.
+- InstantDB: `curl -fsS https://api.example.ch/health/system` → `{"wal":"ok"}`
+- AI-Proxy: `curl -fsS https://ai.example.ch/health` → `{"ok":true}`
 
 ## Authentifizierung (Magic Codes via Postmark)
 
@@ -262,29 +234,24 @@ Magic Codes sind der Startpunkt. Spaeter erweiterbar um:
 - Passkeys/WebAuthn (via Custom Auth + Backend)
 - Bei Wechsel zu InstantDB Cloud entfaellt die Postmark-Konfiguration
 
-## AI-Provider
+## KI-Anbieter: Mistral
 
-| Provider | Modell | Vision | Tools | Kosten |
-|----------|--------|--------|-------|--------|
-| **Mistral** | mistral-small-latest | Ja | Ja | Free/Scale |
-| Anthropic | Claude Sonnet | Ja | Ja | Bezahlt |
-| OpenAI | GPT-4o Mini | Ja | Ja | Bezahlt |
-| Meta Llama | Llama 4 Maverick (OpenRouter) | Ja | Ja | Free Tier |
-| Ollama | qwen3-vl:2b (lokal) | Ja | Ja | Kostenlos |
+| Aufgabe | Modell | Preis (Stand 2026-09-05) |
+|---------|--------|--------------------------|
+| OCR (Rechnungen, PDFs) | mistral-ocr-latest | $4 pro 1.000 Seiten |
+| Chat, Tool-Calling, Parsing | mistral-small-latest | $0.15/M Input, $0.60/M Output |
 
-Provider und API-Key werden in der App unter Einstellungen konfiguriert.
-`.env` wird nur fuer E2E-Tests benoetigt.
+Ein Rechnungsscan kostet damit rund einen halben Cent. Der API-Key wird in der App
+unter Einstellungen hinterlegt. `.env` wird nur fuer E2E-Tests benoetigt.
 
 ### Datenschutz
 
-| Provider | Trainiert mit Daten? | EU-konform? |
-|----------|---------------------|-------------|
-| Mistral Free (Experiment) | Ja (Opt-out moeglich) | Ja |
-| OpenRouter + Gemini Free | Ja (Google) | Nein (Free Tier) |
-| Meta Llama API | Nein | Eingeschraenkt (Vision in EU limitiert) |
-| Anthropic API (bezahlt) | Nein | Ja |
-| OpenAI API (bezahlt) | Nein | Ja |
-| Ollama (lokal) | Nein (100% privat) | Ja |
+| Tier | Trainiert mit Daten? | Standort |
+|------|---------------------|----------|
+| Mistral Experiment (Free) | Ja (Opt-out moeglich) | Frankreich (EU) |
+| Mistral Scale (Paid) | Nein | Frankreich (EU) |
+
+Fuer produktive Nutzung ist der Scale-Tier vorgesehen: reine Nutzungsabrechnung, keine Grundgebuehr.
 
 ## E2E-Tests
 
@@ -296,7 +263,7 @@ npm run test:e2e -- --project=online    # Nur online
 npm run test:e2e -- --project=offline   # Nur offline
 ```
 
-`.env` mit AI-Provider-Keys wird fuer E2E benoetigt.
+`.env` mit `VITE_AI_API_KEY` (Mistral) wird fuer E2E benoetigt.
 
 ## Lizenz
 

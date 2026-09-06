@@ -10,6 +10,8 @@ export interface TestOptions {
 // The warning fires for images without DPI metadata (all browser-resized images).
 const IGNORED_ERRORS = [
   /Invalid resolution.*dpi/,
+  // Bewusste 402-Antwort des AI-Proxys bei erreichtem Monatslimit (AP-002)
+  /status of 402 \(Payment Required\)/,
 ]
 
 /**
@@ -58,6 +60,8 @@ export async function clearInstantDB(page: Page) {
       maintenances: {},
       chatmessages: {},
       ocrcache: {},
+      usage: {},
+      subscriptions: {},
     })
 
     const txs: any[] = []
@@ -71,6 +75,11 @@ export async function clearInstantDB(page: Page) {
       txs.push(tx.chatmessages[c.id].delete())
     for (const o of result.data.ocrcache || [])
       txs.push(tx.ocrcache[o.id].delete())
+    // Nutzungszähler/Abos des AI-Proxys: jeder Test startet im Free-Plan bei null
+    for (const u of result.data.usage || [])
+      txs.push(tx.usage[u.id].delete())
+    for (const s of result.data.subscriptions || [])
+      txs.push(tx.subscriptions[s.id].delete())
 
     if (txs.length > 0)
       await db.transact(txs)

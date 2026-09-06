@@ -1,0 +1,8 @@
+node_modules
+dist
+tmp
+test-results
+e2e
+business-plan
+.env
+*.traineddata

@@ -20,8 +20,10 @@ function readAll(files: string[]): string {
 test.describe('Hygiene', () => {
   test('HY-001: every runtime dependency is imported somewhere', async () => {
     const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { dependencies: Record<string, string> }
+    // Frontend (src) + AI-Proxy (server) teilen sich die package.json
     const files = [
       ...collectFiles('src', /\.(?:vue|ts|css)$/),
+      ...collectFiles('server', /\.ts$/),
       'vite.config.ts',
       'index.html',
     ].filter(existsSync)

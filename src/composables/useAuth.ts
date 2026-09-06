@@ -1,5 +1,5 @@
 import { readonly, ref } from 'vue'
-import { db } from '../lib/instantdb'
+import { db, instantConfig } from '../lib/instantdb'
 
 interface AuthUser {
   id: string
@@ -15,8 +15,8 @@ const authReady = new Promise<void>((resolve) => {
   authReadyResolve = resolve
 })
 
-// E2E-Tests: Auth-Bypass im lokalen Modus (kein Magic Code nötig)
-const isLocal = import.meta.env.VITE_INSTANTDB_MODE === 'local'
+// E2E-Tests: Auth-Bypass nur im lokalen Modus (kein Magic Code nötig), nie bei cloud/selfhosted
+const isLocal = instantConfig.authBypass
 
 // Einmalig subscriben (Singleton)
 let initialized = false

@@ -7,6 +7,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { callMistralOcr, parseInvoice } from '../src/services/ai'
+import { byokAccess } from '../src/services/ai-access'
 import 'dotenv/config'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -37,7 +38,7 @@ async function testImage(filePath: string): Promise<TestResult> {
   try {
     // Phase 1: OCR
     const ocrStart = Date.now()
-    const _ocrText = await callMistralOcr(imageBase64, API_KEY)
+    const _ocrText = await callMistralOcr(imageBase64, byokAccess(API_KEY))
     const ocrMs = Date.now() - ocrStart
 
     // Phase 2: Parse

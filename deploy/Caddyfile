@@ -1,0 +1,20 @@
+# Caddy für die PWA + AI-Proxy. InstantDB (api./dash./files.) läuft mit dem offiziellen
+# docker-compose.with-caddy.yml von instantdb.com/docs/self-hosting/vps und eigener Caddy-Instanz.
+# Diese Datei ersetzt dort NICHT die InstantDB-Caddy-Konfiguration, sondern ergänzt zwei Hosts.
+
+{$APP_DOMAIN} {
+	root * /srv/app
+	encode gzip
+	try_files {path} /index.html
+	file_server
+	header {
+		# PWA: Service Worker und Manifest nicht aggressiv cachen
+		Cache-Control "public, max-age=0, must-revalidate"
+	}
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+}
+
+{$AI_PROXY_DOMAIN} {
+	reverse_proxy ai-proxy:8787
+}

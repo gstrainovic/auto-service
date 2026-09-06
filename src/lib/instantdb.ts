@@ -1,33 +1,31 @@
 /**
  * InstantDB Client
  *
- * Cloud: instantdb.com (Default)
- * Self-Hosted: VITE_INSTANTDB_MODE=local für lokalen Server (localhost:8888)
+ * Modi (siehe instant-config.ts): cloud (Default), local (E2E, localhost:8888, Auth-Bypass),
+ * selfhosted (eigener Server, VITE_INSTANT_APP_ID / VITE_INSTANT_API_URI / VITE_INSTANT_WS_URI)
  *
  * Schema: Schemaless - keine Schema-Definition nötig.
  * Daten werden dynamisch erstellt.
  */
 import { id, init, tx as instantTx } from '@instantdb/core'
+import { resolveInstantConfig } from './instant-config'
 
 const isDev = import.meta.env.DEV
-const isLocal = import.meta.env.VITE_INSTANTDB_MODE === 'local'
 
-// Cloud App-ID (instantdb.com)
-const CLOUD_APP_ID = '5d413a89-91ad-4a5a-ad71-d2df5fd81d88'
-// Self-Hosted App-ID (lokaler Server, für E2E-Tests)
-const LOCAL_APP_ID = 'cd7e6912-773b-4ee1-be18-4d95c3b20e9f'
-
-const APP_ID = isLocal ? LOCAL_APP_ID : CLOUD_APP_ID
+export const instantConfig = resolveInstantConfig({
+  VITE_INSTANTDB_MODE: import.meta.env.VITE_INSTANTDB_MODE,
+  VITE_INSTANT_APP_ID: import.meta.env.VITE_INSTANT_APP_ID,
+  VITE_INSTANT_API_URI: import.meta.env.VITE_INSTANT_API_URI,
+  VITE_INSTANT_WS_URI: import.meta.env.VITE_INSTANT_WS_URI,
+  DEV: isDev,
+})
 
 // InstantDB Client initialisieren
-// Cloud: Default-URIs (api.instantdb.com + wss://api.instantdb.com)
-// Local: Proxy + direkter WebSocket
+// cloud: Default-URIs (api.instantdb.com), local: Vite-Proxy + direkter WebSocket, selfhosted: eigene URIs
 const db = init({
-  appId: APP_ID,
-  ...(isLocal && {
-    apiURI: isDev ? '/instant-api' : 'http://localhost:8888',
-    websocketURI: 'ws://localhost:8888/runtime/session',
-  }),
+  appId: instantConfig.appId,
+  ...(instantConfig.apiURI && { apiURI: instantConfig.apiURI }),
+  ...(instantConfig.websocketURI && { websocketURI: instantConfig.websocketURI }),
   useDateObjects: false,
   devtool: false,
 })

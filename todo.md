@@ -4,18 +4,20 @@ Reihenfolge, nicht Themen. Erst Validierung (business-plan/09-validierung.md), d
 
 ## Jetzt: Validierung (Woche 1 bis 4)
 
+Ausführung: Claude. Beim Nutzer bleibt nur das einmalige Ja zum Versand eines vorbereiteten E-Mail-Stapels; er telefoniert nicht und führt keine Gespräche.
+
 Voraussetzung vor der ersten E-Mail: Eine erreichbare Website mit Impressum und den zwei Landing Pages. Die App selbst muss dafür nicht laufen.
 
-- [ ] Landing Pages «Betrieb» und «Privathalter» plus Impressum und Datenschutz als statische Seiten unter der Domain veröffentlichen (kein InstantDB, kein Proxy), Formular mit E-Mail-Feld, Plausible
-- [ ] Beobachten (M1): zwei Abende lesen, wo Kleinbetriebe mit mehreren Fahrzeugen (Rezensionen von Fuhrpark-Apps, Handwerker- und KMU-Gruppen, Gewerbeverbände) und Privathalter (Motor-Talk, App-Store-Rezensionen Drivvo/Fuelio/TCS MyRide) über das Problem reden; Zitate und Quellen in `business-plan/beobachtungen.md`
-- [ ] Liste mit 20 Betrieben in der Ostschweiz mit 3 bis 15 Fahrzeugen (Sanitär, Elektro, Gartenbau, Malerei, Spitex, Hauswartung), mit E-Mail-Adresse
-- [ ] 20 E-Mails einzeln nach der Vorlage in Kapitel 9 (M2) versenden, nach 10 Tagen einmal nachfassen, Antworten protokollieren
-- [ ] Ein Forumsbeitrag mit echter Frage (Motor-Talk oder r/de)
+- [ ] Landing Pages «Betrieb» und «Privathalter» plus Impressum und Datenschutz als statische Seiten veröffentlichen (kein InstantDB, kein Proxy), Formular mit E-Mail-Feld, Plausible. Offen: Domain und Host für die statische Seite
+- [ ] Beobachten (M1): Rezensionen von Fuhrpark-Apps, Handwerker- und KMU-Gruppen, Gewerbeverbände, Motor-Talk, App-Store-Rezensionen Drivvo/Fuelio/TCS MyRide auswerten; Zitate und Quellen in `business-plan/beobachtungen.md`
+- [ ] Liste mit 20 Betrieben in der Ostschweiz mit 3 bis 15 Fahrzeugen (Sanitär, Elektro, Gartenbau, Malerei, Spitex, Hauswartung), mit E-Mail-Adresse, aus local.ch und Gemeindeverzeichnissen
+- [ ] 20 E-Mails nach der Vorlage in Kapitel 9 (M2) als Entwürfe in Gmail anlegen, Nutzer gibt den Stapel mit einem Ja frei, Versand einzeln; nach 10 Tagen Nachfass-Stapel gleich; Antworten aus dem Posteingang protokollieren
+- [ ] Ein Forumsbeitrag mit echter Frage (Motor-Talk oder r/de), Text vorbereiten, Nutzer gibt frei
 - [ ] Auswertung gegen die Abbruchkriterien, Ergebnis und Entscheid in Kapitel 9 eintragen
 
 ## Sobald ein Betrieb Ja sagt: Betrieb für den Pilot
 
-Erst dann lohnt sich der Server. Bis zur Einrichtung beim ersten Betrieb bleiben etwa zwei Wochen.
+Erst dann lohnt sich der Server. Bis zur Einrichtung beim ersten Betrieb bleiben etwa zwei Wochen. Claude richtet alles ein; der Nutzer bestätigt nur den Kauf der VM und gibt bei Kontoeröffnungen Ausweis und Zahlungsdaten selbst ein.
 
 - [ ] VM bestellen (2 vCPU, 4 GB), DNS für `app.`, `ai.`, `api.`, `dash.`, `files.` anlegen
 - [ ] InstantDB nach offiziellem VPS-Guide aufsetzen: `JAVA_OPTS=-Xmx2g -Xms2g`, Superuser, Signups "Closed", temporäre Apps aus, E-Mail-Provider (Postmark braucht Sending-Approval für fremde Domains)

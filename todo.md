@@ -10,11 +10,11 @@ Ausführung: Claude. Beim Nutzer bleiben zwei Dinge: Konten bei Drittanbietern a
 
 ### Vom Nutzer
 - [ ] Postmark-Konto anlegen (postmarkapp.com, Free 100 Mails/Monat), Server-Token in `/opt/instant/.env` als `POSTMARK_TOKEN` eintragen lassen; ohne Token landen Anmelde-Codes nur im Server-Log, echte Nutzer können sich also noch nicht anmelden. Sending-Freigabe für externe Empfänger im Postmark-Dashboard beantragen.
-- [ ] Mistral Scale-Tier (kein Training) buchen und AVV/DPA abschliessen; bis dahin läuft der Proxy mit dem bestehenden Key.
 
 ### Von Claude
 - [ ] Postmark: Absender `login@wartungsheft.ch` verifizieren (DNS-Einträge per API), Token eintragen, Server neu starten, Login-Mail einmal echt empfangen
-- [ ] Beobachten (M1): Rezensionen von Fuhrpark-Apps, Handwerker- und KMU-Gruppen, Gewerbeverbände, Motor-Talk, App-Store-Rezensionen Drivvo/Fuelio/TCS MyRide auswerten; Zitate und Quellen in `business-plan/beobachtungen.md`
+- [ ] Beobachten (M1) ergänzen: Pro-Preise von Drivvo und Fuelio in CHF, Schweizer KMU-Stimmen (Gewerbeverbände, LinkedIn-Gruppen); Erstfassung steht in `business-plan/beobachtungen.md`
+- [ ] Landing Page «Betrieb» und E-Mail-Vorlage nach den Beobachtungen anpassen: MFK nur Nebenpunkt (Aufgebot kommt vom Strassenverkehrsamt), Hauptschmerz Service, Reifen, Garantie, Kosten pro Fahrzeug, Belege für den Treuhänder
 - [ ] Liste mit 20 Betrieben in der Ostschweiz mit 3 bis 15 Fahrzeugen (Sanitär, Elektro, Gartenbau, Malerei, Spitex, Hauswartung), mit E-Mail-Adresse, aus local.ch und Gemeindeverzeichnissen
 - [ ] 20 E-Mails nach der Vorlage in Kapitel 9 (M2) als Entwürfe in Gmail anlegen, Link auf https://wartungsheft.ch/betrieb, Nutzer gibt den Stapel mit einem Ja frei, Versand einzeln; nach 10 Tagen Nachfass-Stapel gleich; Antworten aus dem Posteingang protokollieren
 - [ ] Ein Forumsbeitrag mit echter Frage (Motor-Talk oder r/de), Text vorbereiten, Nutzer gibt frei

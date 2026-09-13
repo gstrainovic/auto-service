@@ -2,31 +2,35 @@
 
 Reihenfolge, nicht Themen. Erst Validierung (business-plan/09-validierung.md), dann Betrieb für den Pilot, dann alles andere. Kein Zahlungsanbieter und keine Werbung vor dem Entscheid.
 
-## Jetzt: Validierung (Woche 1 bis 4)
+## Jetzt: einmal online stellen, dann Validierung
 
-Ausführung: Claude. Beim Nutzer bleibt nur das einmalige Ja zum Versand eines vorbereiteten E-Mail-Stapels; er telefoniert nicht und führt keine Gespräche.
+Ausführung: Claude. Beim Nutzer bleiben drei Dinge: Domain und Server kaufen (Infomaniak, ein Konto für beides), API-Token für DNS ablegen, und das einmalige Ja zum Versand eines vorbereiteten E-Mail-Stapels. Keine Telefonate, keine Gespräche.
 
-Voraussetzung vor der ersten E-Mail: Eine erreichbare Website mit Impressum und den zwei Landing Pages. Die App selbst muss dafür nicht laufen.
+Entschieden: Kein Zwischenschritt über GitHub Pages (deren Nutzungsbedingungen schliessen Marketing für kommerzielle SaaS aus). Die PWA bekommt die Landing Pages als öffentliche Routen und wird einmal komplett auf dem echten Server veröffentlicht. Server: Infomaniak VPS Lite, 2 vCPU, 4 GB, in der Schweiz gehostet, 7.20 CHF/Monat; Hetzner-Vergleich in business-plan/06.
 
-- [ ] Landing Pages «Betrieb» und «Privathalter» plus Impressum und Datenschutz als statische Seiten veröffentlichen (kein InstantDB, kein Proxy), Formular mit E-Mail-Feld, Plausible. Offen: Domain und Host für die statische Seite
+### Vom Nutzer
+- [ ] Domain `wartungsheft.ch` bei Infomaniak kaufen, automatische Verlängerung an
+- [ ] Infomaniak VPS Lite Linux 2 vCPU / 4 GB bestellen (Debian oder Ubuntu LTS), eigenen SSH-Public-Key hinterlegen
+- [ ] Infomaniak-API-Token mit Rechten für Domain/DNS erstellen und als `~/.config/infomaniak/token` ablegen; Server-IP und SSH-Zugang mitteilen
+
+### Von Claude, Server
+- [ ] DNS per API: `wartungsheft.ch`, `www.`, `app.`, `ai.`, `api.`, `dash.`, `files.` auf die VPS-IP
+- [ ] Grundhärtung: Firewall nur 22/80/443, SSH nur Key, automatische Updates, Docker
+- [ ] InstantDB nach offiziellem VPS-Guide: `JAVA_OPTS=-Xmx2g -Xms2g`, Superuser, Signups "Closed", temporäre Apps aus, E-Mail-Provider (Postmark braucht Sending-Approval für die Domain)
+- [ ] Perms pushen (`instant-cli push perms` gegen eigene Instanz) und mit zweitem Nutzer verifizieren, dass `vehicles`/`usage` nur eigene Daten liefern
+- [ ] Landing Pages «Betrieb» und «Privathalter» als öffentliche Routen in der PWA, Formular mit E-Mail-Feld (Speicherung in InstantDB), Impressum und Datenschutz aktuell, Plausible
+- [ ] PWA bauen (`.env` mit `VITE_INSTANTDB_MODE=selfhosted`, `VITE_AI_PROXY_URL`) und `deploy/` starten; Health-Checks beider Dienste in Uptime-Monitoring aufnehmen
+- [ ] Backup-Cron (`pg_dump` → Infomaniak Swiss Backup oder kDrive), Restore einmal durchspielen
+- [ ] Erster echter Login-Test mit Magic Code auf dem Server (Proxy prüft dann echte Refresh-Tokens, kein Bypass)
+- [ ] Mistral Scale-Tier (kein Training) buchen und AVV/DPA abschliessen (Nutzer bestätigt den Kauf)
+- [ ] README «Produktion»: Hetzner durch Infomaniak ersetzen
+
+### Von Claude, Validierung (Woche 1 bis 4 nach Go-live)
 - [ ] Beobachten (M1): Rezensionen von Fuhrpark-Apps, Handwerker- und KMU-Gruppen, Gewerbeverbände, Motor-Talk, App-Store-Rezensionen Drivvo/Fuelio/TCS MyRide auswerten; Zitate und Quellen in `business-plan/beobachtungen.md`
 - [ ] Liste mit 20 Betrieben in der Ostschweiz mit 3 bis 15 Fahrzeugen (Sanitär, Elektro, Gartenbau, Malerei, Spitex, Hauswartung), mit E-Mail-Adresse, aus local.ch und Gemeindeverzeichnissen
 - [ ] 20 E-Mails nach der Vorlage in Kapitel 9 (M2) als Entwürfe in Gmail anlegen, Nutzer gibt den Stapel mit einem Ja frei, Versand einzeln; nach 10 Tagen Nachfass-Stapel gleich; Antworten aus dem Posteingang protokollieren
 - [ ] Ein Forumsbeitrag mit echter Frage (Motor-Talk oder r/de), Text vorbereiten, Nutzer gibt frei
 - [ ] Auswertung gegen die Abbruchkriterien, Ergebnis und Entscheid in Kapitel 9 eintragen
-
-## Sobald ein Betrieb Ja sagt: Betrieb für den Pilot
-
-Erst dann lohnt sich der Server. Bis zur Einrichtung beim ersten Betrieb bleiben etwa zwei Wochen. Claude richtet alles ein; der Nutzer bestätigt nur den Kauf der VM und gibt bei Kontoeröffnungen Ausweis und Zahlungsdaten selbst ein.
-
-- [ ] VM bestellen (2 vCPU, 4 GB), DNS für `app.`, `ai.`, `api.`, `dash.`, `files.` anlegen
-- [ ] InstantDB nach offiziellem VPS-Guide aufsetzen: `JAVA_OPTS=-Xmx2g -Xms2g`, Superuser, Signups "Closed", temporäre Apps aus, E-Mail-Provider (Postmark braucht Sending-Approval für fremde Domains)
-- [ ] Perms pushen (`instant-cli push perms` gegen eigene Instanz) und mit zweitem Nutzer verifizieren, dass `vehicles`/`usage` nur eigene Daten liefern
-- [ ] PWA bauen (`.env` mit `VITE_INSTANTDB_MODE=selfhosted`, `VITE_AI_PROXY_URL`) und `deploy/` starten; Health-Checks beider Dienste in Uptime-Monitoring aufnehmen
-- [ ] Backup-Cron (`pg_dump` → Hetzner Storage Box), Restore einmal durchspielen
-- [ ] Grundhärtung: Firewall nur 22/80/443, SSH nur Key, automatische Updates
-- [ ] Erster echter Login-Test mit Magic Code auf der VM (Proxy prüft dann echte Refresh-Tokens, kein Bypass)
-- [ ] Mistral Scale-Tier (kein Training) buchen und AVV/DPA abschliessen
 - [ ] Pilot-Betrieb anlegen: Fahrzeuge erfassen, erste Rechnungen von Hand einlesen, Jahresrechnung per QR-Rechnung stellen (kein Zahlungsanbieter)
 
 ## Nach dem Entscheid

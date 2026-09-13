@@ -24,6 +24,17 @@
 - [ ] Grundhärtung: Firewall nur 22/80/443, SSH nur Key, automatische Updates.
 - [ ] Erster echter Login-Test mit Magic Code auf der VM (Proxy prüft dann echte Refresh-Tokens, kein Bypass).
 
+## Validierung zuerst (business-plan/09-validierung.md)
+
+Vor Zahlungsanbieter, Werbung und weiteren Funktionen. Vier Wochen, keine Telefonate.
+
+- [ ] Safari-Notizen: Garagen (AGVS, Werkstattsoftware-Rezensionen, LinkedIn, Google-Rezensionen) und Privathalter (Motor-Talk, App-Store-Rezensionen Drivvo/Fuelio/TCS MyRide) → `business-plan/safari-notizen.md`
+- [ ] Liste mit 20 unabhängigen Garagen in der Ostschweiz mit E-Mail-Adresse
+- [ ] Landing Pages «Garage» und «Privathalter» mit Formular und Plausible
+- [ ] 20 E-Mails einzeln nach Vorlage in Kapitel 9 versenden, nach 10 Tagen einmal nachfassen, Antworten protokollieren
+- [ ] Ein Forumsbeitrag mit echter Frage (Motor-Talk oder r/de)
+- [ ] Auswertung gegen die Abbruchkriterien, Ergebnis und Entscheid in Kapitel 9 eintragen
+
 ## Zahlungsanbieter: Payrexx statt Stripe (Entscheidung 06.09.2026, geprüfte Preise)
 
 Beste Preis-Leistung und Datenschutz: Schweizer Anbieter, Daten in der Schweiz, pro Zahlung rund 35 bis 40 Rappen
@@ -34,7 +45,7 @@ deshalb von Anfang an Payrexx. Beide Apps (auto-service und dms) stellen um.
 **Blockiert, bis das Payrexx-Konto beantragt und freigegeben ist** (Einzelunternehmen: Ausweis, Wohnsitznachweis,
 Konto auf eigenen Namen; Handelsregister erst ab 100k Umsatz nötig).
 
-- [ ] Payrexx-Konto anlegen (Standard, Startup-Rabatt), verifizieren, Payrexx Pay aktivieren, Testmodus einschalten, API-Key und Webhook-Signing-Key notieren
+- [ ] Payrexx-Konto erst anlegen, wenn die Validierung einen zahlenden Kunden ergibt und dieser per Karte statt Rechnung zahlen will (Standard, Startup-Rabatt), verifizieren, Payrexx Pay aktivieren, Testmodus einschalten, API-Key und Webhook-Signing-Key notieren
 - [ ] ai-proxy: austauschbare Billing-Schnittstelle, Stripe-Implementierung behalten, Payrexx-Implementierung ergänzen
       (Gateway mit subscriptionState, Webhook mit X-Webhook-Signature HMAC-SHA256 hex, Status active/overdue/failed/cancelled/in_notice,
       Kundenportal via POST /AuthToken, Kündigen via DELETE /Subscription/{id}); Tests gegen dokumentierte Payloads

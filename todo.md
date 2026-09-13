@@ -28,10 +28,10 @@
 
 Vor Zahlungsanbieter, Werbung und weiteren Funktionen. Vier Wochen, keine Telefonate.
 
-- [ ] Safari-Notizen: Garagen (AGVS, Werkstattsoftware-Rezensionen, LinkedIn, Google-Rezensionen) und Privathalter (Motor-Talk, App-Store-Rezensionen Drivvo/Fuelio/TCS MyRide) → `business-plan/safari-notizen.md`
+- [ ] Beobachten (Kapitel 9, M1): zwei Abende lesen, wo Garagen (AGVS, Werkstattsoftware-Rezensionen, LinkedIn, Google-Rezensionen) und Privathalter (Motor-Talk, App-Store-Rezensionen Drivvo/Fuelio/TCS MyRide) über das Problem reden; Zitate und Quellen in `business-plan/beobachtungen.md`
 - [ ] Liste mit 20 unabhängigen Garagen in der Ostschweiz mit E-Mail-Adresse
 - [ ] Landing Pages «Garage» und «Privathalter» mit Formular und Plausible
-- [ ] 20 E-Mails einzeln nach Vorlage in Kapitel 9 versenden, nach 10 Tagen einmal nachfassen, Antworten protokollieren
+- [ ] 20 E-Mails an Garagen einzeln nach der Vorlage in Kapitel 9 (M2) versenden; sie fragen nur, wie die Garage heute erinnert, und bieten einen Concierge-Pilot von Hand an, kein fertiges Produkt; nach 10 Tagen einmal nachfassen, Antworten protokollieren
 - [ ] Ein Forumsbeitrag mit echter Frage (Motor-Talk oder r/de)
 - [ ] Auswertung gegen die Abbruchkriterien, Ergebnis und Entscheid in Kapitel 9 eintragen
 

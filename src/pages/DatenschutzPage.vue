@@ -176,9 +176,9 @@ const router = useRouter()
             <td>Schweiz</td>
           </tr>
           <tr>
-            <td>Postmark</td>
-            <td>E-Mail-Versand (Magic Codes)</td>
-            <td>USA</td>
+            <td>Resend (Plus Five Five, Inc.)</td>
+            <td>E-Mail-Versand der Anmelde-Codes; verarbeitet werden nur E-Mail-Adresse und Code, Versand aus Irland (EU), Vertrag mit EU-Standardvertragsklauseln für die Schweiz</td>
+            <td>USA / Irland</td>
           </tr>
           <tr>
             <td>KI-Anbieter (nach Wahl)</td>

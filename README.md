@@ -87,7 +87,7 @@ Browser (PWA)
   |-- IndexedDB (Offline-Cache, CRDT)
   '-- WebSocket ----> InstantDB Server ----> PostgreSQL
                          |
-                         '--> Postmark (Magic Code E-Mails)
+                         '--> Resend (Magic Code E-Mails, Produktion)
 ```
 
 ### Lokale Services
@@ -232,29 +232,29 @@ curl -s -X POST https://api.wartungsheft.ch/admin/query -H "Content-Type: applic
   -H "App-Id: $INSTANT_APP_ID" -H "Authorization: Bearer $INSTANT_ADMIN_TOKEN" -d '{"query":{"leads":{},"events":{}}}'
 ```
 
-## Authentifizierung (Magic Codes via Postmark)
+## Authentifizierung (Magic Codes via Resend)
 
-InstantDB bietet passwordless Auth via Magic Codes (6-stelliger Code per E-Mail).
-Self-hosted InstantDB nutzt **Postmark** fuer den E-Mail-Versand (kein direktes SMTP).
+InstantDB bietet passwordless Auth via Magic Codes (6-stelliger Code per E-Mail). Self-hosted InstantDB kennt dafür
+nur Postmark, SendGrid oder Resend, kein SMTP. Produktion nutzt **Resend** (Free: 3'000 Mails/Monat, 100/Tag; Region
+Irland eu-west-1), Absender `login@mail.wartungsheft.ch`.
 
-### Postmark einrichten
+### Resend einrichten
 
-1. Account erstellen: https://postmarkapp.com (Free Tier: 100 Mails/Monat). Neue Konten dürfen bis zur
-   Sending-Freigabe nur an die eigene Domain senden, die Freigabe im Postmark-Dashboard beantragen.
-2. Server API Token generieren (Dashboard -> Server -> API Tokens)
-3. Absender-Adresse verifizieren (Produktion: `login@wartungsheft.ch`, siehe `/opt/instant/.env`)
-4. Token in die **InstantDB Server-Config** eintragen (NICHT in auto-service/.env!):
-   - lokal: `~/instant/server/resources/config/override.edn` → `:postmark-token {:plain "…"}`
-   - Produktion: `POSTMARK_TOKEN=…` in `/opt/instant/.env`
-5. InstantDB-Server neu starten (Produktion: `… up -d server`). Bis dahin stehen die Codes im Server-Log
-   (`… logs server | grep postmark/send-disabled`).
+1. Konto auf resend.com, API-Key mit «Sending access» (mehr braucht der Server nicht).
+2. Domain `mail.wartungsheft.ch` im Resend-Dashboard anlegen (Region Ireland, Tracking aus, «Enable Receiving» aus, damit
+   MX und Postfach der Hauptdomain bei Infomaniak bleiben). Die angezeigten Einträge (TXT `resend._domainkey.mail`,
+   CNAME `rsend.mail` und `send.mail`) per Infomaniak-DNS-API setzen. Subdomain, weil Infomaniak per API angelegte
+   Einträge direkt unter `_domainkey.wartungsheft.ch` nicht ausliefert.
+3. In `/opt/instant/.env`: `RESEND_TOKEN=…`, `INSTANT_*_EMAIL_SENDER_EMAIL=login@mail.wartungsheft.ch`, dann
+   `… up -d server`. Ohne Token stehen die Codes im Server-Log (`… logs server | grep postmark/send-disabled`).
+4. Lokal (`~/instant/server/resources/config/override.edn`) bleibt ohne Token, Codes im Log.
 
 ### Magic Code Flow
 
 ```
 User gibt E-Mail ein
   -> db.auth.sendMagicCode({ email })
-  -> InstantDB Server sendet 6-stelligen Code via Postmark
+  -> InstantDB Server sendet 6-stelligen Code via Resend
   -> User gibt Code ein
   -> db.auth.signInWithMagicCode({ email, code })
   -> Session aktiv (Token in localStorage)
@@ -269,7 +269,7 @@ User gibt E-Mail ein
 Magic Codes sind der Startpunkt. Spaeter erweiterbar um:
 - Google OAuth, Apple Sign-In, GitHub OAuth (in InstantDB eingebaut)
 - Passkeys/WebAuthn (via Custom Auth + Backend)
-- Bei Wechsel zu InstantDB Cloud entfaellt die Postmark-Konfiguration
+- Bei Wechsel des Mail-Dienstes nur `/opt/instant/.env` und die Datenschutzerklärung anpassen
 
 ## KI-Anbieter: Mistral
 

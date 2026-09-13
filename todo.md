@@ -6,13 +6,13 @@ Die App läuft unter https://wartungsheft.ch (Landing Pages `/betrieb` und `/pri
 
 ## Jetzt: Validierung (Woche 1 bis 4)
 
-Ausführung: Claude. Beim Nutzer bleiben zwei Dinge: Konten bei Drittanbietern anlegen (Postmark) und das einmalige Ja zum Versand eines vorbereiteten E-Mail-Stapels. Keine Telefonate, keine Gespräche.
+Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbereiteten E-Mail-Stapels. Keine Telefonate, keine Gespräche.
 
 ### Vom Nutzer
-- [ ] Postmark-Konto anlegen (postmarkapp.com, Free 100 Mails/Monat), Server-Token in `/opt/instant/.env` als `POSTMARK_TOKEN` eintragen lassen; ohne Token landen Anmelde-Codes nur im Server-Log, echte Nutzer können sich also noch nicht anmelden. Sending-Freigabe für externe Empfänger im Postmark-Dashboard beantragen.
+- [ ] Mistral: monatliches Ausgabenlimit über das 10-$-Kontingent hinaus (heute 0 $) auf z. B. 20 $ setzen, sobald ein Pilotbetrieb scannt; sonst stoppt die API bis zum Monatsersten
 
 ### Von Claude
-- [ ] Postmark: Absender `login@wartungsheft.ch` verifizieren (DNS-Einträge per API), Token eintragen, Server neu starten, Login-Mail einmal echt empfangen
+- [ ] Resend: sobald `mail.wartungsheft.ch` verifiziert ist, Login-Mail einmal echt empfangen; alte Domain `wartungsheft.ch` im Resend-Dashboard löschen
 - [ ] Beobachten (M1) ergänzen: Pro-Preise von Drivvo und Fuelio in CHF, Schweizer KMU-Stimmen (Gewerbeverbände, LinkedIn-Gruppen); Erstfassung steht in `business-plan/beobachtungen.md`
 - [ ] Landing Page «Betrieb» und E-Mail-Vorlage nach den Beobachtungen anpassen: MFK nur Nebenpunkt (Aufgebot kommt vom Strassenverkehrsamt), Hauptschmerz Service, Reifen, Garantie, Kosten pro Fahrzeug, Belege für den Treuhänder
 - [ ] Liste mit 20 Betrieben in der Ostschweiz mit 3 bis 15 Fahrzeugen (Sanitär, Elektro, Gartenbau, Malerei, Spitex, Hauswartung), mit E-Mail-Adresse, aus local.ch und Gemeindeverzeichnissen

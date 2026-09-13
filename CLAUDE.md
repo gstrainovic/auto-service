@@ -88,11 +88,13 @@ podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;
 - **Echtzeit-Sync** — Änderungen werden sofort an alle Clients gepusht
 - **Offline-First** — Daten in IndexedDB, Lesen+Schreiben funktionieren offline, Sync via CRDT bei Reconnect
 
-### Auth (Magic Codes via Postmark)
-- **Postmark-Token** gehört in die InstantDB-Server-Konfiguration (lokal `~/instant/server/resources/config/override.edn`
-  als `:postmark-token {:plain "…"}`, Produktion `POSTMARK_TOKEN` in `/opt/instant/.env`), NICHT in auto-service/.env
-- Ohne Token schreibt der Server die Codes ins Log: `docker compose … logs server | grep postmark/send-disabled`
-- Self-hosted InstantDB nutzt Postmark, SendGrid oder Resend, kein direktes SMTP
+### Auth (Magic Codes via Resend)
+- Produktion sendet über **Resend** (Region eu-west-1, Absender `login@mail.wartungsheft.ch`); `RESEND_TOKEN` steht in
+  `/opt/instant/.env`, NICHT in auto-service/.env. Lokal ohne Token: Codes stehen im Server-Log
+  (`docker compose … logs server | grep postmark/send-disabled`, der Log-Name stammt aus dem Postmark-Erbe).
+- Self-hosted InstantDB kennt nur Postmark, SendGrid oder Resend, kein SMTP (geprüft in `server/src/instant/config.clj`).
+- Absender-Subdomain `mail.`, weil Infomaniak per API angelegte Einträge unter `_domainkey.wartungsheft.ch` nicht ausliefert
+  (unter `_domainkey.mail.wartungsheft.ch` schon). MX und SPF der Hauptdomain bleiben bei Infomaniak, Resend-Empfang ist aus.
 - Free Tier: 100 Mails/Monat (reicht für Entwicklung + Solo-Nutzung)
 - Magic Code: 6-stellig, 24h TTL, Einmal-Verwendung
 - Frontend-SDK: `db.auth.sendMagicCode()`, `db.auth.signInWithMagicCode()`, `db.useAuth()`

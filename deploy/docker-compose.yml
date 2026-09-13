@@ -1,6 +1,7 @@
-# PWA + AI-Proxy auf der Hetzner-VM. InstantDB läuft separat (offizieller VPS-Guide).
+# AI-Proxy neben dem InstantDB-Stack (/opt/instant, offizieller VPS-Guide). Kein eigener Caddy:
+# der Caddy des InstantDB-Stacks bedient auch die PWA (./dist) und den Proxy, siehe Caddyfile und README.
 # Der AI-Proxy kommt aus dem Repo gstrainovic/ai-proxy, das neben auto-service ausgecheckt sein muss (../../ai-proxy).
-# Start: docker compose --env-file .env up -d   (im Ordner deploy/, dist/ vorher per rsync nach ./dist)
+# Start: docker compose --env-file .env up -d --build   (im Ordner deploy/, dist/ vorher per rsync nach ./dist)
 services:
   ai-proxy:
     build:
@@ -21,24 +22,11 @@ services:
       STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO:-}
     expose:
       - '8787'
+    networks:
+      - instant
 
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - '80:80'
-      - '443:443'
-    environment:
-      APP_DOMAIN: ${APP_DOMAIN}
-      AI_PROXY_DOMAIN: ${AI_PROXY_DOMAIN}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./dist:/srv/app:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - ai-proxy
-
-volumes:
-  caddy_data:
-  caddy_config:
+networks:
+  # Netz des InstantDB-Stacks, damit dessen Caddy `ai-proxy:8787` erreicht
+  instant:
+    name: ${INSTANT_NETWORK:-instant_default}
+    external: true

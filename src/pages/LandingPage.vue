@@ -27,6 +27,12 @@ function goToApp() {
           <a href="#features">Features</a>
           <a href="#how-it-works">So funktioniert's</a>
           <a href="#pricing">Preise</a>
+          <router-link to="/betrieb">
+            Für Betriebe
+          </router-link>
+          <router-link to="/privathalter">
+            Für Privathalter
+          </router-link>
           <Button
             :label="user ? 'Zum Dashboard' : 'Kostenlos starten'"
             size="small"
@@ -280,6 +286,12 @@ function goToApp() {
           <p>KI-gestützte Fahrzeugwartung. Made in Switzerland.</p>
         </div>
         <div class="footer-links">
+          <router-link to="/betrieb">
+            Betriebe
+          </router-link>
+          <router-link to="/privathalter">
+            Privathalter
+          </router-link>
           <router-link to="/impressum">
             Impressum
           </router-link>

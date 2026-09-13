@@ -76,6 +76,12 @@ podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;
 - Perms: `instant-cli push perms` scheitert gegen die eigene Instanz mit «Record not found: instant-user»
   (CLI 1.0.67 gegen Server-Image `latest`); Perms deshalb als JSON im Dashboard einfügen
   (`node -e "import('./instant.perms.ts').then(m=>console.log(JSON.stringify(m.default,null,2)))"`).
+- Kosten: Infomaniak Public Cloud hat keine Budget-Alarme oder Ausgabenstopps, nur Ressourcen-Quotas (Level 1: 10 Instanzen,
+  20 vCPU, 64 GB, 1 TB Volumes). Deshalb läuft auf dem Laptop der systemd-User-Timer `wartungsheft-cost-watch` (täglich 09:00,
+  `~/.local/bin/wartungsheft-cost-watch`, `--force` sendet immer): schätzt die Monatskosten aus Instanzen, IPv4 und Snapshots
+  und mailt über Resend bei > 25 CHF, bei unbekannten Flavors, Volumes oder Floating IPs und ab 1.12.2026 wegen Guthabenende.
+  Ein zweites, nur lesendes Application Credential für einen Server-Cron ist nicht möglich: Keystone verweigert das Anlegen
+  von Application Credentials mit einem Application Credential.
 - Backup: täglich 03:00 `/opt/backup/backup.sh` (pg_dump + MinIO-Tar nach `/opt/backups`, 14 Tage). Snapshot
   vor riskanten Änderungen: `openstack --os-cloud PCP-CTPZLR8-dc3-a server image create --name <name> wartungsheft`.
 - Admin-SDK `@instantdb/admin` ist auf **0.22.121** gepinnt (gleiche Version wie `@instantdb/core` und der

@@ -46,4 +46,6 @@ tmp/
 installer.sh
 .opencode/
 .vercel
+# Businessplan liegt im privaten Repo ~/projects/business (Symlink), nie ins öffentliche Repo
+business-plan
 business-plan/

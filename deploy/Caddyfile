@@ -14,7 +14,8 @@
 	@assets path /assets/*
 	header @assets Cache-Control "public, max-age=31536000, immutable"
 	# Besucherzahlen für die Validierung (business-plan/09, M3), kein Analytics-Dienst, keine Cookies.
-	# 30 Tage Aufbewahrung, wie in der Datenschutzerklärung angegeben
+	# 30 Tage Aufbewahrung wie in der Datenschutzerklärung: rotierte Dateien löscht Caddy (roll_keep_for),
+	# die aktive Datei kürzt /opt/backup/backup.sh täglich, weil Caddy nur nach Grösse rotiert.
 	log {
 		output file /data/access-app.log {
 			roll_size 20mb

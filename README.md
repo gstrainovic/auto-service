@@ -201,7 +201,8 @@ Ohne Stripe-Konfiguration antworten `/billing/*` mit 501, alle Nutzer bleiben im
 ### 5. Backup
 
 `/opt/backup/backup.sh` läuft täglich um 03:00 per Cron (Nutzer `debian`): `pg_dump -Fc` der Instant-Datenbank und ein
-Tar des MinIO-Volumens nach `/opt/backups`, 14 Tage Aufbewahrung, Log in `/opt/backups/backup.log`.
+Tar des MinIO-Volumens nach `/opt/backups`, 14 Tage Aufbewahrung, Log in `/opt/backups/backup.log`. Dasselbe Skript
+kürzt das Caddy-Zugriffslog der PWA auf 30 Tage (Datenschutzerklärung), weil Caddy nur nach Grösse rotiert.
 
 Wiederherstellung (Stack gestoppt bis auf Postgres):
 

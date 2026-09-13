@@ -12,7 +12,6 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 - [ ] Mistral: monatliches Ausgabenlimit über das 10-$-Kontingent hinaus (heute 0 $) auf z. B. 20 $ setzen, sobald ein Pilotbetrieb scannt; sonst stoppt die API bis zum Monatsersten
 
 ### Von Claude
-- [ ] Resend: sobald `mail.wartungsheft.ch` verifiziert ist, Login-Mail einmal echt empfangen; alte Domain `wartungsheft.ch` im Resend-Dashboard löschen
 - [ ] Beobachten (M1) ergänzen: Pro-Preise von Drivvo und Fuelio in CHF, Schweizer KMU-Stimmen (Gewerbeverbände, LinkedIn-Gruppen); Erstfassung steht in `business-plan/beobachtungen.md`
 - [ ] Landing Page «Betrieb» und E-Mail-Vorlage nach den Beobachtungen anpassen: MFK nur Nebenpunkt (Aufgebot kommt vom Strassenverkehrsamt), Hauptschmerz Service, Reifen, Garantie, Kosten pro Fahrzeug, Belege für den Treuhänder
 - [ ] Liste mit 20 Betrieben in der Ostschweiz mit 3 bis 15 Fahrzeugen (Sanitär, Elektro, Gartenbau, Malerei, Spitex, Hauswartung), mit E-Mail-Adresse, aus local.ch und Gemeindeverzeichnissen

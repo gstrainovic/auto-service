@@ -236,16 +236,16 @@ curl -s -X POST https://api.wartungsheft.ch/admin/query -H "Content-Type: applic
 
 InstantDB bietet passwordless Auth via Magic Codes (6-stelliger Code per E-Mail). Self-hosted InstantDB kennt dafür
 nur Postmark, SendGrid oder Resend, kein SMTP. Produktion nutzt **Resend** (Free: 3'000 Mails/Monat, 100/Tag; Region
-Irland eu-west-1), Absender `login@mail.wartungsheft.ch`.
+Irland eu-west-1), Absender `login@wartungsheft.ch`.
 
 ### Resend einrichten
 
 1. Konto auf resend.com, API-Key mit «Sending access» (mehr braucht der Server nicht).
-2. Domain `mail.wartungsheft.ch` im Resend-Dashboard anlegen (Region Ireland, Tracking aus, «Enable Receiving» aus, damit
-   MX und Postfach der Hauptdomain bei Infomaniak bleiben). Die angezeigten Einträge (TXT `resend._domainkey.mail`,
-   CNAME `rsend.mail` und `send.mail`) per Infomaniak-DNS-API setzen. Subdomain, weil Infomaniak per API angelegte
-   Einträge direkt unter `_domainkey.wartungsheft.ch` nicht ausliefert.
-3. In `/opt/instant/.env`: `RESEND_TOKEN=…`, `INSTANT_*_EMAIL_SENDER_EMAIL=login@mail.wartungsheft.ch`, dann
+2. Domain `wartungsheft.ch` im Resend-Dashboard anlegen (Region Ireland, Tracking aus, «Enable Receiving» aus, damit
+   MX und Postfach bei Infomaniak bleiben). Die CNAMEs `rsend` und `send` per Infomaniak-DNS-API setzen; den DKIM-Eintrag
+   `resend._domainkey` im Infomaniak-Manager als Typ **DKIM** anlegen (per API als TXT wird er angenommen, aber nicht
+   ausgeliefert).
+3. In `/opt/instant/.env`: `RESEND_TOKEN=…`, `INSTANT_*_EMAIL_SENDER_EMAIL=login@wartungsheft.ch`, dann
    `… up -d server`. Ohne Token stehen die Codes im Server-Log (`… logs server | grep postmark/send-disabled`).
 4. Lokal (`~/instant/server/resources/config/override.edn`) bleibt ohne Token, Codes im Log.
 

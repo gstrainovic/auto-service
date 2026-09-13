@@ -140,7 +140,7 @@ const router = useRouter()
       <h3>6.1 Datenbank</h3>
       <p>
         Ihre Daten werden in einer selbst gehosteten InstantDB-Instanz gespeichert.
-        Der Server steht bei Hetzner in Deutschland (EU). Die Daten werden
+        Der Server steht in der Infomaniak Public Cloud in der Schweiz. Die Daten werden
         verschlüsselt übertragen (TLS).
       </p>
 
@@ -171,14 +171,9 @@ const router = useRouter()
         </thead>
         <tbody>
           <tr>
-            <td>Hetzner</td>
-            <td>Server-Hosting</td>
-            <td>Deutschland (EU)</td>
-          </tr>
-          <tr>
-            <td>Vercel</td>
-            <td>Frontend-Hosting</td>
-            <td>USA (Edge: global)</td>
+            <td>Infomaniak Network SA</td>
+            <td>Server- und Frontend-Hosting, Domain</td>
+            <td>Schweiz</td>
           </tr>
           <tr>
             <td>Postmark</td>

@@ -63,13 +63,22 @@ podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;
 - Server-Config: `~/instant/server/resources/config/override.edn`
 - DevTools deaktiviert (Toggle-Button blockierte UI-Klicks)
 
-### Produktion (Hetzner)
-- Anleitung: `README.md` → "Produktion auf Hetzner". InstantDB nach offiziellem VPS-Guide
-  (instantdb.com/docs/self-hosting/vps), PWA + AI-Proxy über `deploy/docker-compose.yml`.
-- Frontend-URIs kommen aus `VITE_INSTANT_*` (Modus selfhosted), nicht mehr aus dem Quellcode
-- Backup: `pg_dump -U instant instant`
+### Produktion (Infomaniak Public Cloud, wartungsheft.ch)
+- Anleitung: `README.md` → "Produktion". Instanz `wartungsheft` (OpenStack-Projekt PCP-CTPZLR8, Region dc3-a,
+  Debian 13, 2 vCPU/4 GB), Zugriff `ssh debian@195.15.207.47` mit dem lokalen Key, OpenStack-CLI über
+  `~/.config/openstack/clouds.yaml` (Application Credential), DNS-API-Token in `~/.config/infomaniak/token`.
+- InstantDB-Stack in `/opt/instant` (offizieller VPS-Guide + `docker-compose.override.yml`: 2-GB-Heap, Neustart,
+  MinIO von quay.io, Caddy importiert `/opt/auto-service/deploy/Caddyfile` und bedient `/opt/auto-service/deploy/dist`).
+  AI-Proxy in `/opt/auto-service/deploy` im Netz `instant_default`. Produktions-App-ID steht in `.env.production`.
+- Frontend-URIs kommen aus `VITE_INSTANT_*` (Modus selfhosted, `.env.production`), nicht aus dem Quellcode.
+- Perms: `instant-cli push perms` scheitert gegen die eigene Instanz mit «Record not found: instant-user»
+  (CLI 1.0.67 gegen Server-Image `latest`); Perms deshalb als JSON im Dashboard einfügen
+  (`node -e "import('./instant.perms.ts').then(m=>console.log(JSON.stringify(m.default,null,2)))"`).
+- Backup: täglich 03:00 `/opt/backup/backup.sh` (pg_dump + MinIO-Tar nach `/opt/backups`, 14 Tage). Snapshot
+  vor riskanten Änderungen: `openstack --os-cloud PCP-CTPZLR8-dc3-a server image create --name <name> wartungsheft`.
 - Admin-SDK `@instantdb/admin` ist auf **0.22.121** gepinnt (gleiche Version wie `@instantdb/core` und der
   lokale Server-Checkout vom Feb 2026). npm-latest ist 1.x → nur zusammen mit Server + Core upgraden.
+  Produktion läuft mit Server-Image `ghcr.io/instantdb/server:latest`; der 0.22-Client funktioniert dagegen.
 
 ### InstantDB vs RxDB Unterschiede
 - **Entity-IDs müssen UUIDs sein** — keine beliebigen Strings (z.B. SHA-256 Hashes)
@@ -78,9 +87,10 @@ podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;
 - **Offline-First** — Daten in IndexedDB, Lesen+Schreiben funktionieren offline, Sync via CRDT bei Reconnect
 
 ### Auth (Magic Codes via Postmark)
-- **Postmark-Token** gehört in `~/instant/server/resources/config/override.edn` (NICHT in auto-service/.env!)
-- Format: `:postmark-token {:plain "dein-token"}` in der override.edn
-- Self-hosted InstantDB nutzt Postmark API, kein direktes SMTP
+- **Postmark-Token** gehört in die InstantDB-Server-Konfiguration (lokal `~/instant/server/resources/config/override.edn`
+  als `:postmark-token {:plain "…"}`, Produktion `POSTMARK_TOKEN` in `/opt/instant/.env`), NICHT in auto-service/.env
+- Ohne Token schreibt der Server die Codes ins Log: `docker compose … logs server | grep postmark/send-disabled`
+- Self-hosted InstantDB nutzt Postmark, SendGrid oder Resend, kein direktes SMTP
 - Free Tier: 100 Mails/Monat (reicht für Entwicklung + Solo-Nutzung)
 - Magic Code: 6-stellig, 24h TTL, Einmal-Verwendung
 - Frontend-SDK: `db.auth.sendMagicCode()`, `db.auth.signInWithMagicCode()`, `db.useAuth()`

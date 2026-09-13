@@ -13,11 +13,13 @@
 	}
 	@assets path /assets/*
 	header @assets Cache-Control "public, max-age=31536000, immutable"
-	# Besucherzahlen für die Validierung (business-plan/09, M3), kein Analytics-Dienst, keine Cookies
+	# Besucherzahlen für die Validierung (business-plan/09, M3), kein Analytics-Dienst, keine Cookies.
+	# 30 Tage Aufbewahrung, wie in der Datenschutzerklärung angegeben
 	log {
 		output file /data/access-app.log {
 			roll_size 20mb
-			roll_keep 5
+			roll_keep 10
+			roll_keep_for 720h
 		}
 		format json
 	}

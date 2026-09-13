@@ -120,15 +120,19 @@ podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;
 - **WebSocket:** `ws://localhost:8888/runtime/session`
 - **Server-Config:** `~/instant/server/resources/config/override.edn`
 
-## Produktion auf Hetzner (InstantDB + PWA + AI-Proxy)
+## Produktion (Infomaniak Public Cloud, wartungsheft.ch)
 
-Alles läuft auf einer VM (2 vCPU, 4 GB RAM reichen für den Start). Drei Bausteine:
+Alles läuft auf einer Instanz in der Infomaniak Public Cloud (OpenStack, Schweiz; Debian 13, 2 vCPU, 4 GB RAM,
+Instanz `wartungsheft`, Domain und Server im selben Infomaniak-Konto, DNS per API). Drei Bausteine:
 
 | Baustein | Woher | Domains |
 |----------|-------|---------|
-| InstantDB (Backend, Dashboard, PostgreSQL, MinIO, Caddy) | Offizieller VPS-Guide: https://www.instantdb.com/docs/self-hosting/vps | `api.`, `dash.`, `files.` |
-| PWA (statisches `dist/`) + AI-Proxy (Repo `ai-proxy`, daneben ausgecheckt) | Dieses Repo, `deploy/docker-compose.yml` | `app.`, `ai.` |
+| InstantDB (Backend, Dashboard, PostgreSQL, MinIO, Caddy) in `/opt/instant` | Offizieller VPS-Guide: https://www.instantdb.com/docs/self-hosting/vps plus `docker-compose.override.yml` | `api.`, `dash.`, `files.` |
+| PWA (statisches `dist/`) + AI-Proxy (Repo `ai-proxy`, daneben ausgecheckt) in `/opt/auto-service` | Dieses Repo, `deploy/` | `wartungsheft.ch` (`www.` und `app.` leiten um), `ai.` |
 | Mistral | Scale-Tier (kein Training), Key liegt nur im AI-Proxy | – |
+
+Es gibt nur **einen Caddy**, den des InstantDB-Stacks: er importiert `deploy/Caddyfile` (`import /etc/caddy/sites/*.caddy`)
+und bekommt `deploy/dist` als `/srv/app` gemountet; der AI-Proxy hängt im Docker-Netz `instant_default`.
 
 > InstantDB Cloud (instantdb.com) nimmt keine neuen Apps mehr an und wird am 31.08.2027 abgeschaltet.
 > Produktion läuft deshalb ausschliesslich self-hosted.
@@ -136,34 +140,50 @@ Alles läuft auf einer VM (2 vCPU, 4 GB RAM reichen für den Start). Drei Bauste
 ### 1. InstantDB nach offiziellem Guide aufsetzen
 
 Dem VPS-Guide folgen (`docker-compose.with-caddy.yml`, `.env` mit `BACKEND_DOMAIN`, `DASHBOARD_DOMAIN`,
-`STORAGE_DOMAIN`). Danach im Dashboard eine App anlegen und notieren: **App-ID** und **Admin-Token**.
-Wichtig aus dem Guide: `JAVA_OPTS=-Xmx2g -Xms2g`, `INSTANT_SUPERUSER_EMAIL` setzen, Dashboard-Signups auf
-"Closed", "Allow temporary app creation" aus, E-Mail-Provider (Postmark/SendGrid/Resend) konfigurieren.
-
-Berechtigungen aus `instant.perms.ts` auf die Instanz pushen:
+`STORAGE_DOMAIN`, generierte Passwörter). Dazu `docker-compose.override.yml` mit `JAVA_OPTS=-Xmx2g -Xms2g`,
+`restart: unless-stopped`, MinIO-Images von `quay.io/minio/*` (auf Docker Hub gibt es `minio/minio` und `minio/mc`
+nicht mehr) und den Caddy-Mounts für `deploy/Caddyfile` und `deploy/dist`. Start und alle weiteren Befehle immer mit
+beiden Compose-Dateien:
 
 ```bash
-INSTANT_CLI_API_URI=https://api.example.ch INSTANT_CLI_DASH_URI=https://dash.example.ch npx instant-cli@latest login
-INSTANT_CLI_API_URI=https://api.example.ch INSTANT_CLI_DASH_URI=https://dash.example.ch npx instant-cli@latest push perms
+cd /opt/instant
+docker compose -f docker-compose.with-caddy.yml -f docker-compose.override.yml --env-file .env up -d
+```
+
+Dann im Dashboard (`dash.`) als `INSTANT_SUPERUSER_EMAIL` anmelden (ohne E-Mail-Provider steht der Code im Server-Log:
+`… logs server | grep postmark/send-disabled`), unter «Deployment Settings» Signups auf **Closed** und «Allow temporary
+app creation» **aus**, App anlegen und notieren: **App-ID** (öffentlich, steht in `.env.production`) und
+**Admin-Token** (nur in `deploy/.env`; alternativ aus der Datenbank: `select token from app_admin_tokens where app_id=…`).
+
+Berechtigungen aus `instant.perms.ts` setzen: `instant-cli push perms` scheitert gegen die eigene Instanz
+(«Record not found: instant-user»), deshalb als JSON im Dashboard unter «Permissions» einfügen:
+
+```bash
+node -e "import('./instant.perms.ts').then(m=>console.log(JSON.stringify(m.default,null,2)))" | wl-copy
 ```
 
 ### 2. PWA bauen
 
 ```bash
-cp .env.example .env   # VITE_INSTANTDB_MODE=selfhosted, VITE_INSTANT_*, VITE_AI_PROXY_URL setzen
-npm run build          # dist/
-rsync -av --delete dist/ user@vm:/opt/auto-service/deploy/dist/
+npm run build          # liest .env.production (Modus selfhosted, App-ID, API-, WS- und Proxy-URL), schreibt dist/
+rsync -az --delete dist/ debian@195.15.207.47:/opt/auto-service/deploy/dist/
 ```
 
-### 3. AI-Proxy + Caddy starten
+Caddy liefert die Dateien direkt aus dem Mount, kein Neustart nötig.
+
+### 3. AI-Proxy starten
 
 ```bash
-# auf der VM, Repo liegt unter /opt/auto-service
-cd /opt/auto-service/deploy
-cp .env.example .env   # Domains, MISTRAL_API_KEY, INSTANT_APP_ID, INSTANT_ADMIN_TOKEN, optional Stripe
+# auf der Instanz, Repos liegen unter /opt/auto-service und /opt/ai-proxy
+cd /opt/auto-service && git pull
+cd deploy
+cp .env.example .env   # einmalig: Domains, MISTRAL_API_KEY, INSTANT_APP_ID, INSTANT_ADMIN_TOKEN, optional Stripe
 docker compose --env-file .env up -d --build
-curl -fsS https://ai.example.ch/health   # {"ok":true}
+curl -fsS https://ai.wartungsheft.ch/health   # {"ok":true}
 ```
+
+Nach Änderungen an `deploy/Caddyfile` den Caddy des InstantDB-Stacks neu laden:
+`cd /opt/instant && docker compose -f docker-compose.with-caddy.yml -f docker-compose.override.yml --env-file .env restart caddy`.
 
 Der Proxy (Repo `ai-proxy`, Hono auf Node 24) hält den Mistral-Key, prüft das InstantDB-Refresh-Token des
 Nutzers per Admin-SDK, reicht `/v1/chat/completions` und `/v1/ocr` durch, zählt Tokens und OCR-Seiten
@@ -180,17 +200,36 @@ Ohne Stripe-Konfiguration antworten `/billing/*` mit 501, alle Nutzer bleiben im
 
 ### 5. Backup
 
+`/opt/backup/backup.sh` läuft täglich um 03:00 per Cron (Nutzer `debian`): `pg_dump -Fc` der Instant-Datenbank und ein
+Tar des MinIO-Volumens nach `/opt/backups`, 14 Tage Aufbewahrung, Log in `/opt/backups/backup.log`.
+
+Wiederherstellung (Stack gestoppt bis auf Postgres):
+
 ```bash
-# InstantDB-Postgres (Container-Name aus dem offiziellen Compose)
-docker exec <postgres-container> pg_dump -U instant instant | gzip > backup_$(date +%Y%m%d).sql.gz
+cd /opt/instant
+C="docker compose -f docker-compose.with-caddy.yml -f docker-compose.override.yml --env-file .env"
+$C stop server www caddy
+$C exec -T postgres dropdb -U instant instant && $C exec -T postgres createdb -U instant instant
+$C exec -T postgres pg_restore -U instant -d instant < /opt/backups/instant-YYYYMMDD.dump
+docker run --rm -v instant_minio_data:/data -v /opt/backups:/b:ro alpine sh -c "cd /data && tar xzf /b/minio-YYYYMMDD.tgz"
+$C up -d
 ```
 
-Täglich per Cron auf eine Hetzner Storage Box kopieren, Restore einmal durchspielen.
+Vor riskanten Änderungen (InstantDB-Upgrade, grössere Migrationen) zusätzlich ein Snapshot der ganzen Instanz vom Laptop aus:
+`openstack --os-cloud PCP-CTPZLR8-dc3-a server image create --name wartungsheft-<grund>-<datum> wartungsheft`.
 
-### 6. Health-Checks
+### 6. Health-Checks und Zahlen für die Validierung
 
-- InstantDB: `curl -fsS https://api.example.ch/health/system` → `{"wal":"ok"}`
-- AI-Proxy: `curl -fsS https://ai.example.ch/health` → `{"ok":true}`
+- InstantDB: `curl -fsS https://api.wartungsheft.ch/health/system` → `{"wal":"ok"}`
+- AI-Proxy: `curl -fsS https://ai.wartungsheft.ch/health` → `{"ok":true}`
+- Besucher der Landing Pages: Caddy-Zugriffslog im Volume `instant_caddy_data` unter `/data/access-app.log` (JSON),
+  Klicks (`events`) und Einträge (`leads`) über die Admin-API mit dem Token aus `deploy/.env`:
+
+```bash
+set -a; . /opt/auto-service/deploy/.env; set +a
+curl -s -X POST https://api.wartungsheft.ch/admin/query -H "Content-Type: application/json" \
+  -H "App-Id: $INSTANT_APP_ID" -H "Authorization: Bearer $INSTANT_ADMIN_TOKEN" -d '{"query":{"leads":{},"events":{}}}'
+```
 
 ## Authentifizierung (Magic Codes via Postmark)
 
@@ -199,18 +238,15 @@ Self-hosted InstantDB nutzt **Postmark** fuer den E-Mail-Versand (kein direktes 
 
 ### Postmark einrichten
 
-1. Account erstellen: https://postmarkapp.com (Free Tier: 100 Mails/Monat)
+1. Account erstellen: https://postmarkapp.com (Free Tier: 100 Mails/Monat). Neue Konten dürfen bis zur
+   Sending-Freigabe nur an die eigene Domain senden, die Freigabe im Postmark-Dashboard beantragen.
 2. Server API Token generieren (Dashboard -> Server -> API Tokens)
-3. Absender-Adresse verifizieren (z.B. `noreply@deine-domain.de`)
+3. Absender-Adresse verifizieren (Produktion: `login@wartungsheft.ch`, siehe `/opt/instant/.env`)
 4. Token in die **InstantDB Server-Config** eintragen (NICHT in auto-service/.env!):
-
-```edn
-;; ~/instant/server/resources/config/override.edn
-{:aead-keyset {...}
- :postmark-token {:plain "dein-postmark-server-api-token"}}
-```
-
-5. InstantDB-Server neu starten
+   - lokal: `~/instant/server/resources/config/override.edn` → `:postmark-token {:plain "…"}`
+   - Produktion: `POSTMARK_TOKEN=…` in `/opt/instant/.env`
+5. InstantDB-Server neu starten (Produktion: `… up -d server`). Bis dahin stehen die Codes im Server-Log
+   (`… logs server | grep postmark/send-disabled`).
 
 ### Magic Code Flow
 

@@ -36,7 +36,7 @@ async function openForm() {
       <div class="hypo-container hypo-header-inner">
         <router-link to="/" class="hypo-logo">
           <i class="pi pi-car" />
-          <span>Auto-Service</span>
+          <span>Wartungsheft</span>
         </router-link>
         <router-link to="/login" class="hypo-login">
           Anmelden

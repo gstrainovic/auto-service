@@ -1,4 +1,4 @@
-# Auto-Service PWA
+# Wartungsheft (Repo auto-service)
 
 Offline-fähige PWA zur Verwaltung von Fahrzeugen, Wartungen und Werkstattrechnungen — mit KI-gestütztem Dokumenten-Scanner und Chat-Assistent.
 

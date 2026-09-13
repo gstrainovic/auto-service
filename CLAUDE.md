@@ -1,4 +1,6 @@
-# Auto-Service PWA
+# Wartungsheft (Repo auto-service)
+
+Produktname «Wartungsheft» (wartungsheft.ch) in allen Texten, Titeln, Manifest und Chat-Prompts; «auto-service» bleibt nur als Repo-, Paket- und Pfadname.
 
 ## Commands
 npm run dev          # Vite dev server + auto-starts InstantDB if not running

@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt'],
       manifest: {
-        name: 'Auto-Service',
-        short_name: 'AutoService',
-        description: 'Auto-Wartung & Rechnungs-Tracker',
+        name: 'Wartungsheft',
+        short_name: 'Wartungsheft',
+        description: 'Werkstattrechnung fotografieren, Service und MFK im Blick',
         theme_color: '#1976D2',
         background_color: '#ffffff',
         display: 'standalone',

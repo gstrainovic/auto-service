@@ -55,7 +55,7 @@ function handleBack() {
     <div class="login-card">
       <div class="login-header">
         <i class="pi pi-car" />
-        <h1>Auto-Service</h1>
+        <h1>Wartungsheft</h1>
       </div>
 
       <Message v-if="error" severity="error" :closable="false">

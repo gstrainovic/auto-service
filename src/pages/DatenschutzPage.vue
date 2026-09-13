@@ -11,7 +11,7 @@ const router = useRouter()
       <div class="legal-container legal-header-inner">
         <router-link to="/" class="legal-logo">
           <i class="pi pi-car" />
-          <span>Auto-Service</span>
+          <span>Wartungsheft</span>
         </router-link>
         <Button label="Zurück" icon="pi pi-arrow-left" text size="small" @click="router.back()" />
       </div>
@@ -107,7 +107,7 @@ const router = useRouter()
 
       <h2>5. KI-gestützte Verarbeitung</h2>
       <p>
-        Auto-Service nutzt einen KI-Dienst zur Extraktion von Daten aus Rechnungsfotos und
+        Wartungsheft nutzt einen KI-Dienst zur Extraktion von Daten aus Rechnungsfotos und
         Dokumenten sowie für den Chat-Assistenten. Dabei werden Bilder, PDFs und
         Chat-Nachrichten an folgenden Anbieter übermittelt:
       </p>
@@ -216,7 +216,7 @@ const router = useRouter()
 
       <h2>10. Cookies</h2>
       <p>
-        Auto-Service verwendet <strong>keine Tracking-Cookies</strong>.
+        Wartungsheft verwendet <strong>keine Tracking-Cookies</strong>.
         Es werden ausschliesslich technisch notwendige Daten im Browser gespeichert
         (localStorage für Einstellungen, IndexedDB für Offline-Daten).
       </p>

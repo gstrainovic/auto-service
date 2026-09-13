@@ -46,7 +46,7 @@ function handleSignOut() {
             aria-label="Menu"
             @click="drawer = !drawer"
           />
-          <span class="app-title">Auto-Service</span>
+          <span class="app-title">Wartungsheft</span>
         </div>
       </header>
 

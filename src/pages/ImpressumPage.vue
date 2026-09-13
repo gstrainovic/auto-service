@@ -11,7 +11,7 @@ const router = useRouter()
       <div class="legal-container legal-header-inner">
         <router-link to="/" class="legal-logo">
           <i class="pi pi-car" />
-          <span>Auto-Service</span>
+          <span>Wartungsheft</span>
         </router-link>
         <Button label="Zurück" icon="pi pi-arrow-left" text size="small" @click="router.back()" />
       </div>
@@ -54,7 +54,7 @@ const router = useRouter()
 
       <h3>KI-gestützte Datenverarbeitung</h3>
       <p>
-        Auto-Service verwendet künstliche Intelligenz zur Extraktion von Daten aus
+        Wartungsheft verwendet künstliche Intelligenz zur Extraktion von Daten aus
         Rechnungen und Dokumenten. Die extrahierten Daten werden dem Nutzer vor dem
         Speichern zur Bestätigung vorgelegt. Für die Richtigkeit der finalen Daten
         ist der Nutzer verantwortlich.

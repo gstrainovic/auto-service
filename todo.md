@@ -24,7 +24,6 @@ Ausführung: Claude. Beim Nutzer bleiben zwei Dinge: Konten bei Drittanbietern a
 
 ### Betrieb, nebenbei
 - [ ] Backups zusätzlich ausserhalb der Instanz ablegen (Object Storage im selben OpenStack-Projekt, eigenes Application Credential nur dafür); Restore einmal nach README durchspielen
-- [ ] Produktname klären: App heisst «Auto-Service», Domain heisst wartungsheft.ch. Entscheid des Inhabers, danach Titel, Manifest, Logo-Text und Landing Pages angleichen
 - [ ] Health-Checks (`api.`/health/system, `ai.`/health) in ein Uptime-Monitoring aufnehmen, sobald ein Pilot läuft
 
 ## Nach dem Entscheid

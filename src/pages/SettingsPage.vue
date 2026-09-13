@@ -82,7 +82,7 @@ async function handleExport(): Promise<void> {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `auto-service-backup-${new Date().toISOString().slice(0, 10)}.json`
+  a.download = `wartungsheft-backup-${new Date().toISOString().slice(0, 10)}.json`
   a.click()
   URL.revokeObjectURL(url)
   toast.add({ severity: 'success', summary: 'Daten exportiert', life: 3000 })

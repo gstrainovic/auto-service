@@ -53,7 +53,7 @@ export interface ChatMessage {
   toolResults?: ToolResult[]
 }
 
-const SYSTEM_PROMPT = `Du bist der Auto-Service Assistent. Du hilfst beim Verwalten von Fahrzeugen und Wartungen.
+const SYSTEM_PROMPT = `Du bist der Wartungsheft-Assistent. Du hilfst beim Verwalten von Fahrzeugen und Wartungen.
 Deine Fähigkeiten:
 - Fahrzeuge anlegen, bearbeiten, löschen
 - Rechnungen und Wartungen eintragen
@@ -148,7 +148,7 @@ Halte deine Antworten kurz und hilfreich.`
 export const WELCOME_MESSAGE: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
-  content: `Hallo! Ich bin dein Auto-Service Assistent. Ich kann dir helfen mit:
+  content: `Hallo! Ich bin dein Wartungsheft-Assistent. Ich kann dir helfen mit:
 
 - **Fahrzeuge verwalten** — anlegen, bearbeiten, löschen
 - **Dokumente scannen** — Rechnungen, Kaufverträge, Fahrzeugscheine, Service-Hefte

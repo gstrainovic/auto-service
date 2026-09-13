@@ -21,7 +21,7 @@ function goToApp() {
       <div class="landing-container landing-header-inner">
         <div class="landing-logo">
           <i class="pi pi-car" />
-          <span>Auto-Service</span>
+          <span>Wartungsheft</span>
         </div>
         <nav class="landing-nav">
           <a href="#features">Features</a>
@@ -281,7 +281,7 @@ function goToApp() {
         <div class="footer-left">
           <div class="landing-logo">
             <i class="pi pi-car" />
-            <span>Auto-Service</span>
+            <span>Wartungsheft</span>
           </div>
           <p>KI-gestützte Fahrzeugwartung. Made in Switzerland.</p>
         </div>

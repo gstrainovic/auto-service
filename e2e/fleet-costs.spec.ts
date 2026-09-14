@@ -49,6 +49,8 @@ test.describe('Fuhrpark-Kosten und Währungsumrechnung', () => {
     const stats = page.locator('.stats-grid')
     await expect(stats).toContainText('CHF 745.00')
     await expect(stats).not.toContainText('EUR')
+    // Fahrzeugkarte rechnet gleich: Fiat 400 + 95 = 495.00, nicht 500 durch 1:1-Addition
+    await expect(page.locator('.vehicle-section', { hasText: 'Fiat Ducato' }).locator('.vehicle-cost')).toHaveText(/CHF 495\.00 · 2 Rechnungen/)
   })
 
   test('FC-002: Fahrzeugseite rechnet EUR in die Heimwährung um', async ({ page }) => {

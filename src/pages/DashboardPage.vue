@@ -145,9 +145,13 @@ function getDueCounts(vehicleId: string): { due: number, total: number } {
   return { due, total: items.length }
 }
 
-function getVehicleTotalCost(vehicleId: string): number {
-  return invoicesStore.getByVehicleId(vehicleId)
-    .reduce((sum, inv) => sum + (inv.totalAmount || 0), 0)
+/** Summe pro Fahrzeug in der Heimwährung, gleiche Basis wie Tabelle und Kachel; ohne Kurs bleibt die Fremdwährung angehängt */
+function getVehicleTotalCost(vehicleId: string): string {
+  const totals: Record<string, number> = {}
+  for (const row of fleetRows.value.filter(r => r.vehicleId === vehicleId))
+    totals[row.currency] = Math.round(((totals[row.currency] || 0) + row.total) * 100) / 100
+  const entries = Object.entries(totals).sort(([a], [b]) => (a === settings.homeCurrency ? -1 : b === settings.homeCurrency ? 1 : 0))
+  return entries.map(([currency, amount]) => formatCurrency(amount, currency)).join(' + ')
 }
 
 function getVehicleInvoiceCount(vehicleId: string): number {
@@ -258,8 +262,8 @@ const totalInvoiceCount = computed(() =>
       </h3>
       <div class="vehicle-subtitle">
         {{ formatNumber(vehicle.mileage) }} km · {{ vehicle.licensePlate }}
-        <span v-if="getVehicleTotalCost(vehicle.id) > 0" class="vehicle-cost">
-          {{ formatCurrency(getVehicleTotalCost(vehicle.id)) }} · {{ getVehicleInvoiceCount(vehicle.id) }} Rechnungen
+        <span v-if="getVehicleInvoiceCount(vehicle.id) > 0" class="vehicle-cost">
+          {{ getVehicleTotalCost(vehicle.id) }} · {{ getVehicleInvoiceCount(vehicle.id) }} Rechnungen
         </span>
         <Badge
           v-if="getDueCounts(vehicle.id).total > 0"

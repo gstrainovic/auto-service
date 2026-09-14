@@ -6,12 +6,15 @@ import Card from 'primevue/card'
 import Message from 'primevue/message'
 import ProgressBar from 'primevue/progressbar'
 import Select from 'primevue/select'
+import ToggleSwitch from 'primevue/toggleswitch'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
+import { userMessage } from '../lib/errors'
 import { db, tx } from '../lib/instantdb'
 import { formatCurrency, formatMonth, formatNumber } from '../lib/locale'
 import { fetchUsage, startCheckout } from '../services/ai-access'
 import { exportDatabase, importDatabase } from '../services/db-export'
+import { useRemindersStore } from '../stores/reminders'
 import { HOME_CURRENCIES, useSettingsStore } from '../stores/settings'
 
 type UsageInfo = Awaited<ReturnType<typeof fetchUsage>>
@@ -30,7 +33,17 @@ const IMPORT_LABELS: Record<string, [singular: string, plural: string]> = {
 }
 
 const settings = useSettingsStore()
+const reminders = useRemindersStore()
 const toast = useToast()
+
+async function toggleEmailReminders(enabled: boolean): Promise<void> {
+  try {
+    await reminders.setEmailReminders(enabled)
+  }
+  catch (err) {
+    toast.add({ severity: 'error', summary: 'Einstellung nicht gespeichert', detail: userMessage(err), life: 4000 })
+  }
+}
 const ocrCacheCount = ref(0)
 const importInput = ref<HTMLInputElement | null>(null)
 
@@ -101,6 +114,7 @@ async function refreshCacheCount(): Promise<void> {
 onMounted(() => {
   refreshCacheCount()
   refreshUsage()
+  reminders.load().catch(err => console.error('[settings] Erinnerungen laden', err))
 })
 
 async function handleExport(): Promise<void> {
@@ -195,6 +209,24 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
           />
           <small class="field-hint">Kostenübersicht und Exporte rechnen fremde Währungen zum EZB-Kurs am Rechnungsdatum in diese Währung um. Rechnungen behalten ihre Originalwährung.</small>
         </div>
+      </template>
+    </Card>
+
+    <Card class="settings-card">
+      <template #title>
+        Erinnerungen
+      </template>
+      <template #content>
+        <div class="form-field toggle-field">
+          <ToggleSwitch
+            :model-value="reminders.emailReminders"
+            input-id="email-reminders"
+            :disabled="!reminders.loaded"
+            @update:model-value="toggleEmailReminders"
+          />
+          <label for="email-reminders">Fällige Wartungen per E-Mail</label>
+        </div>
+        <small class="field-hint">Eine E-Mail an deine Login-Adresse, sobald eine Arbeit bald fällig oder überfällig ist. Unveränderte Erinnerungen höchstens alle 30 Tage.</small>
       </template>
     </Card>
 
@@ -345,6 +377,13 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
 .field-hint {
   color: var(--p-text-muted-color);
   font-size: 0.8rem;
+}
+
+.toggle-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .form-field label {

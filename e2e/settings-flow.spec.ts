@@ -16,6 +16,20 @@ test.describe('Settings Flow', () => {
     await expect(page.locator('input[type="password"]')).toHaveCount(0)
   })
 
+  test('SE-005: E-Mail-Erinnerungen lassen sich abschalten und bleiben nach dem Neuladen aus', async ({ page }) => {
+    await page.goto('/settings')
+    const card = page.locator('.settings-card', { hasText: 'Erinnerungen' })
+    const toggle = card.getByRole('switch')
+    await expect(toggle).toBeChecked()
+    await toggle.click()
+    await expect(toggle).not.toBeChecked()
+    await page.reload()
+    await expect(page.locator('.settings-card', { hasText: 'Erinnerungen' }).getByRole('switch')).not.toBeChecked()
+    await page.locator('.settings-card', { hasText: 'Erinnerungen' }).getByRole('switch').click()
+    await page.reload()
+    await expect(page.locator('.settings-card', { hasText: 'Erinnerungen' }).getByRole('switch')).toBeChecked()
+  })
+
   test('SE-003: default theme is dark', async ({ page }) => {
     // Clear localStorage to simulate first visit
     await page.goto('/settings')

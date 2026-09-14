@@ -165,11 +165,11 @@ node -e "import('./instant.perms.ts').then(m=>console.log(JSON.stringify(m.defau
 ### 2. PWA bauen
 
 ```bash
-npm run build          # liest .env.production (Modus selfhosted, App-ID, API-, WS- und Proxy-URL), schreibt dist/
-rsync -az --delete dist/ debian@195.15.207.47:/opt/auto-service/deploy/dist/
+npm run deploy         # scripts/deploy.sh: build (liest .env.production), build:reminders, rsync dist/ und reminders.mjs, git pull auf der Instanz, Health-Checks
 ```
 
-Caddy liefert die Dateien direkt aus dem Mount, kein Neustart nötig.
+Caddy liefert die Dateien direkt aus dem Mount, kein Neustart nötig. Vorher committen und pushen, weil die Instanz den
+Server-Checkout per `git pull` nachzieht (Compose-Datei, Caddyfile).
 
 ### 3. AI-Proxy starten
 
@@ -200,7 +200,7 @@ Ohne Stripe-Konfiguration antworten `/billing/*` mit 501, alle Nutzer bleiben im
 
 ### 5. Backup
 
-`/opt/backup/backup.sh` läuft täglich um 03:00 per Cron (Nutzer `debian`): `pg_dump -Fc` der Instant-Datenbank und ein
+`/opt/backup/backup.sh` läuft täglich um 03:00 per Cron (`/etc/cron.d/wartungsheft-backup`, Nutzer `debian`): `pg_dump -Fc` der Instant-Datenbank und ein
 Tar des MinIO-Volumens nach `/opt/backups`, 14 Tage Aufbewahrung, Log in `/opt/backups/backup.log`. Dasselbe Skript
 kürzt das Caddy-Zugriffslog der PWA auf 30 Tage (Datenschutzerklärung), weil Caddy nur nach Grösse rotiert.
 
@@ -230,6 +230,27 @@ Vor riskanten Änderungen (InstantDB-Upgrade, grössere Migrationen) zusätzlich
 set -a; . /opt/auto-service/deploy/.env; set +a
 curl -s -X POST https://api.wartungsheft.ch/admin/query -H "Content-Type: application/json" \
   -H "App-Id: $INSTANT_APP_ID" -H "Authorization: Bearer $INSTANT_ADMIN_TOKEN" -d '{"query":{"leads":{},"events":{}}}'
+```
+
+### 7. E-Mail-Erinnerungen
+
+Täglich um 07:00 UTC (`/etc/cron.d/wartungsheft-reminders`, Nutzer `debian`) läuft der Container `reminders` aus
+`deploy/docker-compose.yml` (Profil `jobs`, Node 24 LTS, Skript `deploy/reminders.mjs` = Bündel von `scripts/reminders.ts`):
+
+- liest `$users`, `vehicles`, `maintenances`, `settings` über die Admin-API,
+- rechnet die Fälligkeit wie das Dashboard (`src/services/maintenance-schedule.ts`, nur `status === 'done'`),
+- sendet pro Nutzer mit fälligen oder überfälligen Arbeiten eine Text-Mail über Resend
+  (`Wartungsheft <erinnerung@wartungsheft.ch>`, Token `RESEND_TOKEN` in `deploy/.env`),
+- merkt sich in `settings` (`lastReminderKey`, `lastReminderAt`), was gesendet wurde: unveränderte Erinnerungen
+  frühestens nach 30 Tagen erneut, neue oder andere Arbeiten sofort.
+
+Abschalten pro Nutzer in den Einstellungen («Erinnerungen»), Feld `settings.emailReminders = false`.
+Log: `/opt/auto-service/deploy/reminders.log`. Manuell:
+
+```bash
+cd /opt/auto-service/deploy
+docker compose --env-file .env --profile jobs run --rm reminders node /app/reminders.mjs --dry-run   # zeigt Mails, sendet nichts
+docker compose --env-file .env --profile jobs run --rm reminders node /app/reminders.mjs --only=<email>
 ```
 
 ## Authentifizierung (Magic Codes via Resend)

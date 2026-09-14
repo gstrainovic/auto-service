@@ -62,9 +62,11 @@ export async function clearInstantDB(page: Page) {
       ocrcache: {},
       usage: {},
       subscriptions: {},
+      settings: {},
     })
-
     const txs: any[] = []
+    for (const s of result.data.settings || [])
+      txs.push(tx.settings[s.id].delete())
     for (const v of result.data.vehicles || [])
       txs.push(tx.vehicles[v.id].delete())
     for (const i of result.data.invoices || [])

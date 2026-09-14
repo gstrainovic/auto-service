@@ -25,6 +25,23 @@ services:
     networks:
       - instant
 
+  # Erinnerungs-Job (E-Mail bei fälligen Arbeiten, scripts/reminders.ts gebündelt nach ./reminders.mjs).
+  # Kein Dauerdienst: Cron auf der Instanz ruft täglich `docker compose --env-file .env --profile jobs run --rm reminders`.
+  reminders:
+    # Node 24 = aktuelles LTS, dieselbe Linie wie der AI-Proxy
+    image: node:24-alpine
+    profiles: [jobs]
+    volumes:
+      - ./reminders.mjs:/app/reminders.mjs:ro
+    environment:
+      INSTANT_API_URI: ${INSTANT_API_URI}
+      INSTANT_APP_ID: ${INSTANT_APP_ID}
+      INSTANT_ADMIN_TOKEN: ${INSTANT_ADMIN_TOKEN}
+      RESEND_TOKEN: ${RESEND_TOKEN}
+    command: node /app/reminders.mjs
+    networks:
+      - instant
+
 networks:
   # Netz des InstantDB-Stacks, damit dessen Caddy `ai-proxy:8787` erreicht
   instant:

@@ -180,6 +180,10 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
   ohne `Date`-Zeitzonen (`addMonths` mit Tagesklammerung).
 - Fehler an Nutzer nur über `userMessage` in `src/lib/errors.ts` (402/429/Netz/Auth in deutsche Sätze; die Limit-Meldung
   des ai-proxy geht unverändert durch, sie nennt Kontingent und Plan). Technische Details nur in der Konsole.
+- E-Mail-Erinnerungen: reine Logik in `src/services/reminders.ts` (pro Nutzer eine Mail mit `due`/`overdue`, Schlüssel
+  gegen Wiederholung, 30 Tage), Server-Job `scripts/reminders.ts` (Admin-API + Resend, gebündelt nach
+  `deploy/reminders.mjs`, Cron auf der Instanz, README «7. E-Mail-Erinnerungen»), Nutzer-Schalter im Store
+  `src/stores/reminders.ts` (Entität `settings`, ein Dokument pro `creatorId`, fehlt = eingeschaltet).
 - Löschen kaskadiert: Fahrzeug über `vehiclesStore.removeWithRelated` (Rechnungen und Wartungen mit), Rechnung löscht
   ihre Wartungen über `invoiceId`; Wartungen aus `add_invoice` tragen die `invoiceId`.
 - Kostentabelle: `total` ist der Rechnungsbetrag (brutto), Positionen sind oft netto; die Differenz erscheint als Kategorie

@@ -226,7 +226,7 @@ function goToApp() {
             <ul class="pricing-features">
               <li><i class="pi pi-check" /> 5 Fahrzeuge</li>
               <li><i class="pi pi-check" /> Unbegrenzte Scans</li>
-              <li><i class="pi pi-check" /> Push-Erinnerungen</li>
+              <li><i class="pi pi-check" /> E-Mail-Erinnerungen</li>
               <li><i class="pi pi-check" /> PDF-Export</li>
               <li><i class="pi pi-check" /> E-Mail-Support</li>
             </ul>

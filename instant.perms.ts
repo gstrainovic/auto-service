@@ -57,6 +57,19 @@ const rules = {
       isOwner: 'auth.id != null && auth.id == data.creatorId',
     },
   },
+  // Nutzereinstellungen (E-Mail-Erinnerungen); der Erinnerungs-Job schreibt per Admin-Token lastReminderAt/Key
+  settings: {
+    allow: {
+      view: 'isOwner',
+      create: 'isOwner',
+      update: 'isOwner && isStillOwner',
+      delete: 'isOwner',
+    },
+    bind: {
+      isOwner: 'auth.id != null && auth.id == data.creatorId',
+      isStillOwner: 'auth.id != null && auth.id == newData.creatorId',
+    },
+  },
   // Nutzungszähler und Abos: schreibt nur der AI-Proxy (Admin-SDK), Nutzer lesen nur ihre eigenen
   usage: {
     allow: {

@@ -17,7 +17,10 @@ test.describe('Dashboard Progress', () => {
     // READ - Dashboard zeigt Progress (dueMap wird async berechnet)
     await page.goto('/')
     await expect(page.locator('.vehicle-progress')).toBeVisible({ timeout: 10_000 })
-    await expect(page.getByText(/\d+\/\d+ fällig/)).toBeVisible({ timeout: 10_000 })
+    // Ohne Einträge ist nichts fällig, die Intervalle stehen neutral auf «Kein Eintrag»
+    await expect(page.getByText('0/9 fällig')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText('Kein Eintrag').first()).toBeVisible()
+    await expect(page.getByText('Fällig', { exact: true })).toHaveCount(0)
 
     // DELETE
     await page.goto('/vehicles')

@@ -51,6 +51,33 @@ describe('checkDueMaintenances', () => {
     expect(labels).toMatchObject({ fahrwerk: 'Fahrwerk', kuehlung: 'Kühlung', auspuff: 'Auspuff', autoglas: 'Autoglas', tuev: 'MFK / Prüfung' })
   })
 
+  it('meldet Intervalle ohne jeden Eintrag als «unknown», nicht als fällig', () => {
+    const result = checkDueMaintenances({ currentMileage: 50000, schedule, lastMaintenances: [] })
+    expect(result.every(r => r.status === 'unknown')).toBe(true)
+    expect(result.find(r => r.type === 'zahnriemen')!.lastDoneAt).toBeUndefined()
+  })
+
+  it('unterscheidet erledigt, bald fällig und überfällig', () => {
+    const iso = (d: Date) => d.toISOString().slice(0, 10)
+    const daysAgo = (n: number) => iso(new Date(Date.now() - n * 86_400_000))
+    const result = checkDueMaintenances({
+      currentMileage: 100000,
+      schedule,
+      lastMaintenances: [
+        // Ölwechsel: 15'000 km / 12 Monate. Vor 1 Monat bei 99'500 km → weit weg → done
+        { type: 'oelwechsel', doneAt: daysAgo(30), mileageAtService: 99500 },
+        // Inspektion: 30'000 km / 24 Monate. Vor 2 Monaten, nächste bei 100'800 km, also in 800 km → due (bald)
+        { type: 'inspektion', doneAt: daysAgo(60), mileageAtService: 70800 },
+        // Bremsen: 30'000 km / 24 Monate. Vor 23.5 Monaten → Termin in ~2 Wochen → due (bald)
+        { type: 'bremsen', doneAt: daysAgo(700), mileageAtService: 99000 },
+        // Reifen: 40'000 km / 48 Monate. Vor 5 Jahren → overdue
+        { type: 'reifen', doneAt: daysAgo(5 * 365), mileageAtService: 90000 },
+      ],
+    })
+    const byType = Object.fromEntries(result.map(r => [r.type, r.status]))
+    expect(byType).toMatchObject({ oelwechsel: 'done', inspektion: 'due', bremsen: 'due', reifen: 'overdue' })
+  })
+
   it('lässt den Kilometerstand weg, wenn er fehlt oder 0 ist', () => {
     const result = checkDueMaintenances({
       currentMileage: 1,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { RateMap } from '../services/fx'
-import type { DueResult } from '../services/maintenance-schedule'
+import type { DueResult, DueStatus } from '../services/maintenance-schedule'
 import type { CurrencyOptions } from '../services/report'
 import type { Maintenance } from '../stores/maintenances'
 import Badge from 'primevue/badge'
@@ -107,42 +107,52 @@ async function deleteMaintenance(vehicleId: string, type: string) {
   await computeDue()
 }
 
-function getStatusIcon(status: string): string {
+function getStatusIcon(status: DueStatus): string {
   if (status === 'overdue')
     return 'pi pi-exclamation-triangle'
   if (status === 'due')
     return 'pi pi-clock'
+  if (status === 'unknown')
+    return 'pi pi-question-circle'
   return 'pi pi-check-circle'
 }
 
-function getStatusColor(status: string): string {
+function getStatusColor(status: DueStatus): string {
   if (status === 'overdue')
     return 'var(--p-red-500)'
   if (status === 'due')
     return 'var(--p-yellow-500)'
+  if (status === 'unknown')
+    return 'var(--p-text-muted-color)'
   return 'var(--p-green-500)'
 }
 
-function getStatusSeverity(status: string): 'danger' | 'warn' | 'success' {
+function getStatusSeverity(status: DueStatus): 'danger' | 'warn' | 'success' | 'secondary' {
   if (status === 'overdue')
     return 'danger'
   if (status === 'due')
     return 'warn'
+  if (status === 'unknown')
+    return 'secondary'
   return 'success'
 }
 
-function getStatusLabel(status: string): string {
+function getStatusLabel(status: DueStatus): string {
   if (status === 'overdue')
     return 'Überfällig'
   if (status === 'due')
-    return 'Fällig'
+    return 'Bald fällig'
+  if (status === 'unknown')
+    return 'Kein Eintrag'
   return 'OK'
 }
 
+/** Zähler im Badge: fällige und überfällige Arbeiten gegenüber allen Intervallen (ohne erledigte Arbeiten ausserhalb des Plans) */
 function getDueCounts(vehicleId: string): { due: number, total: number } {
   const items = dueMap.value[vehicleId] || []
   const due = items.filter(i => i.status === 'due' || i.status === 'overdue').length
-  return { due, total: items.length }
+  const total = items.filter(i => i.status === 'unknown' || i.nextDueDate !== undefined).length
+  return { due, total }
 }
 
 /** Summe pro Fahrzeug in der Heimwährung, gleiche Basis wie Tabelle und Kachel; ohne Kurs bleibt die Fremdwährung angehängt */

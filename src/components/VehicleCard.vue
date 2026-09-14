@@ -33,6 +33,7 @@ onMounted(async () => {
       schedule,
     })
 
+    // «unknown» (kein Eintrag) zählt nicht als fällig
     if (dueItems.some(i => i.status === 'overdue')) {
       maintenanceStatus.value = 'overdue'
     }
@@ -58,7 +59,7 @@ const statusLabel = computed(() => {
   if (maintenanceStatus.value === 'overdue')
     return 'Überfällig'
   if (maintenanceStatus.value === 'due')
-    return 'Fällig'
+    return 'Bald fällig'
   return 'OK'
 })
 

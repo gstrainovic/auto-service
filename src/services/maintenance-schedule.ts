@@ -15,10 +15,17 @@ export interface LastMaintenance {
   doneAt: string
 }
 
+/** done = erledigt und nicht bald fällig, due = innerhalb der Vorwarnung, overdue = überschritten, unknown = kein Eintrag vorhanden */
+export type DueStatus = 'done' | 'due' | 'overdue' | 'unknown'
+
+/** Vorwarnung: so viele Tage oder Kilometer vor dem Termin gilt eine Arbeit als «bald fällig» */
+export const DUE_SOON_DAYS = 30
+export const DUE_SOON_KM = 1000
+
 export interface DueResult {
   type: string
   label: string
-  status: 'done' | 'due' | 'overdue'
+  status: DueStatus
   lastDoneAt?: string
   lastMileage?: number
   nextDueDate?: string
@@ -79,7 +86,7 @@ export function checkDueMaintenances(params: {
       return {
         type: item.type,
         label: item.label,
-        status: 'due' as const,
+        status: 'unknown' as const,
       }
     }
 
@@ -92,11 +99,14 @@ export function checkDueMaintenances(params: {
 
     const overdueByKm = nextDueMileage !== undefined && currentMileage >= nextDueMileage
     const overdueByDate = now >= nextDueDate
+    const soonByKm = nextDueMileage !== undefined && currentMileage >= nextDueMileage - DUE_SOON_KM
+    const soonByDate = now.getTime() >= nextDueDate.getTime() - DUE_SOON_DAYS * 86_400_000
 
-    let status: 'done' | 'due' | 'overdue' = 'done'
-    if (overdueByKm || overdueByDate) {
+    let status: DueStatus = 'done'
+    if (overdueByKm || overdueByDate)
       status = 'overdue'
-    }
+    else if (soonByKm || soonByDate)
+      status = 'due'
 
     return {
       type: item.type,

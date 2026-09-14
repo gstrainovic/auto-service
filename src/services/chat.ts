@@ -312,7 +312,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
     }),
 
     get_maintenance_status: tool({
-      description: 'Prüft den Wartungsstatus eines Fahrzeugs - was ist fällig, überfällig oder erledigt',
+      description: 'Prüft den Wartungsstatus eines Fahrzeugs. Status je Arbeit: done (erledigt), due (bald fällig, innerhalb 30 Tagen oder 1000 km), overdue (überfällig), unknown (kein Eintrag vorhanden, nicht als fällig werten)',
       inputSchema: z.object({
         vehicleId: z.string().describe('Fahrzeug-ID'),
       }),

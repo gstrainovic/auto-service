@@ -9,6 +9,9 @@ interface AuthUser {
 const user = ref<AuthUser | null>(null)
 const isLoading = ref(true)
 
+/** Name des Google-OAuth-Clients im Instant-Dashboard (Auth → Google) */
+export const GOOGLE_CLIENT_NAME = 'google-web'
+
 // Promise das resolved wenn Auth-State zum ersten Mal bekannt ist
 let authReadyResolve: () => void
 const authReady = new Promise<void>((resolve) => {
@@ -62,6 +65,18 @@ export function useAuth() {
     db.auth.signOut()
   }
 
+  /**
+   * Google-Login über den Redirect-Flow von InstantDB: Link auf /runtime/oauth/start des eigenen Backends,
+   * Google authentifiziert, das Backend legt die Session an und leitet auf redirectURL zurück.
+   * Der Client heisst im Instant-Dashboard (Auth → Google) `google-web`.
+   */
+  function googleAuthUrl(): string {
+    return db.auth.createAuthorizationURL({
+      clientName: GOOGLE_CLIENT_NAME,
+      redirectURL: `${window.location.origin}/dashboard`,
+    })
+  }
+
   return {
     user: readonly(user),
     isLoading: readonly(isLoading),
@@ -69,5 +84,6 @@ export function useAuth() {
     sendMagicCode,
     signInWithMagicCode,
     signOut,
+    googleAuthUrl,
   }
 }

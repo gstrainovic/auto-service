@@ -5,7 +5,8 @@ import Message from 'primevue/message'
 import { ref } from 'vue'
 import { useAuth } from '../composables/useAuth'
 
-const { sendMagicCode, signInWithMagicCode } = useAuth()
+const { sendMagicCode, signInWithMagicCode, googleAuthUrl } = useAuth()
+const googleUrl = googleAuthUrl()
 
 const email = ref('')
 const code = ref('')
@@ -84,6 +85,18 @@ function handleBack() {
           :loading="loading"
           fluid
         />
+        <div class="login-divider">
+          <span>oder</span>
+        </div>
+        <Button
+          as="a"
+          :href="googleUrl"
+          label="Mit Google anmelden"
+          icon="pi pi-google"
+          severity="secondary"
+          outlined
+          fluid
+        />
       </form>
 
       <!-- Step 2: Code eingeben -->
@@ -145,6 +158,22 @@ function handleBack() {
 .login-header {
   text-align: center;
   margin-bottom: 1.5rem;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.85rem;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--p-surface-border);
 }
 
 .login-header i {

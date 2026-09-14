@@ -29,7 +29,7 @@ const router = useRouter()
         Strainovic IT (Einzelfirma)<br>
         9323 Steinach<br>
         Schweiz<br>
-        E-Mail: <a href="mailto:info@strainovic-it.ch">info@strainovic-it.ch</a>
+        E-Mail: <a href="mailto:info@wartungsheft.ch">info@wartungsheft.ch</a>
       </p>
 
       <h2>2. Grundsatz</h2>

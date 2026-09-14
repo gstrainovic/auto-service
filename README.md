@@ -242,7 +242,8 @@ T채glich um 07:00 UTC (`/etc/cron.d/wartungsheft-reminders`, Nutzer `debian`) l�
 - liest `$users`, `vehicles`, `maintenances`, `settings` 체ber die Admin-API,
 - rechnet die F채lligkeit wie das Dashboard (`src/services/maintenance-schedule.ts`, nur `status === 'done'`),
 - sendet pro Nutzer mit f채lligen oder 체berf채lligen Arbeiten eine Text-Mail 체ber Resend
-  (`Wartungsheft <erinnerung@wartungsheft.ch>`, Token `RESEND_TOKEN` in `deploy/.env`),
+  (`Wartungsheft <erinnerung@wartungsheft.ch>`, Antwortadresse `info@wartungsheft.ch`, das Infomaniak-Postfach;
+  Token `RESEND_TOKEN` in `deploy/.env`),
 - merkt sich in `settings` (`lastReminderKey`, `lastReminderAt`), was gesendet wurde: unver채nderte Erinnerungen
   fr체hestens nach 30 Tagen erneut, neue oder andere Arbeiten sofort.
 

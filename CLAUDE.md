@@ -109,6 +109,8 @@ podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;
 - Apple («Sign in with Apple», 99 USD/Jahr Apple Developer Program) und GitHub bewusst nicht eingebaut.
 
 ### Auth (Magic Codes via Resend)
+- Kontaktadresse des Produkts ist `info@wartungsheft.ch` (Infomaniak-Postfach, Impressum, Datenschutz, Einstellungen,
+  Antwortadresse der Erinnerungen); Claude liest und schreibt dort mit `~/.local/bin/mailbox wartungsheft …`.
 - Produktion sendet über **Resend** (Region eu-west-1, Absender `login@wartungsheft.ch`); `RESEND_TOKEN` steht in
   `/opt/instant/.env`, NICHT in auto-service/.env. Lokal ohne Token: Codes stehen im Server-Log
   (`docker compose … logs server | grep postmark/send-disabled`, der Log-Name stammt aus dem Postmark-Erbe).

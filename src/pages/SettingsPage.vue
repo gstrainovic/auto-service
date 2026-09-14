@@ -35,7 +35,7 @@ const IMPORT_LABELS: Record<string, [singular: string, plural: string]> = {
 // Upgrade-Buttons nur mit konfiguriertem Zahlungsanbieter (VITE_BILLING_ENABLED=true beim Build). Bis dahin
 // zahlen die ersten Kunden per Jahresrechnung, Kontakt statt Checkout.
 const billingEnabled = import.meta.env.VITE_BILLING_ENABLED === 'true'
-const CONTACT_EMAIL = 'info@strainovic-it.ch'
+const CONTACT_EMAIL = 'info@wartungsheft.ch'
 
 const settings = useSettingsStore()
 const reminders = useRemindersStore()

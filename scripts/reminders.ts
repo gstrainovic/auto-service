@@ -17,6 +17,8 @@ const APP_ID = process.env.INSTANT_APP_ID ?? ''
 const ADMIN_TOKEN = process.env.INSTANT_ADMIN_TOKEN ?? ''
 const RESEND_TOKEN = process.env.RESEND_TOKEN ?? ''
 const FROM = process.env.REMINDER_FROM ?? 'Wartungsheft <erinnerung@wartungsheft.ch>'
+/** Antworten landen im Postfach info@wartungsheft.ch (Infomaniak), nicht bei Resend */
+const REPLY_TO = process.env.REMINDER_REPLY_TO ?? 'info@wartungsheft.ch'
 
 const dryRun = process.argv.includes('--dry-run')
 const only = process.argv.find(a => a.startsWith('--only='))?.slice('--only='.length)
@@ -40,7 +42,7 @@ async function sendMail(to: string, subject: string, text: string): Promise<void
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${RESEND_TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: FROM, to: [to], subject, text }),
+    body: JSON.stringify({ from: FROM, to: [to], reply_to: REPLY_TO, subject, text }),
   })
   if (!res.ok)
     throw new Error(`Resend: ${res.status} ${await res.text()}`)

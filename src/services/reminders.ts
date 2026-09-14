@@ -140,7 +140,7 @@ export function buildReminders(input: {
       'Die Intervalle sind Standardwerte, solange kein Serviceheft hinterlegt ist. Erledigte Arbeiten trägst du im',
       'Wartungsheft ein, dann verschwindet die Erinnerung.',
       '',
-      `Keine Erinnerungen mehr: ${APP_URL}/settings, Abschnitt «Erinnerungen».`,
+      `Fragen? Einfach auf diese Mail antworten. Keine Erinnerungen mehr: ${APP_URL}/settings, Abschnitt «Erinnerungen».`,
       '',
       'Wartungsheft, ein Angebot von Strainovic IT, Steinach',
     ].join('\n')

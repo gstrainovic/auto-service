@@ -30,7 +30,7 @@ const router = useRouter()
         Schweiz
       </p>
       <p>
-        E-Mail: <a href="mailto:info@strainovic-it.ch">info@strainovic-it.ch</a>
+        E-Mail: <a href="mailto:info@wartungsheft.ch">info@wartungsheft.ch</a>
       </p>
 
       <h3>Vertretungsberechtigte Person</h3>

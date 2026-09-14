@@ -36,18 +36,18 @@ test.describe('Kosten und Export', () => {
     await page.goto(`/vehicles/${vehicleId}`)
     await page.getByRole('tab', { name: 'Kosten' }).click()
 
+    // Jahre als Spalten (neuestes zuerst), Kategorien als Zeilen, Total-Zeile und Total-Spalte
     const table = page.getByRole('table', { name: 'Kosten pro Jahr' })
     await expect(table).toBeVisible()
-    const row2026 = table.getByRole('row').filter({ hasText: '2026' })
-    await expect(row2026).toContainText('CHF 890.50')
-    const row2025 = table.getByRole('row').filter({ hasText: '2025' })
-    await expect(row2025).toContainText('CHF 480.00')
-    await expect(row2025).toContainText('180.00')
-    await expect(row2025).toContainText('300.00')
-    // Kategorien stehen in der Kopfzeile
-    await expect(table.getByRole('columnheader', { name: 'Ölwechsel' })).toBeVisible()
-    await expect(table.getByRole('columnheader', { name: 'Bremsen' })).toBeVisible()
-    await expect(table.getByRole('columnheader', { name: 'Reifen' })).toBeVisible()
+    const headers = table.getByRole('columnheader')
+    await expect(headers.nth(1)).toHaveText(/2026/)
+    await expect(headers.nth(2)).toHaveText(/2025/)
+    await expect(table.getByRole('row').filter({ hasText: 'Ölwechsel' })).toContainText('180.00')
+    await expect(table.getByRole('row').filter({ hasText: 'Bremsen' })).toContainText('300.00')
+    await expect(table.getByRole('row').filter({ hasText: 'Reifen' })).toContainText('890.50')
+    const total = table.locator('tr.costs-total-row')
+    await expect(total).toContainText('CHF 890.50')
+    await expect(total).toContainText('CHF 480.00')
     await expect(page.getByText('Gesamt CHF 1\'370.50')).toBeVisible()
   })
 

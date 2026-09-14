@@ -236,7 +236,16 @@ const currencyOpts = computed<CurrencyOptions>(() => ({ homeCurrency: settings.h
 const yearCosts = computed(() => costsByYear(vehicleInvoices.value, currencyOpts.value))
 const convertedCount = computed(() => yearCosts.value.reduce((n, r) => n + r.converted, 0))
 const unconvertedCount = computed(() => yearCosts.value.reduce((n, r) => n + r.unconverted, 0))
-const costCategories = computed(() => [...new Set(yearCosts.value.flatMap(r => Object.keys(r.byCategory)))])
+// Tabelle transponiert: Jahre als Spalten (wenige), Kategorien als Zeilen (viele), sortiert nach Gesamtbetrag
+const costCategories = computed(() => {
+  const sums = new Map<string, number>()
+  for (const r of yearCosts.value) {
+    for (const [cat, amount] of Object.entries(r.byCategory))
+      sums.set(cat, (sums.get(cat) ?? 0) + amount)
+  }
+  return [...sums.entries()].sort((a, b) => b[1] - a[1]).map(([cat, total]) => ({ cat, total: Math.round(total * 100) / 100 }))
+})
+const singleCurrency = computed(() => new Set(yearCosts.value.map(r => r.currency)).size <= 1)
 const grandTotals = computed(() => {
   const totals: Record<string, number> = {}
   for (const r of yearCosts.value)
@@ -446,23 +455,32 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
               <table class="costs-table" aria-label="Kosten pro Jahr">
                 <thead>
                   <tr>
-                    <th>Jahr</th>
-                    <th v-for="c in costCategories" :key="c" class="num">
-                      {{ categoryLabel(c) }}
+                    <th>Kategorie</th>
+                    <th v-for="r in yearCosts" :key="`${r.year}-${r.currency}`" class="num">
+                      {{ r.year }} <span class="costs-currency">{{ r.currency }}</span>
                     </th>
-                    <th class="num">
+                    <th v-if="singleCurrency" class="num">
                       Total
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="r in yearCosts" :key="`${r.year}-${r.currency}`">
-                    <td>{{ r.year }} <span class="costs-currency">{{ r.currency }}</span></td>
-                    <td v-for="c in costCategories" :key="c" class="num">
-                      {{ r.byCategory[c] === undefined ? '' : formatNumber(r.byCategory[c], 2) }}
+                  <tr v-for="c in costCategories" :key="c.cat">
+                    <td>{{ categoryLabel(c.cat) }}</td>
+                    <td v-for="r in yearCosts" :key="`${r.year}-${r.currency}`" class="num">
+                      {{ r.byCategory[c.cat] === undefined ? '' : formatNumber(r.byCategory[c.cat], 2) }}
                     </td>
-                    <td class="num costs-total">
+                    <td v-if="singleCurrency" class="num">
+                      {{ formatNumber(c.total, 2) }}
+                    </td>
+                  </tr>
+                  <tr class="costs-total-row">
+                    <td>Total</td>
+                    <td v-for="r in yearCosts" :key="`${r.year}-${r.currency}`" class="num costs-total">
                       {{ formatCurrency(r.total, r.currency) }}
+                    </td>
+                    <td v-if="singleCurrency" class="num costs-total">
+                      {{ grandTotals }}
                     </td>
                   </tr>
                 </tbody>
@@ -719,7 +737,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
 <style scoped>
 .page-container {
   padding: 1rem;
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -1023,6 +1041,18 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
 
 .costs-table .costs-total {
   font-weight: 600;
+}
+
+.costs-table .costs-total-row td {
+  border-top: 2px solid var(--p-surface-border);
+  border-bottom: none;
+  font-weight: 600;
+}
+
+.costs-table th:first-child,
+.costs-table td:first-child {
+  width: 1%;
+  padding-right: 1.5rem;
 }
 
 .costs-currency {

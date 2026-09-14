@@ -174,9 +174,11 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Währung und Zahlenformat nur über `src/lib/locale.ts` (CHF, `1'234.50`, bewusst ohne Intl, weil Browser und Node für de-CH
   verschiedene Apostrophe liefern). Rechnungen behalten ihre erkannte Währung, Summen bleiben pro Währung getrennt.
 - Auswertungen und Exporte: `src/services/report.ts` (Kosten pro Jahr und Kategorie, Fuhrpark pro Fahrzeug und Jahr, CSV mit
-  BOM und Semikolon für Excel de-CH, reine Funktionen) und `src/services/pdf-report.ts` (jsPDF + jspdf-autotable, Dossier mit
-  Stammdaten, Wartungen, Kosten, Rechnungen). UI: Tab «Kosten» auf der Fahrzeugseite, Fuhrpark-Tabelle auf dem Dashboard,
-  Downloads über Blob-Links; E2E `report-export.spec.ts` und `fleet-costs.spec.ts` prüfen Tabellen und Dateien.
+  BOM und Semikolon für Excel de-CH, reine Funktionen) und `src/services/pdf-report.ts` (jsPDF + jspdf-autotable; Dossier pro
+  Fahrzeug mit Stammdaten, Wartungen, Kosten, Rechnungen; Fuhrpark-Übersicht = Übersichtsseite plus dieselben Abschnitte je
+  Fahrzeug über `renderVehicle`). UI: Tab «Kosten» auf der Fahrzeugseite (CSV, PDF-Dossier), Fuhrpark-Tabelle auf dem
+  Dashboard (CSV, PDF-Übersicht), Downloads über Blob-Links; E2E `report-export.spec.ts` und `fleet-costs.spec.ts` prüfen
+  Tabellen und Dateien.
 - Fremde Währungen: `src/services/fx.ts` holt EZB-Referenzkurse zum Rechnungsdatum von `api.frankfurter.dev` (kein Schlüssel,
   Cache im localStorage) und rechnet in die Heimwährung aus den Einstellungen um (`settings.homeCurrency`, CHF oder EUR).
   Ohne Kurs bleibt die Rechnung in ihrer Währung, sichtbar als «nicht umgerechnet». In E2E-Tests die API mit `page.route`

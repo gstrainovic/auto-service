@@ -71,6 +71,18 @@ test.describe('Fuhrpark-Kosten und Währungsumrechnung', () => {
     expect(text).toContain('VW Caddy;SG 2;2025-11-02;Pneu Egger;;Reifen;Winterreifen;250.00;CHF;250.00;1')
   })
 
+  test('FC-006: PDF-Übersicht über alle Fahrzeuge wird als Datei geladen', async ({ page }) => {
+    await seedFleet(page)
+    await page.goto('/dashboard')
+    const download = page.waitForEvent('download')
+    await page.getByRole('button', { name: 'PDF-Übersicht, alle Fahrzeuge' }).click()
+    const file = await download
+    expect(file.suggestedFilename()).toMatch(/^wartungsheft-alle-fahrzeuge-\d{4}-\d{2}-\d{2}\.pdf$/)
+    const bytes = await (await file.createReadStream()).toArray().then(chunks => Buffer.concat(chunks as Buffer[]))
+    expect(bytes.subarray(0, 5).toString()).toBe('%PDF-')
+    expect(bytes.length).toBeGreaterThan(3000)
+  })
+
   test('FC-005: Fahrzeugseite zeigt nur die eigenen Rechnungen und Kosten', async ({ page }) => {
     const { v2 } = await seedFleet(page)
     await page.goto(`/vehicles/${v2}`)

@@ -2,6 +2,7 @@
 import type { RateMap } from '../services/fx'
 import type { DueResult } from '../services/maintenance-schedule'
 import type { CurrencyOptions } from '../services/report'
+import type { Maintenance } from '../stores/maintenances'
 import Badge from 'primevue/badge'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
@@ -13,7 +14,7 @@ import { db, tx } from '../lib/instantdb'
 import { formatCurrency, formatNumber, normalizeCurrency } from '../lib/locale'
 import { resolveRates } from '../services/fx'
 import { checkDueMaintenances, getMaintenanceSchedule } from '../services/maintenance-schedule'
-import { dossierFilename } from '../services/pdf-report'
+import { buildFleetReport, fleetReportFilename } from '../services/pdf-report'
 import { fleetCostsByVehicleYear, invoicesToCsvRows } from '../services/report'
 import { useInvoicesStore } from '../stores/invoices'
 import { useSettingsStore } from '../stores/settings'
@@ -49,19 +50,29 @@ const fleetConverted = computed(() => foreignInvoices.value.filter(i => rates.va
 const fleetUnconverted = computed(() => foreignInvoices.value.length - fleetConverted.value)
 const foreignCurrencies = computed(() => [...new Set(foreignInvoices.value.map(i => normalizeCurrency(i.currency)))].join(', '))
 
+function saveFile(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 function exportFleetCsv(): void {
   const byId = new Map(vehiclesStore.vehicles.map(v => [v.id, v]))
   const entries = invoicesStore.invoices
     .filter(inv => byId.has(inv.vehicleId))
     .map(inv => ({ inv, vehicle: byId.get(inv.vehicleId)! }))
   const csv = invoicesToCsvRows(entries, currencyOpts.value)
-  const name = dossierFilename({ make: 'alle', model: 'Fahrzeuge', licensePlate: '' }).replace(/\.pdf$/, '.csv')
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
-  const a = document.createElement('a')
-  a.href = url
-  a.download = name
-  a.click()
-  URL.revokeObjectURL(url)
+  saveFile(new Blob([csv], { type: 'text/csv;charset=utf-8' }), fleetReportFilename().replace(/\.pdf$/, '.csv'))
+}
+
+async function exportFleetPdf(): Promise<void> {
+  const result = await db.queryOnce({ maintenances: {} })
+  const maintenances = (result?.data?.maintenances || []) as Maintenance[]
+  const doc = buildFleetReport({ vehicles: vehiclesStore.vehicles, invoices: invoicesStore.invoices, maintenances, currency: currencyOpts.value })
+  saveFile(doc.output('blob'), fleetReportFilename())
 }
 
 async function computeDue() {
@@ -205,7 +216,10 @@ const totalInvoiceCount = computed(() =>
     <section v-if="fleetRows.length" class="fleet-costs">
       <div class="fleet-costs-header">
         <h3>Kosten pro Fahrzeug und Jahr</h3>
-        <Button icon="pi pi-file-excel" label="CSV für Excel, alle Fahrzeuge" severity="secondary" outlined size="small" @click="exportFleetCsv" />
+        <div class="fleet-costs-actions">
+          <Button icon="pi pi-file-excel" label="CSV für Excel, alle Fahrzeuge" severity="secondary" outlined size="small" @click="exportFleetCsv" />
+          <Button icon="pi pi-file-pdf" label="PDF-Übersicht, alle Fahrzeuge" severity="primary" size="small" @click="exportFleetPdf" />
+        </div>
       </div>
       <div class="fleet-table-wrap">
         <table class="fleet-table" aria-label="Kosten pro Fahrzeug und Jahr">
@@ -390,6 +404,12 @@ const totalInvoiceCount = computed(() =>
 
 .fleet-costs-header h3 {
   margin: 0;
+}
+
+.fleet-costs-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .fleet-table-wrap {

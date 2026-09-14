@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { RateMap } from '../services/fx'
+import type { CurrencyOptions } from '../services/report'
 import type { Invoice, InvoiceItem } from '../stores/invoices'
 import type { Maintenance } from '../stores/maintenances'
 import type { InvoiceFormData, MaintenanceFormData } from '../types/forms'
@@ -13,7 +15,7 @@ import TabList from 'primevue/tablist'
 import TabPanel from 'primevue/tabpanel'
 import TabPanels from 'primevue/tabpanels'
 import Tabs from 'primevue/tabs'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import InvoiceFormDialog from '../components/InvoiceFormDialog.vue'
 import MaintenanceFormDialog from '../components/MaintenanceFormDialog.vue'
@@ -21,10 +23,12 @@ import MediaViewer from '../components/MediaViewer.vue'
 import VehicleForm from '../components/VehicleForm.vue'
 import { db } from '../lib/instantdb'
 import { DEFAULT_CURRENCY, formatCurrency, formatNumber } from '../lib/locale'
+import { resolveRates } from '../services/fx'
 import { buildDossier, dossierFilename } from '../services/pdf-report'
 import { categoryLabel, costsByYear, invoicesToCsv } from '../services/report'
 import { useInvoicesStore } from '../stores/invoices'
 import { useMaintenancesStore } from '../stores/maintenances'
+import { useSettingsStore } from '../stores/settings'
 import { useVehiclesStore } from '../stores/vehicles'
 
 const route = useRoute()
@@ -37,6 +41,9 @@ const tab = ref('maintenance')
 const vehicle = computed(() =>
   vehiclesStore.vehicles.find(v => v.id === route.params.id),
 )
+// Die Stores halten alle Rechnungen und Wartungen des Kontos; hier zählt nur dieses Fahrzeug
+const vehicleInvoices = computed(() => invoicesStore.getByVehicleId(route.params.id as string))
+const vehicleMaintenances = computed(() => maintenancesStore.getByVehicleId(route.params.id as string))
 
 const selectedInvoice = ref<Invoice | null>(null)
 const confirmDeleteInvoice = ref(false)
@@ -98,9 +105,9 @@ async function deleteMaintenance(id: string): Promise<void> {
 
 async function deleteVehicle(): Promise<void> {
   const id = route.params.id as string
-  for (const inv of invoicesStore.invoices)
+  for (const inv of vehicleInvoices.value)
     await invoicesStore.remove(inv.id)
-  for (const m of maintenancesStore.maintenances)
+  for (const m of vehicleMaintenances.value)
     await maintenancesStore.remove(m.id)
   await vehiclesStore.remove(id)
   confirmDeleteVehicle.value = false
@@ -214,8 +221,21 @@ async function handleAddInvoice(data: InvoiceFormData): Promise<void> {
   showAddInvoiceDialog.value = false
 }
 
-// Kostenübersicht und Exporte (CSV für Excel und Treuhänder, PDF-Dossier für Verkauf und Übergabe)
-const yearCosts = computed(() => costsByYear(invoicesStore.invoices))
+// Kostenübersicht und Exporte (CSV für Excel und Treuhänder, PDF-Dossier für Verkauf und Übergabe).
+// Fremde Währungen werden zum EZB-Kurs am Rechnungsdatum in die Heimwährung umgerechnet (services/fx.ts).
+const settings = useSettingsStore()
+const rates = ref<RateMap>(new Map())
+watch(
+  () => [vehicleInvoices.value, settings.homeCurrency] as const,
+  async ([invoices, home]) => {
+    rates.value = await resolveRates(invoices, home)
+  },
+  { immediate: true, deep: true },
+)
+const currencyOpts = computed<CurrencyOptions>(() => ({ homeCurrency: settings.homeCurrency, rates: rates.value }))
+const yearCosts = computed(() => costsByYear(vehicleInvoices.value, currencyOpts.value))
+const convertedCount = computed(() => yearCosts.value.reduce((n, r) => n + r.converted, 0))
+const unconvertedCount = computed(() => yearCosts.value.reduce((n, r) => n + r.unconverted, 0))
 const costCategories = computed(() => [...new Set(yearCosts.value.flatMap(r => Object.keys(r.byCategory)))])
 const grandTotals = computed(() => {
   const totals: Record<string, number> = {}
@@ -236,7 +256,7 @@ function saveFile(blob: Blob, filename: string): void {
 function exportCsv(): void {
   if (!vehicle.value)
     return
-  const csv = invoicesToCsv(invoicesStore.invoices, vehicle.value)
+  const csv = invoicesToCsv(vehicleInvoices.value, vehicle.value, currencyOpts.value)
   const name = dossierFilename(vehicle.value).replace(/\.pdf$/, '.csv')
   saveFile(new Blob([csv], { type: 'text/csv;charset=utf-8' }), name)
 }
@@ -244,7 +264,7 @@ function exportCsv(): void {
 function exportPdf(): void {
   if (!vehicle.value)
     return
-  const doc = buildDossier({ vehicle: vehicle.value, invoices: invoicesStore.invoices, maintenances: maintenancesStore.maintenances })
+  const doc = buildDossier({ vehicle: vehicle.value, invoices: vehicleInvoices.value, maintenances: vehicleMaintenances.value, currency: currencyOpts.value })
   saveFile(doc.output('blob'), dossierFilename(vehicle.value))
 }
 
@@ -346,7 +366,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
             </div>
 
             <div class="maintenance-list">
-              <div v-for="m in maintenancesStore.maintenances" :key="m.id" class="maintenance-item">
+              <div v-for="m in vehicleMaintenances" :key="m.id" class="maintenance-item">
                 <div class="maintenance-content">
                   <div class="maintenance-label">
                     {{ m.description || m.type }}
@@ -377,7 +397,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                 </div>
               </div>
             </div>
-            <div v-if="maintenancesStore.maintenances.length === 0" class="empty-state">
+            <div v-if="vehicleMaintenances.length === 0" class="empty-state">
               <i class="pi pi-wrench empty-icon" />
               <p>Keine Wartungseinträge. Scanne eine Rechnung im Chat!</p>
             </div>
@@ -394,7 +414,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
             </div>
             <div class="invoices-list">
               <div
-                v-for="inv in invoicesStore.invoices"
+                v-for="inv in vehicleInvoices"
                 :key="inv.id"
                 class="invoice-item"
                 @click="selectedInvoice = inv"
@@ -411,7 +431,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                 <i class="pi pi-chevron-right" />
               </div>
             </div>
-            <div v-if="invoicesStore.invoices.length === 0" class="empty-state">
+            <div v-if="vehicleInvoices.length === 0" class="empty-state">
               <i class="pi pi-file empty-icon" />
               <p>Keine Rechnungen. Scanne deine erste Werkstattrechnung!</p>
             </div>
@@ -419,7 +439,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
 
           <TabPanel value="costs">
             <div class="tab-header costs-actions">
-              <Button icon="pi pi-file-excel" label="CSV für Excel" severity="secondary" outlined :disabled="!invoicesStore.invoices.length" @click="exportCsv" />
+              <Button icon="pi pi-file-excel" label="CSV für Excel" severity="secondary" outlined :disabled="!vehicleInvoices.length" @click="exportCsv" />
               <Button icon="pi pi-file-pdf" label="PDF-Dossier" severity="primary" @click="exportPdf" />
             </div>
             <div v-if="yearCosts.length" class="costs-table-wrap">
@@ -451,7 +471,13 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                 Gesamt {{ grandTotals }}
               </div>
               <p class="costs-hint">
-                Summen pro Währung getrennt, Positionen nach Kategorie. CSV öffnet sich in Excel mit Schweizer Format; das PDF enthält Stammdaten, Wartungshistorie, Kosten und Rechnungen.
+                <template v-if="convertedCount > 0">
+                  {{ convertedCount }} {{ convertedCount === 1 ? 'Rechnung' : 'Rechnungen' }} in fremder Währung zum EZB-Kurs am Rechnungsdatum in {{ settings.homeCurrency }} umgerechnet.
+                </template>
+                <template v-if="unconvertedCount > 0">
+                  {{ unconvertedCount }} {{ unconvertedCount === 1 ? 'Rechnung' : 'Rechnungen' }} in fremder Währung ohne Kurs (offline?), eigene Zeile.
+                </template>
+                Positionen nach Kategorie. CSV öffnet sich in Excel mit Schweizer Format; das PDF enthält Stammdaten, Wartungshistorie, Kosten und Rechnungen.
               </p>
             </div>
             <div v-else class="empty-state">

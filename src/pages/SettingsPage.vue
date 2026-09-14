@@ -10,7 +10,7 @@ import { computed, onMounted, ref } from 'vue'
 import { db, tx } from '../lib/instantdb'
 import { fetchUsage, startCheckout } from '../services/ai-access'
 import { exportDatabase, importDatabase } from '../services/db-export'
-import { useSettingsStore } from '../stores/settings'
+import { HOME_CURRENCIES, useSettingsStore } from '../stores/settings'
 
 type UsageInfo = Awaited<ReturnType<typeof fetchUsage>>
 type LimitKind = keyof typeof LIMIT_LABELS
@@ -126,6 +126,8 @@ const themeOptions = [
   { label: 'Hell', value: 'light' },
   { label: 'System', value: 'system' },
 ]
+
+const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
 </script>
 
 <template>
@@ -148,6 +150,18 @@ const themeOptions = [
             option-value="value"
             class="w-full"
           />
+        </div>
+        <div class="form-field">
+          <label for="home-currency">Heimwährung</label>
+          <Select
+            v-model="settings.homeCurrency"
+            input-id="home-currency"
+            :options="currencyOptions"
+            option-label="label"
+            option-value="value"
+            class="w-full"
+          />
+          <small class="field-hint">Kostenübersicht und Exporte rechnen fremde Währungen zum EZB-Kurs am Rechnungsdatum in diese Währung um. Rechnungen behalten ihre Originalwährung.</small>
         </div>
       </template>
     </Card>
@@ -294,6 +308,11 @@ const themeOptions = [
   flex-direction: column;
   gap: 0.25rem;
   margin-bottom: 1rem;
+}
+
+.field-hint {
+  color: var(--p-text-muted-color);
+  font-size: 0.8rem;
 }
 
 .form-field label {

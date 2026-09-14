@@ -1,7 +1,7 @@
 import type { Invoice } from '../stores/invoices'
 import type { Maintenance } from '../stores/maintenances'
 import { describe, expect, it } from 'vitest'
-import { categoryLabel, costsByYear, invoicesToCsv } from './report'
+import { categoryLabel, costsByYear, fleetCostsByVehicleYear, invoicesToCsv } from './report'
 
 function inv(over: Partial<Invoice>): Invoice {
   return {
@@ -85,5 +85,52 @@ describe('maintenance rows for the dossier', () => {
       ['2025-10-20', 'Winterreifen', '60\'000 km'],
       ['2025-01-05', 'Ölwechsel', '50\'000 km'],
     ])
+  })
+})
+
+describe('costsByYear mit Heimwährung', () => {
+  const rates = new Map([['EUR|CHF|2026-05-20', 0.95]])
+
+  it('rechnet fremde Währungen zum Kurs am Rechnungsdatum in die Heimwährung um', () => {
+    const rows = costsByYear(invoices, { homeCurrency: 'CHF', rates })
+    // 2026: CHF 890.50 + EUR 120 × 0.95 = 114.00 → eine Zeile CHF
+    expect(rows.map(r => [r.year, r.currency, r.total])).toEqual([[2026, 'CHF', 1004.5], [2025, 'CHF', 480]])
+    expect(rows[0]!.byCategory).toEqual({ reifen: 890.5, sonstiges: 114 })
+    expect(rows[0]!.converted).toBe(1)
+  })
+
+  it('lässt Rechnungen ohne Kurs in ihrer Währung stehen', () => {
+    const rows = costsByYear(invoices, { homeCurrency: 'CHF', rates: new Map() })
+    expect(rows.map(r => [r.year, r.currency, r.total])).toEqual([[2026, 'CHF', 890.5], [2026, 'EUR', 120], [2025, 'CHF', 480]])
+    expect(rows[1]!.unconverted).toBe(1)
+  })
+})
+
+describe('fleetCostsByVehicleYear', () => {
+  it('summiert pro Fahrzeug und Jahr in der Heimwährung, neuestes Jahr zuerst, Fahrzeuge alphabetisch', () => {
+    const vehicles = [
+      { id: 'v2', make: 'VW', model: 'Caddy', licensePlate: 'SG 2' },
+      { id: 'v1', make: 'Fiat', model: 'Ducato', licensePlate: 'SG 1' },
+    ]
+    const all: Invoice[] = [
+      ...invoices,
+      inv({ id: 'd', vehicleId: 'v2', date: '2026-01-15', totalAmount: 200, currency: 'CHF' }),
+    ]
+    const rows = fleetCostsByVehicleYear(vehicles, all, { homeCurrency: 'CHF', rates: new Map([['EUR|CHF|2026-05-20', 0.95]]) })
+    expect(rows).toEqual([
+      { vehicleId: 'v1', vehicle: 'Fiat Ducato · SG 1', year: 2026, currency: 'CHF', total: 1004.5 },
+      { vehicleId: 'v2', vehicle: 'VW Caddy · SG 2', year: 2026, currency: 'CHF', total: 200 },
+      { vehicleId: 'v1', vehicle: 'Fiat Ducato · SG 1', year: 2025, currency: 'CHF', total: 480 },
+    ])
+  })
+})
+
+describe('invoicesToCsv mit Heimwährung', () => {
+  it('hängt Betrag in Heimwährung und Kurs an', () => {
+    const csv = invoicesToCsv(invoices, { make: 'VW', model: 'Caddy', licensePlate: 'SG 12345' }, { homeCurrency: 'CHF', rates: new Map([['EUR|CHF|2026-05-20', 0.95]]) })
+    const lines = csv.slice(1).split('\r\n')
+    expect(lines[0]).toBe('Fahrzeug;Kennzeichen;Datum;Werkstatt;Kilometerstand;Kategorie;Beschreibung;Betrag;Währung;Betrag CHF;Kurs')
+    expect(lines[1]).toBe('VW Caddy;SG 12345;2025-11-02;Garage Muster;61000;Ölwechsel;Ölwechsel;180.00;CHF;180.00;1')
+    expect(lines[4]).toBe('VW Caddy;SG 12345;2026-05-20;Werkstatt Lindau;;Sonstiges;;120.00;EUR;114.00;0.95')
   })
 })

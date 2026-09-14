@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import type { RateMap } from '../services/fx'
 import type { DueResult } from '../services/maintenance-schedule'
+import type { CurrencyOptions } from '../services/report'
 import Badge from 'primevue/badge'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
@@ -9,8 +11,12 @@ import { useRouter } from 'vue-router'
 import StatCard from '../components/StatCard.vue'
 import { db, tx } from '../lib/instantdb'
 import { DEFAULT_CURRENCY, formatCurrency, formatNumber } from '../lib/locale'
+import { resolveRates } from '../services/fx'
 import { checkDueMaintenances, getMaintenanceSchedule } from '../services/maintenance-schedule'
+import { dossierFilename } from '../services/pdf-report'
+import { fleetCostsByVehicleYear, invoicesToCsvRows } from '../services/report'
 import { useInvoicesStore } from '../stores/invoices'
+import { useSettingsStore } from '../stores/settings'
 import { useVehiclesStore } from '../stores/vehicles'
 
 const router = useRouter()
@@ -25,6 +31,38 @@ onMounted(async () => {
 })
 
 watch(() => vehiclesStore.vehicles, computeDue, { deep: true })
+
+// Fuhrpark-Übersicht: Kosten pro Fahrzeug und Jahr in der Heimwährung, fremde Währungen zum EZB-Kurs am Rechnungsdatum
+const settings = useSettingsStore()
+const rates = ref<RateMap>(new Map())
+watch(
+  () => [invoicesStore.invoices, settings.homeCurrency] as const,
+  async ([invoices, home]) => {
+    rates.value = await resolveRates(invoices, home)
+  },
+  { immediate: true, deep: true },
+)
+const currencyOpts = computed<CurrencyOptions>(() => ({ homeCurrency: settings.homeCurrency, rates: rates.value }))
+const fleetRows = computed(() => fleetCostsByVehicleYear(vehiclesStore.vehicles, invoicesStore.invoices, currencyOpts.value))
+const foreignInvoices = computed(() => invoicesStore.invoices.filter(i => (i.currency || DEFAULT_CURRENCY) !== settings.homeCurrency))
+const fleetConverted = computed(() => foreignInvoices.value.filter(i => rates.value.has(`${i.currency}|${settings.homeCurrency}|${i.date}`)).length)
+const fleetUnconverted = computed(() => foreignInvoices.value.length - fleetConverted.value)
+const foreignCurrencies = computed(() => [...new Set(foreignInvoices.value.map(i => i.currency))].join(', '))
+
+function exportFleetCsv(): void {
+  const byId = new Map(vehiclesStore.vehicles.map(v => [v.id, v]))
+  const entries = invoicesStore.invoices
+    .filter(inv => byId.has(inv.vehicleId))
+    .map(inv => ({ inv, vehicle: byId.get(inv.vehicleId)! }))
+  const csv = invoicesToCsvRows(entries, currencyOpts.value)
+  const name = dossierFilename({ make: 'alle', model: 'Fahrzeuge', licensePlate: '' }).replace(/\.pdf$/, '.csv')
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 async function computeDue() {
   const result = await db.queryOnce({ maintenances: {} })
@@ -164,6 +202,47 @@ const totalInvoiceCount = computed(() =>
       />
     </div>
 
+    <section v-if="fleetRows.length" class="fleet-costs">
+      <div class="fleet-costs-header">
+        <h3>Kosten pro Fahrzeug und Jahr</h3>
+        <Button icon="pi pi-file-excel" label="CSV für Excel, alle Fahrzeuge" severity="secondary" outlined size="small" @click="exportFleetCsv" />
+      </div>
+      <div class="fleet-table-wrap">
+        <table class="fleet-table" aria-label="Kosten pro Fahrzeug und Jahr">
+          <thead>
+            <tr>
+              <th>Jahr</th>
+              <th>Fahrzeug</th>
+              <th class="num">
+                Total
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="r in fleetRows" :key="`${r.vehicleId}-${r.year}-${r.currency}`">
+              <td>{{ r.year }}</td>
+              <td>
+                <router-link :to="`/vehicles/${r.vehicleId}`">
+                  {{ r.vehicle }}
+                </router-link>
+              </td>
+              <td class="num">
+                {{ formatCurrency(r.total, r.currency) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-if="fleetConverted > 0 || fleetUnconverted > 0" class="fleet-hint">
+        <template v-if="fleetConverted > 0">
+          {{ fleetConverted }} {{ fleetConverted === 1 ? 'Rechnung' : 'Rechnungen' }} in {{ foreignCurrencies }} zum EZB-Kurs am Rechnungsdatum umgerechnet.
+        </template>
+        <template v-if="fleetUnconverted > 0">
+          {{ fleetUnconverted }} ohne Kurs (offline?), in eigener Währung ausgewiesen.
+        </template>
+      </p>
+    </section>
+
     <div v-for="vehicle in vehiclesStore.vehicles" :key="vehicle.id" class="vehicle-section">
       <h3 class="vehicle-title">
         {{ vehicle.make }} {{ vehicle.model }}
@@ -294,6 +373,61 @@ const totalInvoiceCount = computed(() =>
 
 .vehicle-section {
   margin-bottom: 2rem;
+}
+
+.fleet-costs {
+  margin-bottom: 2rem;
+}
+
+.fleet-costs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.fleet-costs-header h3 {
+  margin: 0;
+}
+
+.fleet-table-wrap {
+  overflow-x: auto;
+}
+
+.fleet-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.fleet-table th,
+.fleet-table td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--p-surface-border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.fleet-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.fleet-table a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.fleet-table a:hover {
+  text-decoration: underline;
+}
+
+.fleet-hint {
+  margin: 0.5rem 0 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.85rem;
 }
 
 .vehicle-title {

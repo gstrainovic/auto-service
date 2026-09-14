@@ -5,7 +5,7 @@
  */
 import type { Invoice } from '../stores/invoices'
 import type { Maintenance } from '../stores/maintenances'
-import type { VehicleInfo } from './report'
+import type { CurrencyOptions, VehicleInfo } from './report'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { DEFAULT_CURRENCY, formatCurrency, formatNumber } from '../lib/locale'
@@ -16,6 +16,8 @@ export interface DossierInput {
   invoices: Invoice[]
   maintenances: Maintenance[]
   generatedAt?: Date
+  /** Heimwährung und Kurse: fremde Währungen werden in der Kostentabelle umgerechnet */
+  currency?: CurrencyOptions
 }
 
 function isoDate(d: Date): string {
@@ -30,7 +32,7 @@ export function dossierFilename(vehicle: VehicleInfo, at: Date = new Date()): st
   return `wartungsheft-${slug(`${vehicle.make} ${vehicle.model} ${vehicle.licensePlate}`)}-${isoDate(at)}.pdf`
 }
 
-export function buildDossier({ vehicle, invoices, maintenances, generatedAt = new Date() }: DossierInput): jsPDF {
+export function buildDossier({ vehicle, invoices, maintenances, generatedAt = new Date(), currency }: DossierInput): jsPDF {
   // eslint-disable-next-line new-cap
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const margin = 15
@@ -75,8 +77,9 @@ export function buildDossier({ vehicle, invoices, maintenances, generatedAt = ne
   doc.setFontSize(13)
   doc.text('Kosten pro Jahr', margin, y)
   y += 3
-  const years = costsByYear(invoices)
+  const years = costsByYear(invoices, currency)
   const categories = [...new Set(years.flatMap(r => Object.keys(r.byCategory)))]
+  const convertedCount = years.reduce((n, r) => n + r.converted, 0)
   autoTable(doc, {
     startY: y,
     head: [['Jahr', 'Währung', ...categories.map(categoryLabel), 'Total']],
@@ -87,7 +90,14 @@ export function buildDossier({ vehicle, invoices, maintenances, generatedAt = ne
     columnStyles: { 0: { halign: 'left' }, 1: { halign: 'left' } },
     headStyles: { fillColor: [40, 40, 40], halign: 'right' },
   })
-  y = (doc as any).lastAutoTable.finalY + 8
+  y = (doc as any).lastAutoTable.finalY + 4
+  if (convertedCount > 0 && currency) {
+    doc.setFontSize(8)
+    doc.setTextColor(90)
+    doc.text(`${convertedCount} Rechnung(en) in fremder Währung zum EZB-Kurs am Rechnungsdatum in ${currency.homeCurrency} umgerechnet.`, margin, y)
+    doc.setTextColor(0)
+  }
+  y += 6
 
   doc.setFontSize(13)
   doc.text('Rechnungen', margin, y)

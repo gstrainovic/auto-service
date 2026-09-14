@@ -1,12 +1,22 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
+import { DEFAULT_CURRENCY } from '../lib/locale'
 
 export type ThemeMode = 'dark' | 'light' | 'system'
+
+/** Währungen, in die Kostenübersicht und Exporte umrechnen können (EZB-Kurse, siehe services/fx.ts). */
+export const HOME_CURRENCIES = ['CHF', 'EUR'] as const
+export type HomeCurrency = typeof HOME_CURRENCIES[number]
 
 function applyTheme(mode: ThemeMode): void {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
   const isDark = mode === 'dark' || (mode === 'system' && prefersDark)
   document.documentElement.classList.toggle('dark-mode', isDark)
+}
+
+function readHomeCurrency(): HomeCurrency {
+  const stored = localStorage.getItem('homeCurrency')
+  return (HOME_CURRENCIES as readonly string[]).includes(stored ?? '') ? stored as HomeCurrency : DEFAULT_CURRENCY as HomeCurrency
 }
 
 export const useSettingsStore = defineStore('settings', () => {
@@ -26,5 +36,9 @@ export const useSettingsStore = defineStore('settings', () => {
       applyTheme('system')
   })
 
-  return { theme }
+  // Heimwährung: Nutzereinstellung über dem Deploy-Standard (CHF); Rechnungen behalten ihre Originalwährung
+  const homeCurrency = ref<HomeCurrency>(readHomeCurrency())
+  watch(homeCurrency, v => localStorage.setItem('homeCurrency', v))
+
+  return { theme, homeCurrency }
 })

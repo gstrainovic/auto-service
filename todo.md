@@ -35,8 +35,6 @@ Heute sind Währung (CHF), Zahlenformat (de-CH, `src/lib/locale.ts`) und Sprache
 
 Bei bestätigter Kleinbetriebs-Hypothese (H1):
 - [ ] Mehrere Nutzer pro Konto (Fahrer wirft Rechnung ein, Inhaber sieht alles)
-- [ ] Kostenübersicht über alle Fahrzeuge (Betrieb): Summe pro Fahrzeug und Jahr auf dem Dashboard, Export über den ganzen Fuhrpark; pro Fahrzeug ist beides schon da (Tab «Kosten», CSV, PDF-Dossier)
-- [ ] Gemischte Währungen (Grenzregion, EUR-Rechnungen): Umrechnung in die Heimwährung des Kontos zum Kurs am Rechnungsdatum für Jahresübersicht und Export, Originalbetrag und -währung bleiben an der Rechnung; bis dahin summiert das Dashboard pro Währung getrennt
 - [ ] Preis aus den Antworten festlegen, `src/shared/plans.ts` und Businessplan angleichen
 
 Bei bestätigter Privathalter-Hypothese (H2):

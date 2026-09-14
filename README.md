@@ -196,7 +196,9 @@ pro Nutzer und Monat in InstantDB (`usage`) und setzt die Plan-Limits aus `@stra
    `customer.subscription.updated`, `customer.subscription.deleted` → Secret in `STRIPE_WEBHOOK_SECRET`.
 3. Customer Portal im Stripe-Dashboard aktivieren (Kündigung, Zahlungsmittel).
 
-Ohne Stripe-Konfiguration antworten `/billing/*` mit 501, alle Nutzer bleiben im Free-Plan.
+Ohne Stripe-Konfiguration antworten `/billing/*` mit 501, alle Nutzer bleiben im Free-Plan. Die Upgrade-Buttons in den
+Einstellungen erscheinen erst mit `VITE_BILLING_ENABLED=true` in `.env.production`; bis dahin steht dort die
+Kontaktadresse für die Jahresrechnung (Businessplan Kapitel 4: erste Kunden zahlen per QR-Rechnung).
 
 ### 5. Backup
 

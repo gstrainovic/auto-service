@@ -26,7 +26,7 @@ function goToApp() {
         <nav class="landing-nav">
           <a href="#features">Features</a>
           <a href="#how-it-works">So funktioniert's</a>
-          <a href="#pricing">Preise</a>
+          <a href="#fuer-wen">Für wen</a>
           <router-link to="/betrieb">
             Für Betriebe
           </router-link>
@@ -187,73 +187,51 @@ function goToApp() {
       </div>
     </section>
 
-    <!-- Pricing -->
-    <section id="pricing" class="section">
+    <!-- Für wen: die Preise stehen auf den zwei Angebotsseiten (Betrieb, Privathalter), hier nur der Weg dorthin -->
+    <section id="fuer-wen" class="section">
       <div class="landing-container">
-        <h2>Einfache Preise</h2>
+        <h2>Für wen ist Wartungsheft?</h2>
         <p class="section-subtitle">
-          Starte kostenlos. Upgrade wenn du mehr brauchst.
+          Zwei Angebote, ein Werkzeug. Kostenlos ausprobieren kannst du es in jedem Fall.
         </p>
-        <div class="pricing-grid">
+        <div class="pricing-grid pricing-grid-two">
           <div class="pricing-card">
-            <h3>Free</h3>
-            <div class="pricing-price">
-              <span class="price-amount">0</span>
-              <span class="price-unit">CHF / Monat</span>
-            </div>
+            <h3>Betriebe mit Fahrzeugen</h3>
+            <p class="audience-text">
+              Lieferwagen, Servicefahrzeuge, Firmenwagen: alle Rechnungen und Wartungen an einem Ort,
+              Kosten pro Fahrzeug und Jahr, Export für die Buchhaltung.
+            </p>
             <ul class="pricing-features">
-              <li><i class="pi pi-check" /> 1 Fahrzeug</li>
-              <li><i class="pi pi-check" /> 5 AI-Scans / Monat</li>
-              <li><i class="pi pi-check" /> Wartungsplan</li>
-              <li><i class="pi pi-check" /> Offline-Modus</li>
+              <li><i class="pi pi-check" /> Fahrer fotografiert die Rechnung, fertig</li>
+              <li><i class="pi pi-check" /> Kosten pro Fahrzeug und Jahr, CSV und PDF</li>
+              <li><i class="pi pi-check" /> E-Mail-Erinnerungen an fällige Arbeiten</li>
             </ul>
             <Button
-              label="Kostenlos starten"
-              outlined
+              label="Angebot für Betriebe"
+              icon="pi pi-arrow-right"
+              icon-pos="right"
               fluid
-              @click="goToApp"
-            />
-          </div>
-          <div class="pricing-card pricing-card-featured">
-            <div class="pricing-badge">
-              Beliebt
-            </div>
-            <h3>Plus</h3>
-            <div class="pricing-price">
-              <span class="price-amount">3</span>
-              <span class="price-unit">CHF / Monat</span>
-            </div>
-            <ul class="pricing-features">
-              <li><i class="pi pi-check" /> 5 Fahrzeuge</li>
-              <li><i class="pi pi-check" /> Unbegrenzte Scans</li>
-              <li><i class="pi pi-check" /> E-Mail-Erinnerungen</li>
-              <li><i class="pi pi-check" /> PDF-Export</li>
-              <li><i class="pi pi-check" /> E-Mail-Support</li>
-            </ul>
-            <Button
-              label="Plus wählen"
-              fluid
-              @click="goToApp"
+              @click="router.push('/betrieb')"
             />
           </div>
           <div class="pricing-card">
-            <h3>Pro</h3>
-            <div class="pricing-price">
-              <span class="price-amount">7</span>
-              <span class="price-unit">CHF / Monat</span>
-            </div>
+            <h3>Privathalter</h3>
+            <p class="audience-text">
+              Ein Auto, alle Belege: digitales Serviceheft, Wartungsplan mit Erinnerung und ein PDF-Dossier
+              für den Verkauf.
+            </p>
             <ul class="pricing-features">
-              <li><i class="pi pi-check" /> Unbegrenzte Fahrzeuge</li>
-              <li><i class="pi pi-check" /> Kosten-Analyse</li>
-              <li><i class="pi pi-check" /> Fahrzeug-Sharing</li>
-              <li><i class="pi pi-check" /> Werkstatt-Verzeichnis</li>
-              <li><i class="pi pi-check" /> Priority-Support</li>
+              <li><i class="pi pi-check" /> Rechnung fotografieren statt abtippen</li>
+              <li><i class="pi pi-check" /> Erinnerung, bevor es teuer wird</li>
+              <li><i class="pi pi-check" /> Lückenlose Historie für den Wiederverkauf</li>
             </ul>
             <Button
-              label="Pro wählen"
+              label="Angebot für Privathalter"
+              icon="pi pi-arrow-right"
+              icon-pos="right"
               outlined
               fluid
-              @click="goToApp"
+              @click="router.push('/privathalter')"
             />
           </div>
         </div>
@@ -589,22 +567,8 @@ function goToApp() {
   text-align: center;
 }
 
-.pricing-card-featured {
-  border-color: var(--p-primary-color);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-.pricing-badge {
-  position: absolute;
-  top: -0.75rem;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--p-primary-color);
-  color: var(--p-primary-contrast-color);
-  padding: 0.25rem 1rem;
-  border-radius: 1rem;
-  font-size: 0.8rem;
-  font-weight: 600;
+.pricing-grid-two {
+  max-width: 760px;
 }
 
 .pricing-card h3 {
@@ -612,20 +576,11 @@ function goToApp() {
   font-size: 1.25rem;
 }
 
-.pricing-price {
-  margin-bottom: 1.5rem;
-}
-
-.price-amount {
-  font-size: 3rem;
-  font-weight: 800;
-  color: var(--p-text-color);
-}
-
-.price-unit {
-  font-size: 0.9rem;
+.audience-text {
   color: var(--p-text-muted-color);
-  display: block;
+  margin: 0 0 1.25rem;
+  text-align: left;
+  line-height: 1.5;
 }
 
 .pricing-features {

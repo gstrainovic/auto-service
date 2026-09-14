@@ -142,7 +142,7 @@ export function buildReminders(input: {
       '',
       `Keine Erinnerungen mehr: ${APP_URL}/settings, Abschnitt «Erinnerungen».`,
       '',
-      'Wartungsheft · Strainovic IT, Steinach',
+      'Wartungsheft, ein Angebot von Strainovic IT, Steinach',
     ].join('\n')
 
     reminders.push({ userId: user.id, email: user.email, subject, text, key: reminderKey(entries), entries })

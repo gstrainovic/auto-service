@@ -20,7 +20,6 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 - [ ] Pilot-Betrieb anlegen: Fahrzeuge erfassen, erste Rechnungen von Hand einlesen, Jahresrechnung per QR-Rechnung stellen (kein Zahlungsanbieter)
 
 ### Aus der Review vom Pilot-Stand (Entscheid des Nutzers offen)
-- [ ] Preise auf der Landing `/` (Free / Plus 3 / Pro 7 CHF, dazu Sharing und Werkstatt-Verzeichnis als Features) auf die echten Pläne aus den Einstellungen (Gratis / Basic 5 / Pro 15 CHF) umstellen und nicht vorhandene Features streichen; `/betrieb` und `/privathalter` bleiben Validierungsseiten
 - [ ] Kostentabelle Fahrzeugseite: Zeile «Gesamt» unter der Total-Zeile streichen (doppelt)
 - [ ] Fahrzeugkarten unter «Fahrzeuge» kompakter, Klickbarkeit sichtbar (Chevron), Kosten des Jahres statt Leerfläche
 

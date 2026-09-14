@@ -32,6 +32,11 @@ const IMPORT_LABELS: Record<string, [singular: string, plural: string]> = {
   chatmessages: ['Chat-Nachricht', 'Chat-Nachrichten'],
 }
 
+// Upgrade-Buttons nur mit konfiguriertem Zahlungsanbieter (VITE_BILLING_ENABLED=true beim Build). Bis dahin
+// zahlen die ersten Kunden per Jahresrechnung, Kontakt statt Checkout.
+const billingEnabled = import.meta.env.VITE_BILLING_ENABLED === 'true'
+const CONTACT_EMAIL = 'info@strainovic-it.ch'
+
 const settings = useSettingsStore()
 const reminders = useRemindersStore()
 const toast = useToast()
@@ -253,7 +258,11 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
           <div class="provider-info">
             Zähler gelten für {{ formatMonth(usage.month) }}. KI-Verarbeitung über Mistral (Frankreich, EU) ist im Abo enthalten, kein eigener API-Key nötig.
           </div>
-          <div v-if="upgradePlans.length" class="upgrade-list">
+          <div v-if="!billingEnabled" class="provider-info">
+            Mehr Kontingent oder ein Abo für den Betrieb? Schreib uns an
+            <a :href="`mailto:${CONTACT_EMAIL}`">{{ CONTACT_EMAIL }}</a>, wir richten es ein und stellen eine Jahresrechnung.
+          </div>
+          <div v-else-if="upgradePlans.length" class="upgrade-list">
             <div v-for="plan in upgradePlans" :key="plan.id" class="upgrade-row">
               <div>
                 <strong>{{ planName(plan) }}</strong> · {{ planPrice(plan) }} ·

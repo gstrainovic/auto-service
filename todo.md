@@ -25,6 +25,7 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 - [ ] Fahrzeugkarten unter «Fahrzeuge» kompakter, Klickbarkeit sichtbar (Chevron), Kosten des Jahres statt Leerfläche
 
 ### Bekannte Lücken, klein
+- [ ] Fahrzeug-Kilometerstand nachziehen, wenn eine Rechnung oder Wartung einen höheren Stand nennt (beim Cayenne steht das Fahrzeug auf 231'457 km, der letzte Ölwechsel auf 252'586 km; Fälligkeit nach km rechnet dadurch zu früh)
 - [ ] Dashboard und Fahrzeugkarte berechnen die Fälligkeit einmalig (`queryOnce`); nach einer Wartung im Chat-Drawer erst nach Neuladen aktuell → `useMaintenancesStore` mit Subscription
 - [ ] Wartungsplan aus dem Service-Heft mit mehrfach gleichem Typ (`sonstiges` für Getriebeöl und Differentialöl): Einträge werden über den Typ gematcht und gekeyt, eigene ID pro Plan-Eintrag nötig
 - [ ] Chat-Drawer mobil: Drop-Zone ausblenden, Schnellaktions-Chips horizontal scrollbar; Buttons einheitlich (primäre Aktion oben rechts)

@@ -1,4 +1,5 @@
 import type { MaintenanceCategory } from './ai'
+import { categoryLabel } from './report'
 
 export interface ScheduleItem {
   type: MaintenanceCategory
@@ -9,7 +10,8 @@ export interface ScheduleItem {
 
 export interface LastMaintenance {
   type: string
-  mileageAtService: number
+  /** 0 oder undefined bedeutet unbekannt, dann zählt nur die Zeit */
+  mileageAtService?: number | null
   doneAt: string
 }
 
@@ -32,7 +34,7 @@ const DEFAULT_SCHEDULE: ScheduleItem[] = [
   { type: 'zahnriemen', label: 'Zahnriemen', intervalKm: 120000, intervalMonths: 72 },
   { type: 'bremsflüssigkeit', label: 'Bremsflüssigkeit', intervalKm: 60000, intervalMonths: 24 },
   { type: 'klimaanlage', label: 'Klimaanlage Service', intervalKm: 0, intervalMonths: 24 },
-  { type: 'tuev', label: 'TÜV / HU', intervalKm: 0, intervalMonths: 24 },
+  { type: 'tuev', label: 'MFK / Prüfung', intervalKm: 0, intervalMonths: 24 },
 ]
 
 export function getMaintenanceSchedule(customSchedule?: ScheduleItem[]): ScheduleItem[] {
@@ -47,19 +49,19 @@ function addMonths(dateStr: string, months: number): Date {
   return d
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  oelwechsel: 'Ölwechsel',
-  inspektion: 'Inspektion',
-  bremsen: 'Bremsen',
-  reifen: 'Reifen',
-  luftfilter: 'Luftfilter',
-  zahnriemen: 'Zahnriemen',
-  bremsflüssigkeit: 'Bremsflüssigkeit',
-  klimaanlage: 'Klimaanlage',
-  tuev: 'TÜV / HU',
-  karosserie: 'Karosserie',
-  elektrik: 'Elektrik',
-  sonstiges: 'Sonstiges',
+function knownMileage(m: LastMaintenance): number | undefined {
+  return m.mileageAtService ? m.mileageAtService : undefined
+}
+
+/** Neuester Eintrag pro Typ: nach Datum, bei gleichem Datum nach Kilometerstand */
+function latestByType(maintenances: LastMaintenance[]): Map<string, LastMaintenance> {
+  const latest = new Map<string, LastMaintenance>()
+  for (const m of maintenances) {
+    const cur = latest.get(m.type)
+    if (!cur || m.doneAt > cur.doneAt || (m.doneAt === cur.doneAt && (knownMileage(m) ?? 0) > (knownMileage(cur) ?? 0)))
+      latest.set(m.type, m)
+  }
+  return latest
 }
 
 export function checkDueMaintenances(params: {
@@ -69,13 +71,10 @@ export function checkDueMaintenances(params: {
 }): DueResult[] {
   const { currentMileage, lastMaintenances, schedule } = params
   const now = new Date()
-  const matchedTypes = new Set<string>()
+  const latest = latestByType(lastMaintenances)
 
   const scheduleResults = schedule.map((item) => {
-    const last = lastMaintenances.find(m => m.type === item.type)
-    if (last)
-      matchedTypes.add(last.type)
-
+    const last = latest.get(item.type)
     if (!last) {
       return {
         type: item.type,
@@ -84,8 +83,9 @@ export function checkDueMaintenances(params: {
       }
     }
 
-    const nextDueMileage = item.intervalKm > 0
-      ? last.mileageAtService + item.intervalKm
+    const lastMileage = knownMileage(last)
+    const nextDueMileage = item.intervalKm > 0 && lastMileage !== undefined
+      ? lastMileage + item.intervalKm
       : undefined
 
     const nextDueDate = addMonths(last.doneAt, item.intervalMonths)
@@ -103,21 +103,22 @@ export function checkDueMaintenances(params: {
       label: item.label,
       status,
       lastDoneAt: last.doneAt,
-      lastMileage: last.mileageAtService,
+      lastMileage,
       nextDueDate: nextDueDate.toISOString().split('T')[0],
       nextDueMileage,
     }
   })
 
-  // Add non-schedule maintenances (karosserie, elektrik, sonstiges, etc.)
-  const extraResults: DueResult[] = lastMaintenances
-    .filter(m => !matchedTypes.has(m.type))
+  // Erledigte Arbeiten ohne Intervall (Karosserie, Fahrwerk, Sonstiges …): ein Eintrag pro Typ, der neueste
+  const scheduled = new Set<string>(schedule.map(s => s.type))
+  const extraResults: DueResult[] = [...latest.values()]
+    .filter(m => !scheduled.has(m.type))
     .map(m => ({
       type: m.type,
-      label: CATEGORY_LABELS[m.type] || m.type,
+      label: categoryLabel(m.type),
       status: 'done' as const,
       lastDoneAt: m.doneAt,
-      lastMileage: m.mileageAtService,
+      lastMileage: knownMileage(m),
     }))
 
   return [...scheduleResults, ...extraResults]

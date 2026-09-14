@@ -295,7 +295,9 @@ const totalInvoiceCount = computed(() =>
               {{ item.label }}
             </div>
             <div v-if="item.lastDoneAt" class="maintenance-caption">
-              Zuletzt: {{ item.lastDoneAt }} bei {{ formatNumber(item.lastMileage) }} km
+              Zuletzt: {{ item.lastDoneAt }}<template v-if="item.lastMileage">
+                bei {{ formatNumber(item.lastMileage) }} km
+              </template>
             </div>
           </div>
           <div class="maintenance-actions">

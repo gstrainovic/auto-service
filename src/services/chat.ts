@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { getCurrentUserId } from '../composables/useAuth'
 import { autoRotateForDocument } from '../composables/useImageResize'
 import { db, id as instantId, tx } from '../lib/instantdb'
+import { DEFAULT_CURRENCY } from '../lib/locale'
 import { callMistralOcr, callMistralOcrPdf, getModel, hashImage, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument, withRetry } from './ai'
 import { checkDueMaintenances, getMaintenanceSchedule } from './maintenance-schedule'
 
@@ -377,7 +378,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
         workshopName: z.string().describe('Name der Werkstatt'),
         date: z.string().describe('Datum im Format YYYY-MM-DD'),
         totalAmount: z.number().describe('Gesamtbetrag'),
-        currency: z.string().optional().describe('Währung (z.B. EUR, CHF, USD). Standard: EUR'),
+        currency: z.string().optional().describe('Währung (z.B. CHF, EUR, USD). Standard: CHF'),
         mileageAtService: z.number().optional().describe('Kilometerstand'),
         imageIndex: z.number().optional().describe('Index des zugehörigen Bildes (0-basiert)'),
         items: z.array(z.object({
@@ -396,7 +397,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
         if (duplicate) {
           return {
             success: false,
-            message: `Diese Rechnung existiert bereits: ${duplicate.workshopName}, ${duplicate.date}, ${duplicate.totalAmount} ${duplicate.currency || 'EUR'}. Keine doppelte Erfassung.`,
+            message: `Diese Rechnung existiert bereits: ${duplicate.workshopName}, ${duplicate.date}, ${duplicate.totalAmount} ${duplicate.currency || DEFAULT_CURRENCY}. Keine doppelte Erfassung.`,
           }
         }
 
@@ -413,7 +414,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
             date,
             totalAmount,
             mileageAtService: mileageAtService || 0,
-            currency: currency || 'EUR',
+            currency: currency || DEFAULT_CURRENCY,
             imageData,
             ocrCacheId,
             items,
@@ -459,7 +460,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
             workshopName,
             date,
             totalAmount,
-            currency: currency || 'EUR',
+            currency: currency || DEFAULT_CURRENCY,
             mileageAtService: mileageAtService || 0,
             items: items.map(i => ({ description: i.description, category: i.category, amount: i.amount })),
           },

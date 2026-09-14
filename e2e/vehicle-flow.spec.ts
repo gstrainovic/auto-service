@@ -20,7 +20,7 @@ test.describe('Vehicle Flow', () => {
 
     // READ
     await expect(page.getByText('BMW 320d')).toBeVisible()
-    await expect(page.getByText('45.000 km')).toBeVisible()
+    await expect(page.getByText('45\'000 km')).toBeVisible()
 
     // UPDATE - navigate to detail and edit
     await page.getByText('BMW 320d').click()
@@ -28,7 +28,7 @@ test.describe('Vehicle Flow', () => {
     const dialog = page.locator('[data-pc-name="dialog"]')
     await dialog.getByLabel('Kilometerstand').fill('50000')
     await dialog.getByRole('button', { name: 'Speichern' }).click()
-    await expect(page.getByText('50.000 km')).toBeVisible()
+    await expect(page.getByText('50\'000 km')).toBeVisible()
 
     // DELETE (tests AND cleans up)
     await page.locator('button:has-text("Löschen")').first().click()

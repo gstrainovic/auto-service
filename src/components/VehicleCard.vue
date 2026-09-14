@@ -6,6 +6,7 @@ import Card from 'primevue/card'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { db } from '../lib/instantdb'
+import { formatNumber } from '../lib/locale'
 import { checkDueMaintenances, getMaintenanceSchedule } from '../services/maintenance-schedule'
 
 const props = defineProps<{ vehicle: Vehicle }>()
@@ -88,7 +89,7 @@ function onDelete(event: Event): void {
     <template #content>
       <div class="mileage">
         <i class="pi pi-gauge" />
-        {{ vehicle.mileage.toLocaleString('de-DE') }} km
+        {{ formatNumber(vehicle.mileage) }} km
       </div>
     </template>
     <template #footer>

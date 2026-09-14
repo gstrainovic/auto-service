@@ -20,6 +20,7 @@ import MaintenanceFormDialog from '../components/MaintenanceFormDialog.vue'
 import MediaViewer from '../components/MediaViewer.vue'
 import VehicleForm from '../components/VehicleForm.vue'
 import { db } from '../lib/instantdb'
+import { DEFAULT_CURRENCY, formatCurrency, formatNumber } from '../lib/locale'
 import { useInvoicesStore } from '../stores/invoices'
 import { useMaintenancesStore } from '../stores/maintenances'
 import { useVehiclesStore } from '../stores/vehicles'
@@ -54,7 +55,7 @@ const editInvoiceForm = ref({
   workshopName: '',
   date: '',
   totalAmount: 0,
-  currency: 'EUR',
+  currency: DEFAULT_CURRENCY,
   mileageAtService: 0,
   items: [] as InvoiceItem[],
 })
@@ -117,7 +118,7 @@ function openEditInvoice(inv: Invoice): void {
     workshopName: inv.workshopName || '',
     date: inv.date || '',
     totalAmount: inv.totalAmount || 0,
-    currency: inv.currency || 'EUR',
+    currency: inv.currency || DEFAULT_CURRENCY,
     mileageAtService: inv.mileageAtService || 0,
     items: inv.items ? inv.items.map(i => ({ ...i })) : [],
   }
@@ -196,7 +197,7 @@ async function handleAddInvoice(data: InvoiceFormData): Promise<void> {
     workshopName: data.workshop,
     date: data.date,
     totalAmount: data.amount,
-    currency: data.currency || 'EUR',
+    currency: data.currency || DEFAULT_CURRENCY,
     mileageAtService: vehicle.value.mileage,
     items: data.category
       ? [{
@@ -247,7 +248,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
         {{ vehicle.year }} · {{ vehicle.licensePlate }}
       </div>
       <div class="vehicle-mileage">
-        <i class="pi pi-gauge" /> {{ vehicle.mileage.toLocaleString('de-DE') }} km
+        <i class="pi pi-gauge" /> {{ formatNumber(vehicle.mileage) }} km
       </div>
 
       <Tabs v-model:value="tab">
@@ -312,7 +313,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                     {{ m.description || m.type }}
                   </div>
                   <div class="maintenance-caption">
-                    {{ m.doneAt }} · {{ m.mileageAtService?.toLocaleString('de-DE') }} km
+                    {{ m.doneAt }} · {{ formatNumber(m.mileageAtService) }} km
                   </div>
                 </div>
                 <div class="maintenance-actions">
@@ -365,7 +366,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                     {{ inv.workshopName }}
                   </div>
                   <div class="invoice-caption">
-                    {{ inv.date }} · {{ inv.totalAmount?.toFixed(2) }} {{ inv.currency || 'EUR' }}
+                    {{ inv.date }} · {{ formatCurrency(inv.totalAmount, inv.currency || DEFAULT_CURRENCY) }}
                   </div>
                 </div>
                 <i class="pi pi-chevron-right" />
@@ -393,7 +394,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
           {{ selectedInvoice.workshopName }}
         </div>
         <div class="dialog-subheader">
-          {{ selectedInvoice.date }} · {{ selectedInvoice.totalAmount?.toFixed(2) }} {{ selectedInvoice.currency || 'EUR' }}
+          {{ selectedInvoice.date }} · {{ formatCurrency(selectedInvoice.totalAmount, selectedInvoice.currency || DEFAULT_CURRENCY) }}
         </div>
 
         <div v-if="selectedInvoice.imageData" class="invoice-image-section">
@@ -422,7 +423,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                 </div>
               </div>
               <div class="position-amount">
-                {{ item.amount?.toFixed(2) }} {{ selectedInvoice.currency || 'EUR' }}
+                {{ formatCurrency(item.amount, selectedInvoice.currency || DEFAULT_CURRENCY) }}
               </div>
             </div>
           </div>

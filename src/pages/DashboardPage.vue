@@ -8,6 +8,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import StatCard from '../components/StatCard.vue'
 import { db, tx } from '../lib/instantdb'
+import { DEFAULT_CURRENCY, formatCurrency, formatNumber } from '../lib/locale'
 import { checkDueMaintenances, getMaintenanceSchedule } from '../services/maintenance-schedule'
 import { useInvoicesStore } from '../stores/invoices'
 import { useVehiclesStore } from '../stores/vehicles'
@@ -104,16 +105,12 @@ function getVehicleInvoiceCount(vehicleId: string): number {
   return invoicesStore.getByVehicleId(vehicleId).length
 }
 
-function formatCurrency(value: number, currency: string = 'EUR') {
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency }).format(value)
-}
-
 // Group totals by currency
 const totalsByCurrency = computed(() => {
   const totals: Record<string, number> = {}
   for (const v of vehiclesStore.vehicles) {
     for (const inv of invoicesStore.getByVehicleId(v.id)) {
-      const currency = inv.currency || 'EUR'
+      const currency = inv.currency || DEFAULT_CURRENCY
       totals[currency] = (totals[currency] || 0) + (inv.totalAmount || 0)
     }
   }
@@ -172,7 +169,7 @@ const totalInvoiceCount = computed(() =>
         {{ vehicle.make }} {{ vehicle.model }}
       </h3>
       <div class="vehicle-subtitle">
-        {{ vehicle.mileage?.toLocaleString('de-DE') || 0 }} km · {{ vehicle.licensePlate }}
+        {{ formatNumber(vehicle.mileage) }} km · {{ vehicle.licensePlate }}
         <span v-if="getVehicleTotalCost(vehicle.id) > 0" class="vehicle-cost">
           {{ formatCurrency(getVehicleTotalCost(vehicle.id)) }} · {{ getVehicleInvoiceCount(vehicle.id) }} Rechnungen
         </span>
@@ -206,7 +203,7 @@ const totalInvoiceCount = computed(() =>
               {{ item.label }}
             </div>
             <div v-if="item.lastDoneAt" class="maintenance-caption">
-              Zuletzt: {{ item.lastDoneAt }} bei {{ item.lastMileage?.toLocaleString('de-DE') }} km
+              Zuletzt: {{ item.lastDoneAt }} bei {{ formatNumber(item.lastMileage) }} km
             </div>
           </div>
           <div class="maintenance-actions">

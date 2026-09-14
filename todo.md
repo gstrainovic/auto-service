@@ -23,11 +23,20 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 - [ ] Backups zusätzlich ausserhalb der Instanz ablegen (Object Storage im selben OpenStack-Projekt, eigenes Application Credential nur dafür); Restore einmal nach README durchspielen
 - [ ] Health-Checks (`api.`/health/system, `ai.`/health) in ein Uptime-Monitoring aufnehmen, sobald ein Pilot läuft
 
+## Sobald über die Schweiz hinaus verkauft wird (DACH oder global)
+
+Heute sind Währung (CHF), Zahlenformat (de-CH, `src/lib/locale.ts`) und Sprache (Deutsch) fest im Code. Vor dem ersten Kunden ausserhalb der Schweiz:
+- [ ] Deploy-Standards pro Installation: Währung, Sprache, Zahlen- und Datumsformat, Kilometer/Meilen als Konfiguration (`VITE_*` oder Server-Einstellung), nicht als Konstante
+- [ ] Nutzer-Einstellungen im Profil: eigene Währung, Sprache und Formate überschreiben die Deploy-Standards; Rechnungen behalten ihre Original-Währung
+- [ ] Texte über i18n (vue-i18n oder gleichwertig), DE zuerst, EN als zweite Sprache; Landing Pages und Datenschutz je Sprache
+- [ ] Preise und Pläne pro Land (`plans.ts`): Währung, MWST-Hinweis, Zahlungsanbieter je Region (Kapitel 4 und 6 im Businessplan: EU-Privatkunden nur mit OSS-Registrierung oder Merchant of Record)
+
 ## Nach dem Entscheid
 
 Bei bestätigter Kleinbetriebs-Hypothese (H1):
 - [ ] Mehrere Nutzer pro Konto (Fahrer wirft Rechnung ein, Inhaber sieht alles)
-- [ ] Kostenübersicht pro Fahrzeug und Jahr, Export für den Treuhänder
+- [ ] Kostenübersicht pro Fahrzeug und Jahr, Export für den Treuhänder (PDF Verkaufsdossier, CSV/Excel), nach Kategorie
+- [ ] Gemischte Währungen (Grenzregion, EUR-Rechnungen): Umrechnung in die Heimwährung des Kontos zum Kurs am Rechnungsdatum für Jahresübersicht und Export, Originalbetrag und -währung bleiben an der Rechnung; bis dahin summiert das Dashboard pro Währung getrennt
 - [ ] Preis aus den Antworten festlegen, `src/shared/plans.ts` und Businessplan angleichen
 
 Bei bestätigter Privathalter-Hypothese (H2):

@@ -152,7 +152,7 @@ test.describe('Vehicle CRUD', () => {
     // Verify updated values
     await expect(page.getByText('Mercedes C220')).toBeVisible()
     await expect(page.getByText('2022')).toBeVisible()
-    await expect(page.getByText('30.000 km')).toBeVisible()
+    await expect(page.getByText('30\'000 km')).toBeVisible()
 
     // DELETE (cleanup)
     await deleteVehicleViaUI(page)
@@ -457,7 +457,7 @@ test.describe('Maintenance CRUD', () => {
     await expect(page.getByText('Vollsynthetisches Öl gewechselt')).toBeVisible(
       { timeout: 5_000 },
     )
-    await expect(page.getByText('76.000 km')).toBeVisible()
+    await expect(page.getByText('76\'000 km')).toBeVisible()
 
     // DELETE (cleanup)
     await deleteVehicleViaUI(page)

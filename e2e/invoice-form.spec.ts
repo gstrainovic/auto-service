@@ -72,6 +72,7 @@ test.describe('Invoice Form', () => {
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
 
     // Invoice should appear in list
-    await expect(page.getByText(/150.*EUR/)).toBeVisible()
+    // Standardwährung CHF, Schweizer Format (CHF 150.00)
+    await expect(page.getByText(/CHF.150\.00/)).toBeVisible()
   })
 })

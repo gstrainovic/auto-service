@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ToolResult } from '../services/chat'
 import Panel from 'primevue/panel'
+import { DEFAULT_CURRENCY, formatNumber } from '../lib/locale'
 
 const props = defineProps<{ result: ToolResult }>()
 
@@ -46,7 +47,7 @@ function summary(): string {
   if (d.make)
     return `${d.make} ${d.model ?? ''} ${d.year ? `(${d.year})` : ''}`.trim()
   if (d.workshopName)
-    return `${d.workshopName} — ${d.totalAmount ?? ''} ${d.currency || 'EUR'}`.trim()
+    return `${d.workshopName} — ${d.totalAmount ?? ''} ${d.currency || DEFAULT_CURRENCY}`.trim()
   if (d.schedule?.length)
     return `${d.schedule.length} Wartungsintervalle`
   if (d.type && d.description)
@@ -68,7 +69,7 @@ function fields(): { label: string, value: string }[] {
     let value = String(val)
     // Format known numeric fields
     if ((key === 'mileage' || key === 'mileageAtService') && !Number.isNaN(Number(val)))
-      value = `${Number(val).toLocaleString('de-DE')} km`
+      value = `${formatNumber(Number(val))} km`
     if (key === 'totalAmount' && d.currency)
       value = `${val} ${d.currency}`
     f.push({ label, value })

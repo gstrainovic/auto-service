@@ -11,6 +11,7 @@ import { computed, ref } from 'vue'
 import { z } from 'zod'
 import { useFormValidation } from '../composables/useFormValidation'
 import { useImageUpload } from '../composables/useImageUpload'
+import { DEFAULT_CURRENCY, LOCALE } from '../lib/locale'
 import { MAINTENANCE_CATEGORIES } from '../services/ai'
 
 interface Props {
@@ -46,8 +47,8 @@ const { errors, validate } = useFormValidation(invoiceSchema)
 
 // Currency options
 const currencyOptions = [
-  { label: 'EUR', value: 'EUR' as const },
   { label: 'CHF', value: 'CHF' as const },
+  { label: 'EUR', value: 'EUR' as const },
 ]
 
 // Form data
@@ -55,13 +56,13 @@ const formData = ref<InvoiceFormData>({
   date: props.initialData?.date || '',
   workshop: props.initialData?.workshop || '',
   amount: props.initialData?.amount,
-  currency: props.initialData?.currency || 'EUR',
+  currency: props.initialData?.currency || DEFAULT_CURRENCY,
   category: props.initialData?.category,
   description: props.initialData?.description || '',
 })
 
 // Computed currency for InputNumber
-const selectedCurrency = computed(() => formData.value.currency || 'EUR')
+const selectedCurrency = computed(() => formData.value.currency || DEFAULT_CURRENCY)
 
 // Category options
 const categoryOptions = MAINTENANCE_CATEGORIES.map(cat => ({
@@ -117,7 +118,7 @@ function handleCancel() {
             name="amount"
             mode="currency"
             :currency="selectedCurrency"
-            locale="de-DE"
+            :locale="LOCALE"
             :invalid="!!errors.amount"
             fluid
           />

@@ -24,6 +24,8 @@
     "@strainovic/ai-proxy": "file:../ai-proxy",
     "ai": "^6.0.63",
     "dompurify": "^3.3.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "marked": "^17.0.1",
     "pinia": "^3.0.4",
     "primeicons": "^7.0.0",

@@ -1,0 +1,82 @@
+import type { Page } from '@playwright/test'
+import { Buffer } from 'node:buffer'
+import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
+
+// Kostenübersicht pro Jahr und Kategorie, CSV für Excel/Treuhänder, PDF-Dossier für Verkauf und Übergabe
+
+async function seedVehicleWithInvoices(page: Page): Promise<string> {
+  await page.goto('/')
+  await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 30_000 })
+  return page.evaluate(async () => {
+    const { db, tx, id: genId } = (window as any).__instantdb
+    const vehicleId = genId()
+    const now = new Date().toISOString()
+    await db.transact([
+      tx.vehicles[vehicleId].update({ make: 'VW', model: 'Caddy', year: 2019, mileage: 68500, licensePlate: 'SG 12345', createdAt: now, updatedAt: now }),
+      tx.invoices[genId()].update({ vehicleId, workshopName: 'Garage Muster', date: '2025-11-02', totalAmount: 480, currency: 'CHF', mileageAtService: 61000, items: [
+        { description: 'Ölwechsel', category: 'oelwechsel', amount: 180 },
+        { description: 'Bremsbeläge vorne', category: 'bremsen', amount: 300 },
+      ], createdAt: now, updatedAt: now }),
+      tx.invoices[genId()].update({ vehicleId, workshopName: 'Pneu Egger', date: '2026-03-10', totalAmount: 890.5, currency: 'CHF', mileageAtService: 68500, items: [
+        { description: 'Sommerreifen', category: 'reifen', amount: 890.5 },
+      ], createdAt: now, updatedAt: now }),
+      tx.maintenances[genId()].update({ vehicleId, type: 'oelwechsel', doneAt: '2025-11-02', mileageAtService: 61000, status: 'done', createdAt: now, updatedAt: now }),
+    ])
+    return vehicleId as string
+  })
+}
+
+test.describe('Kosten und Export', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
+
+  test('RE-001: Kosten-Tab zeigt Summen pro Jahr und Kategorie', async ({ page }) => {
+    const vehicleId = await seedVehicleWithInvoices(page)
+    await page.goto(`/vehicles/${vehicleId}`)
+    await page.getByRole('tab', { name: 'Kosten' }).click()
+
+    const table = page.getByRole('table', { name: 'Kosten pro Jahr' })
+    await expect(table).toBeVisible()
+    const row2026 = table.getByRole('row').filter({ hasText: '2026' })
+    await expect(row2026).toContainText('CHF 890.50')
+    const row2025 = table.getByRole('row').filter({ hasText: '2025' })
+    await expect(row2025).toContainText('CHF 480.00')
+    await expect(row2025).toContainText('180.00')
+    await expect(row2025).toContainText('300.00')
+    // Kategorien stehen in der Kopfzeile
+    await expect(table.getByRole('columnheader', { name: 'Ölwechsel' })).toBeVisible()
+    await expect(table.getByRole('columnheader', { name: 'Bremsen' })).toBeVisible()
+    await expect(table.getByRole('columnheader', { name: 'Reifen' })).toBeVisible()
+    await expect(page.getByText('Gesamt CHF 1\'370.50')).toBeVisible()
+  })
+
+  test('RE-002: CSV-Export liefert eine Excel-taugliche Datei', async ({ page }) => {
+    const vehicleId = await seedVehicleWithInvoices(page)
+    await page.goto(`/vehicles/${vehicleId}`)
+    await page.getByRole('tab', { name: 'Kosten' }).click()
+
+    const download = page.waitForEvent('download')
+    await page.getByRole('button', { name: 'CSV für Excel' }).click()
+    const file = await download
+    expect(file.suggestedFilename()).toMatch(/^wartungsheft-vw-caddy-sg-12345-\d{4}-\d{2}-\d{2}\.csv$/)
+    const text = await (await file.createReadStream()).toArray().then(chunks => Buffer.concat(chunks as Buffer[]).toString('utf8'))
+    expect(text.startsWith('﻿Fahrzeug;Kennzeichen;Datum;Werkstatt')).toBe(true)
+    expect(text).toContain('VW Caddy;SG 12345;2025-11-02;Garage Muster;61000;Ölwechsel;Ölwechsel;180.00;CHF')
+    expect(text).toContain('2026-03-10;Pneu Egger;68500;Reifen;Sommerreifen;890.50;CHF')
+  })
+
+  test('RE-003: PDF-Dossier wird als Datei geladen', async ({ page }) => {
+    const vehicleId = await seedVehicleWithInvoices(page)
+    await page.goto(`/vehicles/${vehicleId}`)
+    await page.getByRole('tab', { name: 'Kosten' }).click()
+
+    const download = page.waitForEvent('download')
+    await page.getByRole('button', { name: 'PDF-Dossier' }).click()
+    const file = await download
+    expect(file.suggestedFilename()).toMatch(/^wartungsheft-vw-caddy-sg-12345-\d{4}-\d{2}-\d{2}\.pdf$/)
+    const bytes = await (await file.createReadStream()).toArray().then(chunks => Buffer.concat(chunks as Buffer[]))
+    expect(bytes.subarray(0, 5).toString()).toBe('%PDF-')
+    expect(bytes.length).toBeGreaterThan(2000)
+  })
+})

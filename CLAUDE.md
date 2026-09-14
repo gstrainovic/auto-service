@@ -158,6 +158,11 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - `maxRetries: 0` auf allen AI SDK Calls — verhindert SDK-interne Retries (default: 2) die Rate-Limit aufbrauchen
 
 ## Key Patterns
+- Währung und Zahlenformat nur über `src/lib/locale.ts` (CHF, `1'234.50`, bewusst ohne Intl, weil Browser und Node für de-CH
+  verschiedene Apostrophe liefern). Rechnungen behalten ihre erkannte Währung, Summen bleiben pro Währung getrennt.
+- Auswertungen und Exporte: `src/services/report.ts` (Kosten pro Jahr und Kategorie, CSV mit BOM und Semikolon für Excel de-CH,
+  reine Funktionen) und `src/services/pdf-report.ts` (jsPDF + jspdf-autotable, Dossier mit Stammdaten, Wartungen, Kosten,
+  Rechnungen). UI: Tab «Kosten» auf der Fahrzeugseite, Downloads über Blob-Links, E2E `report-export.spec.ts` prüft die Dateien.
 - AI SDK v6: `inputSchema` (not `parameters`), `stopWhen: stepCountIs(n)` (not maxSteps)
 - Chat tools write directly to InstantDB — no REST API layer
 - Chat stepCount=5 (Phase 2), dynamisch höher für PDF mit vielen Seiten

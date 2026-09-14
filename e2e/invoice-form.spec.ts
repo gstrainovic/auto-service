@@ -73,6 +73,6 @@ test.describe('Invoice Form', () => {
 
     // Invoice should appear in list
     // Standardwährung CHF, Schweizer Format (CHF 150.00)
-    await expect(page.getByText(/CHF.150\.00/)).toBeVisible()
+    await expect(page.locator('.invoice-item').getByText(/CHF.150\.00/)).toBeVisible()
   })
 })

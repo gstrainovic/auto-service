@@ -196,7 +196,7 @@ test.describe('Invoice CRUD', () => {
     await seedInvoice(page, vehicleId)
 
     // Switch to invoices tab and wait for data (RxDB subscription is live)
-    await page.getByText('Rechnungen').click()
+    await page.getByRole('tab', { name: 'Rechnungen' }).click()
     await expect(page.getByText('Werkstatt Schmidt')).toBeVisible({
       timeout: 10_000,
     })
@@ -230,11 +230,12 @@ test.describe('Invoice CRUD', () => {
     await editDialog.getByRole('button', { name: 'Speichern' }).click()
 
     // Verify updated values in the list
-    await page.getByText('Rechnungen').click()
+    await page.getByRole('tab', { name: 'Rechnungen' }).click()
     await expect(page.getByText('Autohaus Müller')).toBeVisible({
       timeout: 5_000,
     })
-    await expect(page.getByText('550.00')).toBeVisible()
+    // Betrag in der Rechnungsliste (der Kosten-Tab zeigt dieselbe Zahl nochmals)
+    await expect(page.locator('.invoice-item').getByText(/550\.00/)).toBeVisible()
 
     // DELETE (cleanup)
     await deleteVehicleViaUI(page)
@@ -251,7 +252,7 @@ test.describe('Invoice CRUD', () => {
     const vehicleId = getVehicleIdFromUrl(page)
     await seedInvoice(page, vehicleId)
 
-    await page.getByText('Rechnungen').click()
+    await page.getByRole('tab', { name: 'Rechnungen' }).click()
     await expect(page.getByText('Werkstatt Schmidt')).toBeVisible({
       timeout: 10_000,
     })
@@ -290,7 +291,7 @@ test.describe('Invoice CRUD', () => {
     await editDialog.getByRole('button', { name: 'Speichern' }).click()
 
     // Verify — reopen
-    await page.getByText('Rechnungen').click()
+    await page.getByRole('tab', { name: 'Rechnungen' }).click()
     await page.getByText('Werkstatt Schmidt').click()
     await expect(
       page.locator('[data-pc-name="dialog"]').getByText('Luftfilter'),
@@ -315,7 +316,7 @@ test.describe('Invoice CRUD', () => {
     const vehicleId = getVehicleIdFromUrl(page)
     await seedInvoice(page, vehicleId)
 
-    await page.getByText('Rechnungen').click()
+    await page.getByRole('tab', { name: 'Rechnungen' }).click()
     await expect(page.getByText('Werkstatt Schmidt')).toBeVisible({
       timeout: 10_000,
     })
@@ -390,7 +391,7 @@ test.describe('Invoice Duplicate Detection', () => {
     expect(result.workshopName).toBe('Werkstatt Schmidt')
 
     // Verify only one invoice is visible in the UI
-    await page.getByText('Rechnungen').click()
+    await page.getByRole('tab', { name: 'Rechnungen' }).click()
     await expect(page.getByText('Werkstatt Schmidt')).toBeVisible({
       timeout: 10_000,
     })

@@ -21,6 +21,8 @@ import MediaViewer from '../components/MediaViewer.vue'
 import VehicleForm from '../components/VehicleForm.vue'
 import { db } from '../lib/instantdb'
 import { DEFAULT_CURRENCY, formatCurrency, formatNumber } from '../lib/locale'
+import { buildDossier, dossierFilename } from '../services/pdf-report'
+import { categoryLabel, costsByYear, invoicesToCsv } from '../services/report'
 import { useInvoicesStore } from '../stores/invoices'
 import { useMaintenancesStore } from '../stores/maintenances'
 import { useVehiclesStore } from '../stores/vehicles'
@@ -212,6 +214,40 @@ async function handleAddInvoice(data: InvoiceFormData): Promise<void> {
   showAddInvoiceDialog.value = false
 }
 
+// Kostenübersicht und Exporte (CSV für Excel und Treuhänder, PDF-Dossier für Verkauf und Übergabe)
+const yearCosts = computed(() => costsByYear(invoicesStore.invoices))
+const costCategories = computed(() => [...new Set(yearCosts.value.flatMap(r => Object.keys(r.byCategory)))])
+const grandTotals = computed(() => {
+  const totals: Record<string, number> = {}
+  for (const r of yearCosts.value)
+    totals[r.currency] = Math.round(((totals[r.currency] ?? 0) + r.total) * 100) / 100
+  return Object.entries(totals).map(([currency, total]) => formatCurrency(total, currency)).join(' + ')
+})
+
+function saveFile(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function exportCsv(): void {
+  if (!vehicle.value)
+    return
+  const csv = invoicesToCsv(invoicesStore.invoices, vehicle.value)
+  const name = dossierFilename(vehicle.value).replace(/\.pdf$/, '.csv')
+  saveFile(new Blob([csv], { type: 'text/csv;charset=utf-8' }), name)
+}
+
+function exportPdf(): void {
+  if (!vehicle.value)
+    return
+  const doc = buildDossier({ vehicle: vehicle.value, invoices: invoicesStore.invoices, maintenances: maintenancesStore.maintenances })
+  saveFile(doc.output('blob'), dossierFilename(vehicle.value))
+}
+
 async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
   if (!vehicle.value)
     return
@@ -258,6 +294,9 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
           </Tab>
           <Tab value="invoices">
             Rechnungen
+          </Tab>
+          <Tab value="costs">
+            Kosten
           </Tab>
         </TabList>
 
@@ -375,6 +414,49 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
             <div v-if="invoicesStore.invoices.length === 0" class="empty-state">
               <i class="pi pi-file empty-icon" />
               <p>Keine Rechnungen. Scanne deine erste Werkstattrechnung!</p>
+            </div>
+          </TabPanel>
+
+          <TabPanel value="costs">
+            <div class="tab-header costs-actions">
+              <Button icon="pi pi-file-excel" label="CSV für Excel" severity="secondary" outlined :disabled="!invoicesStore.invoices.length" @click="exportCsv" />
+              <Button icon="pi pi-file-pdf" label="PDF-Dossier" severity="primary" @click="exportPdf" />
+            </div>
+            <div v-if="yearCosts.length" class="costs-table-wrap">
+              <table class="costs-table" aria-label="Kosten pro Jahr">
+                <thead>
+                  <tr>
+                    <th>Jahr</th>
+                    <th v-for="c in costCategories" :key="c" class="num">
+                      {{ categoryLabel(c) }}
+                    </th>
+                    <th class="num">
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="r in yearCosts" :key="`${r.year}-${r.currency}`">
+                    <td>{{ r.year }} <span class="costs-currency">{{ r.currency }}</span></td>
+                    <td v-for="c in costCategories" :key="c" class="num">
+                      {{ r.byCategory[c] === undefined ? '' : formatNumber(r.byCategory[c], 2) }}
+                    </td>
+                    <td class="num costs-total">
+                      {{ formatCurrency(r.total, r.currency) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="costs-grand">
+                Gesamt {{ grandTotals }}
+              </div>
+              <p class="costs-hint">
+                Summen pro Währung getrennt, Positionen nach Kategorie. CSV öffnet sich in Excel mit Schweizer Format; das PDF enthält Stammdaten, Wartungshistorie, Kosten und Rechnungen.
+              </p>
+            </div>
+            <div v-else class="empty-state">
+              <i class="pi pi-chart-bar empty-icon" />
+              <p>Noch keine Belege erfasst, darum keine Kosten. Das PDF-Dossier geht trotzdem, mit Stammdaten und Wartungen.</p>
             </div>
           </TabPanel>
         </TabPanels>
@@ -883,5 +965,55 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.costs-actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.costs-table-wrap {
+  overflow-x: auto;
+}
+
+.costs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.costs-table th,
+.costs-table td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--p-surface-border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.costs-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.costs-table .costs-total {
+  font-weight: 600;
+}
+
+.costs-currency {
+  color: var(--p-text-muted-color);
+  font-size: 0.8rem;
+  margin-left: 0.25rem;
+}
+
+.costs-grand {
+  margin-top: 0.75rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.costs-hint {
+  margin: 0.75rem 0 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.85rem;
 }
 </style>

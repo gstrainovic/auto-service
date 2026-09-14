@@ -6,7 +6,7 @@
  * der Betrag in der Originalwährung stehen, nie stillschweigend falsch.
  */
 import type { Invoice } from '../stores/invoices'
-import { DEFAULT_CURRENCY } from '../lib/locale'
+import { normalizeCurrency } from '../lib/locale'
 
 export type RateMap = Map<string, number>
 type FetchFn = (url: string) => Promise<Response>
@@ -82,7 +82,7 @@ export async function resolveRates(invoices: Invoice[], homeCurrency: string, fe
   const rates: RateMap = new Map()
   const wanted = new Map<string, [string, string]>()
   for (const inv of invoices) {
-    const currency = inv.currency || DEFAULT_CURRENCY
+    const currency = normalizeCurrency(inv.currency)
     if (currency !== homeCurrency && inv.date)
       wanted.set(rateKey(currency, homeCurrency, inv.date), [currency, inv.date])
   }

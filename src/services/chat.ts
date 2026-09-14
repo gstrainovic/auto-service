@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { getCurrentUserId } from '../composables/useAuth'
 import { autoRotateForDocument } from '../composables/useImageResize'
 import { db, id as instantId, tx } from '../lib/instantdb'
-import { DEFAULT_CURRENCY } from '../lib/locale'
+import { DEFAULT_CURRENCY, normalizeCurrency } from '../lib/locale'
 import { callMistralOcr, callMistralOcrPdf, getModel, hashImage, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument, withRetry } from './ai'
 import { checkDueMaintenances, getMaintenanceSchedule } from './maintenance-schedule'
 
@@ -414,7 +414,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
             date,
             totalAmount,
             mileageAtService: mileageAtService || 0,
-            currency: currency || DEFAULT_CURRENCY,
+            currency: normalizeCurrency(currency),
             imageData,
             ocrCacheId,
             items,
@@ -460,7 +460,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
             workshopName,
             date,
             totalAmount,
-            currency: currency || DEFAULT_CURRENCY,
+            currency: normalizeCurrency(currency),
             mileageAtService: mileageAtService || 0,
             items: items.map(i => ({ description: i.description, category: i.category, amount: i.amount })),
           },

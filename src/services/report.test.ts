@@ -99,6 +99,11 @@ describe('costsByYear mit Heimwährung', () => {
     expect(rows[0]!.converted).toBe(1)
   })
 
+  it('behandelt das Euro-Symbol aus dem Scan wie EUR', () => {
+    const rows = costsByYear([inv({ id: 'e', date: '2026-05-20', totalAmount: 100, currency: '€' })], { homeCurrency: 'CHF', rates })
+    expect(rows).toEqual([{ year: 2026, currency: 'CHF', total: 95, byCategory: { sonstiges: 95 }, converted: 1, unconverted: 0 }])
+  })
+
   it('lässt Rechnungen ohne Kurs in ihrer Währung stehen', () => {
     const rows = costsByYear(invoices, { homeCurrency: 'CHF', rates: new Map() })
     expect(rows.map(r => [r.year, r.currency, r.total])).toEqual([[2026, 'CHF', 890.5], [2026, 'EUR', 120], [2025, 'CHF', 480]])

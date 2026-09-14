@@ -19,3 +19,24 @@ export function formatNumber(value: number | undefined | null, decimals = 0): st
 export function formatCurrency(value: number | undefined | null, currency: string = DEFAULT_CURRENCY): string {
   return `${currency} ${formatNumber(value, 2)}`
 }
+
+const CURRENCY_ALIASES: Record<string, string> = {
+  '€': 'EUR',
+  'EURO': 'EUR',
+  'FR.': 'CHF',
+  'FR': 'CHF',
+  'SFR.': 'CHF',
+  'SFR': 'CHF',
+  'FRANKEN': 'CHF',
+  '$': 'USD',
+  'US$': 'USD',
+}
+
+/** Währung aus Scan oder Formular auf einen ISO-Code bringen; leer heisst Standardwährung, Unbekanntes bleibt stehen. */
+export function normalizeCurrency(value: string | undefined | null): string {
+  const raw = (value ?? '').trim()
+  if (!raw)
+    return DEFAULT_CURRENCY
+  const upper = raw.toUpperCase()
+  return CURRENCY_ALIASES[upper] ?? upper
+}

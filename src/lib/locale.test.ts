@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_CURRENCY, formatCurrency, formatNumber } from './locale'
+import { DEFAULT_CURRENCY, formatCurrency, formatNumber, normalizeCurrency } from './locale'
 
 // Schweizer Standard: CHF, Apostroph als Tausendertrenner, Punkt als Dezimaltrenner
 describe('locale', () => {
@@ -20,6 +20,21 @@ describe('locale', () => {
   it('nimmt undefined als 0', () => {
     expect(formatCurrency(undefined)).toBe('CHF 0.00')
     expect(formatNumber(null)).toBe('0')
+  })
+
+  it('normalisiert Währungssymbole und Schreibweisen aus dem Scan auf ISO-Codes', () => {
+    expect(normalizeCurrency('€')).toBe('EUR')
+    expect(normalizeCurrency('EUR')).toBe('EUR')
+    expect(normalizeCurrency('eur')).toBe('EUR')
+    expect(normalizeCurrency('Euro')).toBe('EUR')
+    expect(normalizeCurrency('CHF')).toBe('CHF')
+    expect(normalizeCurrency('Fr.')).toBe('CHF')
+    expect(normalizeCurrency('SFr.')).toBe('CHF')
+    expect(normalizeCurrency('$')).toBe('USD')
+    expect(normalizeCurrency(' chf ')).toBe('CHF')
+    expect(normalizeCurrency(undefined)).toBe(DEFAULT_CURRENCY)
+    expect(normalizeCurrency('')).toBe(DEFAULT_CURRENCY)
+    expect(normalizeCurrency('XYZ')).toBe('XYZ')
   })
 
   it('formatiert Kilometer ohne Nachkommastellen', () => {

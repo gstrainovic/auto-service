@@ -22,7 +22,7 @@ import MaintenanceFormDialog from '../components/MaintenanceFormDialog.vue'
 import MediaViewer from '../components/MediaViewer.vue'
 import VehicleForm from '../components/VehicleForm.vue'
 import { db } from '../lib/instantdb'
-import { DEFAULT_CURRENCY, formatCurrency, formatNumber } from '../lib/locale'
+import { DEFAULT_CURRENCY, formatCurrency, formatNumber, normalizeCurrency } from '../lib/locale'
 import { resolveRates } from '../services/fx'
 import { buildDossier, dossierFilename } from '../services/pdf-report'
 import { categoryLabel, costsByYear, invoicesToCsv } from '../services/report'
@@ -425,7 +425,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                     {{ inv.workshopName }}
                   </div>
                   <div class="invoice-caption">
-                    {{ inv.date }} · {{ formatCurrency(inv.totalAmount, inv.currency || DEFAULT_CURRENCY) }}
+                    {{ inv.date }} · {{ formatCurrency(inv.totalAmount, normalizeCurrency(inv.currency)) }}
                   </div>
                 </div>
                 <i class="pi pi-chevron-right" />
@@ -502,7 +502,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
           {{ selectedInvoice.workshopName }}
         </div>
         <div class="dialog-subheader">
-          {{ selectedInvoice.date }} · {{ formatCurrency(selectedInvoice.totalAmount, selectedInvoice.currency || DEFAULT_CURRENCY) }}
+          {{ selectedInvoice.date }} · {{ formatCurrency(selectedInvoice.totalAmount, normalizeCurrency(selectedInvoice.currency)) }}
         </div>
 
         <div v-if="selectedInvoice.imageData" class="invoice-image-section">
@@ -531,7 +531,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                 </div>
               </div>
               <div class="position-amount">
-                {{ formatCurrency(item.amount, selectedInvoice.currency || DEFAULT_CURRENCY) }}
+                {{ formatCurrency(item.amount, normalizeCurrency(selectedInvoice.currency)) }}
               </div>
             </div>
           </div>

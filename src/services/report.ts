@@ -7,7 +7,7 @@
 import type { Invoice } from '../stores/invoices'
 import type { Maintenance } from '../stores/maintenances'
 import type { RateMap } from './fx'
-import { DEFAULT_CURRENCY, formatNumber } from '../lib/locale'
+import { formatNumber, normalizeCurrency } from '../lib/locale'
 import { rateKey } from './fx'
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -66,7 +66,7 @@ interface Priced {
 
 /** Entscheidet pro Rechnung, in welcher Währung und mit welchem Faktor sie zählt. */
 function price(inv: Invoice, opts?: CurrencyOptions): Priced {
-  const currency = inv.currency || DEFAULT_CURRENCY
+  const currency = normalizeCurrency(inv.currency)
   if (!opts || currency === opts.homeCurrency)
     return { currency, factor: 1, converted: false, unconverted: false }
   // Kurs ungerundet als Faktor; gerundet wird erst der Betrag
@@ -166,7 +166,7 @@ export function invoicesToCsvRows(entries: { inv: Invoice, vehicle: VehicleInfo 
         categoryLabel(item.category || 'sonstiges'),
         item.description ?? '',
         (item.amount ?? 0).toFixed(2),
-        inv.currency || DEFAULT_CURRENCY,
+        normalizeCurrency(inv.currency),
       ]
       if (opts) {
         row.push(

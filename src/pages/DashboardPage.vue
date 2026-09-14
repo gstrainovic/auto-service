@@ -10,7 +10,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import StatCard from '../components/StatCard.vue'
 import { db, tx } from '../lib/instantdb'
-import { DEFAULT_CURRENCY, formatCurrency, formatNumber } from '../lib/locale'
+import { formatCurrency, formatNumber, normalizeCurrency } from '../lib/locale'
 import { resolveRates } from '../services/fx'
 import { checkDueMaintenances, getMaintenanceSchedule } from '../services/maintenance-schedule'
 import { dossierFilename } from '../services/pdf-report'
@@ -44,10 +44,10 @@ watch(
 )
 const currencyOpts = computed<CurrencyOptions>(() => ({ homeCurrency: settings.homeCurrency, rates: rates.value }))
 const fleetRows = computed(() => fleetCostsByVehicleYear(vehiclesStore.vehicles, invoicesStore.invoices, currencyOpts.value))
-const foreignInvoices = computed(() => invoicesStore.invoices.filter(i => (i.currency || DEFAULT_CURRENCY) !== settings.homeCurrency))
-const fleetConverted = computed(() => foreignInvoices.value.filter(i => rates.value.has(`${i.currency}|${settings.homeCurrency}|${i.date}`)).length)
+const foreignInvoices = computed(() => invoicesStore.invoices.filter(i => normalizeCurrency(i.currency) !== settings.homeCurrency))
+const fleetConverted = computed(() => foreignInvoices.value.filter(i => rates.value.has(`${normalizeCurrency(i.currency)}|${settings.homeCurrency}|${i.date}`)).length)
 const fleetUnconverted = computed(() => foreignInvoices.value.length - fleetConverted.value)
-const foreignCurrencies = computed(() => [...new Set(foreignInvoices.value.map(i => i.currency))].join(', '))
+const foreignCurrencies = computed(() => [...new Set(foreignInvoices.value.map(i => normalizeCurrency(i.currency)))].join(', '))
 
 function exportFleetCsv(): void {
   const byId = new Map(vehiclesStore.vehicles.map(v => [v.id, v]))
@@ -148,7 +148,7 @@ const totalsByCurrency = computed(() => {
   const totals: Record<string, number> = {}
   for (const v of vehiclesStore.vehicles) {
     for (const inv of invoicesStore.getByVehicleId(v.id)) {
-      const currency = inv.currency || DEFAULT_CURRENCY
+      const currency = normalizeCurrency(inv.currency)
       totals[currency] = (totals[currency] || 0) + (inv.totalAmount || 0)
     }
   }

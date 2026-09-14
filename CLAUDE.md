@@ -95,6 +95,19 @@ podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;
 - **Echtzeit-Sync** — Änderungen werden sofort an alle Clients gepusht
 - **Offline-First** — Daten in IndexedDB, Lesen+Schreiben funktionieren offline, Sync via CRDT bei Reconnect
 
+### Google-Login (Redirect-Flow von InstantDB)
+- Login-Seite: Link «Mit Google anmelden» aus `db.auth.createAuthorizationURL({ clientName: 'google-web', redirectURL })`
+  (`useAuth().googleAuthUrl()`), führt auf `https://api.wartungsheft.ch/runtime/oauth/start`, das Backend legt die Session an
+  und leitet auf `/dashboard`. Gleiche E-Mail wie beim Magic Code ergibt denselben Nutzer.
+- Google Cloud: Projekt `auto-service` (`gen-lang-client-0650867108`, dasselbe wie der Gemini-Key), OAuth-Client
+  «Wartungsheft Web» (Typ Webanwendung, JavaScript-Quelle `https://wartungsheft.ch`, Redirect-URI
+  `https://api.wartungsheft.ch/runtime/oauth/callback`), Zustimmungsbildschirm «Wartungsheft», Zielgruppe Extern,
+  Status **In Produktion** (nur Scopes email/openid, darum keine Google-Prüfung nötig). Konsole: console.cloud.google.com/auth.
+- Instant-Dashboard → Auth: Client `google-web` (Web, eigene Credentials), Redirect Origin `wartungsheft.ch`.
+  Client-Secret liegt nur bei Google und in InstantDB, nicht im Repo.
+- E2E `google-login.spec.ts` prüft nur den Link auf `/runtime/oauth/start` (Google selbst wird nicht durchlaufen).
+- Apple («Sign in with Apple», 99 USD/Jahr Apple Developer Program) und GitHub bewusst nicht eingebaut.
+
 ### Auth (Magic Codes via Resend)
 - Produktion sendet über **Resend** (Region eu-west-1, Absender `login@wartungsheft.ch`); `RESEND_TOKEN` steht in
   `/opt/instant/.env`, NICHT in auto-service/.env. Lokal ohne Token: Codes stehen im Server-Log

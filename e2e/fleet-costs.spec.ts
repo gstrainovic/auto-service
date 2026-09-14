@@ -45,6 +45,10 @@ test.describe('Fuhrpark-Kosten und Währungsumrechnung', () => {
     await expect(table.getByRole('row').filter({ hasText: 'Fiat Ducato' }).filter({ hasText: '2026' })).toContainText('CHF 495.00')
     await expect(table.getByRole('row').filter({ hasText: 'VW Caddy' }).filter({ hasText: '2025' })).toContainText('CHF 250.00')
     await expect(page.getByText(/1 Rechnung in EUR zum EZB-Kurs am Rechnungsdatum umgerechnet/)).toBeVisible()
+    // Kachel «Gesamtkosten» rechnet ebenfalls um: 400 + 95 + 250 = 745.00, keine getrennte EUR-Summe mehr
+    const stats = page.locator('.stats-grid')
+    await expect(stats).toContainText('CHF 745.00')
+    await expect(stats).not.toContainText('EUR')
   })
 
   test('FC-002: Fahrzeugseite rechnet EUR in die Heimwährung um', async ({ page }) => {

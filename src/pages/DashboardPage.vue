@@ -154,26 +154,21 @@ function getVehicleInvoiceCount(vehicleId: string): number {
   return invoicesStore.getByVehicleId(vehicleId).length
 }
 
-// Group totals by currency
+// Gesamtkosten in der Heimwährung; Rechnungen ohne Kurs bleiben als eigene Währung stehen
 const totalsByCurrency = computed(() => {
   const totals: Record<string, number> = {}
-  for (const v of vehiclesStore.vehicles) {
-    for (const inv of invoicesStore.getByVehicleId(v.id)) {
-      const currency = normalizeCurrency(inv.currency)
-      totals[currency] = (totals[currency] || 0) + (inv.totalAmount || 0)
-    }
-  }
+  for (const row of fleetRows.value)
+    totals[row.currency] = Math.round(((totals[row.currency] || 0) + row.total) * 100) / 100
   return totals
 })
 
 const formattedTotalCost = computed(() => {
   const entries = Object.entries(totalsByCurrency.value)
   if (entries.length === 0)
-    return formatCurrency(0)
-  if (entries.length === 1)
-    return formatCurrency(entries[0]![1], entries[0]![0])
-  // Multiple currencies: show each
-  return entries.map(([currency, amount]) => formatCurrency(amount, currency)).join(' + ')
+    return formatCurrency(0, settings.homeCurrency)
+  const home = entries.find(([c]) => c === settings.homeCurrency)
+  const others = entries.filter(([c]) => c !== settings.homeCurrency)
+  return [...(home ? [home] : []), ...others].map(([currency, amount]) => formatCurrency(amount, currency)).join(' + ')
 })
 
 const totalInvoiceCount = computed(() =>
@@ -207,8 +202,8 @@ const totalInvoiceCount = computed(() =>
       />
       <StatCard
         icon="pi-file"
-        :label="`${totalInvoiceCount} Rechnungen`"
-        :value="formattedTotalCost"
+        label="Rechnungen"
+        :value="String(totalInvoiceCount)"
         color="var(--status-info)"
       />
     </div>

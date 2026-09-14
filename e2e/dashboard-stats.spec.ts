@@ -54,7 +54,8 @@ test.describe('Dashboard Stats', () => {
     }
 
     await page.goto('/')
-    // Should show invoice count
-    await expect(page.getByText(/2 Rechnungen/).first()).toBeVisible()
+    // Kachel «Rechnungen» zeigt die Anzahl als Wert
+    const card = page.locator('.stats-grid .stat-card', { hasText: 'Rechnungen' })
+    await expect(card.locator('.stat-value')).toHaveText('2')
   })
 })

@@ -48,7 +48,7 @@ function goToApp() {
         <h1>Nie wieder Wartung vergessen.</h1>
         <p class="hero-subtitle">
           Fotografiere deine Werkstattrechnung. Die KI erledigt den Rest.
-          Wartungsplan, Kostenübersicht und digitales Scheckheft in einer App.
+          Wartungsplan, Kostenübersicht und digitales Serviceheft in einer App.
         </p>
         <div class="hero-actions">
           <Button
@@ -144,7 +144,7 @@ function goToApp() {
             <div class="feature-icon">
               <i class="pi pi-file-pdf" />
             </div>
-            <h3>Digitales Scheckheft</h3>
+            <h3>Digitales Serviceheft</h3>
             <p>Lückenlose Wartungshistorie. Beim Autoverkauf den Wert steigern — alles digital belegt.</p>
           </div>
         </div>

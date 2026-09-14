@@ -13,6 +13,7 @@ import { useFormValidation } from '../composables/useFormValidation'
 import { useImageUpload } from '../composables/useImageUpload'
 import { DEFAULT_CURRENCY, LOCALE } from '../lib/locale'
 import { MAINTENANCE_CATEGORIES } from '../services/ai'
+import { categoryLabel } from '../services/report'
 
 interface Props {
   initialData?: Partial<InvoiceFormData>
@@ -41,6 +42,7 @@ const invoiceSchema = z.object({
   amount: z.number().positive('Betrag muss positiv sein').optional(),
   category: z.enum(MAINTENANCE_CATEGORIES).optional(),
   description: z.string().optional(),
+  mileage: z.number().positive('Kilometerstand muss positiv sein').optional(),
 })
 
 const { errors, validate } = useFormValidation(invoiceSchema)
@@ -59,14 +61,15 @@ const formData = ref<InvoiceFormData>({
   currency: props.initialData?.currency || DEFAULT_CURRENCY,
   category: props.initialData?.category,
   description: props.initialData?.description || '',
+  mileage: props.initialData?.mileage,
 })
 
 // Computed currency for InputNumber
 const selectedCurrency = computed(() => formData.value.currency || DEFAULT_CURRENCY)
 
-// Category options
+// Kategorien mit Anzeigenamen (Ölwechsel, MFK / Prüfung …)
 const categoryOptions = MAINTENANCE_CATEGORIES.map(cat => ({
-  label: cat.charAt(0).toUpperCase() + cat.slice(1),
+  label: categoryLabel(cat),
   value: cat,
 }))
 
@@ -133,6 +136,20 @@ function handleCancel() {
         />
       </div>
       <small v-if="errors.amount" class="error">{{ errors.amount }}</small>
+
+      <FloatLabel>
+        <InputNumber
+          id="invoice-mileage"
+          v-model="formData.mileage"
+          name="mileage"
+          :use-grouping="true"
+          suffix=" km"
+          :invalid="!!errors.mileage"
+          fluid
+        />
+        <label for="invoice-mileage">Kilometerstand</label>
+      </FloatLabel>
+      <small v-if="errors.mileage" class="error">{{ errors.mileage }}</small>
 
       <FloatLabel>
         <Select

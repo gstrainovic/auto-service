@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { getCurrentUserId } from '../composables/useAuth'
 import { autoRotateForDocument } from '../composables/useImageResize'
 import { db, id as instantId, tx } from '../lib/instantdb'
-import { DEFAULT_CURRENCY, normalizeCurrency } from '../lib/locale'
+import { formatCurrency, formatDate, formatNumber, normalizeCurrency } from '../lib/locale'
 import { callMistralOcr, callMistralOcrPdf, getModel, hashImage, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument, withRetry } from './ai'
 import { checkDueMaintenances, getMaintenanceSchedule } from './maintenance-schedule'
 
@@ -23,12 +23,12 @@ const CATEGORY_KEYWORDS: [RegExp, string][] = [
   [/feder(bein)?|sto[ßs]d[äa]mpfer|radlager|achse|lenkung|querlenker|spurstange|traggelenk/i, 'fahrwerk'],
   [/batterie|lichtmaschine|starter|z[üu]ndkerze|z[üu]ndspule/i, 'elektrik'],
   [/lack|karosserie|rost|delle|unfallschaden|blech/i, 'karosserie'],
-  [/inspektion|service(?!.*heft)|durchsicht|hu.vorbereitung/i, 'inspektion'],
+  [/inspektion|service(?!.*heft)|durchsicht|(hu|mfk).vorbereitung/i, 'inspektion'],
   [/klimaanlage|klima.service|k[äa]ltemittel/i, 'klimaanlage'],
   [/zahnriemen|steuerriemen|steuerkette/i, 'zahnriemen'],
   [/bremsfl[üu]ssigkeit/i, 'bremsflüssigkeit'],
   [/luftfilter|pollenfilter|innenraumfilter/i, 'luftfilter'],
-  [/t[üu]v\b|hauptuntersuchung|\bhu\b|\bau\b/i, 'tuev'],
+  [/t[üu]v\b|hauptuntersuchung|\bhu\b|\bau\b|\bmfk\b|motorfahrzeugkontrolle|strassenverkehrsamt|\bstva\b/i, 'tuev'],
 ]
 
 function correctCategory(description: string, aiCategory: string): string {
@@ -58,7 +58,7 @@ const SYSTEM_PROMPT = `Du bist der Wartungsheft-Assistent. Du hilfst beim Verwal
 Deine Fähigkeiten:
 - Fahrzeuge anlegen, bearbeiten, löschen
 - Rechnungen und Wartungen eintragen
-- Fotos von Rechnungen, Kaufverträgen, Fahrzeugscheinen und Service-Heften analysieren
+- Fotos von Rechnungen, Kaufverträgen, Fahrzeugausweisen und Service-Heften analysieren
 - Wartungsstatus prüfen und Empfehlungen geben
 - Fragen zu Wartungsintervallen beantworten
 - OCR-Texte gespeicherter Rechnungen abrufen (get_ocr_text) — enthält den maschinengelesenen Volltext
@@ -72,8 +72,8 @@ FAHRZEUG-ERKENNUNG:
 
 WICHTIGE REGELN:
 1. Bevor du ein Fahrzeug anlegst, zeige die Felder dem Benutzer und warte auf Bestätigung:
-   - Marke, Modell, Baujahr, Kilometerstand, Kennzeichen, Fahrgestellnummer
-   - Kennzeichen und Fahrgestellnummer sind OPTIONAL: Wenn nicht genannt, zeige "nicht angegeben" und frage NICHT danach.
+   - Marke, Modell, Baujahr, Kilometerstand, Kontrollschild, Fahrgestellnummer
+   - Kontrollschild und Fahrgestellnummer sind OPTIONAL: Wenn nicht genannt, zeige "nicht angegeben" und frage NICHT danach.
 2. Bevor du eine Rechnung einträgst, zeige ALLE Felder dem Benutzer und warte auf Bestätigung:
    - Werkstatt, Datum, Gesamtbetrag, Währung, Kilometerstand, alle Positionen (Beschreibung, Kategorie, Betrag)
 3. Führe add_vehicle und add_invoice NICHT aus bevor der Benutzer die Daten bestätigt hat.
@@ -93,13 +93,14 @@ KATEGORIEN bei add_invoice — wähle die passendste:
 - oelwechsel: Ölwechsel, Ölfilter, Motoröl, Ölablassschraube
 - bremsen: Bremsbeläge, Bremsscheiben, Bremssättel
 - reifen: Reifenmontage, Reifenwechsel, Auswuchten, Winterreifen, Sommerreifen
-- fahrwerk: Federn, Stoßdämpfer, Federbeine, Achse, Lenkung, Radlager
+- fahrwerk: Federn, Stossdämpfer, Federbeine, Achse, Lenkung, Radlager
 - auspuff: Auspuff, Krümmer, Katalysator, Abgasanlage
 - kuehlung: Kühlwasser, Kühler, Thermostat, Frostschutz, Unterdruckleitung, Kühlmittel
 - autoglas: Windschutzscheibe, Autoglas, Scheibenwischer, Frontscheibe, Heckscheibe
 - elektrik: Batterie, Lichtmaschine, Starter, Kabel, Sicherungen
 - karosserie: Blech, Lack, Rost, Delle, Unfallschaden
-- inspektion: Inspektion, Service, Durchsicht, HU-Vorbereitung
+- inspektion: Inspektion, Service, Durchsicht, MFK-Vorbereitung
+- tuev: MFK, Motorfahrzeugkontrolle, Strassenverkehrsamt, Abgastest
 - sonstiges: NUR wenn keine andere Kategorie passt (z.B. Lieferspesen, Reinigungsmaterial)
 
 WARTUNG OHNE RECHNUNG:
@@ -152,7 +153,7 @@ export const WELCOME_MESSAGE: ChatMessage = {
   content: `Hallo! Ich bin dein Wartungsheft-Assistent. Ich kann dir helfen mit:
 
 - **Fahrzeuge verwalten** — anlegen, bearbeiten, löschen
-- **Dokumente scannen** — Rechnungen, Kaufverträge, Fahrzeugscheine, Service-Hefte
+- **Dokumente scannen** — Rechnungen, Kaufverträge, Fahrzeugausweise, Service-Hefte
 - **Wartungsstatus prüfen** — was ist fällig, was wurde gemacht
 - **Fragen beantworten** — Intervalle, Empfehlungen, Kosten
 
@@ -185,7 +186,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
         model: z.string().describe('Modell (z.B. 320d, A4, Golf)'),
         year: z.number().describe('Baujahr'),
         mileage: z.number().optional().describe('Kilometerstand'),
-        licensePlate: z.string().optional().describe('Kennzeichen'),
+        licensePlate: z.string().optional().describe('Kontrollschild (Kennzeichen)'),
         vin: z.string().optional().describe('Fahrgestellnummer'),
       }),
       execute: async ({ make, model, year, mileage, licensePlate, vin }) => {
@@ -220,7 +221,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
         model: z.string().optional().describe('Neues Modell'),
         year: z.number().optional().describe('Neues Baujahr'),
         mileage: z.number().optional().describe('Neuer Kilometerstand'),
-        licensePlate: z.string().optional().describe('Neues Kennzeichen'),
+        licensePlate: z.string().optional().describe('Neues Kontrollschild (Kennzeichen)'),
         vin: z.string().optional().describe('Neue Fahrgestellnummer'),
       }),
       execute: async ({ vehicleId, make, model, year, mileage, licensePlate, vin }) => {
@@ -323,7 +324,8 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
         if (!vehicle)
           return { error: 'Fahrzeug nicht gefunden' }
         const schedule = getMaintenanceSchedule(vehicle.customSchedule)
-        const maintenances = (result.data.maintenances || []).filter((m: any) => m.vehicleId === vehicleId)
+        // Nur erledigte Arbeiten zählen; geplante Einträge sind noch keine Wartung
+        const maintenances = (result.data.maintenances || []).filter((m: any) => m.vehicleId === vehicleId && m.status === 'done')
         const lastMaintenances = maintenances.map((m: any) => ({
           type: m.type,
           mileageAtService: m.mileageAtService,
@@ -365,7 +367,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
           message: `Wartungsplan für ${vehicle.make} ${vehicle.model} gespeichert (${schedule.length} Positionen)`,
           schedule: schedule.map(s => ({
             label: s.label,
-            interval: `${s.intervalKm > 0 ? `${s.intervalKm.toLocaleString()} km` : ''}${s.intervalKm > 0 && s.intervalMonths > 0 ? ' / ' : ''}${s.intervalMonths > 0 ? `${s.intervalMonths} Monate` : ''}`,
+            interval: `${s.intervalKm > 0 ? `${formatNumber(s.intervalKm)} km` : ''}${s.intervalKm > 0 && s.intervalMonths > 0 ? ' / ' : ''}${s.intervalMonths > 0 ? `${s.intervalMonths} Monate` : ''}`,
           })),
         }
       },
@@ -384,20 +386,20 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
         items: z.array(z.object({
           description: z.string().describe('Beschreibung der Arbeit oder des Teils'),
           category: z.enum(MAINTENANCE_CATEGORIES).describe(
-            'Kategorie — oelwechsel: Öl/Ölfilter | bremsen: Bremsbeläge/Scheiben | reifen: Reifen/Auswuchten | fahrwerk: Federn/Stoßdämpfer/Achse | auspuff: Auspuff/Katalysator | kuehlung: Kühlwasser/Kühler/Frostschutz/Thermostat | autoglas: Windschutzscheibe/Scheibenwischer | elektrik: Batterie/Kabel | karosserie: Lack/Blech | inspektion: Service/Durchsicht | sonstiges: nur wenn nichts anderes passt',
+            'Kategorie — oelwechsel: Öl/Ölfilter | bremsen: Bremsbeläge/Scheiben | reifen: Reifen/Auswuchten | fahrwerk: Federn/Stossdämpfer/Achse | auspuff: Auspuff/Katalysator | kuehlung: Kühlwasser/Kühler/Frostschutz/Thermostat | autoglas: Windschutzscheibe/Scheibenwischer | elektrik: Batterie/Kabel | karosserie: Lack/Blech | inspektion: Service/Durchsicht | sonstiges: nur wenn nichts anderes passt',
           ),
           amount: z.number().describe('Einzelbetrag dieser Position'),
         })).describe('Positionen der Rechnung'),
       }),
       execute: async ({ vehicleId, workshopName, date, totalAmount, currency, mileageAtService, imageIndex, items }) => {
-        // Duplikat-Prüfung: gleiche Werkstatt + Datum oder gleicher Betrag + Datum
+        // Duplikat nur bei gleichem Datum, gleicher Werkstatt und gleichem Betrag
         const result = await db.queryOnce({ invoices: {}, vehicles: {} })
-        const existingInvoices = (result.data.invoices || []).filter((i: any) => i.vehicleId === vehicleId && i.date === date)
-        const duplicate = existingInvoices.find((inv: any) => inv.workshopName === workshopName || inv.totalAmount === totalAmount)
+        const duplicate = (result.data.invoices || []).find((i: any) =>
+          i.vehicleId === vehicleId && i.date === date && i.workshopName === workshopName && i.totalAmount === totalAmount)
         if (duplicate) {
           return {
             success: false,
-            message: `Diese Rechnung existiert bereits: ${duplicate.workshopName}, ${duplicate.date}, ${duplicate.totalAmount} ${duplicate.currency || DEFAULT_CURRENCY}. Keine doppelte Erfassung.`,
+            message: `Diese Rechnung existiert bereits: ${duplicate.workshopName}, ${formatDate(duplicate.date)}, ${formatCurrency(duplicate.totalAmount, normalizeCurrency(duplicate.currency))}. Keine doppelte Erfassung.`,
           }
         }
 
@@ -431,7 +433,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
           transactions.push(
             tx.maintenances[maintenanceId].update({
               vehicleId,
-              invoiceId: '',
+              invoiceId,
               type: category,
               description: item.description,
               doneAt: date,
@@ -488,7 +490,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
         return {
           success: true,
           message: `Rechnung gelöscht`,
-          deleted: { workshopName: invoice.workshopName, date: invoice.date, totalAmount: invoice.totalAmount, maintenances: maintenances.length },
+          deleted: { workshopName: invoice.workshopName, date: invoice.date, totalAmount: invoice.totalAmount, currency: invoice.currency, maintenances: maintenances.length },
         }
       },
     }),
@@ -569,7 +571,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
     }),
 
     scan_document: tool({
-      description: 'Analysiert ein Foto. Erkennt automatisch ob es eine Rechnung, ein Kaufvertrag, ein Fahrzeugschein oder eine Service-Heft-Seite ist. Das Bild muss als base64 übergeben werden.',
+      description: 'Analysiert ein Foto. Erkennt automatisch ob es eine Rechnung, ein Kaufvertrag, ein Fahrzeugausweis oder eine Service-Heft-Seite ist. Das Bild muss als base64 übergeben werden.',
       inputSchema: z.object({
         imageBase64: z.string().describe('Base64-kodiertes Bild'),
         documentType: z.string().describe('Art des Dokuments: rechnung, kaufvertrag, fahrzeugschein, serviceheft'),
@@ -624,13 +626,13 @@ function formatToolResult(r: any): string | undefined {
   if (r.data) {
     const d = r.data
     if (d.make)
-      parts.push(`Marke: ${d.make}, Modell: ${d.model}, Baujahr: ${d.year}, km: ${d.mileage}${d.licensePlate ? `, Kennzeichen: ${d.licensePlate}` : ''}`)
+      parts.push(`Marke: ${d.make}, Modell: ${d.model}, Baujahr: ${d.year}, Kilometerstand: ${formatNumber(d.mileage)} km${d.licensePlate ? `, Kontrollschild: ${d.licensePlate}` : ''}`)
     if (d.workshopName)
-      parts.push(`Werkstatt: ${d.workshopName}, Datum: ${d.date}, Betrag: ${d.totalAmount} ${d.currency}`)
+      parts.push(`Werkstatt: ${d.workshopName}, Datum: ${formatDate(d.date)}, Betrag: ${formatCurrency(d.totalAmount, normalizeCurrency(d.currency))}`)
     if (d.items?.length)
-      parts.push(`Positionen: ${d.items.map((i: any) => `${i.description} (${i.amount})`).join(', ')}`)
+      parts.push(`Positionen: ${d.items.map((i: any) => `${i.description} (${formatNumber(i.amount, 2)})`).join(', ')}`)
     if (d.type && d.doneAt && !d.workshopName)
-      parts.push(`Typ: ${d.type}, Beschreibung: ${d.description}, Datum: ${d.doneAt}${d.mileageAtService ? `, km: ${d.mileageAtService}` : ''}`)
+      parts.push(`Typ: ${d.type}, Beschreibung: ${d.description}, Datum: ${formatDate(d.doneAt)}${d.mileageAtService ? `, Kilometerstand: ${formatNumber(d.mileageAtService)} km` : ''}`)
   }
   if (r.changes) {
     const entries = Object.keys(r.changes.before || {})
@@ -642,7 +644,7 @@ function formatToolResult(r: any): string | undefined {
     if (d.vehicle)
       parts.push(`Gelöscht: ${d.vehicle}${d.invoices ? ` (${d.invoices} Rechnungen, ${d.maintenances} Wartungen)` : ''}`)
     if (d.workshopName)
-      parts.push(`Gelöscht: Rechnung von ${d.workshopName} (${d.date}, ${d.totalAmount})`)
+      parts.push(`Gelöscht: Rechnung von ${d.workshopName} (${formatDate(d.date)}, ${formatCurrency(d.totalAmount, normalizeCurrency(d.currency))})`)
   }
   return parts.length ? parts.join('\n') : undefined
 }
@@ -718,7 +720,7 @@ Wenn zwei Seiten identisch oder sehr ähnlich sind, weise darauf hin (Duplikat).
 Bestimme ZUERST den Dokumenttyp jeder Seite:
 - **Rechnung**: Werkstattname, Beträge, Positionen mit Preisen
 - **Service-Heft/Wartungsplan**: Wartungsintervalle, Inspektionsplan, Wartungsnachweis
-- **Kaufvertrag/Fahrzeugschein**: Fahrzeugdaten, Halter, Erstzulassung
+- **Kaufvertrag/Fahrzeugausweis**: Fahrzeugdaten, Halter, Erstzulassung
 
 --- OCR-ERGEBNIS (exakter Text vom Dokument) ---
 ${ocrContext}
@@ -761,18 +763,18 @@ Analysiere das Bild sorgfältig. Das Bild kann gedreht sein (90° oder 180°) �
 SCHRITT 1 — DOKUMENTTYP ERKENNEN:
 Bestimme ZUERST den Dokumenttyp anhand des Inhalts:
 - **Rechnung/Quittung**: Werkstattname, Beträge, Positionen mit Preisen, MwSt.
-- **Service-Heft/Wartungsplan**: Wartungsintervalle (km/Monate), Inspektionsplan, Wartungsnachweis, "Kleine/Große Wartung", Stempelfelder
-- **Kaufvertrag/Fahrzeugschein**: Fahrzeugdaten, Halter, Erstzulassung
+- **Service-Heft/Wartungsplan**: Wartungsintervalle (km/Monate), Inspektionsplan, Wartungsnachweis, "Kleine/Grosse Wartung", Stempelfelder
+- **Kaufvertrag/Fahrzeugausweis**: Fahrzeugdaten, Halter, Erstzulassung
 Nenne den erkannten Dokumenttyp EXPLIZIT am Anfang deiner Antwort.
 WICHTIG: Ein Service-Heft enthält Wartungsintervalle und Stempel — auch wenn eine Werkstatt-Adresse (z.B. "Porsche Zentrum") darauf steht, ist es KEINE Rechnung!
 
 SCHRITT 2 — DATEN EXTRAHIEREN:
 
 Falls RECHNUNG:
-- KENNZEICHEN vs. FAHRGESTELLNUMMER:
-  - Kennzeichen (license plate): Kürzel + Zahlen, z.B. "SG 218574" (Schweizer Kanton St. Gallen), "M-AB 1234"
+- KONTROLLSCHILD vs. FAHRGESTELLNUMMER:
+  - Kontrollschild (Kennzeichen, license plate): Kürzel + Zahlen, z.B. "SG 218574" (Schweizer Kanton St. Gallen), "M-AB 1234"
   - Fahrgestellnummer/VIN: Genau 17 Zeichen, beginnt mit W, V, etc. z.B. "WP1ZZZ9PZ8LA14872"
-  - "SG 218574" ist ein SCHWEIZER KENNZEICHEN, NICHT eine Fahrgestellnummer!
+  - "SG 218574" ist ein SCHWEIZER KONTROLLSCHILD, NICHT eine Fahrgestellnummer!
 - POSITIONEN KORREKT LESEN:
   - Lies die Tabellenspalten sorgfältig: Beschreibung | Menge | Einheit | Einzelpreis | Betrag
   - Betrag pro Position = Menge × Einzelpreis. Wenn es nicht aufgeht, hast du falsch gelesen.
@@ -788,8 +790,8 @@ Falls SERVICE-HEFT/WARTUNGSPLAN:
 - Zeige auch durchgeführte Wartungen (Stempel/Einträge) falls vorhanden
 - Erwähne das Fahrzeugmodell falls erkennbar (z.B. "Cayenne V6")
 
-Falls KAUFVERTRAG/FAHRZEUGSCHEIN:
-- Zeige alle Fahrzeugdaten: Marke, Modell, Baujahr, Fahrgestellnummer, Kennzeichen, Erstzulassung
+Falls KAUFVERTRAG/FAHRZEUGAUSWEIS:
+- Zeige alle Fahrzeugdaten: Marke, Modell, Baujahr, Fahrgestellnummer, Kontrollschild, Erstzulassung
 ${ocrContext}
 
 Zeige die erkannten Daten strukturiert an. Frage den Benutzer ob die Daten korrekt sind bevor du fortfährst.`
@@ -847,7 +849,7 @@ Zeige die erkannten Daten strukturiert an. Frage den Benutzer ob die Daten korre
   else if (storedImages?.length) {
     aiMessages.push({
       role: 'user' as any,
-      content: `Kontext: Es wurden ${storedImages.length} Bilder gesendet (Index 0–${storedImages.length - 1}). Nutze das passende Tool je nach Dokumenttyp: add_invoice für Rechnungen, set_maintenance_schedule für Service-Hefte, add_vehicle für Kaufverträge/Fahrzeugscheine. Bei Rechnungen: nutze imageIndex um das Bild zu speichern.\n\n${vehicleContext}\n\nWICHTIG: Verwende NUR die exakten Fahrzeug-IDs aus der Liste oben oder aus dem Ergebnis von add_vehicle. Erfinde KEINE IDs.`,
+      content: `Kontext: Es wurden ${storedImages.length} Bilder gesendet (Index 0–${storedImages.length - 1}). Nutze das passende Tool je nach Dokumenttyp: add_invoice für Rechnungen, set_maintenance_schedule für Service-Hefte, add_vehicle für Kaufverträge/Fahrzeugausweise. Bei Rechnungen: nutze imageIndex um das Bild zu speichern.\n\n${vehicleContext}\n\nWICHTIG: Verwende NUR die exakten Fahrzeug-IDs aus der Liste oben oder aus dem Ergebnis von add_vehicle. Erfinde KEINE IDs.`,
     })
   }
   else {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { LIMIT_LABELS, PLANS } from '@strainovic/ai-proxy/plans'
+import type { LimitKind, Plan } from '@strainovic/ai-proxy/plans'
+import { PLANS } from '@strainovic/ai-proxy/plans'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import Message from 'primevue/message'
@@ -8,12 +9,25 @@ import Select from 'primevue/select'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
 import { db, tx } from '../lib/instantdb'
+import { formatCurrency, formatMonth, formatNumber } from '../lib/locale'
 import { fetchUsage, startCheckout } from '../services/ai-access'
 import { exportDatabase, importDatabase } from '../services/db-export'
 import { HOME_CURRENCIES, useSettingsStore } from '../stores/settings'
 
 type UsageInfo = Awaited<ReturnType<typeof fetchUsage>>
-type LimitKind = keyof typeof LIMIT_LABELS
+
+// Nutzertexte für die Zähler und die Plan-Namen des Katalogs
+const LIMIT_LABELS: Record<LimitKind, string> = {
+  ocrPages: 'Scans',
+  chatTokens: 'Chat-Kontingent',
+}
+const IMPORT_LABELS: Record<string, [singular: string, plural: string]> = {
+  vehicles: ['Fahrzeug', 'Fahrzeuge'],
+  invoices: ['Rechnung', 'Rechnungen'],
+  maintenances: ['Wartung', 'Wartungen'],
+  ocrCache: ['Scan', 'Scans'],
+  chatmessages: ['Chat-Nachricht', 'Chat-Nachrichten'],
+}
 
 const settings = useSettingsStore()
 const toast = useToast()
@@ -28,8 +42,21 @@ const currentPlan = computed(() => PLANS[usage.value?.plan ?? 'free'])
 const upgradePlans = computed(() => Object.values(PLANS).filter(p => p.priceChfPerMonth > currentPlan.value.priceChfPerMonth))
 const limitKinds = Object.keys(LIMIT_LABELS) as LimitKind[]
 
-function formatNumber(n: number): string {
-  return new Intl.NumberFormat('de-CH').format(n)
+function planName(plan: Plan): string {
+  return plan.id === 'free' ? 'Gratis' : plan.name
+}
+
+function planPrice(plan: Plan): string {
+  return `${formatCurrency(plan.priceChfPerMonth)} / Monat`
+}
+
+function importSummary(imported: Record<string, number>): string {
+  return Object.entries(imported)
+    .map(([key, count]) => {
+      const [singular, plural] = IMPORT_LABELS[key] ?? [key, key]
+      return `${count} ${count === 1 ? singular : plural}`
+    })
+    .join(', ')
 }
 
 function usagePercent(kind: LimitKind): number {
@@ -96,10 +123,7 @@ async function handleImport(event: Event): Promise<void> {
   try {
     const json = await file.text()
     const result = await importDatabase(json)
-    const summary = Object.entries(result.imported)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(', ')
-    toast.add({ severity: 'success', summary: `Import erfolgreich - ${summary}`, life: 5000 })
+    toast.add({ severity: 'success', summary: `Import erfolgreich: ${importSummary(result.imported)}`, life: 5000 })
     await refreshCacheCount()
   }
   catch (e: any) {
@@ -151,6 +175,14 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
             class="w-full"
           />
         </div>
+      </template>
+    </Card>
+
+    <Card class="settings-card">
+      <template #title>
+        Währung
+      </template>
+      <template #content>
         <div class="form-field">
           <label for="home-currency">Heimwährung</label>
           <Select
@@ -176,8 +208,8 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
         </Message>
         <template v-else-if="usage">
           <div class="plan-line">
-            <span>Aktueller Plan: <strong>{{ currentPlan.name }}</strong></span>
-            <span class="plan-price">{{ currentPlan.priceChfPerMonth }} CHF/Monat</span>
+            <span>Aktueller Plan: <strong>{{ planName(currentPlan) }}</strong></span>
+            <span class="plan-price">{{ planPrice(currentPlan) }}</span>
           </div>
           <div v-for="kind in limitKinds" :key="kind" class="usage-row">
             <div class="usage-label">
@@ -187,16 +219,16 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
             <ProgressBar :value="usagePercent(kind)" :show-value="false" style="height: 0.5rem" />
           </div>
           <div class="provider-info">
-            Zähler gelten für den Monat {{ usage.month }}. KI-Verarbeitung über Mistral (Frankreich, EU) ist im Abo enthalten, kein eigener API-Key nötig.
+            Zähler gelten für {{ formatMonth(usage.month) }}. KI-Verarbeitung über Mistral (Frankreich, EU) ist im Abo enthalten, kein eigener API-Key nötig.
           </div>
           <div v-if="upgradePlans.length" class="upgrade-list">
             <div v-for="plan in upgradePlans" :key="plan.id" class="upgrade-row">
               <div>
-                <strong>{{ plan.name }}</strong> · {{ plan.priceChfPerMonth }} CHF/Monat ·
-                {{ formatNumber(plan.limits.ocrPages) }} Scans, {{ formatNumber(plan.limits.chatTokens) }} Chat-Tokens
+                <strong>{{ planName(plan) }}</strong> · {{ planPrice(plan) }} ·
+                {{ formatNumber(plan.limits.ocrPages) }} Scans, Chat-Kontingent {{ formatNumber(plan.limits.chatTokens) }}
               </div>
               <Button
-                :label="`Upgrade auf ${plan.name}`"
+                :label="`Auf ${planName(plan)} wechseln`"
                 size="small"
                 :loading="checkoutBusy === plan.id"
                 @click="upgrade(plan.id)"
@@ -248,7 +280,7 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
             @click="clearOcrCache"
           />
           <span class="cache-count">
-            {{ ocrCacheCount }} Eintrage im Cache
+            {{ ocrCacheCount }} Einträge im Cache
           </span>
         </div>
       </template>

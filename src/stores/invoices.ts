@@ -16,7 +16,8 @@ export interface Invoice {
   date: string
   totalAmount?: number
   currency?: string
-  mileageAtService?: number
+  /** leer, null oder 0 heisst unbekannt */
+  mileageAtService?: number | null
   imageData?: string
   ocrCacheId?: string
   items?: InvoiceItem[]

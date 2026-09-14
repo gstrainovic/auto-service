@@ -84,7 +84,7 @@ test.describe('AI Proxy (Abo-Modus)', () => {
 
     const card = page.locator('.settings-card', { hasText: 'Abo & Nutzung' })
     await expect(card).toBeVisible()
-    await expect(card).toContainText('Free')
+    await expect(card).toContainText('Gratis')
     await expect(card).toContainText(/2\s*\/\s*5/)
     await expect(card).toContainText(/1[’'.]?234\s*\/\s*100[’'.]?000/)
     await expect(page.locator('input[type="password"]')).toHaveCount(0)

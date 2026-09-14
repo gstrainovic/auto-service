@@ -10,6 +10,7 @@ import { ref } from 'vue'
 import { z } from 'zod'
 import { useFormValidation } from '../composables/useFormValidation'
 import { MAINTENANCE_CATEGORIES } from '../services/ai'
+import { categoryLabel } from '../services/report'
 
 interface Props {
   initialData?: Partial<MaintenanceFormData>
@@ -42,9 +43,9 @@ const formData = ref<MaintenanceFormData>({
   status: props.initialData?.status || 'done',
 })
 
-// Category options
+// Kategorien mit Anzeigenamen (Ölwechsel, MFK / Prüfung …)
 const categoryOptions = MAINTENANCE_CATEGORIES.map(cat => ({
-  label: cat.charAt(0).toUpperCase() + cat.slice(1),
+  label: categoryLabel(cat),
   value: cat,
 }))
 

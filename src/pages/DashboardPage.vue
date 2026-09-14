@@ -11,7 +11,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import StatCard from '../components/StatCard.vue'
 import { db, tx } from '../lib/instantdb'
-import { formatCurrency, formatNumber, normalizeCurrency } from '../lib/locale'
+import { formatCurrency, formatDate, formatNumber, normalizeCurrency } from '../lib/locale'
 import { resolveRates } from '../services/fx'
 import { checkDueMaintenances, getMaintenanceSchedule } from '../services/maintenance-schedule'
 import { buildFleetReport, fleetReportFilename } from '../services/pdf-report'
@@ -81,7 +81,8 @@ async function computeDue() {
 
   for (const vehicle of vehiclesStore.vehicles) {
     const schedule = getMaintenanceSchedule(vehicle.customSchedule as any)
-    const vehicleMaintenances = allMaintenances.filter((m: any) => m.vehicleId === vehicle.id)
+    // Nur erledigte Arbeiten zählen als «zuletzt gemacht», geplante Einträge nicht
+    const vehicleMaintenances = allMaintenances.filter((m: any) => m.vehicleId === vehicle.id && m.status === 'done')
     const lastMaintenances = vehicleMaintenances.map((m: any) => ({
       type: m.type,
       mileageAtService: m.mileageAtService,
@@ -201,11 +202,23 @@ const totalInvoiceCount = computed(() =>
       <div class="empty-text">
         Füge dein erstes Fahrzeug hinzu um loszulegen.
       </div>
-      <Button
-        label="Fahrzeug hinzufügen"
-        icon="pi pi-plus"
-        @click="router.push('/vehicles?action=add')"
-      />
+      <div class="empty-actions">
+        <Button
+          label="Fahrzeug hinzufügen"
+          icon="pi pi-plus"
+          @click="router.push('/vehicles?action=add')"
+        />
+        <Button
+          label="Rechnung im Chat fotografieren"
+          icon="pi pi-camera"
+          severity="secondary"
+          outlined
+          @click="router.push('/dashboard?chat=open')"
+        />
+      </div>
+      <p class="empty-hint">
+        Oder du fotografierst im Chat (Button unten rechts) eine Werkstattrechnung, die KI legt Fahrzeug und Rechnung an.
+      </p>
     </div>
 
     <div v-if="vehiclesStore.vehicles.length > 0" class="stats-grid">
@@ -267,14 +280,10 @@ const totalInvoiceCount = computed(() =>
     </section>
 
     <div v-for="vehicle in vehiclesStore.vehicles" :key="vehicle.id" class="vehicle-section">
-      <h3 class="vehicle-title">
-        {{ vehicle.make }} {{ vehicle.model }}
-      </h3>
-      <div class="vehicle-subtitle">
-        {{ formatNumber(vehicle.mileage) }} km · {{ vehicle.licensePlate }}
-        <span v-if="getVehicleInvoiceCount(vehicle.id) > 0" class="vehicle-cost">
-          {{ getVehicleTotalCost(vehicle.id) }} · {{ getVehicleInvoiceCount(vehicle.id) }} Rechnungen
-        </span>
+      <div class="vehicle-header">
+        <h3 class="vehicle-title">
+          {{ vehicle.make }} {{ vehicle.model }}
+        </h3>
         <Badge
           v-if="getDueCounts(vehicle.id).total > 0"
           class="vehicle-progress"
@@ -282,6 +291,13 @@ const totalInvoiceCount = computed(() =>
           :severity="getDueCounts(vehicle.id).due > 0 ? 'warn' : 'success'"
         />
       </div>
+      <p class="vehicle-subtitle">
+        {{ formatNumber(vehicle.mileage) }} km<template v-if="vehicle.licensePlate">
+          · {{ vehicle.licensePlate }}
+        </template><template v-if="getVehicleInvoiceCount(vehicle.id) > 0">
+          · <span class="vehicle-cost">{{ getVehicleTotalCost(vehicle.id) }} · {{ getVehicleInvoiceCount(vehicle.id) }} {{ getVehicleInvoiceCount(vehicle.id) === 1 ? 'Rechnung' : 'Rechnungen' }}</span>
+        </template>
+      </p>
 
       <Message
         v-if="!vehicle.customSchedule?.length"
@@ -305,7 +321,7 @@ const totalInvoiceCount = computed(() =>
               {{ item.label }}
             </div>
             <div v-if="item.lastDoneAt" class="maintenance-caption">
-              Zuletzt: {{ item.lastDoneAt }}<template v-if="item.lastMileage">
+              Zuletzt: {{ formatDate(item.lastDoneAt) }}<template v-if="item.lastMileage">
                 bei {{ formatNumber(item.lastMileage) }} km
               </template>
             </div>
@@ -384,6 +400,19 @@ const totalInvoiceCount = computed(() =>
   margin-bottom: 1rem;
 }
 
+.empty-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.empty-hint {
+  margin: 1rem auto 0;
+  max-width: 32rem;
+  font-size: 0.875rem;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -433,17 +462,24 @@ const totalInvoiceCount = computed(() =>
   font-size: 0.9rem;
 }
 
+/* Jahr und Total bleiben einzeilig, der Fahrzeugname darf umbrechen, damit die Tabelle auf 390 px passt */
 .fleet-table th,
 .fleet-table td {
   padding: 0.45rem 0.6rem;
   border-bottom: 1px solid var(--p-surface-border);
   text-align: left;
+}
+
+.fleet-table th:first-child,
+.fleet-table td:first-child {
+  width: 1%;
   white-space: nowrap;
 }
 
 .fleet-table .num {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .fleet-table a {
@@ -461,22 +497,30 @@ const totalInvoiceCount = computed(() =>
   font-size: 0.85rem;
 }
 
+/* Zwei Zeilen: Titel mit Badge, darunter km · Schild · Kosten als Fliesstext */
+.vehicle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .vehicle-title {
   margin: 0;
+  min-width: 0;
   font-size: 1.25rem;
   font-weight: 500;
 }
 
 .vehicle-subtitle {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  margin: 0.25rem 0 0.75rem;
   font-size: 0.875rem;
   color: var(--p-text-muted-color);
-  margin-bottom: 0.75rem;
 }
 
 .vehicle-progress {
+  flex-shrink: 0;
+  white-space: nowrap;
   font-size: 0.75rem;
 }
 

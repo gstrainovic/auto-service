@@ -44,6 +44,22 @@ describe('costsByYear', () => {
   it('liefert für keine Rechnungen eine leere Liste', () => {
     expect(costsByYear([])).toEqual([])
   })
+
+  it('weist die Differenz zwischen Positionen (netto) und Total (brutto) als «nicht zugeordnet» aus', () => {
+    const rows = costsByYear([
+      inv({ id: 'n1', date: '2026-02-01', totalAmount: 108.1, currency: 'CHF', items: [{ description: 'Ölwechsel', category: 'oelwechsel', amount: 100 }] }),
+      inv({ id: 'n2', date: '2026-03-01', totalAmount: 54.05, currency: 'CHF', items: [{ description: 'Filter', category: 'luftfilter', amount: 50 }] }),
+    ])
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.total).toBe(162.15)
+    expect(rows[0]!.byCategory).toEqual({ oelwechsel: 100, luftfilter: 50, nicht_zugeordnet: 12.15 })
+    expect(categoryLabel('nicht_zugeordnet')).toBe('Nicht zugeordnet / MwSt.')
+  })
+
+  it('lässt «nicht zugeordnet» weg, wenn die Positionen das Total ergeben', () => {
+    const rows = costsByYear(invoices)
+    expect(rows.every(r => r.byCategory.nicht_zugeordnet === undefined)).toBe(true)
+  })
 })
 
 describe('categoryLabel', () => {
@@ -82,9 +98,18 @@ describe('maintenance rows for the dossier', () => {
       { id: '2', vehicleId: 'v1', type: 'reifen', description: 'Winterreifen', doneAt: '2025-10-20', mileageAtService: 60000, createdAt: '', updatedAt: '' },
     ] as Maintenance[])
     expect(rows).toEqual([
-      ['2025-10-20', 'Winterreifen', '60\'000 km'],
-      ['2025-01-05', 'Ölwechsel', '50\'000 km'],
+      ['20.10.2025', 'Winterreifen', '60\'000 km'],
+      ['05.01.2025', 'Ölwechsel', '50\'000 km'],
     ])
+  })
+
+  it('zeigt Kilometerstand 0 oder fehlend als leer, nicht als «0 km»', async () => {
+    const { maintenanceRows } = await import('./report')
+    const rows = maintenanceRows([
+      { id: '1', vehicleId: 'v1', type: 'oelwechsel', doneAt: '2025-01-05', mileageAtService: 0, createdAt: '', updatedAt: '' },
+      { id: '2', vehicleId: 'v1', type: 'reifen', doneAt: '2025-02-05', createdAt: '', updatedAt: '' },
+    ] as Maintenance[])
+    expect(rows.map(r => r[2])).toEqual(['', ''])
   })
 })
 

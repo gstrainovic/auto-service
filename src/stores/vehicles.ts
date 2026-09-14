@@ -71,6 +71,18 @@ export const useVehiclesStore = defineStore('vehicles', () => {
     ])
   }
 
+  /** Löscht das Fahrzeug samt Rechnungen und Wartungen in einer Transaktion (Detailseite und Karte nutzen dieselbe Kaskade) */
+  async function removeWithRelated(vehicleId: string) {
+    const result = await db.queryOnce({ invoices: {}, maintenances: {} })
+    const invoices = (result.data.invoices || []) as { id: string, vehicleId?: string }[]
+    const maintenances = (result.data.maintenances || []) as { id: string, vehicleId?: string }[]
+    await db.transact([
+      ...invoices.filter(i => i.vehicleId === vehicleId).map(i => (tx.invoices as any)[i.id].delete()),
+      ...maintenances.filter(m => m.vehicleId === vehicleId).map(m => (tx.maintenances as any)[m.id].delete()),
+      (tx.vehicles as any)[vehicleId].delete(),
+    ])
+  }
+
   async function update(vehicleId: string, data: Partial<Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt'>>) {
     await db.transact([
       (tx.vehicles as any)[vehicleId].update({
@@ -95,6 +107,7 @@ export const useVehiclesStore = defineStore('vehicles', () => {
     load,
     add,
     remove,
+    removeWithRelated,
     update,
     updateMileage,
     updateCustomSchedule,

@@ -76,9 +76,11 @@ test.describe('Vehicle Flow', () => {
     // READ
     await expect(page.getByText('Audi A4').first()).toBeVisible()
 
-    // DELETE from card (tests AND cleans up)
+    // DELETE from card with confirmation (tests AND cleans up)
     const audiCard = page.locator('[data-pc-name="card"]', { hasText: 'Audi A4' }).first()
     await audiCard.getByRole('button', { name: 'Löschen' }).click()
+    await expect(page.getByText('Fahrzeug löschen?')).toBeVisible()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
     await expect(page.getByText('Audi A4')).not.toBeVisible()
   })
 
@@ -103,6 +105,7 @@ test.describe('Vehicle Flow', () => {
 
     // DELETE (cleanup)
     await card.getByRole('button', { name: 'Löschen' }).click()
+    await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
     await expect(page.getByText('Test Status')).not.toBeVisible()
   })
 })

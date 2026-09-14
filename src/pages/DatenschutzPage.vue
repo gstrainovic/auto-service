@@ -123,16 +123,15 @@ const router = useRouter()
           <tr>
             <td>Mistral AI</td>
             <td>Frankreich (EU)</td>
-            <td>Opt-out möglich (Free Tier); kein Training (Scale Tier)</td>
+            <td>Training mit Ihren Daten deaktiviert</td>
           </tr>
         </tbody>
       </table>
       <p>
-        <strong>Wichtig:</strong> Die Verarbeitung erfolgt mit Ihrem eigenen Mistral-API-Key,
-        den Sie in den Einstellungen hinterlegen. Im kostenlosen Experiment-Tier von Mistral
-        werden Daten standardmässig für das Modell-Training verwendet; im bezahlten Scale-Tier
-        findet kein Training statt. Die Vertragsbeziehung zu Mistral AI besteht direkt zwischen
-        Ihnen und Mistral AI.
+        <strong>Wichtig:</strong> Die KI-Anfragen laufen über unseren Server mit unserem
+        Mistral-Konto; Sie brauchen keinen eigenen API-Key. Das Training mit Kundendaten ist in
+        diesem Konto deaktiviert. Bilder und Texte werden bei Mistral nur zur Verarbeitung der
+        Anfrage übermittelt und nicht dauerhaft gespeichert.
       </p>
 
       <h2>6. Datenspeicherung</h2>

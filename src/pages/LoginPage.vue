@@ -54,10 +54,13 @@ function handleBack() {
 <template>
   <div class="login-container">
     <div class="login-card">
-      <div class="login-header">
+      <router-link to="/" class="login-header">
         <i class="pi pi-car" />
         <h1>Wartungsheft</h1>
-      </div>
+      </router-link>
+      <p class="login-tagline">
+        Wartungen, Rechnungen und Kosten deiner Fahrzeuge an einem Ort.
+      </p>
 
       <Message v-if="error" severity="error" :closable="false">
         {{ error }}
@@ -156,8 +159,16 @@ function handleBack() {
 }
 
 .login-header {
+  display: block;
   text-align: center;
-  margin-bottom: 1.5rem;
+  text-decoration: none;
+}
+
+.login-tagline {
+  text-align: center;
+  color: var(--p-text-muted-color);
+  font-size: 0.9rem;
+  margin: 0.5rem 0 1.5rem;
 }
 
 .login-divider {

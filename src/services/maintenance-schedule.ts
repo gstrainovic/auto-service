@@ -50,10 +50,20 @@ export function getMaintenanceSchedule(customSchedule?: ScheduleItem[]): Schedul
   return DEFAULT_SCHEDULE
 }
 
-function addMonths(dateStr: string, months: number): Date {
-  const d = new Date(dateStr)
-  d.setMonth(d.getMonth() + months)
-  return d
+/** Kalendermonate addieren, Tag ans Monatsende klammern (31.01. + 1 = 28./29.02.); Ergebnis als YYYY-MM-DD ohne Zeitzone. */
+export function addMonths(dateStr: string, months: number): string {
+  const [y, m, d] = dateStr.slice(0, 10).split('-').map(Number) as [number, number, number]
+  const total = y * 12 + (m - 1) + months
+  const year = Math.floor(total / 12)
+  const month = total - year * 12 + 1
+  const day = Math.min(d, new Date(year, month, 0).getDate())
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+/** ISO-Tag als lokale Mitternacht, damit der Vergleich mit «jetzt» nicht an der Zeitzone hängt */
+function localDate(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number) as [number, number, number]
+  return new Date(y, m - 1, d)
 }
 
 function knownMileage(m: LastMaintenance): number | undefined {
@@ -96,11 +106,12 @@ export function checkDueMaintenances(params: {
       : undefined
 
     const nextDueDate = addMonths(last.doneAt, item.intervalMonths)
+    const nextDue = localDate(nextDueDate)
 
     const overdueByKm = nextDueMileage !== undefined && currentMileage >= nextDueMileage
-    const overdueByDate = now >= nextDueDate
+    const overdueByDate = now >= nextDue
     const soonByKm = nextDueMileage !== undefined && currentMileage >= nextDueMileage - DUE_SOON_KM
-    const soonByDate = now.getTime() >= nextDueDate.getTime() - DUE_SOON_DAYS * 86_400_000
+    const soonByDate = now.getTime() >= nextDue.getTime() - DUE_SOON_DAYS * 86_400_000
 
     let status: DueStatus = 'done'
     if (overdueByKm || overdueByDate)
@@ -114,7 +125,7 @@ export function checkDueMaintenances(params: {
       status,
       lastDoneAt: last.doneAt,
       lastMileage,
-      nextDueDate: nextDueDate.toISOString().split('T')[0],
+      nextDueDate,
       nextDueMileage,
     }
   })

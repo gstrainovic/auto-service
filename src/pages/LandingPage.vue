@@ -65,8 +65,8 @@ function goToApp() {
             <span>Rechnung scannen</span>
           </div>
           <div class="hero-stat">
-            <strong>100% offline</strong>
-            <span>Kein Internet nötig</span>
+            <strong>Offline nutzbar</strong>
+            <span>KI-Scan braucht Internet</span>
           </div>
           <div class="hero-stat">
             <strong>KI aus der EU</strong>
@@ -89,7 +89,7 @@ function goToApp() {
           <div class="problem-card">
             <i class="pi pi-calendar-times" />
             <h3>Wartung vergessen</h3>
-            <p>Zahnriemen übersehen = Motorschaden = 3.000–8.000 CHF. Vermeidbar.</p>
+            <p>Zahnriemen übersehen = Motorschaden = CHF 3'000 bis 8'000. Vermeidbar.</p>
           </div>
           <div class="problem-card">
             <i class="pi pi-calculator" />
@@ -131,14 +131,14 @@ function goToApp() {
               <i class="pi pi-sync" />
             </div>
             <h3>Offline-First</h3>
-            <p>Volle Funktionalität ohne Internet. Automatischer Sync wenn du wieder online bist.</p>
+            <p>Fahrzeuge, Rechnungen und Wartungsplan funktionieren ohne Internet, nur der KI-Scan braucht eine Verbindung. Automatischer Sync wenn du wieder online bist.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">
               <i class="pi pi-shield" />
             </div>
             <h3>Datenschutz</h3>
-            <p>KI-Verarbeitung durch Mistral AI in Frankreich, mit deinem eigenen API-Key. Im Scale-Tier kein Training mit deinen Daten.</p>
+            <p>Daten auf Servern in der Schweiz. KI-Verarbeitung durch Mistral AI in Frankreich, ohne Training mit deinen Daten. Kein eigener API-Key nötig.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">
@@ -439,7 +439,7 @@ function goToApp() {
 /* Problem Grid */
 .problem-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: 1.5rem;
   margin-top: 2.5rem;
 }
@@ -473,7 +473,7 @@ function goToApp() {
 /* Features Grid */
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
   gap: 1.5rem;
   margin-top: 2.5rem;
 }
@@ -574,7 +574,7 @@ function goToApp() {
 /* Pricing */
 .pricing-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: 1.5rem;
   max-width: 900px;
   margin: 2.5rem auto 0;
@@ -687,9 +687,11 @@ function goToApp() {
   color: var(--p-text-muted-color);
 }
 
+/* Umbruch erlaubt, sonst schiebt die Linkzeile die Seite auf schmalen Displays in die Breite */
 .footer-links {
   display: flex;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
 }
 
 .footer-links a {

@@ -1,7 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { checkDueMaintenances, getMaintenanceSchedule } from './maintenance-schedule'
+import { addMonths, checkDueMaintenances, getMaintenanceSchedule } from './maintenance-schedule'
 
 const schedule = getMaintenanceSchedule()
+
+describe('addMonths', () => {
+  it('rechnet kalendarisch und klammert den Tag ans Monatsende', () => {
+    expect(addMonths('2024-01-31', 1)).toBe('2024-02-29')
+    expect(addMonths('2023-01-31', 1)).toBe('2023-02-28')
+    expect(addMonths('2024-01-15', 6)).toBe('2024-07-15')
+    expect(addMonths('2024-08-31', 6)).toBe('2025-02-28')
+    expect(addMonths('2024-11-30', 3)).toBe('2025-02-28')
+  })
+
+  it('liefert das Fälligkeitsdatum als ISO-Tag ohne Zeitzonenverschiebung', () => {
+    const result = checkDueMaintenances({
+      currentMileage: 1,
+      schedule,
+      lastMaintenances: [{ type: 'oelwechsel', doneAt: '2024-01-31', mileageAtService: 0 }],
+    })
+    expect(result.find(r => r.type === 'oelwechsel')!.nextDueDate).toBe('2025-01-31')
+  })
+})
 
 describe('checkDueMaintenances', () => {
   it('fasst Einträge ausserhalb des Intervallplans pro Typ zusammen und zeigt den neuesten', () => {

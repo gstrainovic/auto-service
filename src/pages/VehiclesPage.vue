@@ -10,6 +10,8 @@ import { useVehiclesStore } from '../stores/vehicles'
 const route = useRoute()
 const store = useVehiclesStore()
 const showForm = ref(false)
+// Fahrzeug, dessen Löschung gerade bestätigt wird (gleicher Dialog und gleiche Kaskade wie auf der Detailseite)
+const confirmDeleteId = ref<string | null>(null)
 
 onMounted(async () => {
   await store.load()
@@ -20,6 +22,13 @@ onMounted(async () => {
 async function onSave(data: any) {
   await store.add(data)
   showForm.value = false
+}
+
+async function deleteVehicle(): Promise<void> {
+  if (!confirmDeleteId.value)
+    return
+  await store.removeWithRelated(confirmDeleteId.value)
+  confirmDeleteId.value = null
 }
 </script>
 
@@ -52,7 +61,7 @@ async function onSave(data: any) {
       v-for="v in store.vehicles"
       :key="v.id"
       :vehicle="v"
-      @delete="store.remove($event)"
+      @delete="confirmDeleteId = $event"
     />
 
     <Dialog
@@ -62,6 +71,19 @@ async function onSave(data: any) {
       :style="{ minWidth: '350px' }"
     >
       <VehicleForm @save="onSave" />
+    </Dialog>
+
+    <Dialog
+      :visible="!!confirmDeleteId"
+      modal
+      header="Fahrzeug löschen?"
+      @update:visible="v => { if (!v) confirmDeleteId = null }"
+    >
+      <p>Alle Rechnungen und Wartungseinträge werden ebenfalls gelöscht.</p>
+      <template #footer>
+        <Button label="Abbrechen" text @click="confirmDeleteId = null" />
+        <Button label="Löschen" severity="danger" @click="deleteVehicle" />
+      </template>
     </Dialog>
   </main>
 </template>

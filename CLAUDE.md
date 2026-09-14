@@ -171,8 +171,19 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - `maxRetries: 0` auf allen AI SDK Calls — verhindert SDK-interne Retries (default: 2) die Rate-Limit aufbrauchen
 
 ## Key Patterns
-- Währung und Zahlenformat nur über `src/lib/locale.ts` (CHF, `1'234.50`, bewusst ohne Intl, weil Browser und Node für de-CH
-  verschiedene Apostrophe liefern). Rechnungen behalten ihre erkannte Währung, Summen bleiben pro Währung getrennt.
+- Währung, Zahlen und Datum nur über `src/lib/locale.ts` (CHF, `1'234.50`, `formatDate` → `14.09.2026`, `formatMonth`;
+  bewusst ohne Intl, weil Browser und Node für de-CH verschiedene Apostrophe liefern). ISO-Daten bleiben in Formularfeldern,
+  CSV und Dateinamen. Kategorie-Schlüssel (`oelwechsel`, `fahrwerk`) nie roh anzeigen, immer `categoryLabel` aus
+  `src/services/report.ts`, die einzige Label-Tabelle. Kilometerstand 0 heisst unbekannt und wird weggelassen.
+- Fälligkeit (`src/services/maintenance-schedule.ts`): pro Typ zählt nur der neueste Eintrag mit `status === 'done'`;
+  Status `unknown` (nie erfasst, neutral), `due` (30 Tage oder 1'000 km vor dem Termin), `overdue`, `done`. Datumsrechnung
+  ohne `Date`-Zeitzonen (`addMonths` mit Tagesklammerung).
+- Fehler an Nutzer nur über `userMessage` in `src/lib/errors.ts` (402/429/Netz/Auth in deutsche Sätze; die Limit-Meldung
+  des ai-proxy geht unverändert durch, sie nennt Kontingent und Plan). Technische Details nur in der Konsole.
+- Löschen kaskadiert: Fahrzeug über `vehiclesStore.removeWithRelated` (Rechnungen und Wartungen mit), Rechnung löscht
+  ihre Wartungen über `invoiceId`; Wartungen aus `add_invoice` tragen die `invoiceId`.
+- Kostentabelle: `total` ist der Rechnungsbetrag (brutto), Positionen sind oft netto; die Differenz erscheint als Kategorie
+  `nicht_zugeordnet` («Nicht zugeordnet / MwSt.»), damit die Zeilen zur Total-Zeile addieren.
 - Auswertungen und Exporte: `src/services/report.ts` (Kosten pro Jahr und Kategorie, Fuhrpark pro Fahrzeug und Jahr, CSV mit
   BOM und Semikolon für Excel de-CH, reine Funktionen) und `src/services/pdf-report.ts` (jsPDF + jspdf-autotable; Dossier pro
   Fahrzeug mit Stammdaten, Wartungen, Kosten, Rechnungen; Fuhrpark-Übersicht = Übersichtsseite plus dieselben Abschnitte je

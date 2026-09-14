@@ -20,6 +20,29 @@ export function formatCurrency(value: number | undefined | null, currency: strin
   return `${currency} ${formatNumber(value, 2)}`
 }
 
+const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
+
+/**
+ * Datum als TT.MM.JJJJ. ISO-Strings werden textuell gelesen (kein Date-Parsing, also keine Verschiebung um einen Tag
+ * durch Zeitzonen); Date-Objekte nach lokaler Zeit. Unbekannte Formate bleiben unverändert, leer bleibt leer.
+ */
+export function formatDate(value: string | Date | undefined | null): string {
+  if (!value)
+    return ''
+  if (value instanceof Date)
+    return `${String(value.getDate()).padStart(2, '0')}.${String(value.getMonth() + 1).padStart(2, '0')}.${value.getFullYear()}`
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value)
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : value
+}
+
+/** Monat «JJJJ-MM» als «September 2026» */
+export function formatMonth(value: string | undefined | null): string {
+  const m = /^(\d{4})-(\d{2})/.exec(value ?? '')
+  if (!m)
+    return value ?? ''
+  return `${MONTHS[Number(m[2]) - 1] ?? m[2]} ${m[1]}`
+}
+
 const CURRENCY_ALIASES: Record<string, string> = {
   '€': 'EUR',
   'EURO': 'EUR',

@@ -8,8 +8,8 @@ import type { Maintenance } from '../stores/maintenances'
 import type { CurrencyOptions, VehicleInfo } from './report'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { formatCurrency, formatNumber, normalizeCurrency } from '../lib/locale'
-import { categoryLabel, costsByYear, fleetCostsByVehicleYear, maintenanceRows } from './report'
+import { formatCurrency, formatDate, formatNumber, normalizeCurrency } from '../lib/locale'
+import { categoryLabel, costsByYear, fleetCostsByVehicleYear, formatKm, maintenanceRows } from './report'
 
 export interface DossierInput {
   vehicle: VehicleInfo
@@ -84,7 +84,7 @@ function renderVehicle(doc: jsPDF, y: number, { vehicle, invoices, maintenances,
       ['Kennzeichen', vehicle.licensePlate],
       ['Baujahr', vehicle.year ? String(vehicle.year) : ''],
       ['Fahrgestellnummer', vehicle.vin ?? ''],
-      ['Kilometerstand', vehicle.mileage === undefined ? '' : `${formatNumber(vehicle.mileage)} km`],
+      ['Kilometerstand', formatKm(vehicle.mileage)],
     ],
   })
   y = finalY(doc) + 8
@@ -127,9 +127,9 @@ function renderVehicle(doc: jsPDF, y: number, { vehicle, invoices, maintenances,
   const invRows = [...invoices]
     .sort((a, b) => b.date.localeCompare(a.date))
     .map(inv => [
-      inv.date,
+      formatDate(inv.date),
       inv.workshopName ?? '',
-      inv.mileageAtService === undefined || inv.mileageAtService === null ? '' : `${formatNumber(inv.mileageAtService)} km`,
+      formatKm(inv.mileageAtService),
       (inv.items ?? []).map(i => categoryLabel(i.category || 'sonstiges')).filter((v, i, a) => a.indexOf(v) === i).join(', '),
       formatCurrency(inv.totalAmount, normalizeCurrency(inv.currency)),
     ])
@@ -158,7 +158,7 @@ function footer(doc: jsPDF): void {
 export function buildDossier(input: DossierInput): jsPDF {
   const { vehicle, generatedAt = new Date() } = input
   const doc = newDoc()
-  const y = title(doc, MARGIN, `${vehicle.make} ${vehicle.model}`, `Wartungsheft, Stand ${isoDate(generatedAt)}`)
+  const y = title(doc, MARGIN, `${vehicle.make} ${vehicle.model}`, `Wartungsheft, Stand ${formatDate(generatedAt)}`)
   renderVehicle(doc, y, input)
   footer(doc)
   return doc
@@ -167,7 +167,7 @@ export function buildDossier(input: DossierInput): jsPDF {
 /** Übersichtsseite mit Kosten pro Fahrzeug und Jahr, danach eine Seite je Fahrzeug wie im Dossier. */
 export function buildFleetReport({ vehicles, invoices, maintenances, generatedAt = new Date(), currency }: FleetReportInput): jsPDF {
   const doc = newDoc()
-  let y = title(doc, MARGIN, 'Fuhrpark-Übersicht', `Wartungsheft, ${vehicles.length} Fahrzeuge, Stand ${isoDate(generatedAt)}`)
+  let y = title(doc, MARGIN, 'Fuhrpark-Übersicht', `Wartungsheft, ${vehicles.length} Fahrzeuge, Stand ${formatDate(generatedAt)}`)
 
   y = heading(doc, y, 'Kosten pro Fahrzeug und Jahr')
   const rows = fleetCostsByVehicleYear(vehicles, invoices, currency)

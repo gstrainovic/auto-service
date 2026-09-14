@@ -38,6 +38,22 @@ describe('buildDossier', () => {
     expect(fleetReportFilename(new Date('2026-09-14T10:00:00Z'))).toBe('wartungsheft-alle-fahrzeuge-2026-09-14.pdf')
   })
 
+  it('schreibt Daten als TT.MM.JJJJ und lässt Kilometerstand 0 leer', () => {
+    const doc = buildDossier({
+      vehicle: { ...vehicle, mileage: 0 },
+      invoices: [{ ...invoices[0]!, mileageAtService: 0 }],
+      maintenances,
+      generatedAt: new Date(2026, 8, 14, 10, 0, 0),
+    })
+    const text = doc.output()
+    expect(text).toContain('Stand 14.09.2026')
+    expect(text).toContain('02.11.2025')
+    expect(text).not.toContain('2025-11-02')
+    // Textzellen stehen im PDF als «(…) Tj»; «61'000 km» der Wartung endet ebenfalls auf «0 km»
+    expect(text).toContain('(61\'000 km)')
+    expect(text).not.toContain('(0 km)')
+  })
+
   it('setzt einen sprechenden Dateinamen', async () => {
     const { dossierFilename } = await import('./pdf-report')
     expect(dossierFilename(vehicle, new Date('2026-09-14T10:00:00Z'))).toBe('wartungsheft-vw-caddy-sg-12345-2026-09-14.pdf')

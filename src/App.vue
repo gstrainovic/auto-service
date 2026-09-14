@@ -68,6 +68,7 @@ function handleSignOut() {
             <i class="pi pi-cog" />
             <span>Einstellungen</span>
           </RouterLink>
+          <hr class="nav-divider">
           <a class="nav-item nav-signout" href="#" @click.prevent="handleSignOut">
             <i class="pi pi-sign-out" />
             <span>Abmelden</span>
@@ -118,9 +119,10 @@ function handleSignOut() {
   font-weight: 500;
 }
 
+/* Unten Platz für den Chat-Button, damit er keine Inhalte überdeckt */
 .app-main {
   flex: 1;
-  padding: 1rem;
+  padding: 1rem 1rem 5rem;
   background: var(--p-surface-ground);
 }
 
@@ -154,10 +156,10 @@ function handleSignOut() {
   font-size: 1.25rem;
 }
 
-.nav-signout {
-  margin-top: auto;
+/* Abmelden in normaler Textfarbe, per Trennlinie von der Navigation abgesetzt */
+.nav-divider {
+  margin: 0.5rem 0;
+  border: 0;
   border-top: 1px solid var(--p-surface-border);
-  padding-top: 0.75rem;
-  color: var(--p-text-muted-color);
 }
 </style>

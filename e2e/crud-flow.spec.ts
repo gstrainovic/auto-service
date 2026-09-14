@@ -441,7 +441,8 @@ test.describe('Maintenance CRUD', () => {
     await expect(editDialog.locator('#maintenance-description')).toHaveValue(
       'Motoröl 5W-30 gewechselt',
     )
-    await expect(editDialog.locator('#maintenance-type')).toHaveValue(
+    // Typ ist ein Select; ein Wert ausserhalb der Kategorienliste bleibt als eigene Option sichtbar
+    await expect(editDialog.locator('#maintenance-type')).toContainText(
       'Ölwechsel',
     )
 

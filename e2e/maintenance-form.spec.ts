@@ -56,7 +56,7 @@ test.describe('Maintenance Form', () => {
 
     // Select category (PrimeVue Select dropdown)
     await dialog.locator('#maintenance-category').click()
-    await page.getByText('Inspektion').click()
+    await page.getByRole('option', { name: 'Inspektion / Service' }).click()
 
     await dialog.locator('#maintenance-date').fill('2026-02-08')
     await dialog.locator('#maintenance-mileage input').fill('50000')
@@ -67,7 +67,7 @@ test.describe('Maintenance Form', () => {
     // Dialog should close
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
 
-    // Maintenance should appear
-    await expect(page.getByText('Inspektion')).toBeVisible()
+    // Maintenance should appear (ohne Beschreibung zeigt die Liste den Kategorienamen)
+    await expect(page.getByText('Inspektion / Service')).toBeVisible()
   })
 })

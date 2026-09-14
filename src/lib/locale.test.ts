@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_CURRENCY, formatCurrency, formatNumber, normalizeCurrency } from './locale'
+import { DEFAULT_CURRENCY, formatCurrency, formatDate, formatMonth, formatNumber, normalizeCurrency } from './locale'
 
 // Schweizer Standard: CHF, Apostroph als Tausendertrenner, Punkt als Dezimaltrenner
 describe('locale', () => {
@@ -35,6 +35,16 @@ describe('locale', () => {
     expect(normalizeCurrency(undefined)).toBe(DEFAULT_CURRENCY)
     expect(normalizeCurrency('')).toBe(DEFAULT_CURRENCY)
     expect(normalizeCurrency('XYZ')).toBe('XYZ')
+  })
+
+  it('formatiert ISO-Daten als TT.MM.JJJJ, ohne Zeitzonenverschiebung', () => {
+    expect(formatDate('2025-04-03')).toBe('03.04.2025')
+    expect(formatDate('2026-09-14T10:00:00Z')).toBe('14.09.2026')
+    expect(formatDate(new Date(2024, 0, 31))).toBe('31.01.2024')
+    expect(formatDate('')).toBe('')
+    expect(formatDate(undefined)).toBe('')
+    expect(formatDate('kaputt')).toBe('kaputt')
+    expect(formatMonth('2026-09')).toBe('September 2026')
   })
 
   it('formatiert Kilometer ohne Nachkommastellen', () => {

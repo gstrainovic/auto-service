@@ -17,7 +17,7 @@ export function useImageUpload(maxSize = 1540) {
       return
     }
     if (file.size > MAX_FILE_SIZE) {
-      error.value = 'Datei zu groß (max 10 MB)'
+      error.value = 'Datei zu gross (max 10 MB)'
       return
     }
 

@@ -7,8 +7,11 @@
 import type { Invoice } from '../stores/invoices'
 import type { Maintenance } from '../stores/maintenances'
 import type { RateMap } from './fx'
-import { formatNumber, normalizeCurrency } from '../lib/locale'
+import { formatDate, formatNumber, normalizeCurrency } from '../lib/locale'
 import { rateKey } from './fx'
+
+/** Differenz zwischen Total (brutto) und Positionen (meist netto), damit die Kategorien zum Total addieren */
+export const UNASSIGNED_CATEGORY = 'nicht_zugeordnet'
 
 const CATEGORY_LABELS: Record<string, string> = {
   oelwechsel: 'Ölwechsel',
@@ -27,10 +30,16 @@ const CATEGORY_LABELS: Record<string, string> = {
   kuehlung: 'Kühlung',
   autoglas: 'Autoglas',
   sonstiges: 'Sonstiges',
+  [UNASSIGNED_CATEGORY]: 'Nicht zugeordnet / MwSt.',
 }
 
 export function categoryLabel(category: string): string {
   return CATEGORY_LABELS[category] ?? category
+}
+
+/** Kilometerstand für Anzeige; 0 oder fehlend bedeutet unbekannt und bleibt leer */
+export function formatKm(value: number | undefined | null): string {
+  return value ? `${formatNumber(value)} km` : ''
 }
 
 export interface CurrencyOptions {
@@ -101,6 +110,12 @@ export function costsByYear(invoices: Invoice[], opts?: CurrencyOptions): YearCo
       row.converted++
     if (p.unconverted)
       row.unconverted++
+  }
+  for (const row of map.values()) {
+    const assigned = Object.values(row.byCategory).reduce((sum, v) => sum + v, 0)
+    const diff = round2(row.total - assigned)
+    if (Math.abs(diff) > 0.005)
+      row.byCategory[UNASSIGNED_CATEGORY] = diff
   }
   return [...map.values()].sort((a, b) => b.year - a.year || a.currency.localeCompare(b.currency))
 }
@@ -181,9 +196,9 @@ export function invoicesToCsvRows(entries: { inv: Invoice, vehicle: VehicleInfo 
   return String.fromCharCode(0xFEFF) + lines.join('\r\n')
 }
 
-/** Wartungshistorie für das Dossier, neueste zuerst. */
+/** Wartungshistorie für das Dossier, neueste zuerst, Datum als TT.MM.JJJJ. */
 export function maintenanceRows(maintenances: Maintenance[]): string[][] {
   return [...maintenances]
     .sort((a, b) => b.doneAt.localeCompare(a.doneAt))
-    .map(m => [m.doneAt, m.description || categoryLabel(m.type), `${formatNumber(m.mileageAtService)} km`])
+    .map(m => [formatDate(m.doneAt), m.description || categoryLabel(m.type), formatKm(m.mileageAtService)])
 }

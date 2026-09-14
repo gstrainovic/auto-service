@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { ToolResult } from '../services/chat'
 import Panel from 'primevue/panel'
-import { DEFAULT_CURRENCY, formatNumber } from '../lib/locale'
+import { formatCurrency, formatDate, formatNumber, normalizeCurrency } from '../lib/locale'
+import { categoryLabel } from '../services/report'
 
 const props = defineProps<{ result: ToolResult }>()
 
@@ -26,7 +27,7 @@ const FIELD_LABELS: Record<string, string> = {
   date: 'Datum',
   totalAmount: 'Betrag',
   currency: 'Währung',
-  mileageAtService: 'km-Stand',
+  mileageAtService: 'Kilometerstand',
   type: 'Typ',
   description: 'Beschreibung',
   doneAt: 'Datum',
@@ -42,12 +43,16 @@ const SKIP_KEYS = new Set(['items', 'schedule', 'vehicleId', 'invoiceId', 'id', 
 
 const meta = TOOL_META[props.result.tool] ?? { icon: 'pi pi-check', label: 'Ergebnis' }
 
+function currencyOf(d: Record<string, any>): string {
+  return normalizeCurrency(d.currency)
+}
+
 function summary(): string {
   const d = props.result.data
   if (d.make)
     return `${d.make} ${d.model ?? ''} ${d.year ? `(${d.year})` : ''}`.trim()
   if (d.workshopName)
-    return `${d.workshopName} — ${d.totalAmount ?? ''} ${d.currency || DEFAULT_CURRENCY}`.trim()
+    return `${d.workshopName} — ${formatCurrency(d.totalAmount, currencyOf(d))}`
   if (d.schedule?.length)
     return `${d.schedule.length} Wartungsintervalle`
   if (d.type && d.description)
@@ -67,11 +72,14 @@ function fields(): { label: string, value: string }[] {
       continue
     const label = FIELD_LABELS[key] || key
     let value = String(val)
-    // Format known numeric fields
     if ((key === 'mileage' || key === 'mileageAtService') && !Number.isNaN(Number(val)))
       value = `${formatNumber(Number(val))} km`
-    if (key === 'totalAmount' && d.currency)
-      value = `${val} ${d.currency}`
+    if (key === 'totalAmount' || key === 'amount')
+      value = formatCurrency(Number(val), currencyOf(d))
+    if (key === 'date' || key === 'doneAt')
+      value = formatDate(String(val))
+    if (key === 'type' || key === 'category')
+      value = categoryLabel(String(val))
     f.push({ label, value })
   }
   return f
@@ -83,7 +91,7 @@ function tableItems(): { description: string, amount: string }[] {
     return []
   return d.items.map((i: any) => ({
     description: i.description || Object.values(i).find(v => typeof v === 'string') || '',
-    amount: i.amount ? `${i.amount}` : '',
+    amount: i.amount ? formatCurrency(i.amount, currencyOf(d)) : '',
   }))
 }
 

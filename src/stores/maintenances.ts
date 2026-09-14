@@ -10,7 +10,8 @@ export interface Maintenance {
   type: string
   description?: string
   doneAt: string
-  mileageAtService: number
+  /** leer, null oder 0 heisst unbekannt */
+  mileageAtService?: number | null
   nextDueDate?: string
   nextDueMileage?: number
   status: 'done' | 'due' | 'overdue'

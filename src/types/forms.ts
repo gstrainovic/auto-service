@@ -11,6 +11,8 @@ export interface InvoiceFormData {
   currency?: 'EUR' | 'CHF'
   category?: MaintenanceCategory
   description?: string
+  /** Kilometerstand bei der Rechnung; leer heisst unbekannt */
+  mileage?: number
   images?: string[]
 }
 

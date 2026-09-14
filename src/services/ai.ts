@@ -56,7 +56,7 @@ const vehicleDocumentSchema = z.object({
   engineType: z.string().nullable().optional().describe('Motortyp: Diesel, Benzin, Elektro, Hybrid'),
   enginePower: z.string().nullable().optional().describe('Leistung z.B. 140 kW / 190 PS'),
   purchaseDate: z.string().nullable().optional().describe('Kaufdatum im Format YYYY-MM-DD'),
-  purchasePrice: z.number().nullable().optional().describe('Kaufpreis in Euro'),
+  purchasePrice: z.number().nullable().optional().describe('Kaufpreis (Währung wie im Dokument, sonst CHF)'),
 })
 
 export type ParsedVehicleDocument = z.infer<typeof vehicleDocumentSchema>
@@ -303,11 +303,12 @@ WICHTIG — Positionen extrahieren:
 - Kontrolliere: Die Summe aller Positions-Beträge muss ungefähr dem Netto-Gesamtbetrag (vor MwSt.) entsprechen
 
 WICHTIG — Währung:
-- "CHF" oder "Totalbetrag CHF" → Währung ist CHF
-- "€" oder "EUR" oder "inkl. MwSt." ohne CHF → Währung ist EUR
+- "CHF", "Fr." oder "Totalbetrag CHF" → Währung ist CHF
+- Nur bei ausdrücklichem "€", "EUR" oder "Euro" → Währung ist EUR
+- Ohne Angabe → Währung ist CHF
 
 WICHTIG — Kategorien richtig zuordnen:
-- Federn, Stoßdämpfer, Federbeine, Achse, Lenkung, Radlager → fahrwerk
+- Federn, Stossdämpfer, Federbeine, Achse, Lenkung, Radlager → fahrwerk
 - Auspuff, Krümmer, Katalysator, Abgasanlage → auspuff
 - Kühlwasser, Kühler, Thermostat, Frostschutz, Unterdruckleitung → kuehlung
 - Windschutzscheibe, Autoglas, Scheibenwischer → autoglas

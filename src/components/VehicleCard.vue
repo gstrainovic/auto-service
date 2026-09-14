@@ -14,13 +14,16 @@ const emit = defineEmits<{ delete: [id: string] }>()
 const router = useRouter()
 
 const maintenanceStatus = ref<'ok' | 'due' | 'overdue'>('ok')
+// Arbeit, die den Status auslöst (z. B. «Ölwechsel»), für den Badge-Text
+const statusItemLabel = ref('')
 
 onMounted(async () => {
   try {
     const result = await db.queryOnce({ maintenances: {} })
     const allMaintenances = result.data.maintenances || []
     const schedule = getMaintenanceSchedule(props.vehicle.customSchedule as any)
-    const vehicleMaintenances = allMaintenances.filter((m: any) => m.vehicleId === props.vehicle.id)
+    // Nur erledigte Einträge zählen, geplante (due/overdue) sind noch keine Wartung
+    const vehicleMaintenances = allMaintenances.filter((m: any) => m.vehicleId === props.vehicle.id && m.status === 'done')
     const lastMaintenances = vehicleMaintenances.map((m: any) => ({
       type: m.type,
       mileageAtService: m.mileageAtService,
@@ -34,14 +37,19 @@ onMounted(async () => {
     })
 
     // «unknown» (kein Eintrag) zählt nicht als fällig
-    if (dueItems.some(i => i.status === 'overdue')) {
+    const overdue = dueItems.find(i => i.status === 'overdue')
+    const due = dueItems.find(i => i.status === 'due')
+    if (overdue) {
       maintenanceStatus.value = 'overdue'
+      statusItemLabel.value = overdue.label
     }
-    else if (dueItems.some(i => i.status === 'due')) {
+    else if (due) {
       maintenanceStatus.value = 'due'
+      statusItemLabel.value = due.label
     }
     else {
       maintenanceStatus.value = 'ok'
+      statusItemLabel.value = ''
     }
   }
   catch {}
@@ -56,10 +64,11 @@ const statusSeverity = computed(() => {
 })
 
 const statusLabel = computed(() => {
+  const item = statusItemLabel.value ? `${statusItemLabel.value} ` : ''
   if (maintenanceStatus.value === 'overdue')
-    return 'Überfällig'
+    return `${item}überfällig`
   if (maintenanceStatus.value === 'due')
-    return 'Bald fällig'
+    return `${item}bald fällig`
   return 'OK'
 })
 
@@ -88,7 +97,7 @@ function onDelete(event: Event): void {
       </div>
     </template>
     <template #content>
-      <div class="mileage">
+      <div v-if="vehicle.mileage" class="mileage">
         <i class="pi pi-gauge" />
         {{ formatNumber(vehicle.mileage) }} km
       </div>
@@ -96,8 +105,9 @@ function onDelete(event: Event): void {
     <template #footer>
       <div class="card-actions">
         <Button
+          v-tooltip.top="'Fahrzeug löschen'"
           icon="pi pi-trash"
-          severity="danger"
+          severity="secondary"
           text
           rounded
           aria-label="Löschen"

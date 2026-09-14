@@ -14,6 +14,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { getCurrentUserId } from '../composables/useAuth'
 import { autoRotateForDocument, resizeImage } from '../composables/useImageResize'
+import { userMessage } from '../lib/errors'
 import { db, tx } from '../lib/instantdb'
 import { hashImage } from '../services/ai'
 import { getAiAccess } from '../services/ai-access'
@@ -37,7 +38,10 @@ const toast = useToast()
 const messages = ref<ChatMessage[]>([WELCOME_MESSAGE])
 const input = ref('')
 const loading = ref(false)
-const pendingFiles = ref<{ file: File, type: 'image' | 'pdf', name: string, preview: string, base64: string }[]>([])
+// Eigene ID pro Anhang als v-for-Key: Dateinamen sind nicht eindeutig (Kamera: alle «image.jpg»), und ein Index-Key
+// liesse Vue die intern schon ausgeblendete Chip-Komponente für den nachrückenden Eintrag weiterverwenden
+const pendingFiles = ref<{ id: number, file: File, type: 'image' | 'pdf', name: string, preview: string, base64: string }[]>([])
+let pendingFileSeq = 0
 const scrollArea = ref<any>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const cameraInput = ref<HTMLInputElement | null>(null)
@@ -170,8 +174,8 @@ function onFileChange(event: Event) {
   target.value = ''
 }
 
-function removePendingFile(index: number) {
-  pendingFiles.value.splice(index, 1)
+function removePendingFile(id: number) {
+  pendingFiles.value = pendingFiles.value.filter(pf => pf.id !== id)
 }
 
 function onDragEnter(e: DragEvent) {
@@ -205,7 +209,7 @@ function processFiles(files: FileList) {
         toast.add({
           severity: 'error',
           summary: 'Fehler',
-          detail: `PDF zu groß (${(file.size / 1024 / 1024).toFixed(0)} MB). Maximum: 50 MB.`,
+          detail: `PDF zu gross (${(file.size / 1024 / 1024).toFixed(0)} MB). Maximum: 50 MB.`,
           life: 5000,
         })
         continue
@@ -215,6 +219,7 @@ function processFiles(files: FileList) {
         const dataUrl = e.target?.result as string
         const base64 = dataUrl.split(',')[1] ?? ''
         pendingFiles.value.push({
+          id: ++pendingFileSeq,
           file,
           type: 'pdf',
           name: file.name,
@@ -233,6 +238,7 @@ function processFiles(files: FileList) {
         const finalBase64 = rotatedBase64
         const finalDataUrl = isOriginal ? dataUrl : `data:image/webp;base64,${rotatedBase64}`
         pendingFiles.value.push({
+          id: ++pendingFileSeq,
           file,
           type: 'image',
           name: file.name,
@@ -290,11 +296,11 @@ async function send() {
     messages.value.push(assistantMsg)
     await saveMessage(assistantMsg)
   }
-  catch (e: any) {
+  catch (e) {
     const errorMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'assistant',
-      content: `Fehler: ${e.message}`,
+      content: userMessage(e),
     }
     messages.value.push(errorMsg)
     await saveMessage(errorMsg)
@@ -552,12 +558,12 @@ async function clearChat() {
 
       <div v-if="pendingFiles.length" class="pending-files">
         <Chip
-          v-for="(pf, i) in pendingFiles"
-          :key="pf.name"
+          v-for="pf in pendingFiles"
+          :key="pf.id"
           :label="pf.name"
           :icon="pf.type === 'image' ? 'pi pi-image' : 'pi pi-file-pdf'"
           removable
-          @remove="removePendingFile(i)"
+          @remove="removePendingFile(pf.id)"
         />
       </div>
 

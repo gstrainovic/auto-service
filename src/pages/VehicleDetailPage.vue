@@ -22,7 +22,8 @@ import MaintenanceFormDialog from '../components/MaintenanceFormDialog.vue'
 import MediaViewer from '../components/MediaViewer.vue'
 import VehicleForm from '../components/VehicleForm.vue'
 import { db } from '../lib/instantdb'
-import { DEFAULT_CURRENCY, formatCurrency, formatNumber, normalizeCurrency } from '../lib/locale'
+import { DEFAULT_CURRENCY, formatCurrency, formatDate, formatNumber, normalizeCurrency } from '../lib/locale'
+import { MAINTENANCE_CATEGORIES } from '../services/ai'
 import { resolveRates } from '../services/fx'
 import { buildDossier, dossierFilename } from '../services/pdf-report'
 import { categoryLabel, costsByYear, invoicesToCsv } from '../services/report'
@@ -44,6 +45,9 @@ const vehicle = computed(() =>
 // Die Stores halten alle Rechnungen und Wartungen des Kontos; hier zählt nur dieses Fahrzeug
 const vehicleInvoices = computed(() => invoicesStore.getByVehicleId(route.params.id as string))
 const vehicleMaintenances = computed(() => maintenancesStore.getByVehicleId(route.params.id as string))
+// Anzeige neueste zuerst; die Store-Listen bleiben unverändert (Exporte sortieren selbst)
+const sortedMaintenances = computed(() => [...vehicleMaintenances.value].sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || '')))
+const sortedInvoices = computed(() => [...vehicleInvoices.value].sort((a, b) => (b.date || '').localeCompare(a.date || '')))
 
 const selectedInvoice = ref<Invoice | null>(null)
 const confirmDeleteInvoice = ref(false)
@@ -65,7 +69,7 @@ const editInvoiceForm = ref({
   date: '',
   totalAmount: 0,
   currency: DEFAULT_CURRENCY,
-  mileageAtService: 0,
+  mileageAtService: null as number | null,
   items: [] as InvoiceItem[],
 })
 const editMaintenance = ref<Maintenance | null>(null)
@@ -73,7 +77,7 @@ const editMaintenanceForm = ref({
   type: '',
   description: '',
   doneAt: '',
-  mileageAtService: 0,
+  mileageAtService: null as number | null,
   nextDueDate: '',
   nextDueMileage: 0,
   status: 'done' as Maintenance['status'],
@@ -85,6 +89,23 @@ const statusOptions = [
   { label: 'Überfällig', value: 'overdue' },
 ]
 
+const CURRENCIES = ['CHF', 'EUR']
+
+// Auswahllisten für die Bearbeiten-Dialoge; ein bestehender Wert ausserhalb der Liste (z. B. USD aus einem Scan,
+// alte Freitext-Kategorie) bleibt als eigene Option wählbar, sonst würde das Feld leer erscheinen
+function withCurrent(values: readonly string[], current: string, label: (v: string) => string): { label: string, value: string }[] {
+  const all = current && !values.includes(current) ? [current, ...values] : [...values]
+  return all.map(v => ({ label: label(v), value: v }))
+}
+
+function categoryOptionsFor(current: string): { label: string, value: string }[] {
+  return withCurrent(MAINTENANCE_CATEGORIES, current, categoryLabel)
+}
+
+function currencyOptionsFor(current: string): { label: string, value: string }[] {
+  return withCurrent(CURRENCIES, normalizeCurrency(current), v => v)
+}
+
 onMounted(async () => {
   await vehiclesStore.load()
   const id = route.params.id as string
@@ -92,7 +113,10 @@ onMounted(async () => {
   await maintenancesStore.loadForVehicle(id)
 })
 
+// Wartungen, die aus dieser Rechnung entstanden sind (Chat-Scan setzt invoiceId), gehen mit der Rechnung
 async function deleteInvoice(invoiceId: string): Promise<void> {
+  for (const m of vehicleMaintenances.value.filter(m => m.invoiceId === invoiceId))
+    await maintenancesStore.remove(m.id)
   await invoicesStore.remove(invoiceId)
   selectedInvoice.value = null
   confirmDeleteInvoice.value = false
@@ -104,12 +128,7 @@ async function deleteMaintenance(id: string): Promise<void> {
 }
 
 async function deleteVehicle(): Promise<void> {
-  const id = route.params.id as string
-  for (const inv of vehicleInvoices.value)
-    await invoicesStore.remove(inv.id)
-  for (const m of vehicleMaintenances.value)
-    await maintenancesStore.remove(m.id)
-  await vehiclesStore.remove(id)
+  await vehiclesStore.removeWithRelated(route.params.id as string)
   confirmDeleteVehicle.value = false
   router.push('/vehicles')
 }
@@ -127,8 +146,8 @@ function openEditInvoice(inv: Invoice): void {
     workshopName: inv.workshopName || '',
     date: inv.date || '',
     totalAmount: inv.totalAmount || 0,
-    currency: inv.currency || DEFAULT_CURRENCY,
-    mileageAtService: inv.mileageAtService || 0,
+    currency: normalizeCurrency(inv.currency),
+    mileageAtService: inv.mileageAtService || null,
     items: inv.items ? inv.items.map(i => ({ ...i })) : [],
   }
 }
@@ -136,7 +155,10 @@ function openEditInvoice(inv: Invoice): void {
 async function saveInvoiceEdit(): Promise<void> {
   if (!editInvoice.value)
     return
-  await invoicesStore.update(editInvoice.value.id, { ...editInvoiceForm.value })
+  await invoicesStore.update(editInvoice.value.id, {
+    ...editInvoiceForm.value,
+    mileageAtService: editInvoiceForm.value.mileageAtService || null,
+  })
   editInvoice.value = null
   selectedInvoice.value = null
 }
@@ -155,7 +177,7 @@ function openEditMaintenance(m: Maintenance): void {
     type: m.type || '',
     description: m.description || '',
     doneAt: m.doneAt || '',
-    mileageAtService: m.mileageAtService || 0,
+    mileageAtService: m.mileageAtService || null,
     nextDueDate: m.nextDueDate || '',
     nextDueMileage: m.nextDueMileage || 0,
     status: m.status || 'done',
@@ -165,7 +187,10 @@ function openEditMaintenance(m: Maintenance): void {
 async function saveMaintenanceEdit(): Promise<void> {
   if (!editMaintenance.value)
     return
-  await maintenancesStore.update(editMaintenance.value.id, { ...editMaintenanceForm.value })
+  await maintenancesStore.update(editMaintenance.value.id, {
+    ...editMaintenanceForm.value,
+    mileageAtService: editMaintenanceForm.value.mileageAtService || null,
+  })
   editMaintenance.value = null
 }
 
@@ -207,7 +232,8 @@ async function handleAddInvoice(data: InvoiceFormData): Promise<void> {
     date: data.date,
     totalAmount: data.amount,
     currency: data.currency || DEFAULT_CURRENCY,
-    mileageAtService: vehicle.value.mileage,
+    // Kilometerstand nur, wenn im Formular angegeben; der heutige Fahrzeugstand wäre bei alten Belegen falsch
+    mileageAtService: data.mileage || undefined,
     items: data.category
       ? [{
           description: data.description || '',
@@ -215,7 +241,8 @@ async function handleAddInvoice(data: InvoiceFormData): Promise<void> {
           amount: data.amount || 0,
         }]
       : [],
-    imageData: data.images?.[0],
+    // InvoiceForm liefert das Foto als imageBase64
+    imageData: data.images?.[0] ?? (data as { imageBase64?: string }).imageBase64,
   })
 
   showAddInvoiceDialog.value = false
@@ -288,7 +315,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
     type: data.category,
     description: data.description,
     doneAt: data.date,
-    mileageAtService: data.mileage || vehicle.value.mileage,
+    mileageAtService: data.mileage || undefined,
     status,
   })
 
@@ -302,7 +329,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
       <Button icon="pi pi-arrow-left" text to="/vehicles" as="router-link" />
       <div class="spacer" />
       <Button icon="pi pi-pencil" label="Bearbeiten" text severity="primary" @click="editVehicle = true" />
-      <Button icon="pi pi-trash" label="Löschen" text severity="danger" @click="confirmDeleteVehicle = true" />
+      <Button icon="pi pi-trash" label="Löschen" text severity="secondary" @click="confirmDeleteVehicle = true" />
     </div>
 
     <template v-if="vehicle">
@@ -313,13 +340,13 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
         {{ vehicle.year }} · {{ vehicle.licensePlate }}
       </div>
       <div class="vehicle-mileage">
-        <i class="pi pi-gauge" /> {{ formatNumber(vehicle.mileage) }} km
+        <i class="pi pi-gauge" /> {{ vehicle.mileage ? `${formatNumber(vehicle.mileage)} km` : '–' }}
       </div>
 
       <Tabs v-model:value="tab">
         <TabList>
           <Tab value="maintenance">
-            Wartung
+            Wartungen
           </Tab>
           <Tab value="invoices">
             Rechnungen
@@ -359,7 +386,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                       {{ item.label }}
                     </div>
                     <div class="schedule-interval">
-                      {{ item.intervalKm > 0 ? `${item.intervalKm.toLocaleString()} km` : '' }}{{ item.intervalKm > 0 && item.intervalMonths > 0 ? ' / ' : '' }}{{ item.intervalMonths > 0 ? `${item.intervalMonths} Monate` : '' }}
+                      {{ item.intervalKm > 0 ? `${formatNumber(item.intervalKm)} km` : '' }}{{ item.intervalKm > 0 && item.intervalMonths > 0 ? ' / ' : '' }}{{ item.intervalMonths > 0 ? `${item.intervalMonths} Monate` : '' }}
                     </div>
                   </div>
                 </div>
@@ -375,13 +402,13 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
             </div>
 
             <div class="maintenance-list">
-              <div v-for="m in vehicleMaintenances" :key="m.id" class="maintenance-item">
+              <div v-for="m in sortedMaintenances" :key="m.id" class="maintenance-item">
                 <div class="maintenance-content">
                   <div class="maintenance-label">
-                    {{ m.description || m.type }}
+                    {{ m.description || categoryLabel(m.type) }}
                   </div>
                   <div class="maintenance-caption">
-                    {{ m.doneAt }} · {{ formatNumber(m.mileageAtService) }} km
+                    {{ formatDate(m.doneAt) }}{{ m.mileageAtService ? ` · ${formatNumber(m.mileageAtService)} km` : '' }}
                   </div>
                 </div>
                 <div class="maintenance-actions">
@@ -400,7 +427,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                     icon="pi pi-trash"
                     text
                     rounded
-                    severity="danger"
+                    severity="secondary"
                     @click="confirmDeleteMaintenance = m.id"
                   />
                 </div>
@@ -423,7 +450,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
             </div>
             <div class="invoices-list">
               <div
-                v-for="inv in vehicleInvoices"
+                v-for="inv in sortedInvoices"
                 :key="inv.id"
                 class="invoice-item"
                 @click="selectedInvoice = inv"
@@ -434,7 +461,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                     {{ inv.workshopName }}
                   </div>
                   <div class="invoice-caption">
-                    {{ inv.date }} · {{ formatCurrency(inv.totalAmount, normalizeCurrency(inv.currency)) }}
+                    {{ formatDate(inv.date) }} · {{ formatCurrency(inv.totalAmount, normalizeCurrency(inv.currency)) }}
                   </div>
                 </div>
                 <i class="pi pi-chevron-right" />
@@ -468,7 +495,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                   <tr v-for="c in costCategories" :key="c.cat">
                     <td>{{ categoryLabel(c.cat) }}</td>
                     <td v-for="r in yearCosts" :key="`${r.year}-${r.currency}`" class="num">
-                      {{ r.byCategory[c.cat] === undefined ? '' : formatNumber(r.byCategory[c.cat], 2) }}
+                      {{ r.byCategory[c.cat] === undefined ? '–' : formatNumber(r.byCategory[c.cat], 2) }}
                     </td>
                     <td v-if="singleCurrency" class="num">
                       {{ formatNumber(c.total, 2) }}
@@ -520,7 +547,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
           {{ selectedInvoice.workshopName }}
         </div>
         <div class="dialog-subheader">
-          {{ selectedInvoice.date }} · {{ formatCurrency(selectedInvoice.totalAmount, normalizeCurrency(selectedInvoice.currency)) }}
+          {{ formatDate(selectedInvoice.date) }} · {{ formatCurrency(selectedInvoice.totalAmount, normalizeCurrency(selectedInvoice.currency)) }}{{ selectedInvoice.mileageAtService ? ` · ${formatNumber(selectedInvoice.mileageAtService)} km` : '' }}
         </div>
 
         <div v-if="selectedInvoice.imageData" class="invoice-image-section">
@@ -530,7 +557,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
             @click="openMediaViewer(selectedInvoice!)"
           >
           <div class="image-hint">
-            Klick zum Vergrößern
+            Klick zum Vergrössern
           </div>
         </div>
 
@@ -545,7 +572,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                   {{ item.description }}
                 </div>
                 <div class="position-caption">
-                  {{ item.category }}
+                  {{ categoryLabel(item.category) }}
                 </div>
               </div>
               <div class="position-amount">
@@ -558,7 +585,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
         <div class="dialog-actions">
           <Button label="Bearbeiten" text severity="primary" @click="openEditInvoice(selectedInvoice!)" />
           <Button label="Löschen" text severity="danger" @click="confirmDeleteInvoice = true" />
-          <Button label="Schließen" text @click="selectedInvoice = null" />
+          <Button label="Schliessen" text @click="selectedInvoice = null" />
         </div>
       </template>
     </Dialog>
@@ -591,7 +618,14 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
         </div>
         <div class="form-field">
           <label for="invoice-currency">Währung</label>
-          <InputText id="invoice-currency" v-model="editInvoiceForm.currency" class="w-full" />
+          <Select
+            id="invoice-currency"
+            v-model="editInvoiceForm.currency"
+            :options="currencyOptionsFor(editInvoiceForm.currency)"
+            option-label="label"
+            option-value="value"
+            class="w-full"
+          />
         </div>
         <div class="form-field">
           <label for="invoice-mileage">Kilometerstand</label>
@@ -604,9 +638,16 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
           </div>
           <div v-for="(item, i) in editInvoiceForm.items" :key="i" class="item-row">
             <InputText v-model="item.description" placeholder="Beschreibung" class="flex-grow" />
-            <InputText v-model="item.category" placeholder="Kategorie" class="category-input" />
+            <Select
+              v-model="item.category"
+              :options="categoryOptionsFor(item.category)"
+              option-label="label"
+              option-value="value"
+              placeholder="Kategorie"
+              class="category-input"
+            />
             <InputNumber v-model="item.amount" mode="decimal" :min-fraction-digits="2" placeholder="Betrag" class="amount-input" />
-            <Button icon="pi pi-minus-circle" text rounded severity="danger" @click="removeInvoiceItem(i)" />
+            <Button v-tooltip.top="'Position entfernen'" aria-label="Position entfernen" icon="pi pi-minus-circle" text rounded severity="secondary" @click="removeInvoiceItem(i)" />
           </div>
           <Button icon="pi pi-plus" label="Position hinzufügen" text @click="addInvoiceItem" />
         </div>
@@ -629,7 +670,14 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
       <form class="edit-form" @submit.prevent="saveMaintenanceEdit">
         <div class="form-field">
           <label for="maintenance-type">Typ</label>
-          <InputText id="maintenance-type" v-model="editMaintenanceForm.type" class="w-full" />
+          <Select
+            id="maintenance-type"
+            v-model="editMaintenanceForm.type"
+            :options="categoryOptionsFor(editMaintenanceForm.type)"
+            option-label="label"
+            option-value="value"
+            class="w-full"
+          />
         </div>
         <div class="form-field">
           <label for="maintenance-description">Beschreibung</label>
@@ -997,7 +1045,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
 }
 
 .category-input {
-  width: 8rem;
+  width: 11rem;
 }
 
 .amount-input {

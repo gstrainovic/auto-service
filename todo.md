@@ -19,6 +19,20 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 - [ ] Auswertung gegen die Abbruchkriterien, Ergebnis und Entscheid in Kapitel 9 eintragen
 - [ ] Pilot-Betrieb anlegen: Fahrzeuge erfassen, erste Rechnungen von Hand einlesen, Jahresrechnung per QR-Rechnung stellen (kein Zahlungsanbieter)
 
+### Aus der Review vom Pilot-Stand (Entscheid des Nutzers offen)
+- [ ] Preise auf der Landing `/` (Free / Plus 3 / Pro 7 CHF, dazu Push, Sharing, Werkstatt-Verzeichnis als Features) auf die echten Pläne aus den Einstellungen (Gratis / Basic 5 / Pro 15 CHF) umstellen und nicht vorhandene Features streichen; `/betrieb` und `/privathalter` bleiben Validierungsseiten
+- [ ] Kostentabelle Fahrzeugseite: Zeile «Gesamt» unter der Total-Zeile streichen (doppelt)
+- [ ] Fahrzeugkarten unter «Fahrzeuge» kompakter, Klickbarkeit sichtbar (Chevron), Kosten des Jahres statt Leerfläche
+
+### Erinnerungen
+- [ ] E-Mail-Erinnerungen: täglicher Job auf der Instanz prüft Fälligkeiten (`maintenance-schedule.ts`, Status `due`/`overdue`) und sendet per Resend; Einstellung «Erinnerungen per E-Mail» pro Konto
+- [ ] Web Push danach: VAPID-Schlüssel, Abo pro Nutzer in InstantDB, Versand im selben Job; iPhone nur als installierte PWA
+
+### Bekannte Lücken, klein
+- [ ] Dashboard und Fahrzeugkarte berechnen die Fälligkeit einmalig (`queryOnce`); nach einer Wartung im Chat-Drawer erst nach Neuladen aktuell → `useMaintenancesStore` mit Subscription
+- [ ] Wartungsplan aus dem Service-Heft mit mehrfach gleichem Typ (`sonstiges` für Getriebeöl und Differentialöl): Einträge werden über den Typ gematcht und gekeyt, eigene ID pro Plan-Eintrag nötig
+- [ ] Chat-Drawer mobil: Drop-Zone ausblenden, Schnellaktions-Chips horizontal scrollbar; Buttons einheitlich (primäre Aktion oben rechts)
+
 ### Betrieb, nebenbei
 - [ ] Backups zusätzlich ausserhalb der Instanz ablegen (Object Storage im selben OpenStack-Projekt, eigenes Application Credential nur dafür); Restore einmal nach README durchspielen
 - [ ] Health-Checks (`api.`/health/system, `ai.`/health) in ein Uptime-Monitoring aufnehmen, sobald ein Pilot läuft

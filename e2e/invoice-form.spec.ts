@@ -63,7 +63,7 @@ test.describe('Invoice Form', () => {
 
     // Select category (PrimeVue Select dropdown)
     await dialog.locator('#invoice-category').click()
-    await page.getByText('Oelwechsel').click()
+    await page.getByRole('option', { name: 'Ölwechsel' }).click()
 
     // Submit
     await dialog.getByRole('button', { name: 'Speichern' }).click()

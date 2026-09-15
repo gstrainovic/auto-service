@@ -3,6 +3,7 @@ import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import LastServicesDialog from '../components/LastServicesDialog.vue'
 import VehicleCard from '../components/VehicleCard.vue'
 import VehicleForm from '../components/VehicleForm.vue'
 import { useVehiclesStore } from '../stores/vehicles'
@@ -19,9 +20,14 @@ onMounted(async () => {
     showForm.value = true
 })
 
+// Nach dem Anlegen gleich nach den letzten Wartungen fragen; ohne sie gibt es keine Fälligkeit und keine Erinnerung
+const lastServicesFor = ref<{ id: string, name: string } | null>(null)
+
 async function onSave(data: any) {
-  await store.add(data)
+  const id = await store.add(data)
   showForm.value = false
+  if (id)
+    lastServicesFor.value = { id, name: `${data.make} ${data.model}` }
 }
 
 async function deleteVehicle(): Promise<void> {
@@ -72,6 +78,13 @@ async function deleteVehicle(): Promise<void> {
     >
       <VehicleForm @save="onSave" />
     </Dialog>
+
+    <LastServicesDialog
+      :visible="!!lastServicesFor"
+      :vehicle-id="lastServicesFor?.id ?? null"
+      :vehicle-name="lastServicesFor?.name"
+      @update:visible="v => { if (!v) lastServicesFor = null }"
+    />
 
     <Dialog
       :visible="!!confirmDeleteId"

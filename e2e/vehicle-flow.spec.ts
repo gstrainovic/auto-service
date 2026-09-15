@@ -19,7 +19,7 @@ test.describe('Vehicle Flow', () => {
     await page.getByRole('button', { name: 'Speichern' }).click()
 
     // READ
-    await expect(page.getByText('BMW 320d')).toBeVisible()
+    await expect(page.locator('.vehicle-card', { hasText: 'BMW 320d' })).toBeVisible()
     await expect(page.getByText('45\'000 km')).toBeVisible()
 
     // UPDATE - navigate to detail and edit
@@ -53,7 +53,7 @@ test.describe('Vehicle Flow', () => {
 
     // READ on dashboard
     await page.goto('/')
-    await expect(page.getByText('VW Golf')).toBeVisible()
+    await expect(page.locator('.vehicle-title', { hasText: 'VW Golf' })).toBeVisible()
 
     // DELETE (cleanup)
     await page.goto('/vehicles')

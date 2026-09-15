@@ -1,4 +1,5 @@
 import type { MaintenanceCategory } from './ai'
+import { formatDate, formatNumber } from '../lib/locale'
 import { categoryLabel } from './report'
 
 export interface ScheduleItem {
@@ -143,4 +144,48 @@ export function checkDueMaintenances(params: {
     }))
 
   return [...scheduleResults, ...extraResults]
+}
+
+export interface FleetDueEntry {
+  vehicleId: string
+  vehicleName: string
+  item: DueResult
+}
+
+/** Fälliges über alle Fahrzeuge für den Flottenblick: nur bald fällig und überfällig, überfällig zuerst, dann nach Termin */
+export function fleetDueList(
+  vehicles: { id: string, make: string, model: string, licensePlate?: string }[],
+  dueMap: Record<string, DueResult[]>,
+): FleetDueEntry[] {
+  const rank = (s: DueStatus) => (s === 'overdue' ? 0 : 1)
+  return vehicles
+    .flatMap(v => (dueMap[v.id] ?? [])
+      .filter(item => item.status === 'due' || item.status === 'overdue')
+      .map(item => ({ vehicleId: v.id, vehicleName: `${v.make} ${v.model}${v.licensePlate ? ` · ${v.licensePlate}` : ''}`, item })))
+    .sort((a, b) => rank(a.item.status) - rank(b.item.status)
+      || (a.item.nextDueDate ?? '9999').localeCompare(b.item.nextDueDate ?? '9999'))
+}
+
+/** Kurzbeschreibung des Termins: «fällig seit …», «fällig am …», «nächste am …», jeweils mit Kilometern falls bekannt */
+export function dueDescription(item: DueResult): string {
+  if (item.status === 'unknown')
+    return 'noch nie erfasst'
+  const parts: string[] = []
+  const prefix = item.status === 'overdue' ? 'fällig seit' : item.status === 'due' ? 'fällig am' : 'nächste am'
+  if (item.nextDueDate)
+    parts.push(formatDate(item.nextDueDate))
+  if (item.nextDueMileage)
+    parts.push(`${item.status === 'overdue' ? '' : 'bei '}${formatNumber(item.nextDueMileage)} km`)
+  if (!parts.length)
+    return ''
+  return `${prefix} ${parts.join(' oder ')}`
+}
+
+/** Zustand eines Fahrzeugs für Karte und Kopfzeile; ohne jeden erfassten Eintrag «unknown», nicht «ok» */
+export function vehicleDueStatus(items: DueResult[]): 'overdue' | 'due' | 'ok' | 'unknown' {
+  if (items.some(i => i.status === 'overdue'))
+    return 'overdue'
+  if (items.some(i => i.status === 'due'))
+    return 'due'
+  return items.some(i => i.status === 'done') ? 'ok' : 'unknown'
 }

@@ -3,6 +3,8 @@ import { test as base } from '@playwright/test'
 
 export interface TestOptions {
   simulateOffline: boolean
+  /** true: Dialog «Wann wurde zuletzt …?» nach dem Anlegen eines Fahrzeugs bleibt offen (Standard: schliesst mit «Später») */
+  keepLastServicesDialog: boolean
 }
 
 // Only unfixable third-party errors here — everything else must be fixed, not ignored.
@@ -52,22 +54,44 @@ export const SCAN_INVOICE = {
   ],
 }
 
+/** Serviceheft-Seite: Ölwechsel alle 20'000 km oder 12 Monate, Kühlmittel neu, zwei Stempel am selben Tag */
+export const SCAN_SERVICE_BOOK = {
+  entries: [
+    {
+      date: '2025-06-10',
+      mileage: 61200,
+      workshopName: 'Garage Kunz',
+      items: [
+        { description: 'Motoröl und Filter', category: 'oelwechsel' },
+        { description: 'Service gemäss Plan', category: 'inspektion' },
+      ],
+    },
+  ],
+  manufacturerIntervals: [
+    { type: 'oelwechsel', label: 'Motoröl + Ölfilter', intervalKm: 20000, intervalMonths: 12 },
+    { type: 'kuehlung', label: 'Kühlmittel', intervalKm: 0, intervalMonths: 60 },
+  ],
+}
+
 /**
  * Beleg-Scan ohne echte Mistral-Aufrufe: OCR und strukturierte Auswertung des AI-Proxys abfangen.
  * Fotos: jede Auswertung liefert der Reihe nach einen Eintrag aus `photos` (Standard: SCAN_INVOICE).
  * PDFs: die OCR liefert eine Seite pro Eintrag in `pdfPages` (Text «MOCK-SEITE-n»), die Seitenauswertung den
  * passenden Eintrag; `kind` ist rechnung (Standard), fortsetzung oder andere. `ocrStatus` simuliert Fehler.
  * Fahrzeugdokumente (Prompt «Fahrzeugdokument»): Antwort `vehicleDoc` (Standard: Werte des Beispiel-Fahrzeugausweises).
+ * Serviceheft (Prompt «Serviceheft-Seite»): Antwort `serviceBook` (Standard: SCAN_SERVICE_BOOK).
  */
 export async function mockInvoiceScan(page: Page, opts: {
   photos?: Record<string, unknown>[]
   pdfPages?: Record<string, unknown>[]
   vehicleDoc?: Record<string, unknown>
+  serviceBook?: Record<string, unknown>
   ocrStatus?: number
   ocrError?: string
 } = {}) {
   const photos = opts.photos ?? [SCAN_INVOICE]
   const vehicleDoc = opts.vehicleDoc ?? { documentType: 'fahrzeugausweis', make: 'SAURER', model: '3 DUX', year: 1964, vin: '2 100 728', plate: 'BS', mileage: 405260 }
+  const serviceBook = opts.serviceBook ?? SCAN_SERVICE_BOOK
   const pdfPages = (opts.pdfPages ?? [SCAN_INVOICE]).map(p => ({ kind: 'rechnung', ...p }))
   let photoCall = 0
   await page.route('**/localhost:8787/v1/ocr', (route) => {
@@ -82,9 +106,11 @@ export async function mockInvoiceScan(page: Page, opts: {
   await page.route('**/localhost:8787/v1/chat/completions', (route) => {
     const body = route.request().postData() ?? ''
     const pageNo = /MOCK-SEITE-(\d+)/.exec(body)?.[1]
-    const content = body.includes('Fahrzeugdokument')
-      ? vehicleDoc
-      : pageNo ? pdfPages[Number(pageNo) - 1] : photos[photoCall++ % photos.length]
+    const content = body.includes('Serviceheft-Seite')
+      ? serviceBook
+      : body.includes('Fahrzeugdokument')
+        ? vehicleDoc
+        : pageNo ? pdfPages[Number(pageNo) - 1] : photos[photoCall++ % photos.length]
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -159,8 +185,16 @@ function isIgnoredError(msg: string, offline: boolean): boolean {
 
 export const test = base.extend<TestOptions>({
   simulateOffline: [false, { option: true }],
+  keepLastServicesDialog: [false, { option: true }],
 
-  page: async ({ page, simulateOffline }, use) => {
+  page: async ({ page, simulateOffline, keepLastServicesDialog }, use) => {
+    // Nach «Fahrzeug speichern» fragt die App nach den letzten Wartungen. Specs, die das nicht prüfen, klicken «Später».
+    if (!keepLastServicesDialog) {
+      await page.addLocatorHandler(page.getByTestId('last-services-dialog'), async (dialog) => {
+        await dialog.getByRole('button', { name: 'Später' }).click()
+      })
+    }
+
     if (simulateOffline) {
       // Block all InstantDB server requests to simulate offline mode
       // This tests that the app works with IndexedDB-only (no server sync)

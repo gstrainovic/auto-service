@@ -48,20 +48,21 @@ export type ParsedVehicleDocument = z.infer<typeof vehicleDocumentSchema>
 
 const serviceBookSchema = z.object({
   entries: z.array(z.object({
-    date: z.string().describe('Datum im Format YYYY-MM-DD'),
-    mileage: z.number().describe('Kilometerstand'),
-    workshopName: z.string().optional().describe('Name der Werkstatt'),
+    // alles ausser der Struktur tolerant: ein leeres Feld darf nicht die ganze Seite verwerfen
+    date: z.string().nullable().optional().describe('Datum im Format YYYY-MM-DD'),
+    mileage: z.number().nullable().optional().describe('Kilometerstand, weglassen wenn nicht eingetragen'),
+    workshopName: z.string().nullable().optional().describe('Name der Werkstatt'),
     items: z.array(z.object({
       description: z.string().describe('Beschreibung der Arbeit'),
-      category: z.enum(MAINTENANCE_CATEGORIES).describe(
-        'Kategorie: oelwechsel, bremsen, reifen, inspektion, luftfilter, zahnriemen, bremsflüssigkeit, klimaanlage, tuev, karosserie, elektrik, sonstiges',
-      ),
-    })),
+      // bewusst kein Enum: eine unbekannte Art würde sonst die ganze Seite verwerfen; die Auswertung filtert
+      category: z.string().describe(`Kategorie, genau eine aus: ${MAINTENANCE_CATEGORIES.join(', ')}`),
+    })).optional(),
   })),
   manufacturerIntervals: z.array(z.object({
-    type: z.string().describe('Wartungstyp (oelwechsel, inspektion, bremsen, etc.)'),
+    type: z.string().describe(`Wartungsart, genau eine aus: ${MAINTENANCE_CATEGORIES.join(', ')}`),
+    label: z.string().optional().describe('Bezeichnung wie im Heft, z. B. «Motoröl + Ölfilter»'),
     intervalKm: z.number().describe('Intervall in km, 0 wenn nur zeitbasiert'),
-    intervalMonths: z.number().describe('Intervall in Monaten'),
+    intervalMonths: z.number().describe('Intervall in Monaten, 0 wenn nur km-basiert'),
   })).optional().describe('Hersteller-Wartungsintervalle falls auf der Seite sichtbar'),
 })
 
@@ -409,7 +410,22 @@ export async function parseVehicleDocumentPdf(
   return parseOcrText(text, access, vehicleDocumentSchema, VEHICLE_DOC_PROMPT, modelId)
 }
 
-const SERVICE_BOOK_PROMPT = 'Analysiere diese Service-Heft Seite. Extrahiere alle Wartungseinträge mit Datum, Kilometerstand und durchgeführten Arbeiten. Falls Hersteller-Wartungsintervalle sichtbar sind, extrahiere diese ebenfalls. Antworte auf Deutsch.'
+const SERVICE_BOOK_PROMPT = `Analysiere diese Serviceheft-Seite(n). Antworte auf Deutsch.
+
+WARTUNGSEINTRÄGE (Stempel, handschriftliche Zeilen):
+- Ein Kasten ist ein Eintrag. Datum, Kilometerstand, Auftragsnummer, Stempel und Kreuze gehören zum selben Kasten; nie Werte aus verschiedenen Kästen mischen.
+- Zweistellige Jahre vierstellig ergänzen. Unleserliche Werte weglassen statt raten, den Kilometerstand lieber leer lassen.
+- Die Kilometerstände steigen mit dem Datum. Passt ein gelesener Wert nicht dazu, nochmals genau hinschauen.
+- Leere oder durchgestrichene Kästen weglassen.
+- Seiten ohne Stempel und ohne handschriftliches Datum (Wartungsplan, Checkliste, Inhaltsverzeichnis) liefern KEINE Einträge. Nie einen Eintrag aus einer Checkliste bauen.
+
+HERSTELLER-INTERVALLE:
+- Nur Arbeiten mit ausdrücklich genanntem eigenem Intervall («alle 30'000 km», «alle 2 Jahre», «Kleine Wartung bei 30.000, 90.000 … km»).
+- Punkte aus der Checkliste einer Wartung (prüfen, Sichtprüfung, nachstellen) sind KEIN eigenes Intervall. Im Zweifel weglassen.
+- Zahlenreihen meinen den Abstand: «bei 30.000, 90.000, 150.000 km» ist ein Abstand von 60.000 km. Wechseln sich kleine und grosse Wartung ab, zählt für inspektion der Abstand von einer Wartung zur nächsten (im Beispiel 30.000 km und 2 Jahre).
+- Nie dasselbe Intervall über viele Arten streuen. Schweizer Apostroph als Tausendertrennzeichen lesen, Jahre in Monate umrechnen.
+
+Typische Zuordnung: Service/Kleine und Große Wartung → inspektion, Motoröl/Ölfilter → oelwechsel, Zündkerzen → elektrik, Keilriemen/Zahnriemen → zahnriemen, Kühlmittel → kuehlung, MFK/HU → tuev, Getriebeöl → sonstiges.`
 
 export async function parseServiceBook(
   imageBase64: string,
@@ -417,4 +433,15 @@ export async function parseServiceBook(
   modelId?: string,
 ): Promise<ParsedServiceBook> {
   return parseWithOcrPipeline(imageBase64, access, serviceBookSchema, SERVICE_BOOK_PROMPT, modelId)
+}
+
+/** Serviceheft als PDF (eingescannte Seiten): alle Seiten per OCR, gemeinsam auswerten */
+export async function parseServiceBookPdf(
+  pdfBase64: string,
+  access: AiAccess,
+  modelId?: string,
+): Promise<ParsedServiceBook> {
+  const pages = await withRetry(() => callMistralOcrPdf(pdfBase64, access))
+  const text = pages.map((t, i) => `--- Seite ${i + 1} ---\n${t}`).join('\n\n')
+  return parseOcrText(text, access, serviceBookSchema, SERVICE_BOOK_PROMPT, modelId)
 }

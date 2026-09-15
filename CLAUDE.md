@@ -179,7 +179,16 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
   `src/services/report.ts`, die einzige Label-Tabelle. Kilometerstand 0 heisst unbekannt und wird weggelassen.
 - Fälligkeit (`src/services/maintenance-schedule.ts`): pro Typ zählt nur der neueste Eintrag mit `status === 'done'`;
   Status `unknown` (nie erfasst, neutral), `due` (30 Tage oder 1'000 km vor dem Termin), `overdue`, `done`. Datumsrechnung
-  ohne `Date`-Zeitzonen (`addMonths` mit Tagesklammerung).
+  ohne `Date`-Zeitzonen (`addMonths` mit Tagesklammerung). Dashboard und Fahrzeugkarte rechnen live aus
+  `useMaintenancesStore`; `fleetDueList` (Fälligkeitsliste oben im Dashboard), `dueDescription` («fällig seit …»),
+  `vehicleDueStatus` (Karte, `unknown` = «Noch keine Wartung erfasst»). Deep-Link `/dashboard#fahrzeug-<id>`.
+- Speicherwege: Rechnungen immer über `saveInvoice` (`src/services/invoice-save.ts`: Rechnung, eine Wartung pro Kategorie
+  mit `invoiceId`, höherer Kilometerstand, eine Transaktion; Chat, Formular und Stapel), Wartungen ohne Rechnung über
+  `saveMaintenances` (`src/services/maintenance-save.ts`: Formular, «Erledigt eintragen», `LastServicesDialog` nach dem
+  Anlegen, Serviceheft). Nie direkt `tx.invoices`/`tx.maintenances` aus Seiten schreiben.
+- Serviceheft ohne Chat: `ServiceBookDialog.vue` (Fahrzeugseite «Serviceheft hinterlegen», Dashboard-Hinweis) mit
+  `useServiceBookScan` (Fotos oder PDF) und reiner Logik in `src/services/service-book.ts` (Intervall-Zeilen, Hersteller-
+  Intervalle einmischen, Stempel als Vorschläge mit Duplikatprüfung 14 Tage). Speichert `customSchedule` komplett.
 - Fehler an Nutzer nur über `userMessage` in `src/lib/errors.ts` (402/429/Netz/Auth in deutsche Sätze; die Limit-Meldung
   des ai-proxy geht unverändert durch, sie nennt Kontingent und Plan). Technische Details nur in der Konsole.
 - E-Mail-Erinnerungen: reine Logik in `src/services/reminders.ts` (pro Nutzer eine Mail mit `due`/`overdue`, Schlüssel
@@ -285,12 +294,17 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | PP | Public Pages | PP-001 bis PP-004: Impressum, Datenschutz, Navigation, Redirect |
 | HY | Hygiene | HY-001: keine ungenutzten Dependencies, HY-002: keine ungenutzten Komponenten |
 | AP | AI Proxy | AP-001: Chat via Proxy zählt Tokens, AP-002: Monatslimit-Meldung, AP-003: Settings zeigen Abo & Nutzung |
+| DJ | Fälligkeit als Ablauf | DJ-001 bis DJ-005: Nachtragen nach dem Anlegen, Fälligkeitsliste, «Erledigt eintragen», Mail-Link |
+| SB | Serviceheft ohne Chat | SB-001 bis SB-003: Scan, Duplikate, Intervalle von Hand |
 
 **Gesamt: 73 Tests pro Projekt** (+2 `@soft`) — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`
 - PrimeVue icon-only buttons need CSS class selectors (.chat-fab), not getByRole
+- Nach «Fahrzeug speichern» öffnet die App `LastServicesDialog`. Die Fixture schliesst ihn per `addLocatorHandler` mit
+  «Später»; Specs, die ihn prüfen, setzen `test.use({ keepLastServicesDialog: true })`. Mehrere offene Dialoge über
+  `getByTestId` unterscheiden (`last-services-dialog`, `service-book-dialog`)
 - .env loaded by playwright.config.ts, keys injected via page.evaluate → localStorage
 - Alle AI-Tests nutzen Mistral als Default (schnell, zuverlässig, ~3–6s für Vision+Tools)
 - Use .first() for assertions that may match multiple elements (AI can create duplicates)

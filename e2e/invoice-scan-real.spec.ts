@@ -99,6 +99,42 @@ test.describe('Beleg-Scan mit echtem Mistral @soft', () => {
     expect(values.vin.replace(/\s/g, '')).toBe('2100728')
   })
 
+  test('Porsche-Serviceheft: Wartungsplan und Stempelseite ergeben Intervalle und Einträge @soft', async ({ page }) => {
+    const dir = path.join(TMP, 'wartungen')
+    test.skip(!fs.existsSync(dir), 'tmp/wartungen fehlt')
+    // Seite 10/11 (Regelwartung, kleine Wartung alle 30'000 km oder 2 Jahre) und der Wartungsnachweis mit sechs Stempeln
+    const pages = ['IMG_20260201_112605535.jpg', 'IMG_20260201_112613253.jpg', 'IMG_20260201_112713720.jpg'].map(f => path.join(dir, f))
+    await page.goto('/')
+    await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 30_000 })
+    const vehicleId = await page.evaluate(async () => {
+      const { db, tx, id: genId } = (window as any).__instantdb
+      const v = genId()
+      const now = new Date().toISOString()
+      await db.transact([tx.vehicles[v].update({ make: 'Porsche', model: 'Cayenne', year: 2008, mileage: 231457, licensePlate: 'SG 218574', createdAt: now, updatedAt: now })])
+      return v as string
+    })
+    await page.goto(`/vehicles/${vehicleId}`)
+    await page.getByRole('button', { name: 'Serviceheft hinterlegen' }).click()
+    const dialog = page.getByTestId('service-book-dialog')
+    await dialog.locator('input[type="file"]').setInputFiles(pages)
+    await expect(dialog.getByRole('status')).toContainText('Bitte prüfen', { timeout: 170_000 })
+    const status = await dialog.getByRole('status').textContent()
+    const entries = await dialog.locator('.book-entry').allTextContents()
+    const intervals = await dialog.locator('.interval-row[data-type]').evaluateAll(rows => rows.map(r => `${r.getAttribute('data-type')}:${(r.querySelectorAll('input')[1] as HTMLInputElement).value}/${(r.querySelectorAll('input')[2] as HTMLInputElement).value}`))
+    // eslint-disable-next-line no-console
+    console.log('[real-scan] serviceheft', JSON.stringify({ status, entries, intervals }, null, 1))
+    expect(status).not.toContain('keine Hersteller-Intervalle')
+    // Stempelseite: mehrere Einträge mit Datum und Kilometerstand
+    expect(entries.length).toBeGreaterThanOrEqual(4)
+    expect(entries.filter(e => /\d{2}\.\d{2}\.20\d{2}/.test(e) && /\d{2}'\d{3} km/.test(e)).length).toBeGreaterThanOrEqual(4)
+    // keine Zeile aus der Checkliste der kleinen Wartung
+    expect(entries.every(e => e.length < 150)).toBe(true)
+    expect(entries.some(e => /Sichtprüfung/.test(e))).toBe(false)
+    // Service alle 30'000 km, nicht dasselbe Intervall über die halbe Liste
+    expect(intervals).toContain('inspektion:30’000 km/24 Mt.')
+    expect(intervals.filter(i => i.includes('30’000 km')).length).toBeLessThanOrEqual(4)
+  })
+
   test('Sammel-PDF wird in einzelne Rechnungen aufgeteilt @soft', async ({ page }) => {
     test.skip(!fs.existsSync(pdf), 'tmp/test-images-9pages.pdf fehlt')
     // 22 MB, 9 Seiten: OCR und Auswertung dauern rund drei Minuten

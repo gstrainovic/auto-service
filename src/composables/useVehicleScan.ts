@@ -8,19 +8,10 @@ import { userMessage } from '../lib/errors'
 import { parseVehicleDocument, parseVehicleDocumentPdf } from '../services/ai'
 import { getAiAccess } from '../services/ai-access'
 import { vehicleDocToFields } from '../services/vehicle-scan'
-import { autoRotateForDocument, getImageMimeType, resizeImage } from './useImageResize'
+import { autoRotateForDocument, getImageMimeType, readFileAsBase64 as readAsBase64, resizeImage } from './useImageResize'
 
 const MAX_IMAGE_SIZE = 25 * 1024 * 1024
 const MAX_PDF_SIZE = 50 * 1024 * 1024
-
-function readAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(file)
-  })
-}
 
 export function useVehicleScan() {
   const preview = ref<string | null>(null)

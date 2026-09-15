@@ -17,7 +17,7 @@ test.describe('Delete Flow', () => {
     await page.getByRole('button', { name: 'Speichern' }).click()
 
     // READ
-    await expect(page.getByText('VW Golf')).toBeVisible()
+    await expect(page.locator('.vehicle-card', { hasText: 'VW Golf' })).toBeVisible()
 
     // Navigate to vehicle detail
     await page.getByText('VW Golf').click()

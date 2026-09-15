@@ -11,7 +11,7 @@ async function createTestVehicle(page: any) {
   await page.getByRole('button', { name: 'Speichern' }).click()
 
   // Wait for the vehicle to appear in the list
-  await expect(page.getByText('BMW 320d')).toBeVisible()
+  await expect(page.locator('.vehicle-card', { hasText: 'BMW 320d' })).toBeVisible()
 
   // Click to navigate to detail page
   await page.locator('.vehicle-card').filter({ hasText: 'BMW 320d' }).click()

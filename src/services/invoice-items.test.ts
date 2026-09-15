@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { itemsExceedTotal, maintenancesFromItems, planInvoiceSave, repairItems } from './invoice-items'
+import { itemsExceedTotal, maintenancesFromItems, newVehicleMileage, planInvoiceSave, repairItems } from './invoice-items'
+
+describe('newVehicleMileage', () => {
+  it('liefert den neuen Stand nur, wenn er höher ist', () => {
+    expect(newVehicleMileage(231457, 252586)).toBe(252586)
+    expect(newVehicleMileage(252586, 231457)).toBeUndefined()
+    expect(newVehicleMileage(0, null)).toBeUndefined()
+    expect(newVehicleMileage(undefined, 5)).toBe(5)
+  })
+})
 
 describe('planInvoiceSave', () => {
   const base = { vehicleId: 'v1', workshopName: 'Seestern', date: '2024-01-05', totalAmount: 280.4, currency: 'Fr.', mileageAtService: 239016 }

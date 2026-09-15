@@ -3,63 +3,39 @@ import type { Vehicle } from '../stores/vehicles'
 import Badge from 'primevue/badge'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { db } from '../lib/instantdb'
 import { formatNumber } from '../lib/locale'
-import { checkDueMaintenances, getMaintenanceSchedule } from '../services/maintenance-schedule'
+import { checkDueMaintenances, getMaintenanceSchedule, vehicleDueStatus } from '../services/maintenance-schedule'
+import { useMaintenancesStore } from '../stores/maintenances'
 
 const props = defineProps<{ vehicle: Vehicle }>()
 const emit = defineEmits<{ delete: [id: string] }>()
 const router = useRouter()
 
-const maintenanceStatus = ref<'ok' | 'due' | 'overdue'>('ok')
+// Fälligkeit live aus dem Store (nach «Erledigt eintragen» oder einer Rechnung sofort aktuell)
+const maintenancesStore = useMaintenancesStore()
+onMounted(() => maintenancesStore.load())
+
+const dueItems = computed(() => checkDueMaintenances({
+  currentMileage: props.vehicle.mileage,
+  // Nur erledigte Einträge zählen, geplante sind noch keine Wartung
+  lastMaintenances: maintenancesStore.maintenances
+    .filter(m => m.vehicleId === props.vehicle.id && m.status === 'done')
+    .map(m => ({ type: m.type, mileageAtService: m.mileageAtService, doneAt: m.doneAt })),
+  schedule: getMaintenanceSchedule(props.vehicle.customSchedule as any),
+}))
+const maintenanceStatus = computed(() => vehicleDueStatus(dueItems.value))
 // Arbeit, die den Status auslöst (z. B. «Ölwechsel»), für den Badge-Text
-const statusItemLabel = ref('')
-
-onMounted(async () => {
-  try {
-    const result = await db.queryOnce({ maintenances: {} })
-    const allMaintenances = result.data.maintenances || []
-    const schedule = getMaintenanceSchedule(props.vehicle.customSchedule as any)
-    // Nur erledigte Einträge zählen, geplante (due/overdue) sind noch keine Wartung
-    const vehicleMaintenances = allMaintenances.filter((m: any) => m.vehicleId === props.vehicle.id && m.status === 'done')
-    const lastMaintenances = vehicleMaintenances.map((m: any) => ({
-      type: m.type,
-      mileageAtService: m.mileageAtService,
-      doneAt: m.doneAt,
-    }))
-
-    const dueItems = checkDueMaintenances({
-      currentMileage: props.vehicle.mileage,
-      lastMaintenances,
-      schedule,
-    })
-
-    // «unknown» (kein Eintrag) zählt nicht als fällig
-    const overdue = dueItems.find(i => i.status === 'overdue')
-    const due = dueItems.find(i => i.status === 'due')
-    if (overdue) {
-      maintenanceStatus.value = 'overdue'
-      statusItemLabel.value = overdue.label
-    }
-    else if (due) {
-      maintenanceStatus.value = 'due'
-      statusItemLabel.value = due.label
-    }
-    else {
-      maintenanceStatus.value = 'ok'
-      statusItemLabel.value = ''
-    }
-  }
-  catch {}
-})
+const statusItemLabel = computed(() => dueItems.value.find(i => i.status === maintenanceStatus.value)?.label ?? '')
 
 const statusSeverity = computed(() => {
   if (maintenanceStatus.value === 'overdue')
     return 'danger'
   if (maintenanceStatus.value === 'due')
     return 'warn'
+  if (maintenanceStatus.value === 'unknown')
+    return 'secondary'
   return 'success'
 })
 
@@ -69,6 +45,8 @@ const statusLabel = computed(() => {
     return `${item}überfällig`
   if (maintenanceStatus.value === 'due')
     return `${item}bald fällig`
+  if (maintenanceStatus.value === 'unknown')
+    return 'Noch keine Wartung erfasst'
   return 'OK'
 })
 

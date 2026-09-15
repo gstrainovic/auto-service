@@ -171,7 +171,13 @@ export function invoicesToCsvRows(entries: { inv: Invoice, vehicle: VehicleInfo 
   const sorted = [...entries].sort((a, b) => a.inv.date.localeCompare(b.inv.date))
   for (const { inv, vehicle } of sorted) {
     const p = price(inv, opts)
-    for (const item of itemsOf(inv)) {
+    // Positionen sind oft netto, das Total brutto: Differenz als eigene Zeile, damit die Summe den Belegen entspricht
+    const items = itemsOf(inv)
+    const diff = round2((inv.totalAmount ?? 0) - items.reduce((s, i) => s + (i.amount ?? 0), 0))
+    const withDiff = diff > 0.005
+      ? [...items, { description: 'Differenz zum Rechnungstotal', category: UNASSIGNED_CATEGORY, amount: diff }]
+      : items
+    for (const item of withDiff) {
       const row = [
         `${vehicle.make} ${vehicle.model}`,
         vehicle.licensePlate,

@@ -18,7 +18,7 @@ async function createVehicleAndOpen(page: any, data: { make: string, model: stri
   await mileageInput.pressSequentially(data.mileage)
 
   await page.getByRole('button', { name: 'Speichern' }).click()
-  await expect(page.getByText(`${data.make} ${data.model}`)).toBeVisible()
+  await expect(page.locator('.vehicle-card', { hasText: `${data.make} ${data.model}` })).toBeVisible()
 
   await page.locator('.vehicle-card', { hasText: `${data.make} ${data.model}` }).click()
   await expect(page).toHaveURL(/\/vehicles\/.+/, { timeout: 5_000 })
@@ -55,9 +55,10 @@ test.describe('Schedule Hint', () => {
 
     // Dashboard: banner should also be visible
     await page.goto('/')
-    await expect(page.getByText('Fiat Punto')).toBeVisible()
+    await expect(page.locator('.vehicle-title', { hasText: 'Fiat Punto' })).toBeVisible()
     await expect(page.locator('.schedule-hint')).toBeVisible()
-    await expect(page.locator('.schedule-hint')).toContainText('Allgemeine Wartungsintervalle')
+    await expect(page.locator('.schedule-hint')).toContainText('allgemeine Wartungsintervalle')
+    await expect(page.locator('.schedule-hint').getByRole('button', { name: 'Serviceheft Fiat Punto' })).toBeVisible()
 
     // DELETE (cleanup)
     await page.goto('/vehicles')

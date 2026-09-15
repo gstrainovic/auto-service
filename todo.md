@@ -24,14 +24,7 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 - [ ] Fahrzeugkarten unter «Fahrzeuge» kompakter, Klickbarkeit sichtbar (Chevron), Kosten des Jahres statt Leerfläche
 
 ### Aus dem Ablauf-Review (vor dem Pilot, Reihenfolge = Priorität)
-- [ ] Rechnung aus Formular, Stapel und Sammel-PDF legt keine Wartungen an und hebt den Kilometerstand nicht an (nur der Chat tut das): Speicherteil von `add_invoice` als Service für alle Wege; sonst bleiben Fälligkeiten nach dem Nachtragen falsch
-- [ ] Von der fälligen Arbeit zu «erledigt»: Knopf «Erledigt eintragen» je Zeile (Wartungsformular mit Fahrzeug und Kategorie vorbefüllt), Fahrzeugname im Dashboard als Link, Deep-Link pro Fahrzeug in der Erinnerungs-Mail
-- [ ] Neues Fahrzeug ohne Historie: nach dem Anlegen letzten Service und letzte MFK (Datum, km) abfragen; Fahrzeugkarte zeigt heute grün «OK», obwohl nichts erfasst ist
-- [ ] Flottenblick: oben im Dashboard «Fällig in den nächsten 30 Tagen» über alle Fahrzeuge nach Termin; Intervalle ohne Eintrag je Fahrzeug zuklappen, Serviceheft-Hinweis nur einmal
-- [ ] CSV-Export: Differenz zum Rechnungstotal (meist MwSt.) als Zeile «Nicht zugeordnet / MwSt.», sonst weicht die Summe von den Belegen ab
-- [ ] Sammel-PDF: erkanntes Kontrollschild mit den Fahrzeugen abgleichen, Fahrzeug pro Zeile wählbar, Abweichung markieren
-- [ ] Fälligkeit erklären: «nächste am … / bei … km» anzeigen; Felder «Nächster Termin/Kilometerstand» und Status «Geplant» im Wartungsdialog auswerten oder entfernen
-- [ ] Serviceheft ohne Chat: Knopf «Serviceheft scannen» bei den Hinweisen, Intervalle in einer Tabelle von Hand bearbeiten
+- [ ] Wartungsdialog: Status «Geplant» (gespeichert als `due`) zählt nirgends; auswerten (geplanter Termin in der Fälligkeitsliste) oder entfernen
 - [ ] Jahresabschluss: Jahr im Export wählbar, ZIP mit CSV und Belegbildern
 - [ ] «Verkauft / abgegeben» mit Datum und km statt nur Löschen; Kosten bleiben in den Exporten
 - [ ] Kilometerstand schnell aktualisieren (Stift an der km-Anzeige, auch im Dashboard)
@@ -42,8 +35,7 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 - [ ] Wartungsdialog: Label «Datum *» überdeckt das Feld; Badge «Ölwechsel überfällig» am Handy abgeschnitten
 
 ### Bekannte Lücken, klein
-- [ ] Fahrzeug-Kilometerstand nachziehen, wenn eine Rechnung oder Wartung einen höheren Stand nennt (beim Cayenne steht das Fahrzeug auf 231'457 km, der letzte Ölwechsel auf 252'586 km; Fälligkeit nach km rechnet dadurch zu früh)
-- [ ] Dashboard und Fahrzeugkarte berechnen die Fälligkeit einmalig (`queryOnce`); nach einer Wartung im Chat-Drawer erst nach Neuladen aktuell → `useMaintenancesStore` mit Subscription
+- [ ] Bestehende Daten: beim Cayenne steht das Fahrzeug auf 231'457 km, der letzte Ölwechsel auf 252'586 km (neue Einträge heben den Stand, alte nicht); einmalig nachziehen, nach Rückfrage
 - [ ] Wartungsplan aus dem Service-Heft mit mehrfach gleichem Typ (`sonstiges` für Getriebeöl und Differentialöl): Einträge werden über den Typ gematcht und gekeyt, eigene ID pro Plan-Eintrag nötig
 - [ ] Chat-Drawer mobil: Drop-Zone ausblenden, Schnellaktions-Chips horizontal scrollbar; Buttons einheitlich (primäre Aktion oben rechts)
 

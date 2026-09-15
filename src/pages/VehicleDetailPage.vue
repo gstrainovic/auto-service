@@ -21,12 +21,14 @@ import { useRoute, useRouter } from 'vue-router'
 import InvoiceFormDialog from '../components/InvoiceFormDialog.vue'
 import MaintenanceFormDialog from '../components/MaintenanceFormDialog.vue'
 import MediaViewer from '../components/MediaViewer.vue'
+import ServiceBookDialog from '../components/ServiceBookDialog.vue'
 import VehicleForm from '../components/VehicleForm.vue'
 import { db } from '../lib/instantdb'
 import { DEFAULT_CURRENCY, formatCurrency, formatDate, formatNumber, LOCALE, normalizeCurrency } from '../lib/locale'
 import { MAINTENANCE_CATEGORIES } from '../services/ai'
 import { resolveRates } from '../services/fx'
 import { saveInvoice } from '../services/invoice-save'
+import { saveMaintenances } from '../services/maintenance-save'
 import { buildDossier, dossierFilename } from '../services/pdf-report'
 import { categoryLabel, costsByYear, invoicesToCsv } from '../services/report'
 import { useInvoicesStore } from '../stores/invoices'
@@ -40,6 +42,7 @@ const vehiclesStore = useVehiclesStore()
 const invoicesStore = useInvoicesStore()
 const maintenancesStore = useMaintenancesStore()
 const tab = ref('maintenance')
+const showServiceBook = ref(false)
 
 const vehicle = computed(() =>
   vehiclesStore.vehicles.find(v => v.id === route.params.id),
@@ -326,16 +329,15 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
   if (!vehicle.value)
     return
 
-  const status = data.status === 'planned' ? 'due' : 'done'
-
-  await maintenancesStore.add({
+  // Gleicher Speicherweg wie Dashboard und Nachtragen: erledigte Arbeit hebt auch den Kilometerstand
+  await saveMaintenances([{
     vehicleId: vehicle.value.id,
     type: data.category,
     description: data.description,
     doneAt: data.date,
     mileageAtService: data.mileage || undefined,
-    status,
-  })
+    status: data.status === 'planned' ? 'due' : 'done',
+  }])
 
   showAddMaintenanceDialog.value = false
 }
@@ -381,8 +383,13 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                 <template #icon>
                   <i class="pi pi-info-circle" />
                 </template>
-                Der Wartungsplan basiert auf allgemeinen Intervallen.
-                Fotografiere dein Service-Heft und schick es im Chat — dann werden die genauen Hersteller-Intervalle für dein Fahrzeug hinterlegt.
+                <div class="schedule-hint-body">
+                  <span>
+                    Der Wartungsplan basiert auf allgemeinen Intervallen.
+                    Mit den Angaben aus dem Serviceheft stimmen Termine und Erinnerungen für genau dieses Fahrzeug.
+                  </span>
+                  <Button label="Serviceheft hinterlegen" icon="pi pi-book" size="small" @click="showServiceBook = true" />
+                </div>
               </Message>
               <Button
                 icon="pi pi-plus"
@@ -409,14 +416,17 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                   </div>
                 </div>
               </div>
-              <Button
-                icon="pi pi-trash"
-                label="Zurücksetzen"
-                text
-                size="small"
-                severity="danger"
-                @click="confirmResetSchedule = true"
-              />
+              <div class="schedule-actions">
+                <Button icon="pi pi-pencil" label="Intervalle bearbeiten" text size="small" @click="showServiceBook = true" />
+                <Button
+                  icon="pi pi-trash"
+                  label="Zurücksetzen"
+                  text
+                  size="small"
+                  severity="danger"
+                  @click="confirmResetSchedule = true"
+                />
+              </div>
             </div>
 
             <div class="maintenance-list">
@@ -799,6 +809,8 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
       title="Neue Wartung"
       @submit="handleAddMaintenance"
     />
+
+    <ServiceBookDialog v-model:visible="showServiceBook" :vehicle="vehicle ?? null" />
   </main>
 </template>
 
@@ -842,6 +854,20 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
 
 .custom-schedule-section {
   margin-bottom: 1rem;
+}
+
+.schedule-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.schedule-hint-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
 }
 
 .section-title {

@@ -52,7 +52,7 @@ export const useVehiclesStore = defineStore('vehicles', () => {
     )
   }
 
-  async function add(vehicle: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt'>) {
+  async function add(vehicle: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     const now = new Date().toISOString()
     const newId = id()
     await db.transact([
@@ -63,6 +63,7 @@ export const useVehiclesStore = defineStore('vehicles', () => {
         updatedAt: now,
       }),
     ])
+    return newId
   }
 
   async function remove(vehicleId: string) {

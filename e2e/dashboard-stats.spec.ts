@@ -9,7 +9,7 @@ async function createTestVehicle(page: any, name = 'BMW 320d') {
   await page.getByLabel('Kilometerstand').fill('45000')
   await page.getByLabel('Kennzeichen').fill('M-AB 1234')
   await page.getByRole('button', { name: 'Speichern' }).click()
-  await expect(page.getByText(name)).toBeVisible()
+  await expect(page.locator('.vehicle-card', { hasText: name })).toBeVisible()
 }
 
 test.describe('Dashboard Stats', () => {

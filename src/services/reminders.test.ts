@@ -42,11 +42,19 @@ describe('buildReminders', () => {
     expect(anna.text).not.toContain('Ölwechsel')
     expect(anna.text).not.toContain('Bremsen')
     expect(anna.text).not.toContain('Fiat Ducato')
-    expect(anna.text).toContain('https://wartungsheft.ch/dashboard')
+    // Ein Fahrzeug: Link springt direkt zum Fahrzeug im Dashboard
+    expect(anna.text).toContain('https://wartungsheft.ch/dashboard#fahrzeug-v1')
 
     const ben = reminders[1]!
     expect(ben.subject).toBe('Wartungsheft: 1 Arbeit fällig beim BMW 320d')
     expect(ben.text).toContain('Ölwechsel: bald fällig')
+  })
+
+  it('verlinkt bei mehreren Fahrzeugen auf die Fälligkeitsliste im Dashboard', () => {
+    const more = [...maintenances, { vehicleId: 'v2', type: 'reifen', doneAt: daysAgo(5 * 365), mileageAtService: 1000, status: 'done' }]
+    const [anna] = buildReminders({ users, vehicles, maintenances: more, settings: [], now })
+    expect(anna!.text).toContain('https://wartungsheft.ch/dashboard\n')
+    expect(anna!.text).not.toContain('#fahrzeug-')
   })
 
   it('überspringt Nutzer, die E-Mail-Erinnerungen abgeschaltet haben', () => {

@@ -66,6 +66,28 @@ test.describe('Kosten und Export', () => {
     expect(text).toContain('2026-03-10;Pneu Egger;68500;Reifen;Sommerreifen;890.50;CHF')
   })
 
+  test('RE-004: CSV weist die Differenz zwischen Positionen und Rechnungstotal als eigene Zeile aus', async ({ page }) => {
+    const vehicleId = await seedVehicleWithInvoices(page)
+    // Rechnung mit MwSt. und Kleinmaterial ohne eigene Position: Positionen 120.00, Total 150.00
+    await page.evaluate(async (vId: string) => {
+      const { db, tx, id: genId } = (window as any).__instantdb
+      const now = new Date().toISOString()
+      await db.transact([tx.invoices[genId()].update({ vehicleId: vId, workshopName: 'Garage Kunz', date: '2026-04-01', totalAmount: 150, currency: 'CHF', items: [
+        { description: 'Scheibenwischer', category: 'sonstiges', amount: 120 },
+      ], createdAt: now, updatedAt: now })])
+    }, vehicleId)
+    await page.goto(`/vehicles/${vehicleId}`)
+    await page.getByRole('tab', { name: 'Kosten' }).click()
+
+    const download = page.waitForEvent('download')
+    await page.getByRole('button', { name: 'CSV für Excel' }).click()
+    const text = await (await (await download).createReadStream()).toArray().then(chunks => Buffer.concat(chunks as Buffer[]).toString('utf8'))
+    expect(text).toContain('2026-04-01;Garage Kunz;;Sonstiges;Scheibenwischer;120.00;CHF')
+    expect(text).toContain('2026-04-01;Garage Kunz;;Nicht zugeordnet / MwSt.;Differenz zum Rechnungstotal;30.00;CHF')
+    // Rechnungen ohne Differenz bekommen keine Zusatzzeile
+    expect(text.match(/Differenz zum Rechnungstotal/g)).toHaveLength(1)
+  })
+
   test('RE-003: PDF-Dossier wird als Datei geladen', async ({ page }) => {
     const vehicleId = await seedVehicleWithInvoices(page)
     await page.goto(`/vehicles/${vehicleId}`)

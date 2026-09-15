@@ -84,6 +84,20 @@ describe('invoicesToCsv', () => {
     expect(lines).toHaveLength(5)
   })
 
+  it('hängt die Differenz zum Rechnungstotal als eigene Zeile an, damit die Summe den Belegen entspricht', () => {
+    const csv = invoicesToCsv([
+      inv({ date: '2024-01-05', workshopName: 'Seestern', totalAmount: 280.4, currency: 'CHF', items: [
+        { description: 'Arbeit', category: 'auspuff', amount: 195 },
+        { description: 'Verbinder', category: 'sonstiges', amount: 64.4 },
+      ] }),
+    ], { make: 'Porsche', model: 'Cayenne', licensePlate: 'SG 218574' }, { homeCurrency: 'CHF', rates: new Map() })
+    const lines = csv.slice(1).split('\r\n')
+    expect(lines).toHaveLength(4)
+    expect(lines[3]).toBe('Porsche Cayenne;SG 218574;2024-01-05;Seestern;;Nicht zugeordnet / MwSt.;Differenz zum Rechnungstotal;21.00;CHF;21.00;1')
+    const sum = lines.slice(1).reduce((s, l) => s + Number(l.split(';')[7]), 0)
+    expect(Math.round(sum * 100) / 100).toBe(280.4)
+  })
+
   it('schützt Semikolon und Anführungszeichen in Texten', () => {
     const csv = invoicesToCsv([inv({ workshopName: 'A; "B"', totalAmount: 1, currency: 'CHF' })], { make: 'X', model: 'Y', licensePlate: 'Z' })
     expect(csv).toContain('"A; ""B"""')

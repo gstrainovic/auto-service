@@ -10,7 +10,7 @@ import { userMessage } from '../lib/errors'
 import { parseInvoice, parseInvoicesPdf } from '../services/ai'
 import { getAiAccess } from '../services/ai-access'
 import { buildBatch, pagesLabel, plateAssignment, scannedToFormFields } from '../services/invoice-scan'
-import { autoRotateForDocument, getImageMimeType, resizeImage } from './useImageResize'
+import { autoRotateForDocument, getImageMimeType, readFileAsBase64 as readAsBase64, resizeImage } from './useImageResize'
 
 // Fotos werden ohnehin verkleinert; PDFs gehen unverändert an Mistral OCR (dort max. 50 MB, wie im Chat)
 const MAX_IMAGE_SIZE = 25 * 1024 * 1024
@@ -20,15 +20,6 @@ export type ScanStatus = 'idle' | 'scanning' | 'done' | 'error'
 export type ScanOutcome = { kind: 'single', fields: ScannedFields } | { kind: 'batch', entries: BatchEntry[] }
 
 interface Scanned { parsed: ParsedInvoice, source: string, imageBase64?: string }
-
-function readAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(file)
-  })
-}
 
 /** Monatslimit und fehlende Verbindung brechen den ganzen Stapel ab; andere Fehler betreffen nur einen Beleg */
 function isFatal(err: unknown): boolean {

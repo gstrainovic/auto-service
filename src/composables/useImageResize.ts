@@ -13,6 +13,16 @@ import { rotationFor } from '../lib/orientation'
  * - Tokens per image: (W × H) / 784 ≈ max 3.025 at 1540×1540
  */
 
+/** Datei als base64 ohne data:-Präfix (PDFs gehen so unverändert an die OCR) */
+export function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
 const OUTPUT_MIME = 'image/webp'
 const OUTPUT_QUALITY = 0.75
 

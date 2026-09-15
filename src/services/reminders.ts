@@ -135,7 +135,8 @@ export function buildReminders(input: {
       '',
       blocks.join('\n\n'),
       '',
-      `Details und Eintragen: ${APP_URL}/dashboard`,
+      // Ein Fahrzeug: direkt zu seinem Abschnitt; mehrere: zur Fälligkeitsliste oben im Dashboard
+      `Details und Eintragen: ${APP_URL}/dashboard${names.length === 1 ? `#fahrzeug-${entries[0]!.vehicleId}` : ''}`,
       '',
       'Die Intervalle sind Standardwerte, solange kein Serviceheft hinterlegt ist. Erledigte Arbeiten trägst du im',
       'Wartungsheft ein, dann verschwindet die Erinnerung.',

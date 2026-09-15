@@ -42,6 +42,11 @@ function mergeRun<T extends ItemLike>(run: T[]): T {
   return { ...run[0]!, description, category: correctCategory(description, fallback), amount: run[0]!.amount }
 }
 
+/** Neuer Fahrzeug-Kilometerstand aus einem Beleg oder einer Wartung, nur wenn er höher ist als der bekannte */
+export function newVehicleMileage(current: number | null | undefined, reported: number | null | undefined): number | undefined {
+  return reported && reported > (current || 0) ? reported : undefined
+}
+
 export interface InvoiceSaveInput {
   vehicleId: string
   workshopName: string
@@ -71,10 +76,11 @@ export function planInvoiceSave(input: InvoiceSaveInput, vehicle: { mileage?: nu
   })
   const { items } = repairItems(normalized, input.totalAmount)
   const mileage = input.mileageAtService && input.mileageAtService > 0 ? input.mileageAtService : null
+  const vehicleMileage = newVehicleMileage(vehicle.mileage, mileage)
   return {
     invoice: { ...input, currency: normalizeCurrency(input.currency), mileageAtService: mileage, items },
     maintenances: maintenancesFromItems(items).map(m => ({ type: m.category, description: m.description, doneAt: input.date, mileageAtService: mileage })),
-    ...(mileage && mileage > (vehicle.mileage || 0) ? { vehicleMileage: mileage } : {}),
+    ...(vehicleMileage ? { vehicleMileage } : {}),
   }
 }
 

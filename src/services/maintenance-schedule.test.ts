@@ -1,7 +1,55 @@
+import type { DueResult } from './maintenance-schedule'
 import { describe, expect, it } from 'vitest'
-import { addMonths, checkDueMaintenances, getMaintenanceSchedule } from './maintenance-schedule'
+import { addMonths, checkDueMaintenances, dueDescription, fleetDueList, getMaintenanceSchedule, vehicleDueStatus } from './maintenance-schedule'
 
 const schedule = getMaintenanceSchedule()
+
+describe('fleetDueList', () => {
+  const vehicles = [
+    { id: 'v1', make: 'Fiat', model: 'Ducato', licensePlate: 'SG 1' },
+    { id: 'v2', make: 'VW', model: 'Caddy', licensePlate: '' },
+  ]
+  const item = (over: Partial<DueResult>): DueResult => ({ type: 'oelwechsel', label: 'Ölwechsel', status: 'done', ...over })
+
+  it('listet über alle Fahrzeuge nur Fälliges, überfällig zuerst, dann nach Termin', () => {
+    const list = fleetDueList(vehicles, {
+      v1: [
+        item({ type: 'bremsen', label: 'Bremsen', status: 'due', nextDueDate: '2026-10-01' }),
+        item({ type: 'tuev', label: 'MFK', status: 'unknown' }),
+        item({ type: 'reifen', label: 'Reifen', status: 'done', nextDueDate: '2027-01-01' }),
+      ],
+      v2: [
+        item({ status: 'overdue', nextDueDate: '2026-05-01' }),
+        item({ type: 'inspektion', label: 'Inspektion', status: 'due', nextDueDate: '2026-09-20' }),
+      ],
+    })
+    expect(list.map(e => [e.vehicleName, e.item.label])).toEqual([
+      ['VW Caddy', 'Ölwechsel'],
+      ['VW Caddy', 'Inspektion'],
+      ['Fiat Ducato · SG 1', 'Bremsen'],
+    ])
+  })
+})
+
+describe('dueDescription', () => {
+  it('beschreibt Termin und Kilometer je nach Status', () => {
+    expect(dueDescription({ type: 'x', label: 'x', status: 'overdue', nextDueDate: '2026-04-15', nextDueMileage: 267586 })).toBe('fällig seit 15.04.2026 oder 267\'586 km')
+    expect(dueDescription({ type: 'x', label: 'x', status: 'due', nextDueDate: '2026-10-01' })).toBe('fällig am 01.10.2026')
+    expect(dueDescription({ type: 'x', label: 'x', status: 'done', nextDueDate: '2027-10-01', nextDueMileage: 90000 })).toBe('nächste am 01.10.2027 oder bei 90\'000 km')
+    expect(dueDescription({ type: 'x', label: 'x', status: 'unknown' })).toBe('noch nie erfasst')
+  })
+})
+
+describe('vehicleDueStatus', () => {
+  const s = (status: DueResult['status']): DueResult => ({ type: 'x', label: 'x', status })
+  it('fasst die Fälligkeiten eines Fahrzeugs zusammen; ohne jeden Eintrag nicht «OK»', () => {
+    expect(vehicleDueStatus([s('done'), s('overdue'), s('due')])).toBe('overdue')
+    expect(vehicleDueStatus([s('done'), s('due'), s('unknown')])).toBe('due')
+    expect(vehicleDueStatus([s('done'), s('unknown')])).toBe('ok')
+    expect(vehicleDueStatus([s('unknown'), s('unknown')])).toBe('unknown')
+    expect(vehicleDueStatus([])).toBe('unknown')
+  })
+})
 
 describe('addMonths', () => {
   it('rechnet kalendarisch und klammert den Tag ans Monatsende', () => {

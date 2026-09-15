@@ -40,37 +40,58 @@ export async function waitForEntity(page: Page, entity: string, timeoutMs: numbe
   return false
 }
 
+export const SCAN_INVOICE = {
+  workshopName: 'Lucky Car Dornbirn',
+  date: '2025-04-15',
+  totalAmount: 1403.34,
+  currency: 'EUR',
+  mileageAtService: 252586,
+  items: [
+    { description: 'Motoröl wechseln', category: 'inspektion', amount: 180 },
+    { description: 'Auspuff reparieren', category: 'sonstiges', amount: 1100 },
+  ],
+}
+
 /**
  * Beleg-Scan ohne echte Mistral-Aufrufe: OCR und strukturierte Auswertung des AI-Proxys abfangen.
- * `parsed` ist die Antwort der Auswertung (Schema invoiceSchema in src/services/ai.ts); `ocrStatus` simuliert Fehler.
+ * Fotos: jede Auswertung liefert der Reihe nach einen Eintrag aus `photos` (Standard: SCAN_INVOICE).
+ * PDFs: die OCR liefert eine Seite pro Eintrag in `pdfPages` (Text «MOCK-SEITE-n»), die Seitenauswertung den
+ * passenden Eintrag; `kind` ist rechnung (Standard), fortsetzung oder andere. `ocrStatus` simuliert Fehler.
  */
-export async function mockInvoiceScan(page: Page, opts: { parsed?: Record<string, unknown>, ocrStatus?: number, ocrError?: string } = {}) {
-  const parsed = opts.parsed ?? {
-    workshopName: 'Lucky Car Dornbirn',
-    date: '2025-04-15',
-    totalAmount: 1403.34,
-    currency: 'EUR',
-    mileageAtService: 252586,
-    items: [
-      { description: 'Motoröl wechseln', category: 'inspektion', amount: 180 },
-      { description: 'Auspuff reparieren', category: 'sonstiges', amount: 1100 },
-    ],
-  }
-  await page.route('**/localhost:8787/v1/ocr', route => route.fulfill(opts.ocrStatus
-    ? { status: opts.ocrStatus, contentType: 'application/json', body: JSON.stringify({ error: { message: opts.ocrError ?? 'Fehler' } }) }
-    : { status: 200, contentType: 'application/json', body: JSON.stringify({ pages: [{ markdown: 'Lucky Car Dornbirn\nRechnung 15.04.2025\nTotal EUR 1403.34' }] }) }))
-  await page.route('**/localhost:8787/v1/chat/completions', route => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({
-      id: 'mock',
-      object: 'chat.completion',
-      created: 0,
-      model: 'mistral-small-latest',
-      choices: [{ index: 0, finish_reason: 'stop', message: { role: 'assistant', content: JSON.stringify(parsed) } }],
-      usage: { prompt_tokens: 10, completion_tokens: 10, total_tokens: 20 },
-    }),
-  }))
+export async function mockInvoiceScan(page: Page, opts: {
+  photos?: Record<string, unknown>[]
+  pdfPages?: Record<string, unknown>[]
+  ocrStatus?: number
+  ocrError?: string
+} = {}) {
+  const photos = opts.photos ?? [SCAN_INVOICE]
+  const pdfPages = (opts.pdfPages ?? [SCAN_INVOICE]).map(p => ({ kind: 'rechnung', ...p }))
+  let photoCall = 0
+  await page.route('**/localhost:8787/v1/ocr', (route) => {
+    if (opts.ocrStatus)
+      return route.fulfill({ status: opts.ocrStatus, contentType: 'application/json', body: JSON.stringify({ error: { message: opts.ocrError ?? 'Fehler' } }) })
+    const isPdf = (route.request().postData() ?? '').includes('document_url')
+    const pages = isPdf
+      ? pdfPages.map((_, i) => ({ markdown: `MOCK-SEITE-${i + 1}` }))
+      : [{ markdown: 'Lucky Car Dornbirn\nRechnung 15.04.2025\nTotal EUR 1403.34' }]
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ pages }) })
+  })
+  await page.route('**/localhost:8787/v1/chat/completions', (route) => {
+    const pageNo = /MOCK-SEITE-(\d+)/.exec(route.request().postData() ?? '')?.[1]
+    const content = pageNo ? pdfPages[Number(pageNo) - 1] : photos[photoCall++ % photos.length]
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'mock',
+        object: 'chat.completion',
+        created: 0,
+        model: 'mistral-small-latest',
+        choices: [{ index: 0, finish_reason: 'stop', message: { role: 'assistant', content: JSON.stringify(content) } }],
+        usage: { prompt_tokens: 10, completion_tokens: 10, total_tokens: 20 },
+      }),
+    })
+  })
 }
 
 export async function clearInstantDB(page: Page) {

@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { BatchEntry } from '../services/invoice-scan'
 import type { InvoiceFormData } from '../types/forms'
 import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
 import FloatLabel from 'primevue/floatlabel'
 import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
@@ -11,27 +13,33 @@ import { computed, ref } from 'vue'
 import { z } from 'zod'
 import { useFormValidation } from '../composables/useFormValidation'
 import { useInvoiceScan } from '../composables/useInvoiceScan'
-import { DEFAULT_CURRENCY, formatCurrency, LOCALE } from '../lib/locale'
+import { DEFAULT_CURRENCY, formatCurrency, formatDate, LOCALE } from '../lib/locale'
 import { MAINTENANCE_CATEGORIES } from '../services/ai'
 import { fillEmptyFields } from '../services/invoice-scan'
 import { categoryLabel } from '../services/report'
 
 interface Props {
   initialData?: Partial<InvoiceFormData>
+  /** bereits erfasste Rechnungen des Fahrzeugs, für die Duplikat-Markierung im Stapel */
+  existingInvoices?: { date: string, totalAmount?: number }[]
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
   submit: [data: InvoiceFormData & { imageBase64?: string }]
+  submitBatch: [entries: BatchEntry[]]
   cancel: []
 }>()
 
 const scan = useInvoiceScan()
 const { imagePreview, imageBase64, pdfName } = scan
-const isScanning = computed(() => scan.status.value === 'preparing' || scan.status.value === 'scanning')
+const isScanning = computed(() => scan.status.value === 'scanning')
 // Hat der Nutzer die Währung selbst umgestellt, überschreibt der Scan sie nicht
 const currencyTouched = ref(false)
+// Stapel aus Sammel-PDF oder mehreren Fotos; solange gesetzt, ersetzt die Prüfliste die Formularfelder
+const batch = ref<BatchEntry[] | null>(null)
+const selectedCount = computed(() => batch.value?.filter(e => e.selected && e.draft).length ?? 0)
 
 // Form schema
 const invoiceSchema = z.object({
@@ -65,13 +73,21 @@ const formData = ref<InvoiceFormData>({
 
 async function onFileChange(event: Event) {
   const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
+  const files = [...(input.files ?? [])]
   input.value = ''
-  if (!file)
+  if (!files.length)
     return
-  const fields = await scan.handleFile(file)
-  if (fields)
-    formData.value = fillEmptyFields(formData.value, fields, { currencyTouched: currencyTouched.value })
+  batch.value = null
+  const outcome = await scan.handleFiles(files, props.existingInvoices ?? [])
+  if (outcome?.kind === 'single')
+    formData.value = fillEmptyFields(formData.value, outcome.fields, { currencyTouched: currencyTouched.value })
+  else if (outcome?.kind === 'batch')
+    batch.value = outcome.entries
+}
+
+function saveBatch() {
+  if (batch.value && selectedCount.value)
+    emit('submitBatch', batch.value.filter(e => e.selected && e.draft))
 }
 
 function removeItem(index: number) {
@@ -108,18 +124,22 @@ function handleCancel() {
       <div class="beleg">
         <label class="upload-label" :class="{ disabled: isScanning }">
           <i class="pi pi-camera" />
-          {{ imagePreview || pdfName ? 'Anderen Beleg wählen' : 'Beleg fotografieren oder PDF wählen' }}
+          {{ imagePreview || pdfName || batch ? 'Andere Belege wählen' : 'Beleg fotografieren oder PDF wählen' }}
           <input
             type="file"
             accept="image/*,application/pdf"
+            multiple
             class="file-input"
             :disabled="isScanning"
             @change="onFileChange"
           >
         </label>
+        <small v-if="!batch && !imagePreview && !pdfName && !isScanning && !scan.message.value" class="field-hint">
+          Mehrere Fotos oder ein PDF mit mehreren Rechnungen werden einzeln erfasst.
+        </small>
         <div v-if="isScanning" class="scan-status" role="status">
           <i class="pi pi-spin pi-spinner" />
-          {{ scan.status.value === 'preparing' ? 'Beleg wird ausgerichtet …' : 'Beleg wird gelesen …' }}
+          {{ scan.progress.value }}
         </div>
         <small v-else-if="scan.message.value" class="scan-message" :class="{ error: scan.status.value === 'error' }" role="status">
           {{ scan.message.value }}
@@ -127,130 +147,165 @@ function handleCancel() {
         <div v-if="imagePreview" class="image-preview">
           <img :src="imagePreview" alt="Beleg">
         </div>
-        <div v-else-if="pdfName" class="pdf-name">
+        <div v-else-if="pdfName && !batch" class="pdf-name">
           <i class="pi pi-file-pdf" /> {{ pdfName }}
           <small>PDF wird nur gelesen, nicht als Bild gespeichert.</small>
         </div>
       </div>
 
-      <FloatLabel>
-        <InputText
-          id="invoice-date"
-          v-model="formData.date"
-          name="date"
-          type="date"
-          :invalid="!!errors.date"
-          fluid
-        />
-        <label for="invoice-date">Datum *</label>
-      </FloatLabel>
-      <small v-if="errors.date" class="error">{{ errors.date }}</small>
+      <!-- Stapel: jede erkannte Rechnung eine Zeile, schon erfasste abgewählt -->
+      <div v-if="batch" class="batch" aria-label="Erkannte Rechnungen">
+        <label
+          v-for="(entry, i) in batch"
+          :key="i"
+          class="batch-row"
+          :class="{ muted: !entry.draft || entry.duplicate }"
+        >
+          <Checkbox v-model="entry.selected" :binary="true" :disabled="!entry.draft" :input-id="`batch-${i}`" />
+          <span class="batch-text">
+            <template v-if="entry.draft">
+              <span class="batch-main">{{ formatDate(entry.draft.date) }} · {{ entry.draft.workshopName || 'Werkstatt unbekannt' }}</span>
+              <small>
+                {{ entry.source }} · {{ entry.draft.items.length }} {{ entry.draft.items.length === 1 ? 'Position' : 'Positionen' }}
+                <span v-if="entry.duplicate" class="batch-dup">· {{ entry.duplicate }}</span>
+              </small>
+            </template>
+            <template v-else>
+              <span class="batch-main">Nicht lesbar</span>
+              <small>{{ entry.source }} · Datum oder Betrag fehlt</small>
+            </template>
+          </span>
+          <span v-if="entry.draft" class="batch-amount">{{ formatCurrency(entry.draft.totalAmount, entry.draft.currency) }}</span>
+        </label>
+      </div>
 
-      <FloatLabel>
-        <InputText
-          id="invoice-workshop"
-          v-model="formData.workshop"
-          name="workshop"
-          fluid
-        />
-        <label for="invoice-workshop">Werkstatt</label>
-      </FloatLabel>
-
-      <div class="amount-row">
-        <FloatLabel class="amount-input">
-          <InputNumber
-            id="invoice-amount"
-            v-model="formData.amount"
-            name="amount"
-            mode="currency"
-            :currency="selectedCurrency"
-            :locale="LOCALE"
-            :invalid="!!errors.amount"
+      <template v-if="!batch">
+        <FloatLabel>
+          <InputText
+            id="invoice-date"
+            v-model="formData.date"
+            name="date"
+            type="date"
+            :invalid="!!errors.date"
             fluid
           />
-          <label for="invoice-amount">Betrag</label>
+          <label for="invoice-date">Datum *</label>
         </FloatLabel>
-        <SelectButton
-          v-model="formData.currency"
-          :options="currencyOptions"
-          option-label="label"
-          option-value="value"
-          class="currency-toggle"
-          @update:model-value="currencyTouched = true"
-        />
-      </div>
-      <small v-if="errors.amount" class="error">{{ errors.amount }}</small>
+        <small v-if="errors.date" class="error">{{ errors.date }}</small>
 
-      <FloatLabel>
-        <InputNumber
-          id="invoice-mileage"
-          v-model="formData.mileage"
-          name="mileage"
-          :use-grouping="true"
-          :locale="LOCALE"
-          suffix=" km"
-          :invalid="!!errors.mileage"
-          fluid
-        />
-        <label for="invoice-mileage">Kilometerstand</label>
-      </FloatLabel>
-      <small v-if="errors.mileage" class="error">{{ errors.mileage }}</small>
-
-      <!-- Positionen aus dem Scan ersetzen Kategorie und Beschreibung -->
-      <div v-if="formData.items?.length" class="scan-items" aria-label="Erkannte Positionen">
-        <div class="scan-items-title">
-          Erkannte Positionen
-        </div>
-        <div v-for="(item, i) in formData.items" :key="i" class="scan-item">
-          <div class="scan-item-text">
-            <div>{{ item.description || categoryLabel(item.category) }}</div>
-            <small>{{ categoryLabel(item.category) }}</small>
-          </div>
-          <span class="scan-item-amount">{{ formatCurrency(item.amount, formData.currency) }}</span>
-          <Button
-            v-tooltip.left="'Position entfernen'"
-            type="button"
-            icon="pi pi-times"
-            text
-            rounded
-            severity="secondary"
-            size="small"
-            aria-label="Position entfernen"
-            @click="removeItem(i)"
-          />
-        </div>
-      </div>
-
-      <template v-else>
         <FloatLabel>
-          <Select
-            id="invoice-category"
-            v-model="formData.category"
-            name="category"
-            :options="categoryOptions"
+          <InputText
+            id="invoice-workshop"
+            v-model="formData.workshop"
+            name="workshop"
+            fluid
+          />
+          <label for="invoice-workshop">Werkstatt</label>
+        </FloatLabel>
+
+        <div class="amount-row">
+          <FloatLabel class="amount-input">
+            <InputNumber
+              id="invoice-amount"
+              v-model="formData.amount"
+              name="amount"
+              mode="currency"
+              :currency="selectedCurrency"
+              :locale="LOCALE"
+              :invalid="!!errors.amount"
+              fluid
+            />
+            <label for="invoice-amount">Betrag</label>
+          </FloatLabel>
+          <SelectButton
+            v-model="formData.currency"
+            :options="currencyOptions"
             option-label="label"
             option-value="value"
-            fluid
+            class="currency-toggle"
+            @update:model-value="currencyTouched = true"
           />
-          <label for="invoice-category">Kategorie</label>
-        </FloatLabel>
+        </div>
+        <small v-if="errors.amount" class="error">{{ errors.amount }}</small>
 
         <FloatLabel>
-          <Textarea
-            id="invoice-description"
-            v-model="formData.description"
-            name="description"
-            rows="3"
+          <InputNumber
+            id="invoice-mileage"
+            v-model="formData.mileage"
+            name="mileage"
+            :use-grouping="true"
+            :locale="LOCALE"
+            suffix=" km"
+            :invalid="!!errors.mileage"
             fluid
           />
-          <label for="invoice-description">Beschreibung</label>
+          <label for="invoice-mileage">Kilometerstand</label>
         </FloatLabel>
+        <small v-if="errors.mileage" class="error">{{ errors.mileage }}</small>
+
+        <!-- Positionen aus dem Scan ersetzen Kategorie und Beschreibung -->
+        <div v-if="formData.items?.length" class="scan-items" aria-label="Erkannte Positionen">
+          <div class="scan-items-title">
+            Erkannte Positionen
+          </div>
+          <div v-for="(item, i) in formData.items" :key="i" class="scan-item">
+            <div class="scan-item-text">
+              <div>{{ item.description || categoryLabel(item.category) }}</div>
+              <small>{{ categoryLabel(item.category) }}</small>
+            </div>
+            <span class="scan-item-amount">{{ formatCurrency(item.amount, formData.currency) }}</span>
+            <Button
+              v-tooltip.left="'Position entfernen'"
+              type="button"
+              icon="pi pi-times"
+              text
+              rounded
+              severity="secondary"
+              size="small"
+              aria-label="Position entfernen"
+              @click="removeItem(i)"
+            />
+          </div>
+        </div>
+
+        <template v-else>
+          <FloatLabel>
+            <Select
+              id="invoice-category"
+              v-model="formData.category"
+              name="category"
+              :options="categoryOptions"
+              option-label="label"
+              option-value="value"
+              fluid
+            />
+            <label for="invoice-category">Kategorie</label>
+          </FloatLabel>
+
+          <FloatLabel>
+            <Textarea
+              id="invoice-description"
+              v-model="formData.description"
+              name="description"
+              rows="3"
+              fluid
+            />
+            <label for="invoice-description">Beschreibung</label>
+          </FloatLabel>
+        </template>
       </template>
     </div>
 
     <div class="form-actions">
       <Button type="button" label="Abbrechen" severity="secondary" @click="handleCancel" />
-      <Button type="submit" label="Speichern" :disabled="isScanning" />
+      <Button
+        v-if="batch"
+        type="button"
+        :label="selectedCount === 1 ? '1 Rechnung speichern' : `${selectedCount} Rechnungen speichern`"
+        :disabled="isScanning || !selectedCount"
+        @click="saveBatch"
+      />
+      <Button v-else type="submit" label="Speichern" :disabled="isScanning" />
     </div>
   </form>
 </template>
@@ -292,6 +347,56 @@ function handleCancel() {
   color: var(--status-error);
   display: block;
   margin-top: calc(var(--spacing-xs) * -1);
+}
+
+.field-hint {
+  color: var(--p-text-muted-color);
+  font-size: 0.8rem;
+}
+
+.batch {
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.batch-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--surface-border);
+  cursor: pointer;
+}
+
+.batch-row:last-child {
+  border-bottom: none;
+}
+
+.batch-row.muted .batch-main,
+.batch-row.muted .batch-amount {
+  color: var(--p-text-muted-color);
+}
+
+.batch-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.batch-text small {
+  color: var(--p-text-muted-color);
+}
+
+.batch-dup {
+  color: var(--status-warning);
+}
+
+.batch-amount {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .beleg {

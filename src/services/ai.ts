@@ -1,9 +1,11 @@
 import type { AiAccess } from './ai-access'
+import type { PageKind } from './invoice-scan'
 import { createMistral } from '@ai-sdk/mistral'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import { getCurrentUserId } from '../composables/useAuth'
 import { db, id, tx } from '../lib/instantdb'
+import { mergePdfPages } from './invoice-scan'
 
 export const MAINTENANCE_CATEGORIES = [
   'oelwechsel',
@@ -28,7 +30,7 @@ export type MaintenanceCategory = typeof MAINTENANCE_CATEGORIES[number]
 
 const invoiceSchema = z.object({
   workshopName: z.string().describe('Name der Werkstatt'),
-  date: z.string().describe('Rechnungsdatum im Format YYYY-MM-DD'),
+  date: z.string().describe('Datum der Arbeit im Format YYYY-MM-DD: Reparatur- oder Leistungsdatum, falls angegeben, sonst Rechnungsdatum'),
   totalAmount: z.number().describe('Gesamtbetrag (brutto, inkl. MwSt.)'),
   currency: z.string().describe('Währung: CHF, EUR, USD etc.'),
   mileageAtService: z.number().nullable().optional().describe('Kilometerstand bei Reparatur falls angegeben, null wenn nicht vorhanden'),
@@ -305,6 +307,10 @@ WICHTIG — Kennzeichen vs. Fahrgestellnummer:
 - Fahrgestellnummer/VIN: 17 Zeichen, beginnt mit W, V, etc. z.B. "WP1ZZZ9PZ8LA14872"
 - "SG 218574" ist ein SCHWEIZER KENNZEICHEN (Kanton St. Gallen), NICHT eine Fahrgestellnummer!
 
+WICHTIG — Datum:
+- Das Wartungsheft braucht den Tag der Arbeit. Steht ein "Reparaturdatum", "Leistungsdatum" oder "Auftrag vom", nimm dieses.
+- Nur wenn es fehlt, das Rechnungs- oder Quittungsdatum ("Nr. 8431 vom 23.08.2024").
+
 WICHTIG — Positionen extrahieren:
 - Lies die Tabellenspalten korrekt: Beschreibung | Menge | Einheit | Preis | Betrag
 - Der "Betrag" pro Position = Menge × Einzelpreis
@@ -343,16 +349,50 @@ export async function parseInvoice(
   return parseWithOcrPipeline(imageBase64, access, invoiceSchema, INVOICE_PROMPT, modelId)
 }
 
-/** Rechnung aus einem PDF: alle Seiten per OCR lesen, dann gemeinsam auswerten; `pages` für den Hinweis bei Sammel-PDFs */
-export async function parseInvoicePdf(
+const invoicePageSchema = invoiceSchema.extend({
+  kind: z.enum(['rechnung', 'fortsetzung', 'andere']).describe(
+    'rechnung: Seite mit eigenem Rechnungskopf (Werkstatt, Rechnungsnummer oder Datum). fortsetzung: setzt die Rechnung der vorherigen Seite fort (Übertrag, Seite 2, Abrechnungsdetails derselben Werkstatt). andere: keine Rechnung (AGB, leere Seite, Werbung).',
+  ),
+})
+
+export type ParsedPdfInvoice = ParsedInvoice & { pages: number[] }
+
+const INVOICE_PAGE_PROMPT = `Dies ist EINE Seite aus einem PDF, das EINE oder MEHRERE Werkstattrechnungen enthalten kann.
+Werte NUR diese Seite aus. Werkstatt, Datum und Betrag stammen ausschliesslich von dieser Seite, nie von der vorherigen.
+Die vorherige Seite ist nur als Hilfe angegeben, um zu entscheiden, ob diese Seite eine Fortsetzung ist.
+Fehlt auf einer Fortsetzungsseite ein Wert (Datum, Werkstatt, Gesamtbetrag), leeren Text bzw. 0 angeben.
+
+${INVOICE_PROMPT}`
+
+/** Seiten gleichzeitig auswerten, aber nicht alle auf einmal (Rate-Limit des Proxys) */
+const PAGE_CONCURRENCY = 3
+
+/**
+ * Rechnungen aus einem PDF: alle Seiten per OCR lesen, dann jede Seite einzeln auswerten und Fortsetzungen
+ * zusammenführen (mergePdfPages). Ein Aufruf für das ganze PDF liess bei 9 Seiten Rechnungen aus und übertrug die
+ * Werkstatt der ersten Rechnung auf alle.
+ */
+export async function parseInvoicesPdf(
   pdfBase64: string,
   access: AiAccess,
   modelId?: string,
-): Promise<{ invoice: ParsedInvoice, pages: number }> {
-  const pages = await withRetry(() => callMistralOcrPdf(pdfBase64, access))
-  const text = pages.map((t, i) => `--- Seite ${i + 1} ---\n${t}`).join('\n\n')
-  const invoice = await parseOcrText(text, access, invoiceSchema, INVOICE_PROMPT, modelId)
-  return { invoice, pages: pages.length }
+  onProgress?: (done: number, total: number) => void,
+): Promise<{ invoices: ParsedPdfInvoice[], pages: number }> {
+  const texts = await withRetry(() => callMistralOcrPdf(pdfBase64, access))
+  const results: { page: number, kind: PageKind, parsed: ParsedInvoice }[] = Array.from({ length: texts.length })
+  let next = 0
+  let done = 0
+  async function worker() {
+    while (next < texts.length) {
+      const i = next++
+      const previous = i > 0 ? `\n\n--- VORHERIGE SEITE (nur zur Einordnung, gekürzt) ---\n${texts[i - 1]!.slice(0, 1200)}` : ''
+      const { kind, ...parsed } = await parseOcrText(`${texts[i]}${previous}`, access, invoicePageSchema, INVOICE_PAGE_PROMPT, modelId)
+      results[i] = { page: i + 1, kind, parsed }
+      onProgress?.(++done, texts.length)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(PAGE_CONCURRENCY, texts.length) }, worker))
+  return { invoices: mergePdfPages(results), pages: texts.length }
 }
 
 const VEHICLE_DOC_PROMPT = 'Analysiere dieses Fahrzeugdokument (Kaufvertrag, Fahrzeugschein oder Zulassungsbescheinigung). Extrahiere alle Fahrzeugdaten. Antworte auf Deutsch.'

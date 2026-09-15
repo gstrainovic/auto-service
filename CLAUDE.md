@@ -211,9 +211,12 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
   `src/services/category-correction.ts` (Chat und Formular)
 - Beleg-Scan im Formular «+ Rechnung hinzufügen» (`src/composables/useInvoiceScan.ts`): Foto verkleinern und ausrichten
   (`autoRotateForDocument`, Regel in `src/lib/orientation.ts`: Querformat immer drehen, Hochformat nur ab
-  OSD-Sicherheit 2), dann `parseInvoice`; PDF über `parseInvoicePdf` (OCR aller Seiten, nichts als Bild gespeichert).
-  Erkannte Felder füllen nur leere Formularfelder (`fillEmptyFields` in `src/services/invoice-scan.ts`), Positionen
-  ersetzen Kategorie und Beschreibung. In E2E-Tests Mistral mit `mockInvoiceScan` aus den Fixtures abfangen.
+  OSD-Sicherheit 2), dann `parseInvoice`. PDF über `parseInvoicesPdf`: OCR aller Seiten, dann **jede Seite einzeln**
+  auswerten (Art rechnung/fortsetzung/andere) und mit `mergePdfPages` zusammenführen; ein Aufruf fürs ganze PDF liess
+  Rechnungen aus und übertrug die Werkstatt. Eine Rechnung füllt nur leere Formularfelder (`fillEmptyFields`), mehrere
+  (Sammel-PDF oder mehrere Fotos) erscheinen als Prüfliste (`buildBatch`): Duplikat = gleicher Betrag und Datum höchstens
+  14 Tage auseinander. Datum der Rechnung ist das Reparaturdatum, falls vorhanden. E2E: Mistral mit `mockInvoiceScan`
+  abfangen; echter Test mit Fotos und 9-Seiten-PDF aus `tmp/`: `npx playwright test e2e/invoice-scan-real.spec.ts --project=ai-soft`.
 - PDF-Upload: max 50 MB, OCR pro Seite, Duplikat-Erkennung bei identischen Seiten
 - `scan_document` Tool wird ausgeblendet wenn Bilder im Message sind (Modell sieht Bilder direkt)
 - `add_maintenance` Tool: Wartung OHNE Rechnung eintragen (z.B. manuell berichtete Arbeiten)

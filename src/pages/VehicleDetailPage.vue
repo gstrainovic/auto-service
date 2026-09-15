@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { RateMap } from '../services/fx'
+import type { BatchEntry } from '../services/invoice-scan'
 import type { CurrencyOptions } from '../services/report'
 import type { Invoice, InvoiceItem } from '../stores/invoices'
 import type { Maintenance } from '../stores/maintenances'
@@ -249,6 +250,22 @@ async function handleAddInvoice(data: InvoiceFormData): Promise<void> {
   })
 
   showAddInvoiceDialog.value = false
+}
+
+// Stapel aus Sammel-PDF oder mehreren Fotos: jede gewählte Rechnung einzeln speichern
+async function handleAddInvoiceBatch(entries: BatchEntry[]): Promise<void> {
+  if (!vehicle.value)
+    return
+  for (const { draft, imageBase64 } of entries) {
+    if (!draft)
+      continue
+    await invoicesStore.add({
+      vehicleId: vehicle.value.id,
+      ...draft,
+      items: draft.items.map(i => ({ ...i })),
+      ...(imageBase64 ? { imageData: imageBase64 } : {}),
+    })
+  }
 }
 
 // Kostenübersicht und Exporte (CSV für Excel und Treuhänder, PDF-Dossier für Verkauf und Übergabe).
@@ -771,7 +788,9 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
     <InvoiceFormDialog
       v-model:visible="showAddInvoiceDialog"
       title="Neue Rechnung"
+      :existing-invoices="vehicleInvoices"
       @submit="handleAddInvoice"
+      @submit-batch="handleAddInvoiceBatch"
     />
 
     <!-- Add maintenance dialog -->

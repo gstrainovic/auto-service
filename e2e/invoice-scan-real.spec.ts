@@ -70,19 +70,19 @@ test.describe('Beleg-Scan mit echtem Mistral @soft', () => {
     })
   }
 
-  test('PDF mit mehreren Seiten füllt Felder und verweist auf den Chat @soft', async ({ page }) => {
+  test('Sammel-PDF wird in einzelne Rechnungen aufgeteilt @soft', async ({ page }) => {
     test.skip(!fs.existsSync(pdf), 'tmp/test-images-9pages.pdf fehlt')
     // 22 MB, 9 Seiten: OCR und Auswertung dauern rund drei Minuten
-    test.setTimeout(360_000)
+    test.setTimeout(420_000)
     await openInvoiceForm(page)
     const dialog = page.locator('[data-pc-name="dialog"]')
     await dialog.locator('input[type="file"]').setInputFiles(pdf)
-    await expect(dialog.locator('.scan-message')).toBeVisible({ timeout: 330_000 })
-    const form = await readForm(page)
+    await expect(dialog.locator('.scan-message')).toBeVisible({ timeout: 400_000 })
+    const message = (await dialog.locator('.scan-message').textContent())?.trim()
+    const rows = await dialog.locator('.batch-row').allTextContents()
     // eslint-disable-next-line no-console
-    console.log('[real-scan] pdf', JSON.stringify(form))
-    expect(form.message).toContain('Felder aus dem Beleg ausgefüllt')
-    expect(form.message).toContain('Seiten')
-    expect(form.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    console.log('[real-scan] pdf', message, JSON.stringify(rows, null, 1))
+    expect(message).toMatch(/\d+ Rechnungen erkannt/)
+    expect(rows.length).toBeGreaterThan(1)
   })
 })

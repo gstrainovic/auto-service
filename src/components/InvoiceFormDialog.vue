@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { BatchEntry } from '../services/invoice-scan'
 import type { InvoiceFormData } from '../types/forms'
 import Dialog from 'primevue/dialog'
 import { computed } from 'vue'
@@ -7,6 +8,7 @@ import InvoiceForm from './InvoiceForm.vue'
 interface Props {
   visible: boolean
   initialData?: Partial<InvoiceFormData>
+  existingInvoices?: { date: string, totalAmount?: number }[]
   title?: string
 }
 
@@ -17,7 +19,13 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'update:visible': [value: boolean]
   'submit': [data: InvoiceFormData]
+  'submitBatch': [entries: BatchEntry[]]
 }>()
+
+function handleSubmitBatch(entries: BatchEntry[]) {
+  emit('submitBatch', entries)
+  emit('update:visible', false)
+}
 
 const isVisible = computed({
   get: () => props.visible,
@@ -45,7 +53,9 @@ function handleCancel() {
   >
     <InvoiceForm
       :initial-data="initialData"
+      :existing-invoices="existingInvoices"
       @submit="handleSubmit"
+      @submit-batch="handleSubmitBatch"
       @cancel="handleCancel"
     />
   </Dialog>

@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { clearInstantDB, expect, mockInvoiceScan, test } from './fixtures/test-fixtures'
+import { clearInstantDB, expect, mockInvoiceScan, SCAN_INVOICE, test } from './fixtures/test-fixtures'
 
 // Beleg-Scan im Formular «+ Rechnung hinzufügen»: Foto oder PDF wird ausgerichtet, gelesen und füllt die Felder.
 // Mistral ist gemockt (mockInvoiceScan), getestet werden Ablauf, Vorbefüllung und Speichern.
@@ -168,5 +168,73 @@ test.describe('Beleg-Scan im Rechnungsformular', () => {
     await expect(dialog.getByText('Felder aus dem Beleg ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 30_000 })
     await expect(dialog.locator('#invoice-date')).toHaveValue('2026-02-08')
     await expect(dialog.locator('#invoice-workshop')).toHaveValue('Garage Steinach')
+  })
+
+  test('IS-007: Sammel-PDF zeigt alle Rechnungen, schon erfasste abgewählt, speichert die gewählten', async ({ page }) => {
+    await mockInvoiceScan(page, {
+      pdfPages: [
+        { ...SCAN_INVOICE, workshopName: 'Seestern - Garage', date: '2022-07-01', totalAmount: 1014.8, currency: 'CHF' },
+        { ...SCAN_INVOICE, kind: 'fortsetzung', workshopName: '', date: '', totalAmount: 0, currency: 'CHF' },
+        { ...SCAN_INVOICE, workshopName: 'Seestern - Garage', date: '2025-05-15', totalAmount: 278.35, currency: 'CHF' },
+        { ...SCAN_INVOICE, kind: 'andere', workshopName: '', date: '', totalAmount: 0, items: [] },
+        { ...SCAN_INVOICE, workshopName: 'Seestern - Garage', date: '2024-01-05', totalAmount: 280.4, currency: 'CHF' },
+      ],
+    })
+    const vehicleId = await openInvoiceForm(page)
+    // Rechnung vom 01.07.2022 ist schon erfasst (andere Schreibweise der Werkstatt)
+    await page.evaluate(async (v) => {
+      const { db, tx, id: genId } = (window as any).__instantdb
+      const now = new Date().toISOString()
+      await db.transact([tx.invoices[genId()].update({ vehicleId: v, workshopName: 'Seestern Garage Ivo Wüst', date: '2022-07-01', totalAmount: 1014.8, currency: 'CHF', items: [], createdAt: now, updatedAt: now })])
+    }, vehicleId)
+    await expect(page.locator('.invoice-item')).toHaveCount(1)
+    const dialog = page.locator('[data-pc-name="dialog"]')
+
+    await dialog.locator('input[type="file"]').setInputFiles({ name: 'stapel.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n%%EOF') })
+    await expect(dialog.getByText(/3 Rechnungen erkannt, davon 1 schon erfasst oder doppelt/)).toBeVisible({ timeout: 30_000 })
+
+    const rows = dialog.getByLabel('Erkannte Rechnungen').locator('.batch-row')
+    await expect(rows).toHaveCount(3)
+    await expect(rows.nth(0)).toContainText('01.07.2022')
+    await expect(rows.nth(0)).toContainText('Seite 1–2')
+    await expect(rows.nth(0)).toContainText('bereits erfasst')
+    await expect(rows.nth(0).getByRole('checkbox')).not.toBeChecked()
+    await expect(rows.nth(1).getByRole('checkbox')).toBeChecked()
+    await expect(dialog.locator('#invoice-date')).toHaveCount(0)
+
+    await dialog.getByRole('button', { name: '2 Rechnungen speichern' }).click()
+    await expect(dialog).not.toBeVisible({ timeout: 5000 })
+    await expect(page.locator('.invoice-item')).toHaveCount(3)
+    await expect(page.locator('.invoice-item', { hasText: '15.05.2025' })).toContainText('CHF 278.35')
+  })
+
+  test('IS-008: mehrere Fotos auf einmal werden je eine Rechnung mit Foto', async ({ page }) => {
+    await mockInvoiceScan(page, {
+      photos: [
+        { ...SCAN_INVOICE, date: '2025-04-15', totalAmount: 1403.34 },
+        { ...SCAN_INVOICE, workshopName: 'Pneu Egger', date: '2025-10-02', totalAmount: 890.5, currency: 'CHF' },
+      ],
+    })
+    const vehicleId = await openInvoiceForm(page)
+    const dialog = page.locator('[data-pc-name="dialog"]')
+
+    await dialog.locator('input[type="file"]').setInputFiles([fixture('test-invoice.png'), fixture('test-kaufvertrag.png')])
+    await expect(dialog.getByText('2 Rechnungen erkannt. Bitte prüfen.')).toBeVisible({ timeout: 60_000 })
+    const rows = dialog.getByLabel('Erkannte Rechnungen').locator('.batch-row')
+    await expect(rows.nth(1)).toContainText('Pneu Egger')
+    await expect(rows.nth(1)).toContainText('test-kaufvertrag.png')
+
+    // eine Rechnung abwählen
+    await rows.nth(0).getByRole('checkbox').click()
+    await dialog.getByRole('button', { name: '1 Rechnung speichern' }).click()
+    await expect(dialog).not.toBeVisible({ timeout: 5000 })
+
+    const stored = await page.evaluate(async (id) => {
+      const { db } = (window as any).__instantdb
+      const r = await db.queryOnce({ invoices: {} })
+      return (r.data.invoices || []).filter((i: any) => i.vehicleId === id)
+    }, vehicleId)
+    expect(stored.map((i: any) => i.workshopName)).toEqual(['Pneu Egger'])
+    expect(stored[0].imageData?.length).toBeGreaterThan(100)
   })
 })

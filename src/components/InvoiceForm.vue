@@ -15,6 +15,7 @@ import { useFormValidation } from '../composables/useFormValidation'
 import { useInvoiceScan } from '../composables/useInvoiceScan'
 import { DEFAULT_CURRENCY, formatCurrency, formatDate, LOCALE } from '../lib/locale'
 import { MAINTENANCE_CATEGORIES } from '../services/ai'
+import { itemsExceedTotal } from '../services/invoice-items'
 import { fillEmptyFields } from '../services/invoice-scan'
 import { categoryLabel } from '../services/report'
 
@@ -89,6 +90,9 @@ function saveBatch() {
   if (batch.value && selectedCount.value)
     emit('submitBatch', batch.value.filter(e => e.selected && e.draft))
 }
+
+// Positionen, die zusammen mehr als die Rechnung ergeben, sind fast immer falsch gelesen
+const itemsWarning = computed(() => itemsExceedTotal(formData.value.items ?? [], formData.value.amount ?? 0))
 
 function removeItem(index: number) {
   formData.value.items = (formData.value.items ?? []).filter((_, i) => i !== index)
@@ -168,6 +172,7 @@ function handleCancel() {
               <small>
                 {{ entry.source }} · {{ entry.draft.items.length }} {{ entry.draft.items.length === 1 ? 'Position' : 'Positionen' }}
                 <span v-if="entry.duplicate" class="batch-dup">· {{ entry.duplicate }}</span>
+                <span v-else-if="itemsExceedTotal(entry.draft.items, entry.draft.totalAmount)" class="batch-dup">· Positionen ergeben mehr als das Total</span>
               </small>
             </template>
             <template v-else>
@@ -265,6 +270,10 @@ function handleCancel() {
               aria-label="Position entfernen"
               @click="removeItem(i)"
             />
+          </div>
+          <div v-if="itemsWarning" class="items-warning" role="alert">
+            <i class="pi pi-exclamation-triangle" />
+            Positionen ergeben {{ formatCurrency(itemsWarning.itemsSum, formData.currency) }}, die Rechnung {{ formatCurrency(itemsWarning.total, formData.currency) }}. Bitte Positionen prüfen.
           </div>
         </div>
 
@@ -432,6 +441,16 @@ function handleCancel() {
 .pdf-name small {
   flex-basis: 100%;
   color: var(--p-text-muted-color);
+}
+
+.items-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-top: 1px solid var(--surface-border);
+  color: var(--status-warning);
+  font-size: 0.85rem;
 }
 
 .scan-items {

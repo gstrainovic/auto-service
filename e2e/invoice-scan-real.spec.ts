@@ -65,6 +65,12 @@ test.describe('Beleg-Scan mit echtem Mistral @soft', () => {
       expect(form.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
       expect(form.amount).not.toBe('')
       expect(form.items.length).toBeGreaterThan(0)
+      // Positionen dürfen zusammen nicht mehr als die Rechnung ergeben (Hinweis im Formular)
+      await expect(dialog.getByRole('alert')).toHaveCount(0)
+      if (photo === 'IMG_20260131_234544306.jpg') {
+        // Seestern 8243: eine Arbeitsposition CHF 195.00 für drei Beschreibungszeilen, nicht vier
+        expect(form.items.filter(i => i.includes('195.00'))).toHaveLength(1)
+      }
       const [w, h] = form.preview.split('x').map(Number)
       expect(h).toBeGreaterThan(w!)
     })

@@ -315,6 +315,10 @@ WICHTIG — Positionen extrahieren:
 - Lies die Tabellenspalten korrekt: Beschreibung | Menge | Einheit | Preis | Betrag
 - Der "Betrag" pro Position = Menge × Einzelpreis
 - Unterscheide ARBEITSKOSTEN (Stunden × Stundensatz) von MATERIALKOSTEN (Teile)
+- Textzeilen OHNE eigene Menge und OHNE eigenen Betrag sind Beschreibung der NÄCHSTEN Zeile mit Betrag. Beispiel:
+    "Auspuff reparieren" / "Auto auf Oelverlust kontrollieren" / "Arbeit 1.50 Std. 130.00 195.00"
+  → EINE Position: description "Arbeit: Auspuff reparieren, Auto auf Oelverlust kontrollieren", amount 195.00.
+  Den Betrag NIE auf jede Beschreibungszeile wiederholen.
 - "Summe Arbeiten" und "Summe Teile" sind Zwischensummen — KEINE eigenen Positionen
 - Klein- & Reinigungs-Material und Lieferspesen sind eigene Positionen
 - Kontrolliere: Die Summe aller Positions-Beträge muss ungefähr dem Netto-Gesamtbetrag (vor MwSt.) entsprechen

@@ -6,6 +6,7 @@ import type { InvoiceFormData, InvoiceFormItem } from '../types/forms'
 import type { ParsedInvoice } from './ai'
 import { normalizeCurrency } from '../lib/locale'
 import { correctCategory } from './category-correction'
+import { repairItems } from './invoice-items'
 
 export type ScannedFields = Partial<Pick<InvoiceFormData, 'workshop' | 'date' | 'amount' | 'currency' | 'mileage' | 'items'>>
 
@@ -24,11 +25,13 @@ export function scannedToFormFields(parsed: ParsedInvoice): ScannedFields {
     fields.currency = currency
   if (parsed.mileageAtService && parsed.mileageAtService > 0)
     fields.mileage = parsed.mileageAtService
-  const items: InvoiceFormItem[] = (parsed.items ?? []).map(i => ({
+  const corrected: InvoiceFormItem[] = (parsed.items ?? []).map(i => ({
     description: i.description,
     category: correctCategory(i.description, i.category) as InvoiceFormItem['category'],
     amount: i.amount,
   }))
+  // Positionen, die sich einen Arbeitsbetrag teilen, zusammenfassen (Summe sonst über dem Total)
+  const { items } = repairItems(corrected, parsed.totalAmount)
   if (items.length)
     fields.items = items
   return fields

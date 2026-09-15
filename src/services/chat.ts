@@ -7,6 +7,7 @@ import { db, id as instantId, tx } from '../lib/instantdb'
 import { formatCurrency, formatDate, formatNumber, normalizeCurrency } from '../lib/locale'
 import { callMistralOcr, callMistralOcrPdf, getModel, hashImage, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument, withRetry } from './ai'
 import { correctCategory } from './category-correction'
+import { maintenancesFromItems, repairItems } from './invoice-items'
 import { checkDueMaintenances, getMaintenanceSchedule } from './maintenance-schedule'
 
 export interface ToolResult {
@@ -57,6 +58,9 @@ RECHNUNGSPOSITIONEN:
 - MwSt./MWST/USt. Zeilen sind KEINE eigenen Positionen — nicht eintragen!
 - "Summe Arbeiten", "Summe Teile", "Nettobetrag", "Zwischensumme" sind KEINE Positionen — nicht eintragen!
 - Nur tatsächliche Arbeiten und Teile sind Positionen.
+- Textzeilen ohne eigene Menge und ohne eigenen Betrag gehören zur NÄCHSTEN Zeile mit Betrag: EINE Position,
+  Beschreibung zusammengefasst (z. B. "Arbeit: Auspuff reparieren, Motor reinigen", 195.00). Den Betrag nie auf
+  mehrere Zeilen verteilen oder wiederholen. Kontrolle: alle Positionen zusammen ≤ Gesamtbetrag.
 
 KATEGORIEN bei add_invoice — wähle die passendste:
 - oelwechsel: Ölwechsel, Ölfilter, Motoröl, Ölablassschraube
@@ -372,6 +376,14 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
           }
         }
 
+        // Kategorien normieren und per Stichwort korrigieren, dann Positionen gegen das Total prüfen
+        // (mehrere Beschreibungszeilen mit demselben Arbeitsbetrag werden zu einer Position)
+        const checked = repairItems(items.map((item) => {
+          const normalized = item.category.toLowerCase().trim()
+          const aiCategory = (MAINTENANCE_CATEGORIES as readonly string[]).includes(normalized) ? normalized : 'sonstiges'
+          return { ...item, category: correctCategory(item.description, aiCategory) }
+        }), totalAmount).items
+
         const now = Date.now()
         const imgRaw = imagesBase64?.length ? (imagesBase64[imageIndex ?? 0] ?? '') : ''
         const imageData = imgRaw ? await autoRotateForDocument(imgRaw) : ''
@@ -388,23 +400,21 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
             currency: normalizeCurrency(currency),
             imageData,
             ocrCacheId,
-            items,
+            items: checked,
             creatorId: getCurrentUserId(),
             createdAt: now,
           }),
         ]
 
-        for (const item of items) {
-          const normalized = item.category.toLowerCase().trim()
-          const aiCategory = (MAINTENANCE_CATEGORIES as readonly string[]).includes(normalized) ? normalized : 'sonstiges'
-          const category = correctCategory(item.description, aiCategory)
+        // Eine Wartung pro Kategorie, nicht pro Position (sonst mehrere gleiche Einträge am selben Tag)
+        for (const { category, description } of maintenancesFromItems(checked)) {
           const maintenanceId = instantId()
           transactions.push(
             tx.maintenances[maintenanceId].update({
               vehicleId,
               invoiceId,
               type: category,
-              description: item.description,
+              description,
               doneAt: date,
               mileageAtService: mileageAtService || 0,
               nextDueDate: '',

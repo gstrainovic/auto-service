@@ -71,6 +71,24 @@ describe('scannedToFormFields', () => {
     })
   })
 
+  it('fasst Positionen zusammen, die sich einen Arbeitsbetrag teilen (Nachkontrolle gegen das Total)', () => {
+    const fields = scannedToFormFields({
+      ...parsed,
+      totalAmount: 280.4,
+      currency: 'CHF',
+      items: [
+        { description: 'Auspuff reparieren', category: 'auspuff', amount: 195 },
+        { description: 'Auto auf Ölverlust kontrollieren', category: 'sonstiges', amount: 195 },
+        { description: 'Arbeit', category: 'sonstiges', amount: 195 },
+        { description: 'Verbinder', category: 'sonstiges', amount: 54.6 },
+      ],
+    })
+    expect(fields.items?.map(i => [i.description, i.amount])).toEqual([
+      ['Arbeit: Auspuff reparieren, Auto auf Ölverlust kontrollieren', 195],
+      ['Verbinder', 54.6],
+    ])
+  })
+
   it('lässt unbrauchbare Werte weg: kein ISO-Datum, Währung ausser CHF/EUR, Kilometer 0, Betrag 0', () => {
     const fields = scannedToFormFields({ ...parsed, date: '15.04.2025', currency: 'USD', mileageAtService: 0, totalAmount: 0, items: [] })
     expect(fields).toEqual({ workshop: 'Lucky Car Dornbirn' })

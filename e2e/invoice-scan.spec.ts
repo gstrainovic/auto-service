@@ -157,6 +157,41 @@ test.describe('Beleg-Scan im Rechnungsformular', () => {
     expect(await headerOnTop(page)).toBe(true)
   })
 
+  test('IS-009: Beschreibungszeilen mit gemeinsamem Arbeitsbetrag werden eine Position; unstimmige Summe wird gemeldet', async ({ page }) => {
+    await mockInvoiceScan(page, {
+      photos: [{
+        ...SCAN_INVOICE,
+        workshopName: 'Seestern - Garage',
+        date: '2024-01-05',
+        totalAmount: 280.4,
+        currency: 'CHF',
+        items: [
+          { description: 'Auspuff reparieren', category: 'auspuff', amount: 195 },
+          { description: 'Auto auf Oelverlust kontrollieren', category: 'sonstiges', amount: 195 },
+          { description: 'Motor und Getriebe unten reinigen', category: 'sonstiges', amount: 195 },
+          { description: 'Arbeit', category: 'sonstiges', amount: 195 },
+          { description: 'Verbinder', category: 'sonstiges', amount: 54.6 },
+          { description: 'Klein- & Reinigungs-Material', category: 'sonstiges', amount: 9.8 },
+        ],
+      }],
+    })
+    await openInvoiceForm(page)
+    const dialog = page.locator('[data-pc-name="dialog"]')
+    await dialog.locator('input[type="file"]').setInputFiles(fixture('test-invoice.png'))
+    await expect(dialog.getByText('Felder aus dem Beleg ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 30_000 })
+
+    const positions = dialog.getByLabel('Erkannte Positionen')
+    await expect(positions.locator('.scan-item')).toHaveCount(3)
+    await expect(positions.locator('.scan-item').first()).toContainText('Arbeit: Auspuff reparieren, Auto auf Oelverlust kontrollieren, Motor und Getriebe unten reinigen')
+    await expect(positions.locator('.scan-item').first()).toContainText('CHF 195.00')
+    await expect(dialog.getByRole('alert')).toHaveCount(0)
+
+    // Betrag von Hand zu tief gesetzt: Hinweis erscheint
+    await dialog.locator('#invoice-amount input').fill('100')
+    await dialog.locator('#invoice-workshop').click()
+    await expect(dialog.getByRole('alert')).toContainText('Bitte Positionen prüfen')
+  })
+
   test('IS-005: Eingaben vor dem Scan bleiben erhalten', async ({ page }) => {
     await mockInvoiceScan(page)
     await openInvoiceForm(page)

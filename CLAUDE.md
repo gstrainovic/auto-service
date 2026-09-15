@@ -209,6 +209,10 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - >8 Bilder: OCR-Text wird verwendet, Bilder nicht an Vision-Modell gesendet
 - Regelbasierte Kategorie-Korrektur: Keywords überschreiben AI-Zuordnung (z.B. "Auspuff" → auspuff), einzige Quelle
   `src/services/category-correction.ts` (Chat und Formular)
+- Nachkontrolle der Positionen (`src/services/invoice-items.ts`), für Chat, Formular und Sammel-PDF: ergeben die
+  Positionen mehr als das Total, werden aufeinanderfolgende Positionen mit gleichem Betrag zusammengefasst (typisch:
+  mehrere Beschreibungszeilen unter einer Arbeitszeile), nur wenn die Summe danach passt. Bleibt die Summe zu hoch,
+  zeigt das Formular einen Hinweis. Wartungen aus einer Rechnung: eine pro Kategorie (`maintenancesFromItems`).
 - Beleg-Scan im Formular «+ Rechnung hinzufügen» (`src/composables/useInvoiceScan.ts`): Foto verkleinern und ausrichten
   (`autoRotateForDocument`, Regel in `src/lib/orientation.ts`: Querformat immer drehen, Hochformat nur ab
   OSD-Sicherheit 2), dann `parseInvoice`. PDF über `parseInvoicesPdf`: OCR aller Seiten, dann **jede Seite einzeln**

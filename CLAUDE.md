@@ -207,7 +207,13 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Chat stepCount=5 (Phase 2), dynamisch höher für PDF mit vielen Seiten
 - Chat-Verlauf wird in InstantDB `chatmessages` Entity persistiert
 - >8 Bilder: OCR-Text wird verwendet, Bilder nicht an Vision-Modell gesendet
-- Regelbasierte Kategorie-Korrektur: Keywords überschreiben AI-Zuordnung (z.B. "Auspuff" → auspuff)
+- Regelbasierte Kategorie-Korrektur: Keywords überschreiben AI-Zuordnung (z.B. "Auspuff" → auspuff), einzige Quelle
+  `src/services/category-correction.ts` (Chat und Formular)
+- Beleg-Scan im Formular «+ Rechnung hinzufügen» (`src/composables/useInvoiceScan.ts`): Foto verkleinern und ausrichten
+  (`autoRotateForDocument`, Regel in `src/lib/orientation.ts`: Querformat immer drehen, Hochformat nur ab
+  OSD-Sicherheit 2), dann `parseInvoice`; PDF über `parseInvoicePdf` (OCR aller Seiten, nichts als Bild gespeichert).
+  Erkannte Felder füllen nur leere Formularfelder (`fillEmptyFields` in `src/services/invoice-scan.ts`), Positionen
+  ersetzen Kategorie und Beschreibung. In E2E-Tests Mistral mit `mockInvoiceScan` aus den Fixtures abfangen.
 - PDF-Upload: max 50 MB, OCR pro Seite, Duplikat-Erkennung bei identischen Seiten
 - `scan_document` Tool wird ausgeblendet wenn Bilder im Message sind (Modell sieht Bilder direkt)
 - `add_maintenance` Tool: Wartung OHNE Rechnung eintragen (z.B. manuell berichtete Arbeiten)

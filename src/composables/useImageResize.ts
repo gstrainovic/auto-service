@@ -1,4 +1,5 @@
 import { createWorker } from 'tesseract.js'
+import { rotationFor } from '../lib/orientation'
 
 /**
  * Resize images before sending to Vision APIs.
@@ -122,7 +123,7 @@ export async function rotateBase64Image(
  * Returns the degrees the image needs to be rotated CW to make text upright.
  * Returns 0 if detection fails or text is already upright.
  */
-async function detectOrientation(base64: string): Promise<0 | 90 | 180 | 270> {
+async function detectOrientation(base64: string): Promise<{ degrees: 0 | 90 | 180 | 270, confidence: number | null }> {
   try {
     const { mime } = getOutputFormat()
     const worker = await createWorker('osd', 0, {
@@ -132,18 +133,19 @@ async function detectOrientation(base64: string): Promise<0 | 90 | 180 | 270> {
     const result = await worker.detect(`data:${mime};base64,${base64}`)
     await worker.terminate()
     const deg = result.data?.orientation_degrees
+    const confidence = result.data?.orientation_confidence ?? null
     if (deg === 90 || deg === 180 || deg === 270)
-      return deg
-    return 0
+      return { degrees: deg, confidence }
+    return { degrees: 0, confidence }
   }
   catch {
-    return 0
+    return { degrees: 0, confidence: null }
   }
 }
 
 /**
- * Auto-rotate document images using Tesseract.js OSD (free, local, no API calls).
- * Only rotates landscape images where text is sideways.
+ * Richtet ein Belegfoto aus (Tesseract.js OSD, lokal im Browser, ohne API-Aufruf). Querformat wird immer gedreht,
+ * Hochformat nur bei sicher erkanntem Winkel, z. B. auf dem Kopf; Regel in lib/orientation.ts.
  */
 export async function autoRotateForDocument(
   base64: string,
@@ -154,11 +156,8 @@ export async function autoRotateForDocument(
   const bitmap = await createImageBitmap(blob)
   const { width, height } = bitmap
   bitmap.close()
-  if (width <= height)
-    return base64
 
-  const degrees = await detectOrientation(base64)
-  if (degrees === 0)
-    return rotateBase64Image(base64, 90)
-  return rotateBase64Image(base64, degrees)
+  const detected = await detectOrientation(base64)
+  const degrees = rotationFor({ width, height, ...detected })
+  return degrees === 0 ? base64 : rotateBase64Image(base64, degrees)
 }

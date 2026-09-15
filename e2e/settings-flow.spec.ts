@@ -1,6 +1,16 @@
+import type { Page } from '@playwright/test'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
+
+async function serverHasEmailReminders(page: Page, expected: boolean): Promise<void> {
+  await expect.poll(() => page.evaluate(async () => {
+    const { db } = (window as any).__instantdb
+    const r = await db.queryOnce({ settings: {} })
+    const s = (r.data.settings || [])[0]
+    return s ? s.emailReminders !== false : true
+  }), { timeout: 10_000 }).toBe(expected)
+}
 
 test.describe('Settings Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -21,11 +31,17 @@ test.describe('Settings Flow', () => {
     const card = page.locator('.settings-card', { hasText: 'Erinnerungen' })
     const toggle = card.getByRole('switch')
     await expect(toggle).toBeChecked()
+    await expect(toggle).toBeEnabled()
     await toggle.click()
     await expect(toggle).not.toBeChecked()
+    // Erst neu laden, wenn der Server den Wert hat; sonst prüft der Test den Sync statt der Einstellung
+    await serverHasEmailReminders(page, false)
     await page.reload()
-    await expect(page.locator('.settings-card', { hasText: 'Erinnerungen' }).getByRole('switch')).not.toBeChecked()
-    await page.locator('.settings-card', { hasText: 'Erinnerungen' }).getByRole('switch').click()
+    const reloaded = page.locator('.settings-card', { hasText: 'Erinnerungen' }).getByRole('switch')
+    await expect(reloaded).toBeEnabled()
+    await expect(reloaded).not.toBeChecked()
+    await reloaded.click()
+    await serverHasEmailReminders(page, true)
     await page.reload()
     await expect(page.locator('.settings-card', { hasText: 'Erinnerungen' }).getByRole('switch')).toBeChecked()
   })

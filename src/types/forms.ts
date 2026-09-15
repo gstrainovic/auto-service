@@ -4,6 +4,12 @@
 
 import type { MaintenanceCategory } from './maintenance'
 
+export interface InvoiceFormItem {
+  description: string
+  category: MaintenanceCategory
+  amount: number
+}
+
 export interface InvoiceFormData {
   date: string
   workshop?: string
@@ -13,6 +19,8 @@ export interface InvoiceFormData {
   description?: string
   /** Kilometerstand bei der Rechnung; leer heisst unbekannt */
   mileage?: number
+  /** Positionen aus dem Beleg-Scan; ersetzen Kategorie und Beschreibung */
+  items?: InvoiceFormItem[]
   images?: string[]
 }
 

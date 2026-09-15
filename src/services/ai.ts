@@ -271,6 +271,17 @@ async function parseWithOcrPipeline<T>(
   modelId?: string,
 ): Promise<T> {
   const { markdown: ocrText } = await withRetry(() => callMistralOcr(imageBase64, access))
+  return parseOcrText(ocrText, access, schema, prompt, modelId)
+}
+
+/** Stufe 2 allein: bereits erkannten OCR-Text (z. B. aus einem PDF) in das Schema überführen */
+async function parseOcrText<T>(
+  ocrText: string,
+  access: AiAccess,
+  schema: z.ZodType<T>,
+  prompt: string,
+  modelId?: string,
+): Promise<T> {
   const model = getModel({ access, model: modelId })
 
   const { object } = await withRetry(() => generateObject({
@@ -330,6 +341,17 @@ export async function parseInvoice(
   modelId?: string,
 ): Promise<ParsedInvoice> {
   return parseWithOcrPipeline(imageBase64, access, invoiceSchema, INVOICE_PROMPT, modelId)
+}
+
+/** Rechnung aus einem PDF: alle Seiten per OCR lesen, dann gemeinsam auswerten */
+export async function parseInvoicePdf(
+  pdfBase64: string,
+  access: AiAccess,
+  modelId?: string,
+): Promise<ParsedInvoice> {
+  const pages = await withRetry(() => callMistralOcrPdf(pdfBase64, access))
+  const text = pages.map((t, i) => `--- Seite ${i + 1} ---\n${t}`).join('\n\n')
+  return parseOcrText(text, access, invoiceSchema, INVOICE_PROMPT, modelId)
 }
 
 const VEHICLE_DOC_PROMPT = 'Analysiere dieses Fahrzeugdokument (Kaufvertrag, Fahrzeugschein oder Zulassungsbescheinigung). Extrahiere alle Fahrzeugdaten. Antworte auf Deutsch.'

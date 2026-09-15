@@ -40,6 +40,39 @@ export async function waitForEntity(page: Page, entity: string, timeoutMs: numbe
   return false
 }
 
+/**
+ * Beleg-Scan ohne echte Mistral-Aufrufe: OCR und strukturierte Auswertung des AI-Proxys abfangen.
+ * `parsed` ist die Antwort der Auswertung (Schema invoiceSchema in src/services/ai.ts); `ocrStatus` simuliert Fehler.
+ */
+export async function mockInvoiceScan(page: Page, opts: { parsed?: Record<string, unknown>, ocrStatus?: number, ocrError?: string } = {}) {
+  const parsed = opts.parsed ?? {
+    workshopName: 'Lucky Car Dornbirn',
+    date: '2025-04-15',
+    totalAmount: 1403.34,
+    currency: 'EUR',
+    mileageAtService: 252586,
+    items: [
+      { description: 'Motoröl wechseln', category: 'inspektion', amount: 180 },
+      { description: 'Auspuff reparieren', category: 'sonstiges', amount: 1100 },
+    ],
+  }
+  await page.route('**/localhost:8787/v1/ocr', route => route.fulfill(opts.ocrStatus
+    ? { status: opts.ocrStatus, contentType: 'application/json', body: JSON.stringify({ error: { message: opts.ocrError ?? 'Fehler' } }) }
+    : { status: 200, contentType: 'application/json', body: JSON.stringify({ pages: [{ markdown: 'Lucky Car Dornbirn\nRechnung 15.04.2025\nTotal EUR 1403.34' }] }) }))
+  await page.route('**/localhost:8787/v1/chat/completions', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      id: 'mock',
+      object: 'chat.completion',
+      created: 0,
+      model: 'mistral-small-latest',
+      choices: [{ index: 0, finish_reason: 'stop', message: { role: 'assistant', content: JSON.stringify(parsed) } }],
+      usage: { prompt_tokens: 10, completion_tokens: 10, total_tokens: 20 },
+    }),
+  }))
+}
+
 export async function clearInstantDB(page: Page) {
   // Navigate to app first to initialize InstantDB client
   await page.goto('/')

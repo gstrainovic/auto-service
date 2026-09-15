@@ -6,39 +6,8 @@ import { autoRotateForDocument } from '../composables/useImageResize'
 import { db, id as instantId, tx } from '../lib/instantdb'
 import { formatCurrency, formatDate, formatNumber, normalizeCurrency } from '../lib/locale'
 import { callMistralOcr, callMistralOcrPdf, getModel, hashImage, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument, withRetry } from './ai'
+import { correctCategory } from './category-correction'
 import { checkDueMaintenances, getMaintenanceSchedule } from './maintenance-schedule'
-
-/**
- * Regelbasierte Kategorie-Korrektur: Überschreibt die AI-Zuordnung wenn
- * eindeutige Keywords in der Beschreibung gefunden werden.
- * Löst das Problem dass z.B. "Auspuff reparieren" → sonstiges statt auspuff.
- */
-const CATEGORY_KEYWORDS: [RegExp, string][] = [
-  [/auspuff|katalysator|kr[üu]mmer|abgasanlage|endtopf|mitteltopf/i, 'auspuff'],
-  [/k[üu]hl(wasser|er|mittel|fl[üu]ssigkeit)|frostschutz|thermostat|unterdruck/i, 'kuehlung'],
-  [/windschutzscheibe|frontscheibe|heckscheibe|autoglas|scheibenwischer/i, 'autoglas'],
-  [/[öo]lwechsel|[öo]lfilter|motor[öo]l|[öo]lablassschraube/i, 'oelwechsel'],
-  [/bremsbe[lä]|bremsscheib|bremss[aä]ttel|bremstrommel|bremsbacke/i, 'bremsen'],
-  [/\breifen\b|reifenmontage|reifenwechsel|auswuchten|winterreifen|sommerreifen/i, 'reifen'],
-  [/feder(bein)?|sto[ßs]d[äa]mpfer|radlager|achse|lenkung|querlenker|spurstange|traggelenk/i, 'fahrwerk'],
-  [/batterie|lichtmaschine|starter|z[üu]ndkerze|z[üu]ndspule/i, 'elektrik'],
-  [/lack|karosserie|rost|delle|unfallschaden|blech/i, 'karosserie'],
-  [/inspektion|service(?!.*heft)|durchsicht|(hu|mfk).vorbereitung/i, 'inspektion'],
-  [/klimaanlage|klima.service|k[äa]ltemittel/i, 'klimaanlage'],
-  [/zahnriemen|steuerriemen|steuerkette/i, 'zahnriemen'],
-  [/bremsfl[üu]ssigkeit/i, 'bremsflüssigkeit'],
-  [/luftfilter|pollenfilter|innenraumfilter/i, 'luftfilter'],
-  [/t[üu]v\b|hauptuntersuchung|\bhu\b|\bau\b|\bmfk\b|motorfahrzeugkontrolle|strassenverkehrsamt|\bstva\b/i, 'tuev'],
-]
-
-function correctCategory(description: string, aiCategory: string): string {
-  const desc = description.toLowerCase()
-  for (const [pattern, category] of CATEGORY_KEYWORDS) {
-    if (pattern.test(desc))
-      return category
-  }
-  return aiCategory
-}
 
 export interface ToolResult {
   tool: string

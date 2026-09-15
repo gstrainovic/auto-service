@@ -234,13 +234,16 @@ async function handleAddInvoice(data: InvoiceFormData): Promise<void> {
     currency: data.currency || DEFAULT_CURRENCY,
     // Kilometerstand nur, wenn im Formular angegeben; der heutige Fahrzeugstand wäre bei alten Belegen falsch
     mileageAtService: data.mileage || undefined,
-    items: data.category
-      ? [{
-          description: data.description || '',
-          category: data.category,
-          amount: data.amount || 0,
-        }]
-      : [],
+    // Positionen aus dem Beleg-Scan haben Vorrang; sonst eine Position aus Kategorie und Beschreibung
+    items: data.items?.length
+      ? data.items.map(i => ({ ...i }))
+      : data.category
+        ? [{
+            description: data.description || '',
+            category: data.category,
+            amount: data.amount || 0,
+          }]
+        : [],
     // InvoiceForm liefert das Foto als imageBase64
     imageData: data.images?.[0] ?? (data as { imageBase64?: string }).imageBase64,
   })

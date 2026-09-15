@@ -10,9 +10,10 @@ import Textarea from 'primevue/textarea'
 import { computed, ref } from 'vue'
 import { z } from 'zod'
 import { useFormValidation } from '../composables/useFormValidation'
-import { useImageUpload } from '../composables/useImageUpload'
-import { DEFAULT_CURRENCY, LOCALE } from '../lib/locale'
+import { useInvoiceScan } from '../composables/useInvoiceScan'
+import { DEFAULT_CURRENCY, formatCurrency, LOCALE } from '../lib/locale'
 import { MAINTENANCE_CATEGORIES } from '../services/ai'
+import { fillEmptyFields } from '../services/invoice-scan'
 import { categoryLabel } from '../services/report'
 
 interface Props {
@@ -26,14 +27,11 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-const { imagePreview, imageBase64, error: imageError, isProcessing, handleFile } = useImageUpload()
-
-function onFileChange(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (file)
-    handleFile(file)
-}
+const scan = useInvoiceScan()
+const { imagePreview, imageBase64, pdfName } = scan
+const isScanning = computed(() => scan.status.value === 'preparing' || scan.status.value === 'scanning')
+// Hat der Nutzer die Währung selbst umgestellt, überschreibt der Scan sie nicht
+const currencyTouched = ref(false)
 
 // Form schema
 const invoiceSchema = z.object({
@@ -62,7 +60,23 @@ const formData = ref<InvoiceFormData>({
   category: props.initialData?.category,
   description: props.initialData?.description || '',
   mileage: props.initialData?.mileage,
+  items: props.initialData?.items ? [...props.initialData.items] : [],
 })
+
+async function onFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file)
+    return
+  const fields = await scan.handleFile(file)
+  if (fields)
+    formData.value = fillEmptyFields(formData.value, fields, { currencyTouched: currencyTouched.value })
+}
+
+function removeItem(index: number) {
+  formData.value.items = (formData.value.items ?? []).filter((_, i) => i !== index)
+}
 
 // Computed currency for InputNumber
 const selectedCurrency = computed(() => formData.value.currency || DEFAULT_CURRENCY)
@@ -90,6 +104,35 @@ function handleCancel() {
 <template>
   <form class="invoice-form" @submit.prevent="handleSubmit">
     <div class="form-grid">
+      <!-- Beleg zuerst: Foto oder PDF wird ausgerichtet, gelesen und füllt leere Felder -->
+      <div class="beleg">
+        <label class="upload-label" :class="{ disabled: isScanning }">
+          <i class="pi pi-camera" />
+          {{ imagePreview || pdfName ? 'Anderen Beleg wählen' : 'Beleg fotografieren oder PDF wählen' }}
+          <input
+            type="file"
+            accept="image/*,application/pdf"
+            class="file-input"
+            :disabled="isScanning"
+            @change="onFileChange"
+          >
+        </label>
+        <div v-if="isScanning" class="scan-status" role="status">
+          <i class="pi pi-spin pi-spinner" />
+          {{ scan.status.value === 'preparing' ? 'Beleg wird ausgerichtet …' : 'Beleg wird gelesen …' }}
+        </div>
+        <small v-else-if="scan.message.value" class="scan-message" :class="{ error: scan.status.value === 'error' }" role="status">
+          {{ scan.message.value }}
+        </small>
+        <div v-if="imagePreview" class="image-preview">
+          <img :src="imagePreview" alt="Beleg">
+        </div>
+        <div v-else-if="pdfName" class="pdf-name">
+          <i class="pi pi-file-pdf" /> {{ pdfName }}
+          <small>PDF wird nur gelesen, nicht als Bild gespeichert.</small>
+        </div>
+      </div>
+
       <FloatLabel>
         <InputText
           id="invoice-date"
@@ -133,6 +176,7 @@ function handleCancel() {
           option-label="label"
           option-value="value"
           class="currency-toggle"
+          @update:model-value="currencyTouched = true"
         />
       </div>
       <small v-if="errors.amount" class="error">{{ errors.amount }}</small>
@@ -151,54 +195,61 @@ function handleCancel() {
       </FloatLabel>
       <small v-if="errors.mileage" class="error">{{ errors.mileage }}</small>
 
-      <FloatLabel>
-        <Select
-          id="invoice-category"
-          v-model="formData.category"
-          name="category"
-          :options="categoryOptions"
-          option-label="label"
-          option-value="value"
-          fluid
-        />
-        <label for="invoice-category">Kategorie</label>
-      </FloatLabel>
-
-      <FloatLabel>
-        <Textarea
-          id="invoice-description"
-          v-model="formData.description"
-          name="description"
-          rows="3"
-          fluid
-        />
-        <label for="invoice-description">Beschreibung</label>
-      </FloatLabel>
-
-      <div class="image-upload">
-        <label class="upload-label">
-          <i class="pi pi-camera" />
-          Foto hinzufügen
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            class="file-input"
-            @change="onFileChange"
-          >
-        </label>
-        <small v-if="imageError" class="error">{{ imageError }}</small>
-        <div v-if="isProcessing" class="image-processing">
-          <i class="pi pi-spin pi-spinner" /> Wird verarbeitet...
+      <!-- Positionen aus dem Scan ersetzen Kategorie und Beschreibung -->
+      <div v-if="formData.items?.length" class="scan-items" aria-label="Erkannte Positionen">
+        <div class="scan-items-title">
+          Erkannte Positionen
         </div>
-        <div v-if="imagePreview" class="image-preview">
-          <img :src="imagePreview" alt="Vorschau">
+        <div v-for="(item, i) in formData.items" :key="i" class="scan-item">
+          <div class="scan-item-text">
+            <div>{{ item.description || categoryLabel(item.category) }}</div>
+            <small>{{ categoryLabel(item.category) }}</small>
+          </div>
+          <span class="scan-item-amount">{{ formatCurrency(item.amount, formData.currency) }}</span>
+          <Button
+            v-tooltip.left="'Position entfernen'"
+            type="button"
+            icon="pi pi-times"
+            text
+            rounded
+            severity="secondary"
+            size="small"
+            aria-label="Position entfernen"
+            @click="removeItem(i)"
+          />
         </div>
       </div>
+
+      <template v-else>
+        <FloatLabel>
+          <Select
+            id="invoice-category"
+            v-model="formData.category"
+            name="category"
+            :options="categoryOptions"
+            option-label="label"
+            option-value="value"
+            fluid
+          />
+          <label for="invoice-category">Kategorie</label>
+        </FloatLabel>
+
+        <FloatLabel>
+          <Textarea
+            id="invoice-description"
+            v-model="formData.description"
+            name="description"
+            rows="3"
+            fluid
+          />
+          <label for="invoice-description">Beschreibung</label>
+        </FloatLabel>
+      </template>
     </div>
 
     <div class="form-actions">
       <Button type="button" label="Abbrechen" severity="secondary" @click="handleCancel" />
-      <Button type="submit" label="Speichern" />
+      <Button type="submit" label="Speichern" :disabled="isScanning" />
     </div>
   </form>
 </template>
@@ -242,10 +293,79 @@ function handleCancel() {
   margin-top: calc(var(--spacing-xs) * -1);
 }
 
-.image-upload {
+.beleg {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+}
+
+.upload-label.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.scan-status,
+.scan-message {
+  color: var(--p-text-muted-color);
+  font-size: 0.85rem;
+}
+
+.scan-status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.pdf-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs) var(--spacing-sm);
+}
+
+.pdf-name small {
+  flex-basis: 100%;
+  color: var(--p-text-muted-color);
+}
+
+.scan-items {
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+}
+
+.scan-items-title {
+  padding: var(--spacing-sm) var(--spacing-md) 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--p-text-muted-color);
+}
+
+.scan-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.scan-item:last-child {
+  border-bottom: none;
+}
+
+.scan-item-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.scan-item-text small {
+  color: var(--p-text-muted-color);
+}
+
+.scan-item-amount {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .upload-label {
@@ -271,11 +391,6 @@ function handleCancel() {
   height: 1px;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
-}
-
-.image-processing {
-  color: var(--p-text-muted-color);
-  font-size: var(--text-sm);
 }
 
 .image-preview {

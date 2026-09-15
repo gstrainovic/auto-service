@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
+import { clearInstantDB, expect, mockInvoiceScan, test } from './fixtures/test-fixtures'
 
 async function createTestVehicle(page: any) {
   await page.goto('/vehicles')
@@ -15,6 +15,8 @@ async function createTestVehicle(page: any) {
 
 test.describe('Image Upload', () => {
   test.beforeEach(async ({ page }) => {
+    // Das Formular scannt jeden Beleg; hier ohne echte Mistral-Aufrufe
+    await mockInvoiceScan(page)
     await clearInstantDB(page)
   })
 

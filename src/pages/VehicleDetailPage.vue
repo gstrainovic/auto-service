@@ -475,8 +475,8 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
 
           <TabPanel value="costs">
             <div class="tab-header costs-actions">
-              <Button icon="pi pi-file-excel" label="CSV für Excel" severity="secondary" outlined :disabled="!vehicleInvoices.length" @click="exportCsv" />
-              <Button icon="pi pi-file-pdf" label="PDF-Dossier" severity="primary" @click="exportPdf" />
+              <Button v-tooltip.bottom="'Alle Rechnungspositionen als Tabelle für Excel'" icon="pi pi-file-excel" label="CSV für Excel" severity="secondary" outlined :disabled="!vehicleInvoices.length" @click="exportCsv" />
+              <Button v-tooltip.bottom="'Stammdaten, Wartungen, Kosten und Rechnungen, z. B. für den Verkauf'" icon="pi pi-file-pdf" label="PDF-Dossier" severity="primary" @click="exportPdf" />
             </div>
             <div v-if="yearCosts.length" class="costs-table-wrap">
               <table class="costs-table" aria-label="Kosten pro Jahr">
@@ -515,14 +515,14 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
               <div class="costs-grand">
                 Gesamt {{ grandTotals }}
               </div>
-              <p class="costs-hint">
-                <template v-if="convertedCount > 0">
-                  {{ convertedCount }} {{ convertedCount === 1 ? 'Rechnung' : 'Rechnungen' }} in fremder Währung zum EZB-Kurs am Rechnungsdatum in {{ settings.homeCurrency }} umgerechnet.
-                </template>
-                <template v-if="unconvertedCount > 0">
-                  {{ unconvertedCount }} {{ unconvertedCount === 1 ? 'Rechnung' : 'Rechnungen' }} in fremder Währung ohne Kurs (offline?), eigene Zeile.
-                </template>
-                Positionen nach Kategorie. CSV öffnet sich in Excel mit Schweizer Format; das PDF enthält Stammdaten, Wartungshistorie, Kosten und Rechnungen.
+              <!-- Nur Hinweise, die zur Tabelle gehören, je eine Zeile; Erklärungen der Exporte stehen als Tooltip an den Knöpfen -->
+              <p v-if="convertedCount > 0" class="costs-hint">
+                <i class="pi pi-info-circle" />
+                {{ convertedCount }} {{ convertedCount === 1 ? 'Rechnung' : 'Rechnungen' }} in fremder Währung, zum EZB-Kurs am Rechnungsdatum in {{ settings.homeCurrency }} umgerechnet.
+              </p>
+              <p v-if="unconvertedCount > 0" class="costs-hint">
+                <i class="pi pi-exclamation-circle" />
+                {{ unconvertedCount }} {{ unconvertedCount === 1 ? 'Rechnung' : 'Rechnungen' }} in fremder Währung ohne Kurs, in eigener Spalte ausgewiesen.
               </p>
             </div>
             <div v-else class="empty-state">
@@ -1123,8 +1123,15 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
 }
 
 .costs-hint {
-  margin: 0.75rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
   color: var(--p-text-muted-color);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+}
+
+.costs-hint .pi {
+  font-size: 0.8rem;
 }
 </style>

@@ -23,6 +23,10 @@
   --spacing-xl: 2rem;
   --spacing-2xl: 3rem;
 
+  /* Aliasse für ältere Namen in den Seiten (PrimeVue 3); ohne sie fielen Nebentexte auf volle Textfarbe zurück */
+  --text-color-secondary: var(--p-text-muted-color);
+  --border-radius: var(--radius-md);
+
   /* Border Radius */
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;

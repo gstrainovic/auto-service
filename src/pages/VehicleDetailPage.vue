@@ -538,14 +538,12 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
     <Dialog
       :visible="!!selectedInvoice"
       modal
-      header=""
-      :style="{ minWidth: '340px', maxWidth: '90vw' }"
+      :header="selectedInvoice?.workshopName || 'Rechnung'"
+      class="invoice-dialog"
+      :style="{ width: 'min(560px, 92vw)' }"
       @update:visible="v => { if (!v) selectedInvoice = null }"
     >
       <template v-if="selectedInvoice">
-        <div class="dialog-header">
-          {{ selectedInvoice.workshopName }}
-        </div>
         <div class="dialog-subheader">
           {{ formatDate(selectedInvoice.date) }} · {{ formatCurrency(selectedInvoice.totalAmount, normalizeCurrency(selectedInvoice.currency)) }}{{ selectedInvoice.mileageAtService ? ` · ${formatNumber(selectedInvoice.mileageAtService)} km` : '' }}
         </div>
@@ -583,9 +581,9 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
         </div>
 
         <div class="dialog-actions">
-          <Button label="Bearbeiten" text severity="primary" @click="openEditInvoice(selectedInvoice!)" />
-          <Button label="Löschen" text severity="danger" @click="confirmDeleteInvoice = true" />
-          <Button label="Schliessen" text @click="selectedInvoice = null" />
+          <!-- Schliessen über das X oben rechts oder Escape; unten nur die zwei Aktionen, damit sie auch am Handy in eine Zeile passen -->
+          <Button label="Löschen" icon="pi pi-trash" text severity="danger" class="action-destructive" @click="confirmDeleteInvoice = true" />
+          <Button label="Bearbeiten" icon="pi pi-pencil" @click="openEditInvoice(selectedInvoice!)" />
         </div>
       </template>
     </Dialog>
@@ -931,16 +929,10 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
   margin-bottom: 0.5rem;
 }
 
-.dialog-header {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-}
-
 .dialog-subheader {
   font-size: 0.875rem;
   color: var(--text-color-secondary);
-  margin-bottom: 1rem;
+  margin: -0.25rem 0 1.5rem;
 }
 
 .invoice-image-section {
@@ -963,13 +955,16 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
 }
 
 .items-section {
-  margin-top: 1rem;
+  margin-top: 1.25rem;
 }
 
 .items-title {
-  font-size: 1rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  margin-bottom: 0.5rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-color-secondary);
+  margin-bottom: 0.625rem;
 }
 
 .items-list {
@@ -979,8 +974,9 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
 
 .position-item {
   display: flex;
-  align-items: center;
-  padding: 0.5rem 0.75rem;
+  align-items: flex-start;
+  gap: 1.5rem;
+  padding: 0.875rem 1rem;
   border-bottom: 1px solid var(--surface-border);
 }
 
@@ -990,26 +986,37 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
 
 .position-content {
   flex: 1;
+  min-width: 0;
 }
 
 .position-label {
   font-weight: 500;
+  line-height: 1.4;
 }
 
 .position-caption {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: var(--text-color-secondary);
+  margin-top: 0.25rem;
 }
 
 .position-amount {
-  font-weight: 500;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 1rem;
+  margin-top: 1.75rem;
+}
+
+.dialog-actions .action-destructive {
+  margin-right: auto;
 }
 
 .edit-form {

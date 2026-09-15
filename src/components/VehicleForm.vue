@@ -4,6 +4,7 @@ import FloatLabel from 'primevue/floatlabel'
 import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import { reactive, watchEffect } from 'vue'
+import { LOCALE } from '../lib/locale'
 
 const props = defineProps<{
   initialData?: {
@@ -82,6 +83,7 @@ function onSubmit(event: Event): void {
         v-model="form.mileage"
         input-id="mileage"
         :min="0"
+        :locale="LOCALE"
         suffix=" km"
         required
         class="w-full"

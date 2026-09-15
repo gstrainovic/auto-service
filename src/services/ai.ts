@@ -343,15 +343,16 @@ export async function parseInvoice(
   return parseWithOcrPipeline(imageBase64, access, invoiceSchema, INVOICE_PROMPT, modelId)
 }
 
-/** Rechnung aus einem PDF: alle Seiten per OCR lesen, dann gemeinsam auswerten */
+/** Rechnung aus einem PDF: alle Seiten per OCR lesen, dann gemeinsam auswerten; `pages` für den Hinweis bei Sammel-PDFs */
 export async function parseInvoicePdf(
   pdfBase64: string,
   access: AiAccess,
   modelId?: string,
-): Promise<ParsedInvoice> {
+): Promise<{ invoice: ParsedInvoice, pages: number }> {
   const pages = await withRetry(() => callMistralOcrPdf(pdfBase64, access))
   const text = pages.map((t, i) => `--- Seite ${i + 1} ---\n${t}`).join('\n\n')
-  return parseOcrText(text, access, invoiceSchema, INVOICE_PROMPT, modelId)
+  const invoice = await parseOcrText(text, access, invoiceSchema, INVOICE_PROMPT, modelId)
+  return { invoice, pages: pages.length }
 }
 
 const VEHICLE_DOC_PROMPT = 'Analysiere dieses Fahrzeugdokument (Kaufvertrag, Fahrzeugschein oder Zulassungsbescheinigung). Extrahiere alle Fahrzeugdaten. Antworte auf Deutsch.'

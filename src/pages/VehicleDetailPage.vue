@@ -22,7 +22,7 @@ import MaintenanceFormDialog from '../components/MaintenanceFormDialog.vue'
 import MediaViewer from '../components/MediaViewer.vue'
 import VehicleForm from '../components/VehicleForm.vue'
 import { db } from '../lib/instantdb'
-import { DEFAULT_CURRENCY, formatCurrency, formatDate, formatNumber, normalizeCurrency } from '../lib/locale'
+import { DEFAULT_CURRENCY, formatCurrency, formatDate, formatNumber, LOCALE, normalizeCurrency } from '../lib/locale'
 import { MAINTENANCE_CATEGORIES } from '../services/ai'
 import { resolveRates } from '../services/fx'
 import { buildDossier, dossierFilename } from '../services/pdf-report'
@@ -615,7 +615,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
         </div>
         <div class="form-field">
           <label for="invoice-total">Gesamtbetrag</label>
-          <InputNumber id="invoice-total" v-model="editInvoiceForm.totalAmount" mode="decimal" :min-fraction-digits="2" class="w-full" input-id="invoice-total-input" />
+          <InputNumber id="invoice-total" v-model="editInvoiceForm.totalAmount" mode="decimal" :min-fraction-digits="2" :locale="LOCALE" class="w-full" input-id="invoice-total-input" />
         </div>
         <div class="form-field">
           <label for="invoice-currency">Währung</label>
@@ -630,7 +630,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
         </div>
         <div class="form-field">
           <label for="invoice-mileage">Kilometerstand</label>
-          <InputNumber id="invoice-mileage" v-model="editInvoiceForm.mileageAtService" class="w-full" input-id="invoice-mileage-input" />
+          <InputNumber id="invoice-mileage" v-model="editInvoiceForm.mileageAtService" :locale="LOCALE" class="w-full" input-id="invoice-mileage-input" />
         </div>
 
         <div class="items-section">
@@ -647,7 +647,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
               placeholder="Kategorie"
               class="category-input"
             />
-            <InputNumber v-model="item.amount" mode="decimal" :min-fraction-digits="2" placeholder="Betrag" class="amount-input" />
+            <InputNumber v-model="item.amount" mode="decimal" :min-fraction-digits="2" :locale="LOCALE" placeholder="Betrag" class="amount-input" />
             <Button v-tooltip.top="'Position entfernen'" aria-label="Position entfernen" icon="pi pi-minus-circle" text rounded severity="secondary" @click="removeInvoiceItem(i)" />
           </div>
           <Button icon="pi pi-plus" label="Position hinzufügen" text @click="addInvoiceItem" />
@@ -690,7 +690,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
         </div>
         <div class="form-field">
           <label for="maintenance-mileage">Kilometerstand</label>
-          <InputNumber id="maintenance-mileage" v-model="editMaintenanceForm.mileageAtService" class="w-full" input-id="maintenance-mileage-input" />
+          <InputNumber id="maintenance-mileage" v-model="editMaintenanceForm.mileageAtService" :locale="LOCALE" class="w-full" input-id="maintenance-mileage-input" />
         </div>
         <div class="form-field">
           <label for="maintenance-next-date">Nächster Termin</label>
@@ -698,7 +698,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
         </div>
         <div class="form-field">
           <label for="maintenance-next-mileage">Nächster Kilometerstand</label>
-          <InputNumber id="maintenance-next-mileage" v-model="editMaintenanceForm.nextDueMileage" class="w-full" input-id="maintenance-next-mileage-input" />
+          <InputNumber id="maintenance-next-mileage" v-model="editMaintenanceForm.nextDueMileage" :locale="LOCALE" class="w-full" input-id="maintenance-next-mileage-input" />
         </div>
         <div class="form-field">
           <label for="maintenance-status">Status</label>

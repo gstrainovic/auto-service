@@ -187,6 +187,7 @@ function handleCancel() {
           v-model="formData.mileage"
           name="mileage"
           :use-grouping="true"
+          :locale="LOCALE"
           suffix=" km"
           :invalid="!!errors.mileage"
           fluid

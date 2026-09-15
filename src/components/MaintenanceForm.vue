@@ -9,6 +9,7 @@ import Textarea from 'primevue/textarea'
 import { ref } from 'vue'
 import { z } from 'zod'
 import { useFormValidation } from '../composables/useFormValidation'
+import { LOCALE } from '../lib/locale'
 import { MAINTENANCE_CATEGORIES } from '../services/ai'
 import { categoryLabel } from '../services/report'
 
@@ -103,6 +104,7 @@ function handleCancel() {
           v-model="formData.mileage"
           name="mileage"
           :use-grouping="true"
+          :locale="LOCALE"
           suffix=" km"
           :invalid="!!errors.mileage"
           fluid

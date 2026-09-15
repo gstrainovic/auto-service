@@ -10,7 +10,11 @@ import { getAiAccess } from '../services/ai-access'
 import { scannedToFormFields } from '../services/invoice-scan'
 import { autoRotateForDocument, getImageMimeType, resizeImage } from './useImageResize'
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
+// Fotos werden ohnehin verkleinert; PDFs gehen unverändert an Mistral OCR (dort max. 50 MB, wie im Chat)
+const MAX_IMAGE_SIZE = 25 * 1024 * 1024
+const MAX_PDF_SIZE = 50 * 1024 * 1024
+/** Ab so vielen Seiten ist ein PDF eher ein Stapel Rechnungen als eine; dann auf den Chat verweisen */
+const MULTI_INVOICE_PAGES = 3
 
 export type ScanStatus = 'idle' | 'preparing' | 'scanning' | 'done' | 'error'
 
@@ -39,9 +43,9 @@ export function useInvoiceScan() {
       message.value = 'Nur Fotos oder PDF möglich.'
       return null
     }
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > (isPdf ? MAX_PDF_SIZE : MAX_IMAGE_SIZE)) {
       status.value = 'error'
-      message.value = 'Datei zu gross (max. 10 MB).'
+      message.value = `Datei zu gross (max. ${isPdf ? 50 : 25} MB).`
       return null
     }
 
@@ -51,11 +55,14 @@ export function useInvoiceScan() {
     try {
       status.value = 'preparing'
       let fields: ScannedFields
+      let pages = 1
       if (isPdf) {
         pdfName.value = file.name
         const pdfBase64 = await readAsBase64(file)
         status.value = 'scanning'
-        fields = scannedToFormFields(await parseInvoicePdf(pdfBase64, await getAiAccess()))
+        const result = await parseInvoicePdf(pdfBase64, await getAiAccess())
+        pages = result.pages
+        fields = scannedToFormFields(result.invoice)
       }
       else {
         const { base64 } = await resizeImage(file)
@@ -69,6 +76,8 @@ export function useInvoiceScan() {
       message.value = Object.keys(fields).length
         ? 'Felder aus dem Beleg ausgefüllt. Bitte prüfen.'
         : 'Auf dem Beleg war nichts Verwertbares zu lesen. Bitte Felder selbst ausfüllen.'
+      if (pages >= MULTI_INVOICE_PAGES)
+        message.value += ` Das PDF hat ${pages} Seiten. Enthält es mehrere Rechnungen, im Chat hochladen, dort wird jede einzeln erfasst.`
       return fields
     }
     catch (err) {

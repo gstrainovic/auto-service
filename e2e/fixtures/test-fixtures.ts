@@ -57,14 +57,17 @@ export const SCAN_INVOICE = {
  * Fotos: jede Auswertung liefert der Reihe nach einen Eintrag aus `photos` (Standard: SCAN_INVOICE).
  * PDFs: die OCR liefert eine Seite pro Eintrag in `pdfPages` (Text «MOCK-SEITE-n»), die Seitenauswertung den
  * passenden Eintrag; `kind` ist rechnung (Standard), fortsetzung oder andere. `ocrStatus` simuliert Fehler.
+ * Fahrzeugdokumente (Prompt «Fahrzeugdokument»): Antwort `vehicleDoc` (Standard: Werte des Beispiel-Fahrzeugausweises).
  */
 export async function mockInvoiceScan(page: Page, opts: {
   photos?: Record<string, unknown>[]
   pdfPages?: Record<string, unknown>[]
+  vehicleDoc?: Record<string, unknown>
   ocrStatus?: number
   ocrError?: string
 } = {}) {
   const photos = opts.photos ?? [SCAN_INVOICE]
+  const vehicleDoc = opts.vehicleDoc ?? { documentType: 'fahrzeugausweis', make: 'SAURER', model: '3 DUX', year: 1964, vin: '2 100 728', plate: 'BS', mileage: 405260 }
   const pdfPages = (opts.pdfPages ?? [SCAN_INVOICE]).map(p => ({ kind: 'rechnung', ...p }))
   let photoCall = 0
   await page.route('**/localhost:8787/v1/ocr', (route) => {
@@ -77,8 +80,11 @@ export async function mockInvoiceScan(page: Page, opts: {
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ pages }) })
   })
   await page.route('**/localhost:8787/v1/chat/completions', (route) => {
-    const pageNo = /MOCK-SEITE-(\d+)/.exec(route.request().postData() ?? '')?.[1]
-    const content = pageNo ? pdfPages[Number(pageNo) - 1] : photos[photoCall++ % photos.length]
+    const body = route.request().postData() ?? ''
+    const pageNo = /MOCK-SEITE-(\d+)/.exec(body)?.[1]
+    const content = body.includes('Fahrzeugdokument')
+      ? vehicleDoc
+      : pageNo ? pdfPages[Number(pageNo) - 1] : photos[photoCall++ % photos.length]
     return route.fulfill({
       status: 200,
       contentType: 'application/json',

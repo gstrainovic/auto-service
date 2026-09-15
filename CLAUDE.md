@@ -209,6 +209,10 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - >8 Bilder: OCR-Text wird verwendet, Bilder nicht an Vision-Modell gesendet
 - Regelbasierte Kategorie-Korrektur: Keywords überschreiben AI-Zuordnung (z.B. "Auspuff" → auspuff), einzige Quelle
   `src/services/category-correction.ts` (Chat und Formular)
+- Fahrzeugausweis-Scan im Formular «Neues Fahrzeug» (`src/composables/useVehicleScan.ts`, Bereinigung in
+  `src/services/vehicle-scan.ts`): Foto nicht pauschal hochkant drehen (`expectPortrait: false`, der Ausweis liegt quer),
+  Prompt kennt die nummerierten Felder des Schweizer Ausweises (15 Schild, 21 Marke und Typ, 23 Fahrgestell-Nr.,
+  36 1. Inverkehrsetzung). Test-Bild ist der gemeinfreie Ausweis von Wikimedia (`e2e/fixtures/LIZENZEN.md`).
 - Nachkontrolle der Positionen (`src/services/invoice-items.ts`), für Chat, Formular und Sammel-PDF: ergeben die
   Positionen mehr als das Total, werden aufeinanderfolgende Positionen mit gleichem Betrag zusammengefasst (typisch:
   mehrere Beschreibungszeilen unter einer Arbeitszeile), nur wenn die Summe danach passt. Bleibt die Summe zu hoch,
@@ -308,6 +312,25 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 - InputNumber: Label nur mit `input-id` verknüpft, nicht mit `id`
 - `v-tooltip` Direktive muss in `main.ts` registriert werden: `app.directive('tooltip', Tooltip)`
 - Labels mit `*` brechen `getByLabel` — Labels ohne `*` oder Regex verwenden
+
+## Abläufe prüfen, nicht nur Seiten
+
+Lücken wie «der Chat liest den Fahrzeugausweis, das Formular nicht» sieht man auf keiner einzelnen Seite. Vor einer
+Fertigmeldung bei Änderungen an Formularen, Chat-Tools oder Navigation die betroffenen Kernabläufe durchgehen und
+prüfen, ob jeder Einstieg (Dashboard, Fahrzeugliste, Fahrzeugseite, Formular, Chat, E-Mail-Link, Handy) dasselbe kann:
+
+1. Neues Fahrzeug erfassen (leeres Dashboard und weiteres Fahrzeug)
+2. Erste Rechnung und alte Belege nachtragen (Foto, mehrere Fotos, Sammel-PDF)
+3. Wartung ohne Rechnung eintragen
+4. Serviceheft-Intervalle hinterlegen und Fälligkeiten verstehen
+5. Kosten exportieren (ein Fahrzeug, alle Fahrzeuge)
+6. Erinnerung erhalten und Arbeit als erledigt eintragen
+7. Fahrzeug verkaufen oder abgeben
+8. Kilometerstand aktuell halten
+9. Betrieb: über alle Fahrzeuge sehen, was fällig ist
+
+KI-Funktionen zusätzlich mit echtem Material testen, nicht nur mit Mocks: Fotos und PDF in `tmp/` (lokal),
+Fahrzeugausweis in `e2e/fixtures/`, `npx playwright test e2e/invoice-scan-real.spec.ts --project=ai-soft`.
 
 ## Code Style
 - German UI text and AI schema descriptions

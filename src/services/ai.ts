@@ -48,13 +48,13 @@ const invoiceSchema = z.object({
 export type ParsedInvoice = z.infer<typeof invoiceSchema>
 
 const vehicleDocumentSchema = z.object({
-  documentType: z.string().describe('Art des Dokuments: kaufvertrag, fahrzeugschein, sonstiges'),
-  make: z.string().describe('Marke des Fahrzeugs'),
-  model: z.string().describe('Modell des Fahrzeugs'),
-  year: z.number().describe('Baujahr oder Erstzulassung'),
-  vin: z.string().nullable().optional().describe('Fahrgestellnummer (VIN) falls sichtbar'),
-  plate: z.string().nullable().optional().describe('Kennzeichen falls sichtbar'),
-  mileage: z.number().nullable().optional().describe('Kilometerstand falls angegeben'),
+  documentType: z.string().describe('Art des Dokuments: fahrzeugausweis, kaufvertrag, fahrzeugschein, sonstiges'),
+  make: z.string().describe('Marke des Fahrzeugs (Schweizer Fahrzeugausweis: erster Teil von Feld 21 «Marke und Typ»)'),
+  model: z.string().describe('Modell/Typ (Fahrzeugausweis: Rest von Feld 21, z. B. «SAURER 3 DUX» → Modell «3 DUX»)'),
+  year: z.number().describe('Vierstelliges Jahr der 1. Inverkehrsetzung (Fahrzeugausweis Feld 36, «03.64» → 1964), sonst Baujahr'),
+  vin: z.string().nullable().optional().describe('Fahrgestellnummer (Fahrzeugausweis Feld 23) wie gedruckt, bei neueren Fahrzeugen 17-stellige VIN'),
+  plate: z.string().nullable().optional().describe('Kontrollschild (Fahrzeugausweis Feld 15, z. B. «SG 218574»); steht nur das Kantonskürzel, nur dieses'),
+  mileage: z.number().nullable().optional().describe('Kilometerstand, auch aus Vermerken (Fahrzeugausweis Feld 13/14, z. B. «KM-STAND: 405260»)'),
   engineType: z.string().nullable().optional().describe('Motortyp: Diesel, Benzin, Elektro, Hybrid'),
   enginePower: z.string().nullable().optional().describe('Leistung z.B. 140 kW / 190 PS'),
   purchaseDate: z.string().nullable().optional().describe('Kaufdatum im Format YYYY-MM-DD'),
@@ -399,7 +399,13 @@ export async function parseInvoicesPdf(
   return { invoices: mergePdfPages(results), pages: texts.length }
 }
 
-const VEHICLE_DOC_PROMPT = 'Analysiere dieses Fahrzeugdokument (Kaufvertrag, Fahrzeugschein oder Zulassungsbescheinigung). Extrahiere alle Fahrzeugdaten. Antworte auf Deutsch.'
+const VEHICLE_DOC_PROMPT = `Analysiere dieses Fahrzeugdokument (Schweizer Fahrzeugausweis, Kaufvertrag, deutscher Fahrzeugschein oder Zulassungsbescheinigung). Extrahiere die Fahrzeugdaten. Antworte auf Deutsch.
+
+Schweizer Fahrzeugausweis: Die Felder sind nummeriert und viersprachig beschriftet (Deutsch, Französisch, Italienisch, Rätoromanisch).
+- 15 Schild/Plaque: Kontrollschild. 21 Marke und Typ. 23 Fahrgestell-Nr. 36 1. Inverkehrsetzung (Monat.Jahr, zweistelliges Jahr vierstellig ergänzen).
+- 18 Stammnummer und 24 Typengenehmigung sind NICHT die Fahrgestellnummer.
+- Halter (Name, Wohnort) gehört nicht zu den Fahrzeugdaten.
+- Kilometerstand steht nur in Vermerken (13/14), wenn überhaupt; sonst weglassen.`
 
 export async function parseVehicleDocument(
   imageBase64: string,
@@ -407,6 +413,17 @@ export async function parseVehicleDocument(
   modelId?: string,
 ): Promise<ParsedVehicleDocument> {
   return parseWithOcrPipeline(imageBase64, access, vehicleDocumentSchema, VEHICLE_DOC_PROMPT, modelId)
+}
+
+/** Fahrzeugdokument als PDF: alle Seiten per OCR, gemeinsam auswerten (Ausweis und Kaufvertrag sind kurz) */
+export async function parseVehicleDocumentPdf(
+  pdfBase64: string,
+  access: AiAccess,
+  modelId?: string,
+): Promise<ParsedVehicleDocument> {
+  const pages = await withRetry(() => callMistralOcrPdf(pdfBase64, access))
+  const text = pages.map((t, i) => `--- Seite ${i + 1} ---\n${t}`).join('\n\n')
+  return parseOcrText(text, access, vehicleDocumentSchema, VEHICLE_DOC_PROMPT, modelId)
 }
 
 const SERVICE_BOOK_PROMPT = 'Analysiere diese Service-Heft Seite. Extrahiere alle Wartungseinträge mit Datum, Kilometerstand und durchgeführten Arbeiten. Falls Hersteller-Wartungsintervalle sichtbar sind, extrahiere diese ebenfalls. Antworte auf Deutsch.'

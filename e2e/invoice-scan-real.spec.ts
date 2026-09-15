@@ -76,6 +76,29 @@ test.describe('Beleg-Scan mit echtem Mistral @soft', () => {
     })
   }
 
+  test('Fahrzeugausweis (Wikimedia, gemeinfrei) füllt das Fahrzeugformular @soft', async ({ page }) => {
+    await page.goto('/vehicles?action=add')
+    const dialog = page.locator('[data-pc-name="dialog"]')
+    await dialog.locator('input[type="file"]').setInputFiles(path.join(import.meta.dirname, 'fixtures', 'fahrzeugausweis-schweiz.jpg'))
+    await expect(dialog.getByText(/Felder aus dem Dokument ausgefüllt|Felder bitte selbst ausfüllen|keine Fahrzeugdaten/)).toBeVisible({ timeout: 150_000 })
+    const values = {
+      make: await dialog.getByLabel('Marke').inputValue(),
+      model: await dialog.getByLabel('Modell').inputValue(),
+      year: await dialog.getByLabel('Baujahr').inputValue(),
+      mileage: await dialog.getByLabel('Kilometerstand').inputValue(),
+      plate: await dialog.getByLabel('Kennzeichen').inputValue(),
+      vin: await dialog.locator('#vin').inputValue(),
+    }
+    // eslint-disable-next-line no-console
+    console.log('[real-scan] fahrzeugausweis', JSON.stringify(values))
+    expect(values.make).toMatch(/saurer/i)
+    expect(values.model).toMatch(/3\s*DUX/i)
+    expect(values.year).toBe('1964')
+    expect(values.mileage).toBe('405’260 km')
+    expect(values.plate).toMatch(/^BS/)
+    expect(values.vin.replace(/\s/g, '')).toBe('2100728')
+  })
+
   test('Sammel-PDF wird in einzelne Rechnungen aufgeteilt @soft', async ({ page }) => {
     test.skip(!fs.existsSync(pdf), 'tmp/test-images-9pages.pdf fehlt')
     // 22 MB, 9 Seiten: OCR und Auswertung dauern rund drei Minuten

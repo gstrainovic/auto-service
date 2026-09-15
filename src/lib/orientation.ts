@@ -14,11 +14,14 @@ export interface OrientationInput {
 /** Ab dieser Sicherheit wird ein Hochformat-Beleg gedreht; darunter ist ein aufrechtes Foto wahrscheinlicher als ein Fehler */
 export const PORTRAIT_MIN_CONFIDENCE = 2
 
-export function rotationFor({ width, height, degrees, confidence }: OrientationInput): 0 | 90 | 180 | 270 {
-  // Querformat: Belege sind fast immer Hochformat, ein quer liegendes Foto ist also gedreht
-  if (width > height)
+/**
+ * `expectPortrait`: Rechnungen sind fast immer Hochformat, ein quer liegendes Foto ist also gedreht (Standard).
+ * Der Fahrzeugausweis ist aufgeklappt quer; dort nur nach sicher erkanntem Winkel drehen.
+ */
+export function rotationFor({ width, height, degrees, confidence }: OrientationInput, opts: { expectPortrait?: boolean } = {}): 0 | 90 | 180 | 270 {
+  if (width > height && opts.expectPortrait !== false)
     return degrees === 0 ? 90 : degrees
-  // Hochformat: nur bei sicher erkanntem Winkel drehen (z. B. auf dem Kopf stehend fotografiert)
+  // sonst nur bei sicher erkanntem Winkel drehen (z. B. auf dem Kopf stehend fotografiert)
   if (degrees !== 0 && (confidence ?? 0) >= PORTRAIT_MIN_CONFIDENCE)
     return degrees
   return 0

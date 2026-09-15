@@ -149,6 +149,7 @@ async function detectOrientation(base64: string): Promise<{ degrees: 0 | 90 | 18
  */
 export async function autoRotateForDocument(
   base64: string,
+  opts: { expectPortrait?: boolean } = {},
 ): Promise<string> {
   const { mime } = getOutputFormat()
   const resp = await fetch(`data:${mime};base64,${base64}`)
@@ -158,6 +159,6 @@ export async function autoRotateForDocument(
   bitmap.close()
 
   const detected = await detectOrientation(base64)
-  const degrees = rotationFor({ width, height, ...detected })
+  const degrees = rotationFor({ width, height, ...detected }, opts)
   return degrees === 0 ? base64 : rotateBase64Image(base64, degrees)
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BatchEntry } from '../services/invoice-scan'
+import type { BatchEntry, BatchVehicle } from '../services/invoice-scan'
 import type { InvoiceFormData } from '../types/forms'
 import Dialog from 'primevue/dialog'
 import { computed } from 'vue'
@@ -8,7 +8,9 @@ import InvoiceForm from './InvoiceForm.vue'
 interface Props {
   visible: boolean
   initialData?: Partial<InvoiceFormData>
-  existingInvoices?: { date: string, totalAmount?: number }[]
+  existingInvoices?: { vehicleId?: string, date: string, totalAmount?: number }[]
+  vehicles?: BatchVehicle[]
+  vehicleId?: string
   title?: string
 }
 
@@ -54,6 +56,8 @@ function handleCancel() {
     <InvoiceForm
       :initial-data="initialData"
       :existing-invoices="existingInvoices"
+      :vehicles="vehicles"
+      :vehicle-id="vehicleId"
       @submit="handleSubmit"
       @submit-batch="handleSubmitBatch"
       @cancel="handleCancel"

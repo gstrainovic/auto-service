@@ -272,4 +272,79 @@ test.describe('Beleg-Scan im Rechnungsformular', () => {
     expect(stored.map((i: any) => i.workshopName)).toEqual(['Pneu Egger'])
     expect(stored[0].imageData?.length).toBeGreaterThan(100)
   })
+
+  test('IS-010: Rechnung übers Formular legt Wartungen je Kategorie an und hebt den Kilometerstand', async ({ page }) => {
+    await mockInvoiceScan(page, {
+      photos: [{
+        ...SCAN_INVOICE,
+        date: '2026-06-01',
+        mileageAtService: 260000,
+        currency: 'CHF',
+        totalAmount: 520,
+        items: [
+          { description: 'Ölwechsel', category: 'oelwechsel', amount: 180 },
+          { description: 'Ölfilter', category: 'oelwechsel', amount: 40 },
+          { description: 'Bremsbeläge vorne', category: 'bremsen', amount: 300 },
+        ],
+      }],
+    })
+    const vehicleId = await openInvoiceForm(page)
+    const dialog = page.locator('[data-pc-name="dialog"]')
+    await dialog.locator('input[type="file"]').setInputFiles(fixture('test-invoice.png'))
+    await expect(dialog.getByText('Felder aus dem Beleg ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 30_000 })
+    await dialog.getByRole('button', { name: 'Speichern' }).click()
+    await expect(dialog).not.toBeVisible({ timeout: 5000 })
+
+    const state = await page.evaluate(async (id) => {
+      const { db } = (window as any).__instantdb
+      const r = await db.queryOnce({ invoices: {}, maintenances: {}, vehicles: {} })
+      const invoice = (r.data.invoices || []).find((i: any) => i.vehicleId === id)
+      return {
+        maintenances: (r.data.maintenances || []).filter((m: any) => m.vehicleId === id).map((m: any) => [m.type, m.doneAt, m.invoiceId === invoice?.id]).sort(),
+        mileage: (r.data.vehicles || []).find((v: any) => v.id === id)?.mileage,
+      }
+    }, vehicleId)
+    expect(state.maintenances).toEqual([['bremsen', '2026-06-01', true], ['oelwechsel', '2026-06-01', true]])
+    expect(state.mileage).toBe(260000)
+
+    // Dashboard: Ölwechsel ist nicht mehr «Kein Eintrag»
+    await page.goto('/dashboard')
+    const oil = page.locator('.maintenance-item', { hasText: 'Ölwechsel' }).first()
+    await expect(oil).toContainText('01.06.2026')
+  })
+
+  test('IS-011: Sammel-PDF ordnet Rechnungen per Kontrollschild dem richtigen Fahrzeug zu', async ({ page }) => {
+    await mockInvoiceScan(page, {
+      pdfPages: [
+        { ...SCAN_INVOICE, workshopName: 'Garage A', date: '2025-02-01', totalAmount: 200, currency: 'CHF', licensePlate: 'SG 218574' },
+        { ...SCAN_INVOICE, workshopName: 'Garage B', date: '2025-03-01', totalAmount: 300, currency: 'CHF', licensePlate: 'SG5' },
+        { ...SCAN_INVOICE, workshopName: 'Garage C', date: '2025-04-01', totalAmount: 400, currency: 'CHF', licensePlate: 'ZH 99' },
+      ],
+    })
+    const porsche = await openInvoiceForm(page)
+    const caddy = await page.evaluate(async () => {
+      const { db, tx, id: genId } = (window as any).__instantdb
+      const v = genId()
+      const now = new Date().toISOString()
+      await db.transact([tx.vehicles[v].update({ make: 'VW', model: 'Caddy', year: 2019, mileage: 68500, licensePlate: 'SG 5', createdAt: now, updatedAt: now })])
+      return v as string
+    })
+    const dialog = page.locator('[data-pc-name="dialog"]')
+    await dialog.locator('input[type="file"]').setInputFiles({ name: 'stapel.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n%%EOF') })
+    await expect(dialog.getByText(/3 Rechnungen erkannt, 2 mit anderem Kontrollschild/)).toBeVisible({ timeout: 30_000 })
+
+    const rows = dialog.getByLabel('Erkannte Rechnungen').locator('.batch-row')
+    await expect(rows.nth(1)).toContainText('Kontrollschild SG 5: VW Caddy')
+    await expect(rows.nth(2)).toContainText('Kontrollschild ZH 99 gehört zu keinem Fahrzeug')
+    await expect(rows.nth(2).getByRole('checkbox')).not.toBeChecked()
+
+    await dialog.getByRole('button', { name: '2 Rechnungen speichern' }).click()
+    await expect(dialog).not.toBeVisible({ timeout: 5000 })
+    const byVehicle = await page.evaluate(async () => {
+      const { db } = (window as any).__instantdb
+      const r = await db.queryOnce({ invoices: {} })
+      return (r.data.invoices || []).map((i: any) => [i.workshopName, i.vehicleId]).sort()
+    })
+    expect(byVehicle).toEqual([['Garage A', porsche], ['Garage B', caddy]])
+  })
 })

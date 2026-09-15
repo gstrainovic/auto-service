@@ -142,6 +142,38 @@ describe('buildBatch', () => {
     expect(batch.map(e => e.duplicate)).toEqual(['bereits erfasst', null])
   })
 
+  describe('kontrollschild', () => {
+    const vehicles = [
+      { id: 'v1', licensePlate: 'SG 1', make: 'Fiat', model: 'Ducato' },
+      { id: 'v2', licensePlate: 'SG 5', make: 'VW', model: 'Caddy' },
+    ]
+
+    it('ordnet Rechnungen dem Fahrzeug mit passendem Kontrollschild zu, sonst dem offenen Fahrzeug', () => {
+      const batch = buildBatch([
+        { parsed: { ...a, licensePlate: 'SG5' }, source: 'Seite 1' },
+        { parsed: { ...b, licensePlate: null }, source: 'Seite 2' },
+      ], [], { vehicles, currentVehicleId: 'v1' })
+      expect(batch.map(e => [e.vehicleId, e.plateNote])).toEqual([
+        ['v2', 'Kontrollschild SG 5: VW Caddy'],
+        ['v1', null],
+      ])
+    })
+
+    it('markiert ein unbekanntes Kontrollschild und lässt die Rechnung beim offenen Fahrzeug, aber abgewählt', () => {
+      const [entry] = buildBatch([{ parsed: { ...a, licensePlate: 'ZH 99' }, source: 'Seite 1' }], [], { vehicles, currentVehicleId: 'v1' })
+      expect([entry!.vehicleId, entry!.plateNote, entry!.selected]).toEqual(['v1', 'Kontrollschild ZH 99 gehört zu keinem Fahrzeug', false])
+    })
+
+    it('prüft Duplikate beim zugeordneten Fahrzeug', () => {
+      const existing = [{ vehicleId: 'v2', date: '2022-07-01', totalAmount: 1014.8 }]
+      const batch = buildBatch([
+        { parsed: { ...a, licensePlate: 'SG 5' }, source: 'Seite 1' },
+        { parsed: { ...a, licensePlate: 'SG 1', date: '2022-07-02' }, source: 'Seite 2' },
+      ], existing, { vehicles, currentVehicleId: 'v1' })
+      expect(batch.map(e => e.duplicate)).toEqual(['bereits erfasst', null])
+    })
+  })
+
   it('erkennt Doppel innerhalb des Stapels: nur das erste bleibt gewählt', () => {
     const batch = buildBatch([{ parsed: b, source: 'Seite 1' }, { parsed: b, source: 'Seite 5' }], [])
     expect(batch.map(e => [e.duplicate, e.selected])).toEqual([[null, true], ['doppelt im Beleg', false]])
@@ -149,7 +181,7 @@ describe('buildBatch', () => {
 
   it('führt unlesbare Rechnungen als Hinweis ohne Auswahl', () => {
     const batch = buildBatch([{ parsed: { ...b, date: '' }, source: 'Seite 3' }], [])
-    expect(batch).toEqual([{ source: 'Seite 3', draft: null, duplicate: null, selected: false, imageBase64: undefined }])
+    expect(batch).toEqual([{ source: 'Seite 3', draft: null, duplicate: null, selected: false, imageBase64: undefined, vehicleId: undefined, plateNote: null }])
   })
 })
 

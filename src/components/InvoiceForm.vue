@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BatchEntry } from '../services/invoice-scan'
+import type { BatchEntry, BatchVehicle } from '../services/invoice-scan'
 import type { InvoiceFormData } from '../types/forms'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
@@ -21,8 +21,12 @@ import { categoryLabel } from '../services/report'
 
 interface Props {
   initialData?: Partial<InvoiceFormData>
-  /** bereits erfasste Rechnungen des Fahrzeugs, für die Duplikat-Markierung im Stapel */
-  existingInvoices?: { date: string, totalAmount?: number }[]
+  /** bereits erfasste Rechnungen (alle Fahrzeuge, mit vehicleId), für die Duplikat-Markierung im Stapel */
+  existingInvoices?: { vehicleId?: string, date: string, totalAmount?: number }[]
+  /** Fahrzeuge des Kontos, für den Abgleich des Kontrollschilds */
+  vehicles?: BatchVehicle[]
+  /** offenes Fahrzeug */
+  vehicleId?: string
 }
 
 const props = defineProps<Props>()
@@ -79,12 +83,14 @@ async function onFileChange(event: Event) {
   if (!files.length)
     return
   batch.value = null
-  const outcome = await scan.handleFiles(files, props.existingInvoices ?? [])
+  const outcome = await scan.handleFiles(files, props.existingInvoices ?? [], { vehicles: props.vehicles, currentVehicleId: props.vehicleId })
   if (outcome?.kind === 'single')
     formData.value = fillEmptyFields(formData.value, outcome.fields, { currencyTouched: currencyTouched.value })
   else if (outcome?.kind === 'batch')
     batch.value = outcome.entries
 }
+
+const vehicleOptions = computed(() => (props.vehicles ?? []).map(v => ({ label: `${v.make} ${v.model}${v.licensePlate ? ` · ${v.licensePlate}` : ''}`, value: v.id })))
 
 function saveBatch() {
   if (batch.value && selectedCount.value)
@@ -159,7 +165,7 @@ function handleCancel() {
 
       <!-- Stapel: jede erkannte Rechnung eine Zeile, schon erfasste abgewählt -->
       <div v-if="batch" class="batch" aria-label="Erkannte Rechnungen">
-        <label
+        <div
           v-for="(entry, i) in batch"
           :key="i"
           class="batch-row"
@@ -167,21 +173,34 @@ function handleCancel() {
         >
           <Checkbox v-model="entry.selected" :binary="true" :disabled="!entry.draft" :input-id="`batch-${i}`" />
           <span class="batch-text">
-            <template v-if="entry.draft">
-              <span class="batch-main">{{ formatDate(entry.draft.date) }} · {{ entry.draft.workshopName || 'Werkstatt unbekannt' }}</span>
-              <small>
-                {{ entry.source }} · {{ entry.draft.items.length }} {{ entry.draft.items.length === 1 ? 'Position' : 'Positionen' }}
-                <span v-if="entry.duplicate" class="batch-dup">· {{ entry.duplicate }}</span>
-                <span v-else-if="itemsExceedTotal(entry.draft.items, entry.draft.totalAmount)" class="batch-dup">· Positionen ergeben mehr als das Total</span>
-              </small>
-            </template>
-            <template v-else>
-              <span class="batch-main">Nicht lesbar</span>
-              <small>{{ entry.source }} · Datum oder Betrag fehlt</small>
-            </template>
+            <label :for="`batch-${i}`">
+              <template v-if="entry.draft">
+                <span class="batch-main">{{ formatDate(entry.draft.date) }} · {{ entry.draft.workshopName || 'Werkstatt unbekannt' }}</span>
+                <small>
+                  {{ entry.source }} · {{ entry.draft.items.length }} {{ entry.draft.items.length === 1 ? 'Position' : 'Positionen' }}
+                  <span v-if="entry.duplicate" class="batch-dup">· {{ entry.duplicate }}</span>
+                  <span v-else-if="itemsExceedTotal(entry.draft.items, entry.draft.totalAmount)" class="batch-dup">· Positionen ergeben mehr als das Total</span>
+                </small>
+                <small v-if="entry.plateNote" class="batch-dup batch-plate">{{ entry.plateNote }}</small>
+              </template>
+              <template v-else>
+                <span class="batch-main">Nicht lesbar</span>
+                <small>{{ entry.source }} · Datum oder Betrag fehlt</small>
+              </template>
+            </label>
+            <Select
+              v-if="entry.draft && vehicleOptions.length > 1"
+              v-model="entry.vehicleId"
+              :options="vehicleOptions"
+              option-label="label"
+              option-value="value"
+              size="small"
+              class="batch-vehicle"
+              :aria-label="`Fahrzeug für Rechnung ${i + 1}`"
+            />
           </span>
           <span v-if="entry.draft" class="batch-amount">{{ formatCurrency(entry.draft.totalAmount, entry.draft.currency) }}</span>
-        </label>
+        </div>
       </div>
 
       <template v-if="!batch">
@@ -401,6 +420,17 @@ function handleCancel() {
 
 .batch-dup {
   color: var(--status-warning);
+}
+
+.batch-text label {
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.batch-vehicle {
+  margin-top: 0.35rem;
+  max-width: 100%;
 }
 
 .batch-amount {

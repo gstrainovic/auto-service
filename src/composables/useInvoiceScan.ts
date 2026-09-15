@@ -4,12 +4,12 @@
  * Mehrere Rechnungen (Sammel-PDF oder mehrere Fotos) → Stapel mit Duplikat-Markierung zum Bestätigen.
  */
 import type { ParsedInvoice } from '../services/ai'
-import type { BatchEntry, ScannedFields } from '../services/invoice-scan'
+import type { BatchEntry, BatchVehicle, ScannedFields } from '../services/invoice-scan'
 import { ref } from 'vue'
 import { userMessage } from '../lib/errors'
 import { parseInvoice, parseInvoicesPdf } from '../services/ai'
 import { getAiAccess } from '../services/ai-access'
-import { buildBatch, pagesLabel, scannedToFormFields } from '../services/invoice-scan'
+import { buildBatch, pagesLabel, plateAssignment, scannedToFormFields } from '../services/invoice-scan'
 import { autoRotateForDocument, getImageMimeType, resizeImage } from './useImageResize'
 
 // Fotos werden ohnehin verkleinert; PDFs gehen unverändert an Mistral OCR (dort max. 50 MB, wie im Chat)
@@ -56,7 +56,18 @@ export function useInvoiceScan() {
     return autoRotateForDocument(base64)
   }
 
-  async function handleFiles(files: File[], existing: { date: string, totalAmount?: number }[]): Promise<ScanOutcome | null> {
+  async function handleFiles(
+    files: File[],
+    existing: { vehicleId?: string, date: string, totalAmount?: number }[],
+    context: { vehicles?: BatchVehicle[], currentVehicleId?: string } = {},
+  ): Promise<ScanOutcome | null> {
+    // Einzelne Rechnung: nennt der Beleg ein anderes oder unbekanntes Kontrollschild, im Hinweis sagen
+    const plateHint = (parsed: ParsedInvoice) => {
+      const { note, vehicleId } = plateAssignment(parsed.licensePlate, context.vehicles ?? [], context.currentVehicleId)
+      if (!note)
+        return ''
+      return vehicleId === context.currentVehicleId ? ` Achtung: ${note}.` : ` Achtung: Beleg nennt ${note.replace(/^Kontrollschild /, 'Kontrollschild ')}, nicht dieses Fahrzeug.`
+    }
     message.value = ''
     imageBase64.value = null
     imagePreview.value = null
@@ -81,7 +92,8 @@ export function useInvoiceScan() {
         const rotated = await prepareImage(files[0]!)
         imageBase64.value = rotated
         imagePreview.value = `data:${getImageMimeType()};base64,${rotated}`
-        return single(scannedToFormFields(await parseInvoice(rotated, access)))
+        const parsed = await parseInvoice(rotated, access)
+        return single(scannedToFormFields(parsed), plateHint(parsed))
       }
 
       const scanned: Scanned[] = []
@@ -117,14 +129,15 @@ export function useInvoiceScan() {
       const failedNote = failed.length ? ` Nicht lesbar: ${failed.join(', ')}.` : ''
       // Sammel-PDF mit genau einer Rechnung: Formular vorbefüllen
       if (scanned.length === 1 && files.length === 1)
-        return single(scannedToFormFields(scanned[0]!.parsed), failedNote)
+        return single(scannedToFormFields(scanned[0]!.parsed), `${plateHint(scanned[0]!.parsed)}${failedNote}`)
       if (!scanned.length)
         return fail(`Auf den Belegen war keine Rechnung zu lesen. Bitte Felder selbst ausfüllen.${failedNote}`)
 
-      const entries = buildBatch(scanned, existing)
+      const entries = buildBatch(scanned, existing, context)
       status.value = 'done'
       const dupes = entries.filter(e => e.duplicate).length
-      message.value = `${entries.length} Rechnungen erkannt${dupes ? `, davon ${dupes} schon erfasst oder doppelt` : ''}. Bitte prüfen.${failedNote}`
+      const others = entries.filter(e => e.plateNote).length
+      message.value = `${entries.length} Rechnungen erkannt${dupes ? `, davon ${dupes} schon erfasst oder doppelt` : ''}${others ? `, ${others} mit anderem Kontrollschild` : ''}. Bitte prüfen.${failedNote}`
       return { kind: 'batch', entries }
     }
     catch (err) {

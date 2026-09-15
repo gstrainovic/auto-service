@@ -109,6 +109,34 @@ export interface BatchEntry {
   selected: boolean
   /** ausgerichtetes Foto, nur bei Foto-Stapeln */
   imageBase64?: string
+  /** Zielfahrzeug: per Kontrollschild erkannt, sonst das offene Fahrzeug; in der Prüfliste änderbar */
+  vehicleId?: string
+  /** Hinweis zum Kontrollschild auf dem Beleg, z. B. andere Zuordnung oder unbekannt */
+  plateNote: string | null
+}
+
+export interface BatchVehicle {
+  id: string
+  licensePlate?: string
+  make: string
+  model: string
+}
+
+export function normalizePlate(plate: string | null | undefined): string {
+  return (plate ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^CH(?=[A-Z]{2}\d)/, '')
+}
+
+export function plateAssignment(plate: string | null | undefined, vehicles: BatchVehicle[], currentVehicleId?: string): { vehicleId?: string, note: string | null, unknown: boolean } {
+  const key = normalizePlate(plate)
+  if (!key || !vehicles.length)
+    return { vehicleId: currentVehicleId, note: null, unknown: false }
+  const match = vehicles.find(v => normalizePlate(v.licensePlate) === key)
+  const shown = (plate ?? '').trim().toUpperCase().replace(/\s+/g, ' ')
+  if (!match)
+    return { vehicleId: currentVehicleId, note: `Kontrollschild ${shown} gehört zu keinem Fahrzeug`, unknown: true }
+  if (match.id === currentVehicleId)
+    return { vehicleId: match.id, note: null, unknown: false }
+  return { vehicleId: match.id, note: `Kontrollschild ${match.licensePlate}: ${match.make} ${match.model}`, unknown: false }
 }
 
 /**
@@ -126,20 +154,32 @@ function sameInvoice(a: { date: string, amount: number }, b: { date: string, amo
 
 export function buildBatch(
   scanned: { parsed: ParsedInvoice, source: string, imageBase64?: string }[],
-  existing: { date: string, totalAmount?: number }[],
+  existing: { vehicleId?: string, date: string, totalAmount?: number }[],
+  opts: { vehicles?: BatchVehicle[], currentVehicleId?: string } = {},
 ): BatchEntry[] {
-  const known = existing.filter(e => e.totalAmount).map(e => ({ date: e.date, amount: e.totalAmount! }))
-  const seen: { date: string, amount: number }[] = []
+  const known = existing.filter(e => e.totalAmount).map(e => ({ vehicleId: e.vehicleId, date: e.date, amount: e.totalAmount! }))
+  const seen: { vehicleId?: string, date: string, amount: number }[] = []
+  // ohne vehicleId (z. B. nur Rechnungen des offenen Fahrzeugs übergeben) zählt jede bekannte Rechnung
+  const sameVehicle = (a?: string, b?: string) => !a || !b || a === b
   return scanned.map(({ parsed, source, imageBase64 }) => {
+    const assignment = plateAssignment(parsed.licensePlate, opts.vehicles ?? [], opts.currentVehicleId)
     const draft = draftFromParsed(parsed)
     if (!draft)
-      return { source, draft: null, duplicate: null, selected: false, imageBase64 }
-    const self = { date: draft.date, amount: draft.totalAmount }
-    const duplicate = known.some(k => sameInvoice(k, self))
+      return { source, draft: null, duplicate: null, selected: false, imageBase64, vehicleId: assignment.vehicleId, plateNote: assignment.note }
+    const self = { vehicleId: assignment.vehicleId, date: draft.date, amount: draft.totalAmount }
+    const duplicate = known.some(k => sameVehicle(k.vehicleId, self.vehicleId) && sameInvoice(k, self))
       ? 'bereits erfasst' as const
-      : seen.some(s => sameInvoice(s, self)) ? 'doppelt im Beleg' as const : null
+      : seen.some(s => sameVehicle(s.vehicleId, self.vehicleId) && sameInvoice(s, self)) ? 'doppelt im Beleg' as const : null
     seen.push(self)
-    return { source, draft, duplicate, selected: duplicate === null, imageBase64 }
+    return {
+      source,
+      draft,
+      duplicate,
+      selected: duplicate === null && !assignment.unknown,
+      imageBase64,
+      vehicleId: assignment.vehicleId,
+      plateNote: assignment.note,
+    }
   })
 }
 

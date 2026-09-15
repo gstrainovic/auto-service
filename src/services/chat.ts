@@ -7,7 +7,7 @@ import { db, id as instantId, tx } from '../lib/instantdb'
 import { formatCurrency, formatDate, formatNumber, normalizeCurrency } from '../lib/locale'
 import { callMistralOcr, callMistralOcrPdf, getModel, hashImage, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument, withRetry } from './ai'
 import { correctCategory } from './category-correction'
-import { maintenancesFromItems, repairItems } from './invoice-items'
+import { saveInvoice } from './invoice-save'
 import { checkDueMaintenances, getMaintenanceSchedule } from './maintenance-schedule'
 
 export interface ToolResult {
@@ -376,64 +376,12 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
           }
         }
 
-        // Kategorien normieren und per Stichwort korrigieren, dann Positionen gegen das Total prüfen
-        // (mehrere Beschreibungszeilen mit demselben Arbeitsbetrag werden zu einer Position)
-        const checked = repairItems(items.map((item) => {
-          const normalized = item.category.toLowerCase().trim()
-          const aiCategory = (MAINTENANCE_CATEGORIES as readonly string[]).includes(normalized) ? normalized : 'sonstiges'
-          return { ...item, category: correctCategory(item.description, aiCategory) }
-        }), totalAmount).items
-
-        const now = Date.now()
         const imgRaw = imagesBase64?.length ? (imagesBase64[imageIndex ?? 0] ?? '') : ''
         const imageData = imgRaw ? await autoRotateForDocument(imgRaw) : ''
         const ocrCacheId = imgRaw ? await hashImage(imgRaw) : ''
-        const invoiceId = instantId()
-
-        const transactions: any[] = [
-          tx.invoices[invoiceId].update({
-            vehicleId,
-            workshopName,
-            date,
-            totalAmount,
-            mileageAtService: mileageAtService || 0,
-            currency: normalizeCurrency(currency),
-            imageData,
-            ocrCacheId,
-            items: checked,
-            creatorId: getCurrentUserId(),
-            createdAt: now,
-          }),
-        ]
-
-        // Eine Wartung pro Kategorie, nicht pro Position (sonst mehrere gleiche Einträge am selben Tag)
-        for (const { category, description } of maintenancesFromItems(checked)) {
-          const maintenanceId = instantId()
-          transactions.push(
-            tx.maintenances[maintenanceId].update({
-              vehicleId,
-              invoiceId,
-              type: category,
-              description,
-              doneAt: date,
-              mileageAtService: mileageAtService || 0,
-              nextDueDate: '',
-              nextDueMileage: 0,
-              status: 'done',
-              creatorId: getCurrentUserId(),
-              createdAt: now,
-            }),
-          )
-        }
-
-        if (mileageAtService) {
-          const vehicles = result.data.vehicles || []
-          const vehicle = vehicles.find((v: any) => v.id === vehicleId)
-          if (vehicle && mileageAtService > (vehicle.mileage || 0))
-            transactions.push(tx.vehicles[vehicleId].update({ mileage: mileageAtService }))
-        }
-
-        await db.transact(transactions)
+        // Gleicher Speicherweg wie Formular und Stapel: Kategorien korrigieren, Positionen prüfen,
+        // eine Wartung pro Kategorie, Kilometerstand nachziehen
+        const { plan } = await saveInvoice({ vehicleId, workshopName, date, totalAmount, currency, mileageAtService, items, imageData, ocrCacheId })
         return {
           success: true,
           message: `Rechnung erfasst`,
@@ -441,9 +389,9 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
             workshopName,
             date,
             totalAmount,
-            currency: normalizeCurrency(currency),
-            mileageAtService: mileageAtService || 0,
-            items: items.map(i => ({ description: i.description, category: i.category, amount: i.amount })),
+            currency: plan.invoice.currency,
+            mileageAtService: plan.invoice.mileageAtService ?? 0,
+            items: plan.invoice.items.map(i => ({ description: i.description, category: i.category, amount: i.amount })),
           },
         }
       },

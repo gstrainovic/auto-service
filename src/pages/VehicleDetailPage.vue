@@ -26,6 +26,7 @@ import { db } from '../lib/instantdb'
 import { DEFAULT_CURRENCY, formatCurrency, formatDate, formatNumber, LOCALE, normalizeCurrency } from '../lib/locale'
 import { MAINTENANCE_CATEGORIES } from '../services/ai'
 import { resolveRates } from '../services/fx'
+import { saveInvoice } from '../services/invoice-save'
 import { buildDossier, dossierFilename } from '../services/pdf-report'
 import { categoryLabel, costsByYear, invoicesToCsv } from '../services/report'
 import { useInvoicesStore } from '../stores/invoices'
@@ -227,11 +228,12 @@ async function handleAddInvoice(data: InvoiceFormData): Promise<void> {
   if (!vehicle.value)
     return
 
-  await invoicesStore.add({
+  // Gleicher Speicherweg wie der Chat: Rechnung, eine Wartung pro Kategorie, Kilometerstand nachziehen
+  await saveInvoice({
     vehicleId: vehicle.value.id,
-    workshopName: data.workshop,
+    workshopName: data.workshop ?? '',
     date: data.date,
-    totalAmount: data.amount,
+    totalAmount: data.amount ?? 0,
     currency: data.currency || DEFAULT_CURRENCY,
     // Kilometerstand nur, wenn im Formular angegeben; der heutige Fahrzeugstand wäre bei alten Belegen falsch
     mileageAtService: data.mileage || undefined,
@@ -239,11 +241,7 @@ async function handleAddInvoice(data: InvoiceFormData): Promise<void> {
     items: data.items?.length
       ? data.items.map(i => ({ ...i }))
       : data.category
-        ? [{
-            description: data.description || '',
-            category: data.category,
-            amount: data.amount || 0,
-          }]
+        ? [{ description: data.description || '', category: data.category, amount: data.amount || 0 }]
         : [],
     // InvoiceForm liefert das Foto als imageBase64
     imageData: data.images?.[0] ?? (data as { imageBase64?: string }).imageBase64,
@@ -252,16 +250,16 @@ async function handleAddInvoice(data: InvoiceFormData): Promise<void> {
   showAddInvoiceDialog.value = false
 }
 
-// Stapel aus Sammel-PDF oder mehreren Fotos: jede gewählte Rechnung einzeln speichern
+// Stapel aus Sammel-PDF oder mehreren Fotos: jede gewählte Rechnung beim zugeordneten Fahrzeug speichern
 async function handleAddInvoiceBatch(entries: BatchEntry[]): Promise<void> {
   if (!vehicle.value)
     return
-  for (const { draft, imageBase64 } of entries) {
+  for (const { draft, imageBase64, vehicleId } of entries) {
     if (!draft)
       continue
-    await invoicesStore.add({
-      vehicleId: vehicle.value.id,
+    await saveInvoice({
       ...draft,
+      vehicleId: vehicleId ?? vehicle.value.id,
       items: draft.items.map(i => ({ ...i })),
       ...(imageBase64 ? { imageData: imageBase64 } : {}),
     })
@@ -788,7 +786,9 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
     <InvoiceFormDialog
       v-model:visible="showAddInvoiceDialog"
       title="Neue Rechnung"
-      :existing-invoices="vehicleInvoices"
+      :existing-invoices="invoicesStore.invoices"
+      :vehicles="vehiclesStore.vehicles"
+      :vehicle-id="vehicle?.id"
       @submit="handleAddInvoice"
       @submit-batch="handleAddInvoiceBatch"
     />

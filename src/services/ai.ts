@@ -5,28 +5,11 @@ import { generateObject } from 'ai'
 import { z } from 'zod'
 import { getCurrentUserId } from '../composables/useAuth'
 import { db, id, tx } from '../lib/instantdb'
+import { MAINTENANCE_CATEGORIES } from './categories'
 import { mergePdfPages } from './invoice-scan'
 
-export const MAINTENANCE_CATEGORIES = [
-  'oelwechsel',
-  'inspektion',
-  'bremsen',
-  'reifen',
-  'luftfilter',
-  'zahnriemen',
-  'bremsflüssigkeit',
-  'klimaanlage',
-  'tuev',
-  'karosserie',
-  'elektrik',
-  'fahrwerk',
-  'auspuff',
-  'kuehlung',
-  'autoglas',
-  'sonstiges',
-] as const
-
-export type MaintenanceCategory = typeof MAINTENANCE_CATEGORIES[number]
+export { MAINTENANCE_CATEGORIES }
+export type { MaintenanceCategory } from './categories'
 
 const invoiceSchema = z.object({
   workshopName: z.string().describe('Name der Werkstatt'),

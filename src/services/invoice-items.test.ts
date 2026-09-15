@@ -1,5 +1,39 @@
 import { describe, expect, it } from 'vitest'
-import { itemsExceedTotal, maintenancesFromItems, repairItems } from './invoice-items'
+import { itemsExceedTotal, maintenancesFromItems, planInvoiceSave, repairItems } from './invoice-items'
+
+describe('planInvoiceSave', () => {
+  const base = { vehicleId: 'v1', workshopName: 'Seestern', date: '2024-01-05', totalAmount: 280.4, currency: 'Fr.', mileageAtService: 239016 }
+
+  it('normiert Kategorien und Währung, fasst Positionen zusammen, legt eine Wartung pro Kategorie an und hebt den Kilometerstand', () => {
+    const plan = planInvoiceSave({
+      ...base,
+      items: [
+        { description: 'Auspuff reparieren', category: 'Sonstiges', amount: 195 },
+        { description: 'Arbeit', category: 'sonstiges', amount: 195 },
+        { description: 'Motoröl', category: 'unbekannt', amount: 50 },
+      ],
+    }, { mileage: 231457 })
+    expect(plan.invoice.currency).toBe('CHF')
+    expect(plan.invoice.items).toEqual([
+      { description: 'Arbeit: Auspuff reparieren', category: 'auspuff', amount: 195 },
+      { description: 'Motoröl', category: 'oelwechsel', amount: 50 },
+    ])
+    expect(plan.maintenances).toEqual([
+      { type: 'auspuff', description: 'Arbeit: Auspuff reparieren', doneAt: '2024-01-05', mileageAtService: 239016 },
+      { type: 'oelwechsel', description: 'Motoröl', doneAt: '2024-01-05', mileageAtService: 239016 },
+    ])
+    expect(plan.vehicleMileage).toBe(239016)
+  })
+
+  it('hebt den Kilometerstand nicht, wenn der Beleg älter ist oder keinen Stand hat', () => {
+    expect(planInvoiceSave({ ...base, items: [] }, { mileage: 250000 }).vehicleMileage).toBeUndefined()
+    expect(planInvoiceSave({ ...base, mileageAtService: undefined, items: [] }, { mileage: 1 }).vehicleMileage).toBeUndefined()
+  })
+
+  it('rechnung ohne Positionen: keine Wartung', () => {
+    expect(planInvoiceSave({ ...base, items: [] }, {}).maintenances).toEqual([])
+  })
+})
 
 describe('maintenancesFromItems', () => {
   it('liefert eine Wartung pro Kategorie, Beschreibungen verbunden, Reihenfolge wie auf der Rechnung', () => {

@@ -54,8 +54,9 @@ test.describe('Verkauft oder abgegeben', () => {
 
   test('SV-002: Fahrzeugliste klappt verkaufte Fahrzeuge zu, Löschdialog bietet den Verkauf an', async ({ page }) => {
     const vehicleId = await seedVehicleWithCosts(page)
-    await page.goto('/vehicles')
-    await page.locator('.vehicle-card', { hasText: 'Fiat Ducato' }).getByRole('button', { name: 'Löschen' }).click()
+    // Löschen gibt es nur auf der Fahrzeugseite (kein Papierkorb auf der Karte)
+    await page.goto(`/vehicles/${vehicleId}`)
+    await page.locator('button:has-text("Löschen")').first().click()
     await expect(page.getByText('Fahrzeug löschen?')).toBeVisible()
     await page.locator('[data-pc-name="dialog"]', { hasText: 'Fahrzeug löschen?' }).getByRole('button', { name: 'Verkauft eintragen' }).click()
 
@@ -65,6 +66,7 @@ test.describe('Verkauft oder abgegeben', () => {
     await expect(dialog).not.toBeVisible()
 
     // Liste zeigt nur noch den zugeklappten Abschnitt
+    await page.goto('/vehicles')
     await expect(page.locator('.vehicle-card')).toHaveCount(0)
     await page.getByRole('button', { name: '1 verkauftes Fahrzeug' }).click()
     const card = page.locator('.vehicle-card', { hasText: 'Fiat Ducato' })

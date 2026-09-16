@@ -286,7 +286,7 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Tests folgen **CRUD-Paradigma**: Create → Read → Update → Delete
 - Tests laufen automatisch **zweimal**: online + offline (via Network-Blocking)
 - **Playwright startet Server automatisch** (Vite + InstantDB) — kein manuelles `podman-compose up` nötig
-- `npm run test:e2e` führt beide Projekt-Varianten aus (142 Tests: 71 online + 71 offline; 2 weitere nur via `test:e2e:soft`)
+- `npm run test:e2e` führt beide Projekt-Varianten aus (240 Tests: 120 online + 120 offline; 8 weitere nur via `test:e2e:soft`)
 - Playwright startet drei Server: Vite (`VITE_INSTANTDB_MODE=local`, `VITE_AI_PROXY_URL=http://localhost:8787`),
   InstantDB (podman-compose) und den AI-Proxy (`npm run dev:proxy` im Auth-Bypass, Key aus `.env` explizit per `env`,
   `AI_PROXY_BURST_LIMIT=10000`, weil alle Tests einen Nutzer teilen und die Fair-Use-Bremse sonst 429 liefert)
@@ -334,7 +334,7 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | IE | Rechnung bearbeiten | IE-001, IE-002: Datum und km nachziehen, Positionen abgleichen |
 | SV | Verkauft oder abgegeben | SV-001, SV-002: raus aus Fälligkeiten, Kosten bleiben, rückgängig |
 
-**Gesamt: 71 Tests pro Projekt** (+2 `@soft`) — `npm run test:e2e --list` zeigt alle
+**Gesamt: 120 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`

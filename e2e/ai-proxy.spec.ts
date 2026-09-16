@@ -89,7 +89,8 @@ test.describe('AI Proxy (Abo-Modus)', () => {
     await expect(card).toContainText(/noch \d+ Tage/)
     // Zahlen aus dem Plan-Katalog, damit der Test bei einer Kontingent-Änderung nicht bricht
     await expect(card).toContainText(new RegExp(`2\\s*/\\s*${PLANS.free.limits.ocrPages}`))
-    await expect(card).toContainText(/1[’'.]?234\s*\/\s*/)
+    // Chat-Tokens sagen niemandem etwas: nur der Anteil in Worten
+    await expect(card).toContainText(/Chat.*unter 1 % genutzt/s)
     await expect(card).toContainText('Fair Use')
     await expect(page.locator('input[type="password"]')).toHaveCount(0)
     // Ohne Zahlungsanbieter kein Checkout-Button, sondern Kontakt für die Jahresrechnung

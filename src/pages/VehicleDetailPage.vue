@@ -430,8 +430,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                 </template>
                 <div class="schedule-hint-body">
                   <span>
-                    Der Wartungsplan basiert auf allgemeinen Intervallen.
-                    Mit den Angaben aus dem Serviceheft stimmen Termine und Erinnerungen für genau dieses Fahrzeug.
+                    Termine nach allgemeinen Intervallen. Mit dem Serviceheft stimmen sie für genau dieses Fahrzeug.
                   </span>
                   <Button label="Serviceheft hinterlegen" icon="pi pi-book" size="small" @click="showServiceBook = true" />
                 </div>
@@ -510,9 +509,9 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
             <div v-if="vehicleMaintenances.length === 0" class="empty-state">
               <i class="pi pi-wrench empty-icon" />
               <p>Noch keine Wartungen erfasst. Ohne sie kennt Wartungsheft keine Termine.</p>
+              <!-- Ein Weg: das Serviceheft hat oben schon seinen Knopf -->
               <div class="empty-actions">
                 <Button label="Letzte Wartungen nachtragen" icon="pi pi-history" @click="showLastServices = true" />
-                <Button label="Serviceheft scannen" icon="pi pi-book" severity="secondary" outlined @click="showServiceBook = true" />
               </div>
             </div>
           </TabPanel>

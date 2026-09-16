@@ -120,17 +120,24 @@ Antworte immer auf Deutsch.
 Wenn der Benutzer ein Bild schickt, analysiere es und gib die Ergebnisse strukturiert aus.
 Halte deine Antworten kurz und hilfreich.`
 
-export const WELCOME_MESSAGE: ChatMessage = {
-  id: 'welcome',
-  role: 'assistant',
-  content: `Hallo! Schick mir ein Foto der Werkstattrechnung, ich trage sie ein. Oder frag mich, zum Beispiel:
+/** Begrüssung mit Beispielen; nennt die eigenen Fahrzeuge, damit die Beispiele nicht erfunden wirken */
+export function welcomeMessage(vehicles: { make: string, model: string }[] = []): ChatMessage {
+  const first = vehicles[0] ? `${vehicles[0].make} ${vehicles[0].model}` : 'Caddy'
+  const second = vehicles[1] ? `${vehicles[1].make} ${vehicles[1].model}` : vehicles[0] ? first : 'Ducato'
+  return {
+    id: 'welcome',
+    role: 'assistant',
+    content: `Hallo! Schick mir ein Foto der Werkstattrechnung, ich trage sie ein. Oder frag mich, zum Beispiel:
 
-- «Wann muss der Caddy zum Service?»
-- «Was hat der Ducato dieses Jahr gekostet?»
+- «Wann muss der ${first} zum Service?»
+- «Was hat der ${second} dieses Jahr gekostet?»
 - «Trag ein: Ölwechsel gestern bei 68'500 km»
 
 Fahrzeugausweis, Kaufvertrag und Serviceheft kann ich ebenfalls lesen.`,
+  }
 }
+
+export const WELCOME_MESSAGE: ChatMessage = welcomeMessage()
 
 function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]) {
   return {

@@ -18,7 +18,7 @@ import { userMessage } from '../lib/errors'
 import { db, tx } from '../lib/instantdb'
 import { hashImage } from '../services/ai'
 import { getAiAccess } from '../services/ai-access'
-import { sendChatMessage, WELCOME_MESSAGE } from '../services/chat'
+import { sendChatMessage, welcomeMessage } from '../services/chat'
 import { useVehiclesStore } from '../stores/vehicles'
 import MediaViewer from './MediaViewer.vue'
 import ToolResultCard from './ToolResultCard.vue'
@@ -44,7 +44,13 @@ const currentVehicle = computed(() => {
   return vehicle ? { id: vehicle.id, name: `${vehicle.make} ${vehicle.model}` } : null
 })
 
-const messages = ref<ChatMessage[]>([WELCOME_MESSAGE])
+// Begrüssung nennt die eigenen Fahrzeuge; die Liste kommt asynchron, darum die erste Nachricht nachziehen
+const welcome = computed(() => welcomeMessage(vehiclesStore.vehicles))
+const messages = ref<ChatMessage[]>([welcome.value])
+watch(welcome, (w) => {
+  if (messages.value[0]?.id === 'welcome')
+    messages.value[0] = w
+})
 const input = ref('')
 const loading = ref(false)
 // Eigene ID pro Anhang als v-for-Key: Dateinamen sind nicht eindeutig (Kamera: alle «image.jpg»), und ein Index-Key
@@ -71,7 +77,7 @@ onMounted(async () => {
       .sort((a: any, b: any) => (a.createdAt || 0) - (b.createdAt || 0))
     if (docs.length) {
       messages.value = [
-        WELCOME_MESSAGE,
+        welcome.value,
         ...docs.map((d: any) => ({
           id: d.id,
           role: d.role,
@@ -357,7 +363,7 @@ async function clearChat() {
     }
   }
   catch {}
-  messages.value = [WELCOME_MESSAGE]
+  messages.value = [welcome.value]
 }
 </script>
 

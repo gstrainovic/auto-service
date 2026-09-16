@@ -408,10 +408,11 @@ const totalInvoiceCount = computed(() =>
             allgemeine Wartungsintervalle. Mit dem Serviceheft werden sie genau:
           </span>
           <span class="schedule-hint-actions">
+            <!-- Ein Fahrzeug: der Knopf sagt, was passiert; mehrere: der Knopf sagt, für welches -->
             <Button
               v-for="v in vehiclesWithoutSchedule"
               :key="v.id"
-              :label="`${v.make} ${v.model}`"
+              :label="ownVehicles.length === 1 ? 'Serviceheft hinterlegen' : `${v.make} ${v.model}`"
               :aria-label="`Serviceheft ${v.make} ${v.model}`"
               icon="pi pi-book"
               size="small"

@@ -127,6 +127,7 @@ test.describe('Settings Flow', () => {
 
     // Import the file using filechooser API
     const fileChooserPromise = page.waitForEvent('filechooser')
+    await page.getByRole('button', { name: 'Erweitert anzeigen' }).click()
     await page.getByRole('button', { name: 'Daten importieren' }).click()
     const fileChooser = await fileChooserPromise
     await fileChooser.setFiles(downloadPath)

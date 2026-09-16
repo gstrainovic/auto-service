@@ -22,7 +22,7 @@ type UsageInfo = Awaited<ReturnType<typeof fetchUsage>>
 // Nutzertexte für die Zähler und die Plan-Namen des Katalogs
 const LIMIT_LABELS: Record<LimitKind, string> = {
   ocrPages: 'Scans',
-  chatTokens: 'Chat-Kontingent',
+  chatTokens: 'Chat',
 }
 const IMPORT_LABELS: Record<string, [singular: string, plural: string]> = {
   vehicles: ['Fahrzeug', 'Fahrzeuge'],
@@ -95,6 +95,19 @@ function usagePercent(kind: LimitKind): number {
     return 0
   return Math.min(100, Math.round((usage.value.usage[kind] / usage.value.limits[kind]) * 100))
 }
+
+// Scans zählt man in Stück, Chat-Tokens sagen niemandem etwas: dort nur der Anteil in Worten
+function usageText(kind: LimitKind): string {
+  if (!usage.value)
+    return ''
+  if (kind === 'ocrPages')
+    return `${formatNumber(usage.value.usage[kind])} / ${formatNumber(usage.value.limits[kind])}`
+  const percent = usagePercent(kind)
+  return `${percent < 1 ? 'unter 1' : percent} % genutzt`
+}
+
+// Import und Zwischenspeicher braucht fast niemand; eingeklappt schrecken sie nicht ab
+const showAdvanced = ref(false)
 
 async function refreshUsage(): Promise<void> {
   try {
@@ -267,7 +280,7 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
           <div v-for="kind in limitKinds" :key="kind" class="usage-row">
             <div class="usage-label">
               <span>{{ LIMIT_LABELS[kind] }}</span>
-              <span>{{ formatNumber(usage.usage[kind]) }} / {{ formatNumber(usage.limits[kind]) }}</span>
+              <span>{{ usageText(kind) }}</span>
             </div>
             <ProgressBar :value="usagePercent(kind)" :show-value="false" style="height: 0.5rem" />
           </div>
@@ -293,6 +306,10 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
               />
             </div>
           </div>
+          <div class="provider-info">
+            Mehrere Fahrer? Mit einer Team-Adresse anmelden (z. B. fuhrpark@deinbetrieb.ch), jedes Handy einmal
+            mit dem Code aus diesem Postfach. Dann fotografiert jeder mit demselben Zugang.
+          </div>
         </template>
         <ProgressBar v-else mode="indeterminate" style="height: 0.5rem" />
       </template>
@@ -312,35 +329,47 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
             @click="handleExport"
           />
           <Button
-            label="Daten importieren"
-            icon="pi pi-upload"
-            outlined
-            class="import-btn"
-            @click="importInput?.click()"
+            :label="showAdvanced ? 'Erweitert ausblenden' : 'Erweitert anzeigen'"
+            :icon="showAdvanced ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+            text
+            severity="secondary"
+            @click="showAdvanced = !showAdvanced"
           />
-          <input
-            ref="importInput"
-            type="file"
-            accept=".json"
-            style="display: none"
-            @change="handleImport"
-          >
         </div>
 
-        <div class="cache-section">
-          <Button
-            label="Scan-Zwischenspeicher leeren"
-            icon="pi pi-trash"
-            outlined
-            severity="danger"
-            size="small"
-            class="clear-cache-btn"
-            @click="clearOcrCache"
-          />
-          <span class="cache-count">
-            {{ ocrCacheCount }} gespeicherte Scans
-          </span>
-        </div>
+        <template v-if="showAdvanced">
+          <div class="button-group advanced-section">
+            <Button
+              label="Daten importieren"
+              icon="pi pi-upload"
+              outlined
+              class="import-btn"
+              @click="importInput?.click()"
+            />
+            <input
+              ref="importInput"
+              type="file"
+              accept=".json"
+              style="display: none"
+              @change="handleImport"
+            >
+          </div>
+
+          <div class="cache-section">
+            <Button
+              label="Scan-Zwischenspeicher leeren"
+              icon="pi pi-trash"
+              outlined
+              severity="danger"
+              size="small"
+              class="clear-cache-btn"
+              @click="clearOcrCache"
+            />
+            <span class="cache-count">
+              {{ ocrCacheCount }} gespeicherte Scans
+            </span>
+          </div>
+        </template>
       </template>
     </Card>
   </main>
@@ -445,6 +474,10 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.advanced-section {
+  margin-top: 1rem;
 }
 
 .cache-section {

@@ -22,7 +22,9 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 ### Versprechen der Landing Page einlösen
 - [ ] Serviceheft-PDF für die Übergabe (Käufer-Mappe, eigener Knopf neben dem PDF-Dossier): erste Seite als Auszug
       (Fahrzeug, Kilometerstand, Zeitraum, Anzahl Einträge, lückenlos ja/nein, letzte Arbeiten), danach die
-      Wartungshistorie, Belege als Anhang; Preise abwählbar, weil der Verkäufer seine Kosten selten zeigen will
+      Wartungshistorie, Belege als Anhang; Preise abwählbar, weil der Verkäufer seine Kosten selten zeigen will.
+      Werbung dezent: letzte Seite mit den Funktionen von Wartungsheft, auf jeder Seite unten die Fusszeile mit
+      wartungsheft.ch
 - [ ] Offline fotografierte Belege: Scan nachholen, sobald wieder Verbindung besteht (Warteschlange mit Bild und
       Status «Scan ausstehend», Nachlauf beim `online`-Ereignis), heute meldet der Scan offline nur einen Fehler
 - [ ] Export auf der Landing Page nennen: CSV für den Treuhänder, PDF-Dossier, Jahresabschluss als ZIP stehen in
@@ -32,11 +34,31 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 - [ ] Bestehende Daten: beim Cayenne steht das Fahrzeug auf 231'457 km, der letzte Ölwechsel auf 252'586 km (neue Einträge heben den Stand, alte nicht); einmalig nachziehen, nach Rückfrage
 
 ### Betrieb, nebenbei
-- [ ] Backups zusätzlich ausserhalb der Instanz ablegen: Object Storage im OpenStack-Projekt ist für das
-      Application Credential gesperrt (Swift antwortet mit 403, `openstack container create` ebenso; Rollen lassen sich
-      mit dem Credential nicht lesen). Der Nutzer muss im Infomaniak-Manager Object Storage aktivieren oder die
-      Swift-Rolle vergeben, danach Container anlegen und `backup.sh` um den Upload erweitern
+- [ ] **Vom Nutzer, einmalig:** In Horizon (https://api.pub2.infomaniak.cloud/horizon, Benutzer `PCU-CTPZLR8`) anmelden
+      und unter «Identity → Application Credentials» ein Credential `claude-backup` **ohne Rollenauswahl** anlegen, damit
+      es alle Rollen des Benutzers erbt; ID und Secret in `~/.config/openstack/clouds.yaml` als Cloud
+      `PCP-CTPZLR8-backup` ablegen. Grund: das heutige Credential hat nur die Rolle `member`, Swift antwortet damit auf
+      alles mit 403, und aus einem Application-Credential-Token heraus lässt sich kein zweites anlegen
+      («Using method 'application_credential' is not allowed»). Danach übernehme ich: Container
+      `wartungsheft-backups` anlegen, `backup.sh` um den Upload erweitern, Aufbewahrung im Container prüfen
 - [ ] Health-Checks (`api.`/health/system, `ai.`/health) in ein Uptime-Monitoring aufnehmen, sobald ein Pilot läuft
+
+### Preismodell: ein Preis pro Fahrzeug statt zwei Zielgruppen-Preise (Entscheid des Nutzers offen)
+
+Heute versprechen die zwei Landing Pages 36 CHF im Jahr (privat, bis drei Fahrzeuge) und 29 bis 49 CHF im Monat
+(Betrieb) für dasselbe Produkt; funktional unterscheidet sich nichts, und ein Fahrzeuglimit gibt es im Code nirgends.
+Der Markt für Fuhrpark-Software rechnet pro Fahrzeug und Monat (Fleetio ab 4 USD, Fleethouse 2,90 €, CARMADA 6 € plus
+19 € Grundgebühr, Vimcar 13,90 €), Privat-Apps dagegen pauschal, und bei Privathaltern steht die Abo-Aversion aus
+`business-plan/beobachtungen.md` dagegen.
+
+- [ ] Entscheid: eine Preisliste, gestaffelt nach Fahrzeugen statt nach Zielgruppe. Vorschlag: 36 CHF im Jahr für bis
+      zu drei Fahrzeuge (deckt Privathalter, Zahl bleibt wie getestet), jedes weitere Fahrzeug 30 CHF im Jahr; zehn
+      Fahrzeuge kosten damit 246 CHF im Jahr, rund 2 CHF pro Fahrzeug und Monat
+- [ ] KI-Kontingent an die Fahrzeuge koppeln statt an Plangrössen: Scans pro Fahrzeug und Monat (Vorschlag 5, Minimum
+      15 pro Konto), Chat-Kontingent gleich mitziehen; `plans.ts` kennt heute nur feste Plangrenzen
+- [ ] Beide Landing Pages auf die eine Preisliste umstellen; Unterschied bleibt der Kontext, nicht das Produkt:
+      Betriebe bekommen Jahresrechnung, Concierge-Einrichtung und später mehrere Nutzer pro Konto
+- [ ] Fahrzeuggrenze im Code durchsetzen (heute unbegrenzt), sonst ist die Staffel eine reine Behauptung
 
 ## Sobald über die Schweiz hinaus verkauft wird (DACH oder global)
 

@@ -520,7 +520,8 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                 <i :class="inv.imageData ? 'pi pi-image' : 'pi pi-receipt'" class="invoice-icon" />
                 <div class="invoice-content">
                   <div class="invoice-label">
-                    {{ inv.workshopName }}
+                    {{ inv.workshopName || 'Ohne Werkstatt' }}
+                    <Badge v-if="inv.scanPending" value="Scan ausstehend" severity="info" class="planned-badge" />
                   </div>
                   <div class="invoice-caption">
                     {{ formatDate(inv.date) }} · {{ formatCurrency(inv.totalAmount, normalizeCurrency(inv.currency)) }}

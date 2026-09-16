@@ -6,7 +6,7 @@ import type { InvoiceFormData } from '../types/forms'
 import type { InvoiceSaveInput } from './invoice-items'
 import { DEFAULT_CURRENCY } from '../lib/locale'
 
-export function formToInvoiceInput(data: InvoiceFormData, vehicleId: string): InvoiceSaveInput & { imageData?: string } {
+export function formToInvoiceInput(data: InvoiceFormData, vehicleId: string): InvoiceSaveInput & { imageData?: string, scanPending?: boolean } {
   return {
     vehicleId,
     workshopName: data.workshop ?? '',
@@ -23,5 +23,7 @@ export function formToInvoiceInput(data: InvoiceFormData, vehicleId: string): In
         : [],
     // InvoiceForm liefert das Foto als imageBase64
     imageData: data.images?.[0] ?? (data as { imageBase64?: string }).imageBase64,
+    // offline fotografiert: der Scan wird nachgeholt, sobald wieder Verbindung besteht
+    ...((data as { scanPending?: boolean }).scanPending ? { scanPending: true } : {}),
   }
 }

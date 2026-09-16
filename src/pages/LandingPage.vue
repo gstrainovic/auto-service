@@ -66,7 +66,7 @@ function goToApp() {
           </div>
           <div class="hero-stat">
             <strong>Offline nutzbar</strong>
-            <span>KI-Scan braucht Internet</span>
+            <span>Scan läuft später nach</span>
           </div>
           <div class="hero-stat">
             <strong>KI aus der EU</strong>
@@ -131,7 +131,7 @@ function goToApp() {
               <i class="pi pi-sync" />
             </div>
             <h3>Offline-First</h3>
-            <p>Fahrzeuge, Rechnungen und Wartungsplan funktionieren ohne Internet, nur der KI-Scan braucht eine Verbindung. Automatischer Sync wenn du wieder online bist.</p>
+            <p>Fahrzeuge, Rechnungen und Wartungsplan funktionieren ohne Internet. Ein offline fotografierter Beleg wird gespeichert, der KI-Scan läuft automatisch nach, sobald du wieder online bist.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">
@@ -146,6 +146,13 @@ function goToApp() {
             </div>
             <h3>Digitales Serviceheft</h3>
             <p>Lückenlose Wartungshistorie. Beim Autoverkauf den Wert steigern — alles digital belegt.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="pi pi-file-excel" />
+            </div>
+            <h3>Export für Treuhänder und Käufer</h3>
+            <p>CSV für Excel, PDF-Dossier pro Fahrzeug und der Jahresabschluss als ZIP mit allen Belegbildern.</p>
           </div>
         </div>
       </div>
@@ -192,7 +199,8 @@ function goToApp() {
       <div class="landing-container">
         <h2>Für wen ist Wartungsheft?</h2>
         <p class="section-subtitle">
-          Zwei Angebote, ein Werkzeug. Kostenlos ausprobieren kannst du es in jedem Fall.
+          Ein Werkzeug, eine Preisliste: 36 CHF im Jahr für bis zu drei Fahrzeuge, jedes weitere 30 CHF.
+          Kostenlos ausprobieren kannst du es in jedem Fall.
         </p>
         <div class="pricing-grid pricing-grid-two">
           <div class="pricing-card">

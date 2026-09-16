@@ -5,12 +5,19 @@ import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ChatDrawer from './components/ChatDrawer.vue'
 import { useAuth } from './composables/useAuth'
+import { useOfflineScanQueue } from './composables/useOfflineScanQueue'
 
 const router = useRouter()
 const route = useRoute()
 const drawer = ref(false)
 const chatOpen = ref(false)
 const { user, isLoading, signOut } = useAuth()
+// Offline fotografierte Belege: Scan nachholen, sobald wieder Verbindung besteht
+const scanQueue = useOfflineScanQueue()
+watch(user, (u) => {
+  if (u)
+    scanQueue.runQueue()
+})
 
 const isPublicRoute = computed(() => route.meta.public === true)
 const showAppLayout = computed(() => user.value && !isPublicRoute.value)

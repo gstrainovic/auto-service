@@ -20,6 +20,8 @@ export interface Invoice {
   mileageAtService?: number | null
   imageData?: string
   ocrCacheId?: string
+  /** offline fotografiert: der KI-Scan wird nachgeholt, sobald wieder Verbindung besteht */
+  scanPending?: boolean
   items?: InvoiceItem[]
   createdAt: string
   updatedAt: string

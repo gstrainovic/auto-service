@@ -17,7 +17,9 @@ const MAX_IMAGE_SIZE = 25 * 1024 * 1024
 const MAX_PDF_SIZE = 50 * 1024 * 1024
 
 export type ScanStatus = 'idle' | 'scanning' | 'done' | 'error'
-export type ScanOutcome = { kind: 'single', fields: ScannedFields } | { kind: 'batch', entries: BatchEntry[] }
+export type ScanOutcome
+  = | { kind: 'single', fields: ScannedFields, scanPending?: boolean }
+    | { kind: 'batch', entries: BatchEntry[] }
 
 interface Scanned { parsed: ParsedInvoice, source: string, imageBase64?: string }
 
@@ -71,6 +73,17 @@ export function useInvoiceScan() {
         return fail(`${f.name}: nur Fotos oder PDF möglich.`)
       if (f.size > (isPdf ? MAX_PDF_SIZE : MAX_IMAGE_SIZE))
         return fail(`${f.name}: Datei zu gross (max. ${isPdf ? 50 : 25} MB).`)
+    }
+
+    // Ohne Verbindung gibt es keinen Scan: Foto trotzdem übernehmen, der Scan wird später nachgeholt.
+    // Auch das Ausrichten entfällt, Tesseract lädt seine Worker-Dateien vom CDN.
+    if (!navigator.onLine && files.length === 1 && files[0]!.type !== 'application/pdf') {
+      const { base64 } = await resizeImage(files[0]!)
+      imageBase64.value = base64
+      imagePreview.value = `data:${getImageMimeType()};base64,${base64}`
+      status.value = 'done'
+      message.value = 'Offline: Der Beleg wird gespeichert, der Scan läuft nach, sobald du wieder online bist.'
+      return { kind: 'single', fields: {}, scanPending: true }
     }
 
     status.value = 'scanning'

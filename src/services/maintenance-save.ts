@@ -18,8 +18,12 @@ export interface MaintenanceInput {
 export async function saveMaintenances(entries: MaintenanceInput[]): Promise<void> {
   if (!entries.length)
     return
-  const result = await db.queryOnce({ vehicles: {} })
-  const vehicles: any[] = result.data.vehicles || []
+  // Offline beantwortet InstantDB keine Abfrage; dann werden nur die Wartungen geschrieben
+  let vehicles: any[] = []
+  try {
+    vehicles = (await db.queryOnce({ vehicles: {} })).data.vehicles || []
+  }
+  catch {}
   const now = new Date().toISOString()
   const creatorId = getCurrentUserId()
   const transactions: any[] = entries.map(e => (tx.maintenances as any)[id()].update({

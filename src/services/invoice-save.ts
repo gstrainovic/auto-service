@@ -8,10 +8,27 @@ import { getCurrentUserId } from '../composables/useAuth'
 import { db, id, tx } from '../lib/instantdb'
 import { planInvoiceSave, planInvoiceUpdate } from './invoice-items'
 
-export async function saveInvoice(input: InvoiceSaveInput & { imageData?: string, ocrCacheId?: string }): Promise<{ invoiceId: string, plan: InvoiceSavePlan }> {
-  const { imageData, ocrCacheId, ...data } = input
-  const result = await db.queryOnce({ vehicles: {} })
-  const vehicle = (result.data.vehicles || []).find((v: any) => v.id === data.vehicleId) ?? {}
+/** Abfrage, die offline leer zurückkommt statt zu scheitern */
+async function queryOrEmpty(query: Record<string, any>): Promise<Record<string, any[]>> {
+  try {
+    const result = await db.queryOnce(query as any)
+    return (result.data ?? {}) as Record<string, any[]>
+  }
+  catch {
+    return {}
+  }
+}
+
+async function findVehicle(vehicleId: string): Promise<{ mileage?: number | null }> {
+  const { vehicles } = await queryOrEmpty({ vehicles: {} })
+  return (vehicles || []).find((v: any) => v.id === vehicleId) ?? {}
+}
+
+export async function saveInvoice(input: InvoiceSaveInput & { imageData?: string, ocrCacheId?: string, scanPending?: boolean }): Promise<{ invoiceId: string, plan: InvoiceSavePlan }> {
+  const { imageData, ocrCacheId, scanPending, ...data } = input
+  // Offline beantwortet InstantDB keine Abfrage; dann wird ohne Fahrzeugdaten gespeichert und der
+  // Kilometerstand bleibt, wie er ist.
+  const vehicle = await findVehicle(data.vehicleId)
   const plan = planInvoiceSave(data, vehicle)
 
   const now = new Date().toISOString()
@@ -24,6 +41,7 @@ export async function saveInvoice(input: InvoiceSaveInput & { imageData?: string
       ...invoice,
       ...(imageData ? { imageData } : {}),
       ...(ocrCacheId ? { ocrCacheId } : {}),
+      ...(scanPending ? { scanPending: true } : {}),
       creatorId,
       createdAt: now,
       updatedAt: now,
@@ -51,9 +69,9 @@ export async function saveInvoice(input: InvoiceSaveInput & { imageData?: string
  * dieser Rechnung entstanden sind (`invoiceId`). Regeln in planInvoiceUpdate (invoice-items.ts, getestet).
  */
 export async function updateInvoice(invoiceId: string, input: InvoiceSaveInput): Promise<InvoiceUpdatePlan> {
-  const result = await db.queryOnce({ vehicles: {}, maintenances: {} })
-  const vehicle = (result.data.vehicles || []).find((v: any) => v.id === input.vehicleId) ?? {}
-  const linked = ((result.data.maintenances || []) as any[]).filter(m => m.invoiceId === invoiceId)
+  const result = await queryOrEmpty({ vehicles: {}, maintenances: {} })
+  const vehicle = (result.vehicles || []).find((v: any) => v.id === input.vehicleId) ?? {}
+  const linked = ((result.maintenances || []) as any[]).filter(m => m.invoiceId === invoiceId)
   const plan = planInvoiceUpdate(input, linked, vehicle)
   const savePlan = planInvoiceSave(input, vehicle)
 

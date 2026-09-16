@@ -151,7 +151,8 @@ export async function callMistralOcr(imageBase64: string, access: AiAccess): Pro
     }
   }
   catch (e) {
-    console.error('[OCR] InstantDB query failed:', e)
+    // Ohne Verbindung gibt es keinen Cache-Treffer; das ist kein Fehler, der Scan läuft trotzdem
+    console.warn('[OCR] Cache nicht abfragbar:', e)
   }
 
   const resp = await fetch(`${access.baseURL}/ocr`, {

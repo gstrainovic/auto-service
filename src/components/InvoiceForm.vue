@@ -32,7 +32,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  submit: [data: InvoiceFormData & { imageBase64?: string }]
+  submit: [data: InvoiceFormData & { imageBase64?: string, scanPending?: boolean }]
   submitBatch: [entries: BatchEntry[]]
   cancel: []
 }>()
@@ -44,6 +44,8 @@ const isScanning = computed(() => scan.status.value === 'scanning')
 const currencyTouched = ref(false)
 // Stapel aus Sammel-PDF oder mehreren Fotos; solange gesetzt, ersetzt die Prüfliste die Formularfelder
 const batch = ref<BatchEntry[] | null>(null)
+// offline aufgenommen: der Scan fehlt noch und wird nachgeholt
+const scanPending = ref(false)
 const selectedCount = computed(() => batch.value?.filter(e => e.selected && e.draft).length ?? 0)
 
 // Form schema
@@ -84,10 +86,14 @@ async function onFileChange(event: Event) {
     return
   batch.value = null
   const outcome = await scan.handleFiles(files, props.existingInvoices ?? [], { vehicles: props.vehicles, currentVehicleId: props.vehicleId })
-  if (outcome?.kind === 'single')
+  if (outcome?.kind === 'single') {
     formData.value = fillEmptyFields(formData.value, outcome.fields, { currencyTouched: currencyTouched.value })
-  else if (outcome?.kind === 'batch')
+    // offline fotografiert: der Beleg merkt sich, dass der Scan noch fehlt
+    scanPending.value = outcome.scanPending === true
+  }
+  else if (outcome?.kind === 'batch') {
     batch.value = outcome.entries
+  }
 }
 
 const vehicleOptions = computed(() => (props.vehicles ?? []).map(v => ({ label: `${v.make} ${v.model}${v.licensePlate ? ` · ${v.licensePlate}` : ''}`, value: v.id })))
@@ -118,6 +124,7 @@ function handleSubmit() {
     emit('submit', {
       ...formData.value,
       ...(imageBase64.value ? { imageBase64: imageBase64.value } : {}),
+      ...(scanPending.value ? { scanPending: true } : {}),
     })
   }
 }

@@ -25,10 +25,6 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
       Wartungshistorie, Belege als Anhang; Preise abwählbar, weil der Verkäufer seine Kosten selten zeigen will.
       Werbung dezent: letzte Seite mit den Funktionen von Wartungsheft, auf jeder Seite unten die Fusszeile mit
       wartungsheft.ch
-- [ ] Offline fotografierte Belege: Scan nachholen, sobald wieder Verbindung besteht (Warteschlange mit Bild und
-      Status «Scan ausstehend», Nachlauf beim `online`-Ereignis), heute meldet der Scan offline nur einen Fehler
-- [ ] Export auf der Landing Page nennen: CSV für den Treuhänder, PDF-Dossier, Jahresabschluss als ZIP stehen in
-      keinem Feature-Punkt
 
 ### Bekannte Lücken, klein
 - [ ] Bestehende Daten: beim Cayenne steht das Fahrzeug auf 231'457 km, der letzte Ölwechsel auf 252'586 km (neue Einträge heben den Stand, alte nicht); einmalig nachziehen, nach Rückfrage

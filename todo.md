@@ -19,11 +19,23 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 - [ ] Auswertung gegen die Abbruchkriterien, Ergebnis und Entscheid in Kapitel 9 eintragen
 - [ ] Pilot-Betrieb anlegen: Fahrzeuge erfassen, erste Rechnungen von Hand einlesen, Jahresrechnung per QR-Rechnung stellen (kein Zahlungsanbieter)
 
+### Versprechen der Landing Page einlösen
+- [ ] Serviceheft-PDF für die Übergabe (Käufer-Mappe, eigener Knopf neben dem PDF-Dossier): erste Seite als Auszug
+      (Fahrzeug, Kilometerstand, Zeitraum, Anzahl Einträge, lückenlos ja/nein, letzte Arbeiten), danach die
+      Wartungshistorie, Belege als Anhang; Preise abwählbar, weil der Verkäufer seine Kosten selten zeigen will
+- [ ] Offline fotografierte Belege: Scan nachholen, sobald wieder Verbindung besteht (Warteschlange mit Bild und
+      Status «Scan ausstehend», Nachlauf beim `online`-Ereignis), heute meldet der Scan offline nur einen Fehler
+- [ ] Export auf der Landing Page nennen: CSV für den Treuhänder, PDF-Dossier, Jahresabschluss als ZIP stehen in
+      keinem Feature-Punkt
+
 ### Bekannte Lücken, klein
 - [ ] Bestehende Daten: beim Cayenne steht das Fahrzeug auf 231'457 km, der letzte Ölwechsel auf 252'586 km (neue Einträge heben den Stand, alte nicht); einmalig nachziehen, nach Rückfrage
 
 ### Betrieb, nebenbei
-- [ ] Backups zusätzlich ausserhalb der Instanz ablegen (Object Storage im selben OpenStack-Projekt, eigenes Application Credential nur dafür); Restore einmal nach README durchspielen
+- [ ] Backups zusätzlich ausserhalb der Instanz ablegen: Object Storage im OpenStack-Projekt ist für das
+      Application Credential gesperrt (Swift antwortet mit 403, `openstack container create` ebenso; Rollen lassen sich
+      mit dem Credential nicht lesen). Der Nutzer muss im Infomaniak-Manager Object Storage aktivieren oder die
+      Swift-Rolle vergeben, danach Container anlegen und `backup.sh` um den Upload erweitern
 - [ ] Health-Checks (`api.`/health/system, `ai.`/health) in ein Uptime-Monitoring aufnehmen, sobald ein Pilot läuft
 
 ## Sobald über die Schweiz hinaus verkauft wird (DACH oder global)

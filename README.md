@@ -214,12 +214,55 @@ C="docker compose -f docker-compose.with-caddy.yml -f docker-compose.override.ym
 $C stop server www caddy
 $C exec -T postgres dropdb -U instant instant && $C exec -T postgres createdb -U instant instant
 $C exec -T postgres pg_restore -U instant -d instant < /opt/backups/instant-YYYYMMDD.dump
+# Pflicht: abgeleitete Aggregator-Daten leeren und den Replikations-Slot neu anlegen lassen,
+# sonst stirbt der Server beim Start
+$C exec -T postgres psql -U instant -d instant -c "truncate attr_sketches, triples_size_aggregate, wal_aggregator_status, wal_logs"
+$C exec -T postgres psql -U instant -d instant -tAc "select pg_drop_replication_slot(slot_name) from pg_replication_slots where slot_name = 'aggregator' and not active"
 docker run --rm -v instant_minio_data:/data -v /opt/backups:/b:ro alpine sh -c "cd /data && tar xzf /b/minio-YYYYMMDD.tgz"
 $C up -d
 ```
 
+Warum die beiden Zeilen nötig sind (alles abgeleitete Daten, die im Betrieb neu entstehen):
+
+- ohne `truncate attr_sketches` stirbt der Start an
+  `duplicate key value violates unique constraint "attr_sketches_app_id_attr_id_key"`,
+- ohne `truncate wal_aggregator_status` an `duplicate key value violates unique constraint "wal_aggregator_status_pkey"`,
+- ohne den gelöschten Slot meldet der Aggregator
+  `confirmed-flush-lsn is older than start-lsn, cannot start stream from start-lsn` und läuft nicht mit.
+
+Der Server braucht nach `up -d` etwa eine Minute, bis Port 8888 offen ist; bis dahin antwortet Caddy mit 502.
+Prüfen: `curl -fsS https://api.wartungsheft.ch/health/system` → `{"wal":"ok"}` und
+`select slot_name, active from pg_replication_slots` → `aggregator` aktiv.
+
 Vor riskanten Änderungen (InstantDB-Upgrade, grössere Migrationen) zusätzlich ein Snapshot der ganzen Instanz vom Laptop aus:
 `openstack --os-cloud PCP-CTPZLR8-dc3-a server image create --name wartungsheft-<grund>-<datum> wartungsheft`.
+
+Die Nutzdaten stecken alle im Postgres-Dump, auch die Belegbilder (sie liegen als base64 in der Entität `invoices`).
+Das MinIO-Volume enthält nur den leeren Bucket `instant-bucket` und die Metadaten des Storage — es wird trotzdem
+gesichert, damit ein Restore ohne Neueinrichtung startet.
+
+**Restore ohne Produktion üben** (Laptop, rootless Podman; braucht nur die beiden Dateien aus `/opt/backups`):
+
+```bash
+scp debian@<instanz>:/opt/backups/instant-YYYYMMDD.dump debian@<instanz>:/opt/backups/minio-YYYYMMDD.tgz /tmp/
+podman run -d --name restore-pg -e POSTGRES_USER=instant -e POSTGRES_PASSWORD=restoretest \
+  -e POSTGRES_DB=instant ghcr.io/instantdb/postgresql:postgresql-17-pg-hint-plan
+until podman exec restore-pg pg_isready -U instant -q; do sleep 2; done
+podman exec -i restore-pg pg_restore -U instant -d instant --clean --if-exists < /tmp/instant-YYYYMMDD.dump
+# Probe: Zeilen pro App gegen die Produktion vergleichen
+podman exec restore-pg psql -U instant -d instant -tAc "select app_id, count(*) from triples group by 1 order by 2 desc"
+# MinIO-Volume prüfen: Bucket muss nach dem Entpacken da sein
+podman volume create restore_minio
+podman run --rm -v restore_minio:/data -v /tmp:/b:ro,Z alpine sh -c "cd /data && tar xzf /b/minio-YYYYMMDD.tgz"
+podman run -d --name restore-minio -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
+  -v restore_minio:/data quay.io/minio/minio:latest server /data
+podman exec restore-minio mc alias set local http://127.0.0.1:9000 minioadmin minioadmin
+podman exec restore-minio mc ls local   # instant-bucket
+podman rm -f restore-pg restore-minio && podman volume rm restore_minio
+```
+
+`pg_restore` läuft ohne vorheriges `dropdb`, wenn `--clean --if-exists` gesetzt ist; ohne die Schalter muss die
+Datenbank leer sein.
 
 ### 6. Health-Checks und Zahlen für die Validierung
 

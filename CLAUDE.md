@@ -1,9 +1,11 @@
 # Wartungsheft (Repo auto-service)
 
+Die App läuft unter https://wartungsheft.ch (Landing Pages `/betrieb` und `/privathalter`, Login mit Magic Code, AI-Proxy unter `ai.`, InstantDB unter `api.`/`dash.`/`files.`). Betrieb und Befehle: README «Produktion», CLAUDE.md «Produktion».
+
 Produktname «Wartungsheft» (wartungsheft.ch) in allen Texten, Titeln, Manifest und Chat-Prompts; «auto-service» bleibt nur als Repo-, Paket- und Pfadname.
 
 ## Commands
-npm run dev          # Vite dev server + auto-starts InstantDB if not running
+npm run dev          # Vite + InstantDB + AI-Proxy (startet, was nicht läuft; Proxy-Log /tmp/ai-proxy-dev.log)
 npm run dev:vite     # Vite dev server only (no InstantDB check)
 npm run build        # vue-tsc + vite build
 npm run lint         # ESLint (antfu config)
@@ -35,13 +37,15 @@ tmp/              # Testbilder + 9-Seiten-PDF für manuelle Tests (gitignored, N
 Backend-Datenbank mit Echtzeit-Sync via WebSocket. Ersetzt RxDB.
 
 ### Modi (`src/lib/instant-config.ts`)
-- **Cloud (Default, Auslaufmodell):** instantdb.com — App-ID `5d413a89-91ad-4a5a-ad71-d2df5fd81d88`.
-  Instant-Team ging 2026 zu OpenAI, keine neuen Signups, **Cloud-Abschaltung 31.08.2027**.
-- **Local:** `VITE_INSTANTDB_MODE=local` — App-ID `cd7e6912-773b-4ee1-be18-4d95c3b20e9f`, Auth-Bypass (E2E)
+- **Cloud (Default ohne Variable, Auslaufmodell):** instantdb.com — App-ID `5d413a89-91ad-4a5a-ad71-d2df5fd81d88`.
+  Instant-Team ging 2026 zu OpenAI, keine neuen Signups, **Cloud-Abschaltung 31.08.2027**. Der lokale Proxy kann
+  Cloud-Tokens nicht prüfen, Scan und Chat antworten dann mit 401.
+- **Local (Entwicklung und E2E):** `VITE_INSTANTDB_MODE=local` — App-ID `cd7e6912-773b-4ee1-be18-4d95c3b20e9f`,
+  Auth-Bypass im Frontend, Proxy erkennt den Nutzer am Header `x-user-id`. `scripts/dev.sh` setzt den Modus.
 - **Selfhosted (Produktion):** `VITE_INSTANTDB_MODE=selfhosted` + `VITE_INSTANT_APP_ID`, `VITE_INSTANT_API_URI`,
   optional `VITE_INSTANT_WS_URI` (sonst aus API-URI abgeleitet). Echte Auth, kein Bypass.
 - E2E-Tests laufen IMMER gegen lokalen Server (Playwright setzt `VITE_INSTANTDB_MODE=local`)
-- `npm run dev` → Cloud, `npm run dev:vite` in Tests → Local
+- `npm run dev` → Local (Vite, InstantDB, Proxy), `VITE_INSTANTDB_MODE=cloud npm run dev` → Cloud ohne Scan und Chat
 
 ### Server starten
 ```bash
@@ -200,8 +204,9 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
   ersten Aufruf, Subscription mit `status: 'trial'`); danach antworten Scan und Chat mit 402 `trial_expired`, Lesen,
   Erfassen von Hand und Exporte bleiben frei. Preisstaffel in `yearlyPriceChf` (36 CHF erstes Fahrzeug, 24 CHF je
   weiteres), `PriceTable.vue` rechnet damit; Fair-Use-Bremse 20 Anfragen pro Minute im Proxy (`rate-limit.ts`).
-- Texte: Hauptknopf überall «30 Tage gratis testen» (führt zum Login), das Lead-Formular gibt es nur noch auf `/betrieb`
-  («Wir richten es für dich ein»). Du-Form auch für Betriebe, bewusst.
+- Texte: Hauptknopf überall «30 Tage gratis testen» (führt zum Login, Klick zählt in `events` über `useEventsStore`).
+  Kein Lead-Formular: Fragen gehen per mailto an `info@wartungsheft.ch` (Footer aller Landing Pages, auf `/betrieb`
+  zusätzlich unter dem Knopf mit Betreff). Kein Pilotangebot, keine Einrichtung vor Ort. Du-Form auch für Betriebe, bewusst.
 - Speicherwege: Rechnungen immer über `saveInvoice` (`src/services/invoice-save.ts`: Rechnung, eine Wartung pro Kategorie
   mit `invoiceId`, höherer Kilometerstand, eine Transaktion; Chat, Formular und Stapel) und beim Bearbeiten über
   `updateInvoice` (zieht Datum, Kilometerstand und Positionen in die verknüpften Wartungen nach), Wartungen ohne Rechnung über
@@ -275,7 +280,7 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Tests folgen **CRUD-Paradigma**: Create → Read → Update → Delete
 - Tests laufen automatisch **zweimal**: online + offline (via Network-Blocking)
 - **Playwright startet Server automatisch** (Vite + InstantDB) — kein manuelles `podman-compose up` nötig
-- `npm run test:e2e` führt beide Projekt-Varianten aus (146 Tests: 73 online + 73 offline; 2 weitere nur via `test:e2e:soft`)
+- `npm run test:e2e` führt beide Projekt-Varianten aus (142 Tests: 71 online + 71 offline; 2 weitere nur via `test:e2e:soft`)
 - Playwright startet drei Server: Vite (`VITE_INSTANTDB_MODE=local`, `VITE_AI_PROXY_URL=http://localhost:8787`),
   InstantDB (podman-compose) und den AI-Proxy (`npm run dev:proxy` im Auth-Bypass, Key aus `.env` explizit per `env`,
   `AI_PROXY_BURST_LIMIT=10000`, weil alle Tests einen Nutzer teilen und die Fair-Use-Bremse sonst 429 liefert)
@@ -323,7 +328,7 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | IE | Rechnung bearbeiten | IE-001, IE-002: Datum und km nachziehen, Positionen abgleichen |
 | SV | Verkauft oder abgegeben | SV-001, SV-002: raus aus Fälligkeiten, Kosten bleiben, rückgängig |
 
-**Gesamt: 73 Tests pro Projekt** (+2 `@soft`) — `npm run test:e2e --list` zeigt alle
+**Gesamt: 71 Tests pro Projekt** (+2 `@soft`) — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`

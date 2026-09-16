@@ -1,66 +1,45 @@
 <script setup lang="ts">
-import type { LeadSegment } from '../lib/leads'
+import type { LandingSegment } from '../stores/events'
 import Button from 'primevue/button'
-import { nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useLeadsStore } from '../stores/leads'
-import LeadForm from './LeadForm.vue'
+import { useEventsStore } from '../stores/events'
+import LandingFooter from './LandingFooter.vue'
+import LandingHeader from './LandingHeader.vue'
 import PriceTable from './PriceTable.vue'
 
-// Landing Page als Türattrappe (business-plan/09-validierung.md, M3): Problem in einem Satz,
-// drei Nutzen, Preis sichtbar, ein Button. Der Button öffnet nur ein E-Mail-Formular, kein Zahlungsvorgang.
+// Landing Page pro Hypothese (business-plan/09-validierung.md, M3): Problem in einem Satz,
+// drei Nutzen, Preis sichtbar, ein Button in die Testzeit. Fragen gehen per Mail ans Postfach.
 const props = defineProps<{
-  segment: LeadSegment
+  segment: LandingSegment
   title: string
   problem: string
   benefits: { icon: string, title: string, text: string }[]
   price: string
   priceNote: string
   cta: string
-  noteLabel?: string
   /** Startwert des Preisreglers */
   vehicles?: number
   /** Obergrenze des Preisreglers */
   maxVehicles?: number
-  /** zweiter Weg: Einrichtung durch uns, öffnet das Lead-Formular */
-  secondaryCta?: string
-  /** Angebot im Rahmen, z. B. die ersten drei Betriebe gratis */
-  offer?: string
+  /** Betreff der Kontakt-Mail; ohne Angabe keine Kontaktzeile unter dem Knopf */
+  contactSubject?: string
 }>()
 
+const CONTACT_EMAIL = 'info@wartungsheft.ch'
+
 const router = useRouter()
-const leads = useLeadsStore()
+const events = useEventsStore()
 
 // Hauptweg ist die Testzeit: der Klick zählt als Interesse und führt zur Anmeldung
 function startTrial() {
-  leads.trackCta(props.segment)
+  events.trackCta(props.segment)
   router.push('/login')
-}
-
-const showForm = ref(false)
-const formEl = ref<HTMLElement | null>(null)
-
-async function openForm() {
-  showForm.value = true
-  leads.trackCta(props.segment)
-  await nextTick()
-  formEl.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 </script>
 
 <template>
   <div class="hypo">
-    <header class="hypo-header">
-      <div class="hypo-container hypo-header-inner">
-        <router-link to="/" class="hypo-logo">
-          <i class="pi pi-car" />
-          <span>Wartungsheft</span>
-        </router-link>
-        <router-link to="/login" class="hypo-login">
-          Anmelden
-        </router-link>
-      </div>
-    </header>
+    <LandingHeader :segment="segment" />
 
     <main class="hypo-container hypo-main">
       <section class="hypo-hero">
@@ -82,31 +61,18 @@ async function openForm() {
         <strong>{{ price }}</strong>
         <span>{{ priceNote }}</span>
         <PriceTable :vehicles="vehicles ?? 1" :max="maxVehicles ?? 25" compact class="hypo-price-table" />
-        <p v-if="offer" class="hypo-offer">
-          {{ offer }}
-        </p>
         <div class="hypo-actions">
           <Button :label="cta" size="large" icon="pi pi-arrow-right" icon-pos="right" @click="startTrial" />
-          <Button v-if="secondaryCta && !showForm" :label="secondaryCta" size="large" outlined @click="openForm" />
         </div>
-      </section>
-
-      <section v-if="showForm" ref="formEl" class="hypo-form">
-        <LeadForm :segment="segment" :note-label="noteLabel" />
+        <p v-if="contactSubject" class="hypo-contact">
+          Fragen vorab? Schreib an
+          <a :href="`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(contactSubject)}`">{{ CONTACT_EMAIL }}</a>,
+          wir antworten am gleichen Tag.
+        </p>
       </section>
     </main>
 
-    <footer class="hypo-footer">
-      <div class="hypo-container footer-inner">
-        <span>Goran Strainovic, Strainovic IT, Steinach SG · Schweizer Server, KI in der EU</span>
-        <router-link to="/impressum">
-          Impressum
-        </router-link>
-        <router-link to="/datenschutz">
-          Datenschutz
-        </router-link>
-      </div>
-    </footer>
+    <LandingFooter />
   </div>
 </template>
 
@@ -118,34 +84,6 @@ async function openForm() {
   font-family: var(--p-font-family);
   color: var(--p-text-color);
   background: var(--p-surface-ground);
-}
-
-.hypo-header {
-  background: var(--p-surface-card);
-  border-bottom: 1px solid var(--p-surface-border);
-}
-
-.hypo-header-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1.5rem;
-}
-
-.hypo-logo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--p-primary-color);
-  text-decoration: none;
-}
-
-.hypo-login {
-  color: var(--p-text-muted-color);
-  text-decoration: none;
-  font-size: 0.9rem;
 }
 
 .hypo-container {
@@ -239,15 +177,6 @@ async function openForm() {
   margin-bottom: 1.5rem;
 }
 
-.hypo-offer {
-  margin: 0 0 1.25rem;
-  padding: 0.9rem 1.2rem;
-  border: 1px solid var(--p-primary-color);
-  border-radius: var(--p-border-radius);
-  background: color-mix(in srgb, var(--p-primary-color) 10%, transparent);
-  font-weight: 600;
-}
-
 .hypo-actions {
   display: flex;
   gap: 0.75rem;
@@ -255,34 +184,13 @@ async function openForm() {
   justify-content: center;
 }
 
-.hypo-form {
-  padding: 2rem 1.5rem;
-  border-radius: var(--p-border-radius);
-  background: var(--p-surface-card);
-  border: 1px solid var(--p-surface-border);
-}
-
-.hypo-footer {
-  padding: 1.5rem 0;
-  border-top: 1px solid var(--p-surface-border);
-  background: var(--p-surface-card);
-}
-
-.footer-inner {
-  display: flex;
-  gap: 1.5rem;
-  justify-content: center;
-  flex-wrap: wrap;
-  font-size: 0.9rem;
+.hypo-contact {
+  margin: 1rem 0 0;
+  font-size: 0.95rem;
   color: var(--p-text-muted-color);
 }
 
-.footer-inner a {
-  color: var(--p-text-muted-color);
-  text-decoration: none;
-}
-
-.footer-inner a:hover {
-  color: var(--p-text-color);
+.hypo-contact a {
+  color: var(--p-primary-color);
 }
 </style>

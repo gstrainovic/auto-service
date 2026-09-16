@@ -18,11 +18,9 @@ const benefits = [
     problem="Bei drei bis fünfzehn Fahrzeugen kostet die Verwaltung Stunden im Monat: Belege verstreut, kein Überblick, wann welcher Wagen zum Service war, und am Jahresende weiss niemand, was welches Fahrzeug gekostet hat."
     :benefits="benefits"
     price="Rund 2 CHF pro Fahrzeug und Monat"
-    price-note="Kein Telematik-Kasten, keine Grundgebühr, Jahresrechnung. 30 Tage gratis mit der ganzen Flotte."
-    offer="Die ersten drei Betriebe: ein Jahr kostenlos. Wir erfassen deine Fahrzeuge und die Altbelege, du fotografierst nur noch."
+    price-note="Kein Telematik-Kasten, keine Grundgebühr, Jahresrechnung. 30 Tage gratis mit der ganzen Flotte. Tipp: mit einer Team-Adresse wie fuhrpark@deinbetrieb.ch anmelden, dann fotografiert jeder Fahrer mit dem gleichen Zugang."
     :vehicles="5"
     cta="30 Tage gratis testen"
-    secondary-cta="Wir richten es für dich ein"
-    note-label="Anzahl Fahrzeuge"
+    contact-subject="Wartungsheft für unseren Betrieb"
   />
 </template>

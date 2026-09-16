@@ -102,7 +102,7 @@ function chf(value: number): string {
 
     <ul class="price-includes">
       <li><i class="pi pi-check" /> Scannen ohne Limit im Alltag, Chat-Assistent, E-Mail-Erinnerungen</li>
-      <li><i class="pi pi-check" /> Kosten pro Fahrzeug und Jahr, CSV, PDF-Dossier, Serviceheft für den Verkauf</li>
+      <li><i class="pi pi-check" /> Kosten pro Fahrzeug und Jahr für Excel, PDF-Dossier, Serviceheft für den Verkauf</li>
       <li><i class="pi pi-check" /> Jahresrechnung, keine Grundgebühr, jederzeit kündbar</li>
     </ul>
   </div>

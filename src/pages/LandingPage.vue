@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { useRouter } from 'vue-router'
+import DemoDueList from '../components/DemoDueList.vue'
+import LandingFooter from '../components/LandingFooter.vue'
+import LandingHeader from '../components/LandingHeader.vue'
 import PriceTable from '../components/PriceTable.vue'
 import { useAuth } from '../composables/useAuth'
 
@@ -18,47 +21,29 @@ function goToApp() {
 <template>
   <div class="landing">
     <!-- Header -->
-    <header class="landing-header">
-      <div class="landing-container landing-header-inner">
-        <div class="landing-logo">
-          <i class="pi pi-car" />
-          <span>Wartungsheft</span>
-        </div>
-        <nav class="landing-nav">
-          <a href="#features">Features</a>
-          <a href="#how-it-works">So funktioniert's</a>
-          <a href="#preise">Preise</a>
-          <router-link to="/betrieb">
-            Für Betriebe
-          </router-link>
-          <router-link to="/privathalter">
-            Für Privathalter
-          </router-link>
-          <Button
-            :label="user ? 'Zur Übersicht' : '30 Tage gratis testen'"
-            size="small"
-            @click="goToApp"
-          />
-        </nav>
-      </div>
-    </header>
+    <LandingHeader />
 
     <!-- Hero -->
     <section class="hero">
       <div class="landing-container hero-inner">
-        <h1>Rechnung fotografieren. Alles andere macht Wartungsheft.</h1>
-        <p class="hero-subtitle">
-          Serviceheft, Fälligkeiten und Kosten pro Fahrzeug — ohne Abtippen.
-          Für ein Auto oder die ganze Flotte.
-        </p>
-        <div class="hero-actions">
-          <Button
-            :label="user ? 'Zur Übersicht' : '30 Tage gratis testen'"
-            icon="pi pi-arrow-right"
-            icon-pos="right"
-            size="large"
-            @click="goToApp"
-          />
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <h1>Rechnung fotografieren. Den Rest erledigt Wartungsheft.</h1>
+            <p class="hero-subtitle">
+              Serviceheft, Fälligkeiten und Kosten pro Fahrzeug — ohne Abtippen.
+              Für ein Auto oder die ganze Flotte.
+            </p>
+            <div class="hero-actions">
+              <Button
+                :label="user ? 'Zur Übersicht' : '30 Tage gratis testen'"
+                icon="pi pi-arrow-right"
+                icon-pos="right"
+                size="large"
+                @click="goToApp"
+              />
+            </div>
+          </div>
+          <DemoDueList class="hero-demo" />
         </div>
         <div class="hero-stats">
           <div class="hero-stat">
@@ -118,7 +103,8 @@ function goToApp() {
               <i class="pi pi-bell" />
             </div>
             <h3>Wartungs-Tracker</h3>
-            <p>Farbcodierte Anzeige: Grün (ok), Gelb (bald fällig), Rot (überfällig). Für Öl, Bremsen, MFK und mehr.</p>
+            <p>Auf einen Blick, was ansteht: Öl, Bremsen, MFK, Zahnriemen und was dein Serviceheft sonst vorsieht.</p>
+            <DemoDueList compact />
           </div>
           <div class="feature-card">
             <div class="feature-icon">
@@ -132,7 +118,7 @@ function goToApp() {
               <i class="pi pi-shield" />
             </div>
             <h3>Schweizer Anbieter, Schweizer Server</h3>
-            <p>Entwickelt und betrieben von Strainovic IT in Steinach SG. Daten auf Servern in der Schweiz, KI-Verarbeitung durch Mistral AI in Frankreich (EU), ohne Training mit deinen Daten. Kein eigener API-Key nötig.</p>
+            <p>Entwickelt, betrieben und gespeichert in der Schweiz. Die KI läuft bei Mistral in Frankreich, ohne Training mit deinen Daten. Alles inklusive, nichts extra buchen.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">
@@ -146,7 +132,7 @@ function goToApp() {
               <i class="pi pi-file-excel" />
             </div>
             <h3>Export für Treuhänder und Käufer</h3>
-            <p>CSV für Excel, PDF-Dossier pro Fahrzeug und der Jahresabschluss als ZIP mit allen Belegbildern.</p>
+            <p>Tabelle für Excel, PDF-Dossier pro Fahrzeug und der Jahresabschluss mit allen Belegbildern für den Treuhänder.</p>
           </div>
         </div>
       </div>
@@ -204,7 +190,7 @@ function goToApp() {
             </p>
             <ul class="pricing-features">
               <li><i class="pi pi-check" /> Fahrer fotografiert die Rechnung, fertig</li>
-              <li><i class="pi pi-check" /> Kosten pro Fahrzeug und Jahr, CSV und PDF</li>
+              <li><i class="pi pi-check" /> Kosten pro Fahrzeug und Jahr, für Excel und als PDF</li>
               <li><i class="pi pi-check" /> E-Mail-Erinnerungen an fällige Arbeiten</li>
             </ul>
             <Button
@@ -256,37 +242,14 @@ function goToApp() {
           icon="pi pi-arrow-right"
           icon-pos="right"
           size="large"
+          severity="contrast"
           @click="goToApp"
         />
       </div>
     </section>
 
     <!-- Footer -->
-    <footer class="landing-footer">
-      <div class="landing-container footer-inner">
-        <div class="footer-left">
-          <div class="landing-logo">
-            <i class="pi pi-car" />
-            <span>Wartungsheft</span>
-          </div>
-          <p>Aus Steinach SG. Schweizer Server, KI in der EU.</p>
-        </div>
-        <div class="footer-links">
-          <router-link to="/betrieb">
-            Betriebe
-          </router-link>
-          <router-link to="/privathalter">
-            Privathalter
-          </router-link>
-          <router-link to="/impressum">
-            Impressum
-          </router-link>
-          <router-link to="/datenschutz">
-            Datenschutz
-          </router-link>
-        </div>
-      </div>
-    </footer>
+    <LandingFooter />
   </div>
 </template>
 
@@ -297,52 +260,7 @@ function goToApp() {
   background: var(--p-surface-ground);
 }
 
-/* Header */
-.landing-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: var(--p-surface-card);
-  border-bottom: 1px solid var(--p-surface-border);
-  backdrop-filter: blur(8px);
-}
-
-.landing-header-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1.5rem;
-}
-
-.landing-logo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--p-primary-color);
-}
-
-.landing-logo i {
-  font-size: 1.5rem;
-}
-
-.landing-nav {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.landing-nav a {
-  color: var(--p-text-muted-color);
-  text-decoration: none;
-  font-size: 0.9rem;
-  transition: color 0.2s;
-}
-
-.landing-nav a:hover {
-  color: var(--p-text-color);
-}
+/* Kopf und Fuss sind LandingHeader.vue und LandingFooter.vue */
 
 /* Container */
 .landing-container {
@@ -357,6 +275,21 @@ function goToApp() {
   text-align: center;
 }
 
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 3rem;
+  align-items: center;
+  text-align: left;
+  margin-bottom: 3rem;
+}
+
+.hero-demo {
+  max-width: 460px;
+  width: 100%;
+  justify-self: end;
+}
+
 .hero h1 {
   font-size: clamp(2rem, 5vw, 3.5rem);
   font-weight: 800;
@@ -369,12 +302,24 @@ function goToApp() {
   font-size: 1.2rem;
   color: var(--p-text-muted-color);
   max-width: 600px;
-  margin: 0 auto 2rem;
+  margin: 0 0 2rem;
   line-height: 1.6;
 }
 
-.hero-actions {
-  margin-bottom: 3rem;
+@media (max-width: 800px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 2rem;
+  }
+
+  .hero-subtitle {
+    margin: 0 auto 2rem;
+  }
+
+  .hero-demo {
+    justify-self: center;
+  }
 }
 
 .hero-stats {
@@ -568,6 +513,8 @@ function goToApp() {
 
 .pricing-card {
   position: relative;
+  display: flex;
+  flex-direction: column;
   padding: 2rem 1.5rem;
   border-radius: var(--p-border-radius);
   background: var(--p-surface-card);
@@ -584,7 +531,9 @@ function goToApp() {
   font-size: 1.25rem;
 }
 
+/* wächst mit, damit Haken-Liste und Knopf in beiden Karten auf gleicher Höhe stehen */
 .audience-text {
+  flex: 1;
   color: var(--p-text-muted-color);
   margin: 0 0 1.25rem;
   text-align: left;
@@ -601,14 +550,17 @@ function goToApp() {
 .pricing-features li {
   padding: 0.4rem 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   font-size: 0.95rem;
+  line-height: 1.4;
 }
 
 .pricing-features li i {
   color: var(--p-green-500);
   font-size: 0.85rem;
+  flex-shrink: 0;
+  margin-top: 0.3rem;
 }
 
 /* CTA */
@@ -630,49 +582,8 @@ function goToApp() {
 }
 
 /* Footer */
-.landing-footer {
-  padding: 2rem 0;
-  border-top: 1px solid var(--p-surface-border);
-  background: var(--p-surface-card);
-}
-
-.footer-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.footer-left p {
-  margin: 0.5rem 0 0;
-  font-size: 0.85rem;
-  color: var(--p-text-muted-color);
-}
-
-/* Umbruch erlaubt, sonst schiebt die Linkzeile die Seite auf schmalen Displays in die Breite */
-.footer-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1.5rem;
-}
-
-.footer-links a {
-  color: var(--p-text-muted-color);
-  text-decoration: none;
-  font-size: 0.9rem;
-}
-
-.footer-links a:hover {
-  color: var(--p-text-color);
-}
-
 /* Mobile */
 @media (max-width: 768px) {
-  .landing-nav a:not(.p-button) {
-    display: none;
-  }
-
   .hero {
     padding: 3rem 0 2rem;
   }

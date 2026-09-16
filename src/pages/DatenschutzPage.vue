@@ -1,21 +1,11 @@
 <script setup lang="ts">
-import Button from 'primevue/button'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
+import LandingFooter from '../components/LandingFooter.vue'
+import LandingHeader from '../components/LandingHeader.vue'
 </script>
 
 <template>
   <div class="legal-page">
-    <header class="legal-header">
-      <div class="legal-container legal-header-inner">
-        <router-link to="/" class="legal-logo">
-          <i class="pi pi-car" />
-          <span>Wartungsheft</span>
-        </router-link>
-        <Button label="Zurück" icon="pi pi-arrow-left" text size="small" @click="router.back()" />
-      </div>
-    </header>
+    <LandingHeader />
 
     <main class="legal-container legal-content">
       <h1>Datenschutzerklärung</h1>
@@ -228,16 +218,7 @@ const router = useRouter()
       </p>
     </main>
 
-    <footer class="legal-footer">
-      <div class="legal-container footer-inner">
-        <router-link to="/">
-          Startseite
-        </router-link>
-        <router-link to="/impressum">
-          Impressum
-        </router-link>
-      </div>
-    </footer>
+    <LandingFooter />
   </div>
 </template>
 
@@ -247,35 +228,6 @@ const router = useRouter()
   display: flex;
   flex-direction: column;
   background: var(--p-surface-ground);
-}
-
-.legal-header {
-  background: var(--p-surface-card);
-  border-bottom: 1px solid var(--p-surface-border);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.legal-header-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1.5rem;
-}
-
-.legal-logo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--p-primary-color);
-  text-decoration: none;
-}
-
-.legal-logo i {
-  font-size: 1.5rem;
 }
 
 .legal-container {
@@ -355,27 +307,5 @@ const router = useRouter()
 
 .legal-content td {
   color: var(--p-text-muted-color);
-}
-
-.legal-footer {
-  padding: 1.5rem 0;
-  border-top: 1px solid var(--p-surface-border);
-  background: var(--p-surface-card);
-}
-
-.footer-inner {
-  display: flex;
-  gap: 1.5rem;
-  justify-content: center;
-}
-
-.footer-inner a {
-  color: var(--p-text-muted-color);
-  text-decoration: none;
-  font-size: 0.9rem;
-}
-
-.footer-inner a:hover {
-  color: var(--p-text-color);
 }
 </style>

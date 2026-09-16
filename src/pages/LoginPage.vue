@@ -3,6 +3,7 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import { ref } from 'vue'
+import LandingFooter from '../components/LandingFooter.vue'
 import { useAuth } from '../composables/useAuth'
 
 const { sendMagicCode, signInWithMagicCode, googleAuthUrl } = useAuth()
@@ -137,14 +138,16 @@ function handleBack() {
       </form>
     </div>
   </div>
+  <LandingFooter />
 </template>
 
 <style scoped>
+/* Karte füllt den Platz über dem Fuss, der Fuss bleibt unten */
 .login-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  min-height: calc(100vh - 6rem);
   background: var(--p-surface-ground);
   padding: 1rem;
 }

@@ -8,9 +8,10 @@ test.describe('Public Pages', () => {
     await expect(page.getByText('Strainovic IT').first()).toBeVisible()
     await expect(page.getByText('9323 Steinach')).toBeVisible()
     await expect(page.getByText('UWG')).toBeVisible()
-    // Footer-Links
-    await expect(page.getByRole('link', { name: 'Startseite' })).toBeVisible()
+    // Kopf: Logo führt zur Startseite; Fuss: Rechtliches und Kontakt
+    await expect(page.getByRole('banner').getByRole('link', { name: 'Wartungsheft' })).toHaveAttribute('href', '/')
     await expect(page.getByRole('link', { name: 'Datenschutz' })).toBeVisible()
+    await expect(page.getByRole('contentinfo').getByRole('link', { name: 'info@wartungsheft.ch' })).toBeVisible()
   })
 
   test('PP-002: datenschutz shows privacy policy with nDSG sections', async ({ page }) => {

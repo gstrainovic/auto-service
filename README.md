@@ -41,7 +41,7 @@ cd ~/instant/server && podman-compose -f docker-compose-dev.yml up -d
 
 ```bash
 npm install
-npm run dev    # Prüft automatisch ob InstantDB läuft
+npm run dev    # Startet InstantDB und AI-Proxy mit, falls sie nicht laufen (lokaler Modus)
 ```
 
 Die App läuft auf http://localhost:5173.
@@ -55,8 +55,8 @@ Die App läuft auf http://localhost:5173.
 ## Befehle
 
 ```bash
-npm run dev          # Vite Dev Server + InstantDB Auto-Start
-npm run dev:vite     # Nur Vite (InstantDB muss manuell laufen)
+npm run dev          # Vite + InstantDB + AI-Proxy, lokaler Modus mit Auth-Bypass
+npm run dev:vite     # Nur Vite (InstantDB und Proxy müssen laufen, Modus per VITE_INSTANTDB_MODE)
 npm run build        # Produktions-Build (vue-tsc + Vite)
 npm run lint         # ESLint prüfen
 npm run lint:fix     # ESLint auto-fix
@@ -269,12 +269,12 @@ Datenbank leer sein.
 - InstantDB: `curl -fsS https://api.wartungsheft.ch/health/system` → `{"wal":"ok"}`
 - AI-Proxy: `curl -fsS https://ai.wartungsheft.ch/health` → `{"ok":true}`
 - Besucher der Landing Pages: Caddy-Zugriffslog im Volume `instant_caddy_data` unter `/data/access-app.log` (JSON),
-  Klicks (`events`) und Einträge (`leads`) über die Admin-API mit dem Token aus `deploy/.env`:
+  Klicks (`events`) über die Admin-API mit dem Token aus `deploy/.env`, Fragen landen im Postfach `info@wartungsheft.ch`:
 
 ```bash
 set -a; . /opt/auto-service/deploy/.env; set +a
 curl -s -X POST https://api.wartungsheft.ch/admin/query -H "Content-Type: application/json" \
-  -H "App-Id: $INSTANT_APP_ID" -H "Authorization: Bearer $INSTANT_ADMIN_TOKEN" -d '{"query":{"leads":{},"events":{}}}'
+  -H "App-Id: $INSTANT_APP_ID" -H "Authorization: Bearer $INSTANT_ADMIN_TOKEN" -d '{"query":{"events":{}}}'
 ```
 
 ### 7. E-Mail-Erinnerungen

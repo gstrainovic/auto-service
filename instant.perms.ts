@@ -93,16 +93,8 @@ const rules = {
       isOwner: 'auth.id != null && auth.id == data.userId',
     },
   },
-  // Landing Pages (Validierung): Interessenten und Klicks schreibt jeder Besucher ohne Login,
+  // Landing Pages (Validierung): Klicks schreibt jeder Besucher ohne Login,
   // lesen darf niemand über den Client; Auswertung nur im Dashboard oder per Admin-SDK
-  leads: {
-    allow: {
-      view: 'false',
-      create: 'true',
-      update: 'false',
-      delete: 'false',
-    },
-  },
   events: {
     allow: {
       view: 'false',

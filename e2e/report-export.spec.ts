@@ -111,7 +111,7 @@ test.describe('Kosten und Export', () => {
     expect(dump).toContain('kosten-2026.csv')
     expect(dump).toContain('belege/2026-03-10-vw-caddy-pneu-egger.jpg')
     expect(dump).not.toContain('2025-11-02')
-    await expect(page.getByText('CSV und 1 Beleg geladen.')).toBeVisible()
+    await expect(page.getByText('CSV und 1 Rechnungsbild geladen.')).toBeVisible()
   })
 
   test('RE-006: Serviceheft für den Verkauf lädt als PDF, Preise nur auf Wunsch', async ({ page }) => {

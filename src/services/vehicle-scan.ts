@@ -39,7 +39,8 @@ export function vehicleDocToFields(doc: ParsedVehicleDocument): Partial<VehicleF
   return fields
 }
 
-export function fillVehicleFields<T extends VehicleFields>(current: T, scanned: Partial<VehicleFields>, opts: { yearTouched: boolean }): T {
+/** Füllt nur leere Felder; Baujahr und Kilometerstand 0 gelten als leer (das Formular belegt nichts vor) */
+export function fillVehicleFields<T extends VehicleFields>(current: T, scanned: Partial<VehicleFields>): T {
   const merged = { ...current }
   for (const key of ['make', 'model', 'licensePlate', 'vin'] as const) {
     if (!merged[key]?.trim() && scanned[key])
@@ -47,7 +48,7 @@ export function fillVehicleFields<T extends VehicleFields>(current: T, scanned: 
   }
   if (!merged.mileage && scanned.mileage)
     merged.mileage = scanned.mileage
-  if (!opts.yearTouched && scanned.year)
+  if (!merged.year && scanned.year)
     merged.year = scanned.year
   return merged
 }

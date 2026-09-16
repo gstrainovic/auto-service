@@ -42,10 +42,11 @@ describe('vehicleDocToFields', () => {
 })
 
 describe('fillVehicleFields', () => {
-  const empty = { make: '', model: '', year: 2026, mileage: 0, licensePlate: '', vin: '' }
+  // Baujahr und Kilometerstand starten leer (0 = unbekannt), nichts ist vorbelegt
+  const empty = { make: '', model: '', year: 0, mileage: 0, licensePlate: '', vin: '' }
 
-  it('füllt leere Felder; das vorbelegte Baujahr gilt als leer, solange der Nutzer es nicht geändert hat', () => {
-    expect(fillVehicleFields(empty, vehicleDocToFields(ausweis), { yearTouched: false })).toEqual({
+  it('füllt leere Felder, auch Baujahr und Kilometerstand', () => {
+    expect(fillVehicleFields(empty, vehicleDocToFields(ausweis))).toEqual({
       make: 'Saurer',
       model: '3 DUX',
       year: 1964,
@@ -57,6 +58,6 @@ describe('fillVehicleFields', () => {
 
   it('lässt Eingaben des Nutzers stehen', () => {
     const typed = { ...empty, make: 'Saurer AG', year: 1963, mileage: 405300 }
-    expect(fillVehicleFields(typed, vehicleDocToFields(ausweis), { yearTouched: true })).toMatchObject({ make: 'Saurer AG', year: 1963, mileage: 405300, model: '3 DUX' })
+    expect(fillVehicleFields(typed, vehicleDocToFields(ausweis))).toMatchObject({ make: 'Saurer AG', year: 1963, mileage: 405300, model: '3 DUX' })
   })
 })

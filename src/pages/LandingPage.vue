@@ -111,7 +111,7 @@ function goToApp() {
               <i class="pi pi-sync" />
             </div>
             <h3>Offline-First</h3>
-            <p>Fahrzeuge, Rechnungen und Wartungsplan funktionieren ohne Internet. Ein offline fotografierter Beleg wird gespeichert, der KI-Scan läuft automatisch nach, sobald du wieder online bist.</p>
+            <p>Fahrzeuge, Rechnungen und Wartungsplan funktionieren ohne Internet. Eine offline fotografierte Rechnung wird gespeichert, der KI-Scan läuft automatisch nach, sobald du wieder online bist.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">
@@ -132,7 +132,7 @@ function goToApp() {
               <i class="pi pi-file-excel" />
             </div>
             <h3>Export für Treuhänder und Käufer</h3>
-            <p>Tabelle für Excel, PDF-Dossier pro Fahrzeug und der Jahresabschluss mit allen Belegbildern für den Treuhänder.</p>
+            <p>Tabelle für Excel, PDF-Dossier pro Fahrzeug und der Jahresabschluss mit allen Rechnungsbildern für den Treuhänder.</p>
           </div>
         </div>
       </div>
@@ -204,7 +204,7 @@ function goToApp() {
           <div class="pricing-card">
             <h3>Privathalter</h3>
             <p class="audience-text">
-              Ein Auto, alle Belege: digitales Serviceheft, Wartungsplan mit Erinnerung und ein PDF-Dossier
+              Ein Auto, alle Rechnungen: digitales Serviceheft, Wartungsplan mit Erinnerung und ein PDF-Dossier
               für den Verkauf.
             </p>
             <ul class="pricing-features">

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Vehicle } from '../stores/vehicles'
 import Badge from 'primevue/badge'
-import Button from 'primevue/button'
 import Card from 'primevue/card'
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -14,7 +13,6 @@ import { useMaintenancesStore } from '../stores/maintenances'
 import { useSettingsStore } from '../stores/settings'
 
 const props = defineProps<{ vehicle: Vehicle }>()
-const emit = defineEmits<{ delete: [id: string] }>()
 const router = useRouter()
 
 // Fälligkeit live aus dem Store (nach «Erledigt eintragen» oder einer Rechnung sofort aktuell)
@@ -75,13 +73,9 @@ const yearCost = computed(() => {
     .join(' + ')
 })
 
+// Löschen nur auf der Fahrzeugseite: ein Papierkorb neben dem Öffnen-Pfeil war auf dem Handy ein Fehlklick-Risiko
 function navigateToDetail(): void {
   router.push(`/vehicles/${props.vehicle.id}`)
-}
-
-function onDelete(event: Event): void {
-  event.stopPropagation()
-  emit('delete', props.vehicle.id)
 }
 </script>
 
@@ -96,12 +90,12 @@ function onDelete(event: Event): void {
     </template>
     <template #subtitle>
       <div class="subtitle-row">
-        <span>{{ vehicle.year }}</span>
+        <span v-if="vehicle.year">{{ vehicle.year }}</span>
         <Badge v-if="vehicle.licensePlate" :value="vehicle.licensePlate" severity="secondary" class="license-badge" />
       </div>
     </template>
     <template #content>
-      <!-- Eine Zeile statt Leerfläche: km, Kosten des laufenden Jahres, Löschen und Chevron als Klick-Hinweis -->
+      <!-- Eine Zeile statt Leerfläche: km, Kosten des laufenden Jahres und Chevron als Klick-Hinweis -->
       <div class="card-row">
         <span v-if="vehicle.mileage" class="mileage">
           <i class="pi pi-gauge" />
@@ -112,16 +106,6 @@ function onDelete(event: Event): void {
           {{ yearCost }} in {{ currentYear }}
         </span>
         <span class="card-spacer" />
-        <Button
-          v-tooltip.top="'Fahrzeug löschen'"
-          icon="pi pi-trash"
-          severity="secondary"
-          text
-          rounded
-          size="small"
-          aria-label="Löschen"
-          @click="onDelete"
-        />
         <i class="pi pi-chevron-right chevron" />
       </div>
     </template>

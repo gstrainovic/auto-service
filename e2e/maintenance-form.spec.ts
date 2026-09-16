@@ -7,7 +7,7 @@ async function createTestVehicle(page: any) {
   await page.getByLabel('Modell').fill('320d')
   await page.getByLabel('Baujahr').fill('2020')
   await page.getByLabel('Kilometerstand').fill('45000')
-  await page.getByLabel('Kennzeichen').fill('M-AB 1234')
+  await page.getByLabel('Kontrollschild').fill('M-AB 1234')
   await page.getByRole('button', { name: 'Speichern' }).click()
 
   await expect(page.locator('.vehicle-card', { hasText: 'BMW 320d' })).toBeVisible()

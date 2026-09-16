@@ -13,7 +13,7 @@ test.describe('Delete Flow', () => {
     await page.getByLabel('Modell').fill('Golf')
     await page.getByLabel('Baujahr').fill('2018')
     await page.getByLabel('Kilometerstand').fill('80000')
-    await page.getByLabel('Kennzeichen').fill('HH-VW 1234')
+    await page.getByLabel('Kontrollschild').fill('HH-VW 1234')
     await page.getByRole('button', { name: 'Speichern' }).click()
 
     // READ

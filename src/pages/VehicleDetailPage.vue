@@ -369,17 +369,17 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
     <div class="header-row">
       <Button icon="pi pi-arrow-left" text to="/vehicles" as="router-link" />
       <div class="spacer" />
-      <Button icon="pi pi-pencil" label="Bearbeiten" text severity="primary" @click="editVehicle = true" />
-      <Button v-if="!vehicle?.soldAt" icon="pi pi-tag" label="Verkauft eintragen" text severity="secondary" @click="sellVehicle = true" />
-      <Button icon="pi pi-trash" label="Löschen" text severity="secondary" @click="confirmDeleteVehicle = true" />
+      <Button v-tooltip.bottom="'Bearbeiten'" icon="pi pi-pencil" label="Bearbeiten" text severity="primary" @click="editVehicle = true" />
+      <Button v-if="!vehicle?.soldAt" v-tooltip.bottom="'Verkauft eintragen'" icon="pi pi-tag" label="Verkauft eintragen" text severity="secondary" @click="sellVehicle = true" />
+      <Button v-tooltip.bottom="'Löschen'" icon="pi pi-trash" label="Löschen" text severity="secondary" @click="confirmDeleteVehicle = true" />
     </div>
 
     <template v-if="vehicle">
       <h2 class="vehicle-title">
         {{ vehicle.make }} {{ vehicle.model }}
       </h2>
-      <div class="vehicle-subtitle">
-        {{ vehicle.year }} · {{ vehicle.licensePlate }}
+      <div v-if="vehicle.year || vehicle.licensePlate" class="vehicle-subtitle">
+        {{ [vehicle.year || '', vehicle.licensePlate].filter(Boolean).join(' · ') }}
       </div>
 
       <!-- Verkauft: keine Fälligkeiten und Erinnerungen mehr, Kosten und Belege bleiben -->
@@ -388,7 +388,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
           <i class="pi pi-tag" />
         </template>
         <span class="sold-note-body">
-          <span>{{ soldNote }}. Kosten und Belege bleiben erhalten.</span>
+          <span>{{ soldNote }}. Kosten und Rechnungen bleiben erhalten.</span>
           <Button label="Doch behalten" text size="small" @click="undoSell" />
         </span>
       </Message>
@@ -562,7 +562,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
             </div>
             <!-- Übergabemappe: dasselbe Fahrzeug, aber für den Käufer statt für die Buchhaltung -->
             <div class="service-record">
-              <Button v-tooltip.bottom="'Auszug, Wartungshistorie und Belege als Mappe für den Käufer'" icon="pi pi-book" label="Serviceheft für den Verkauf" severity="secondary" outlined @click="exportServiceRecord" />
+              <Button v-tooltip.bottom="'Auszug, Wartungshistorie und Rechnungen als Mappe für den Käufer'" icon="pi pi-book" label="Serviceheft für den Verkauf" severity="secondary" outlined @click="exportServiceRecord" />
               <label class="service-record-prices">
                 <Checkbox v-model="serviceRecordPrices" binary input-id="service-record-prices" />
                 <span>mit Preisen</span>
@@ -614,7 +614,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
             </div>
             <div v-else class="empty-state">
               <i class="pi pi-chart-bar empty-icon" />
-              <p>Noch keine Belege erfasst, darum keine Kosten. Das PDF-Dossier geht trotzdem, mit Stammdaten und Wartungen.</p>
+              <p>Noch keine Rechnungen erfasst, darum keine Kosten. Das PDF-Dossier geht trotzdem, mit Stammdaten und Wartungen.</p>
             </div>
           </TabPanel>
         </TabPanels>
@@ -846,7 +846,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
     <Dialog v-model:visible="confirmDeleteVehicle" modal header="Fahrzeug löschen?">
       <p>Alle Rechnungen und Wartungseinträge werden ebenfalls gelöscht.</p>
       <p class="delete-hint">
-        Verkauft? Dann besser «Verkauft eintragen»: Das Fahrzeug verschwindet aus den Fälligkeiten, Kosten und Belege
+        Verkauft? Dann besser «Verkauft eintragen»: Das Fahrzeug verschwindet aus den Fälligkeiten, Kosten und Rechnungen
         bleiben für den Jahresabschluss erhalten.
       </p>
       <template #footer>
@@ -897,6 +897,13 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
   display: flex;
   align-items: center;
   margin-bottom: 1rem;
+}
+
+/* Am Handy nur Icons: drei beschriftete Knöpfe brachen sonst um und wurden abgeschnitten («Bearbeite», «Lösche») */
+@media (max-width: 600px) {
+  .header-row :deep(.p-button-label) {
+    display: none;
+  }
 }
 
 .spacer {

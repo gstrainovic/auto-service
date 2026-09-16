@@ -30,7 +30,7 @@ async function createVehicleAndOpen(
   await mileageInput.pressSequentially(data.mileage)
 
   if (data.plate)
-    await page.getByLabel(/Kennzeichen/).fill(data.plate)
+    await page.getByLabel('Kontrollschild').fill(data.plate)
 
   await page.getByRole('button', { name: 'Speichern' }).click()
   await expect(page.locator('.vehicle-card', { hasText: `${data.make} ${data.model}` })).toBeVisible()
@@ -340,7 +340,7 @@ test.describe('Invoice CRUD', () => {
     await expect(
       page.locator('[data-pc-name="tabpanel"]').getByText('Werkstatt Schmidt'),
     ).not.toBeVisible({ timeout: 5_000 })
-    await expect(page.getByText(/keine rechnungen/i)).toBeVisible()
+    await expect(page.getByText(/^Keine Rechnungen./)).toBeVisible()
 
     // DELETE vehicle (cleanup)
     await deleteVehicleViaUI(page)

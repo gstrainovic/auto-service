@@ -38,7 +38,7 @@ test.describe('Empty States', () => {
 
     await page.getByText('Test Empty').click()
     await page.getByRole('tab', { name: 'Rechnungen' }).click()
-    await expect(page.getByText(/keine rechnungen/i)).toBeVisible()
+    await expect(page.getByText(/^Keine Rechnungen./)).toBeVisible()
 
     // DELETE
     await page.locator('button:has-text("Löschen")').first().click()

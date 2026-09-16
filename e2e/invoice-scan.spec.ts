@@ -58,7 +58,7 @@ test.describe('Beleg-Scan im Rechnungsformular', () => {
     const dialog = page.locator('[data-pc-name="dialog"]')
 
     await dialog.locator('input[type="file"]').setInputFiles(fixture('test-invoice.png'))
-    await expect(dialog.getByText('Felder aus dem Beleg ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 30_000 })
+    await expect(dialog.getByText('Felder aus der Rechnung ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 30_000 })
     await expect(dialog.locator('.image-preview img')).toBeVisible()
     // aufrechtes Hochformat bleibt, wie es ist
     expect(await headerOnTop(page)).toBe(true)
@@ -97,7 +97,7 @@ test.describe('Beleg-Scan im Rechnungsformular', () => {
       mimeType: 'application/pdf',
       buffer: Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF'),
     })
-    await expect(dialog.getByText('Felder aus dem Beleg ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 30_000 })
+    await expect(dialog.getByText('Felder aus der Rechnung ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 30_000 })
     await expect(dialog.locator('.pdf-name')).toContainText('rechnung.pdf')
     await expect(dialog.locator('#invoice-workshop')).toHaveValue('Lucky Car Dornbirn')
   })
@@ -125,7 +125,7 @@ test.describe('Beleg-Scan im Rechnungsformular', () => {
     const dialog = page.locator('[data-pc-name="dialog"]')
 
     await dialog.locator('input[type="file"]').setInputFiles(fixture('test-invoice-landscape.png'))
-    await expect(dialog.getByText('Felder aus dem Beleg ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 60_000 })
+    await expect(dialog.getByText('Felder aus der Rechnung ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 60_000 })
     const dims = await dialog.locator('.image-preview img').evaluate((img: HTMLImageElement) => ({ w: img.naturalWidth, h: img.naturalHeight }))
     expect(dims.h).toBeGreaterThan(dims.w)
   })
@@ -152,7 +152,7 @@ test.describe('Beleg-Scan im Rechnungsformular', () => {
       return c.toDataURL('image/png').split(',')[1]
     }, png.toString('base64'))
     await dialog.locator('input[type="file"]').setInputFiles({ name: 'kopfueber.png', mimeType: 'image/png', buffer: Buffer.from(upsideDown!, 'base64') })
-    await expect(dialog.getByText('Felder aus dem Beleg ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 60_000 })
+    await expect(dialog.getByText('Felder aus der Rechnung ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 60_000 })
 
     expect(await headerOnTop(page)).toBe(true)
   })
@@ -178,7 +178,7 @@ test.describe('Beleg-Scan im Rechnungsformular', () => {
     await openInvoiceForm(page)
     const dialog = page.locator('[data-pc-name="dialog"]')
     await dialog.locator('input[type="file"]').setInputFiles(fixture('test-invoice.png'))
-    await expect(dialog.getByText('Felder aus dem Beleg ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 30_000 })
+    await expect(dialog.getByText('Felder aus der Rechnung ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 30_000 })
 
     const positions = dialog.getByLabel('Erkannte Positionen')
     await expect(positions.locator('.scan-item')).toHaveCount(3)
@@ -200,7 +200,7 @@ test.describe('Beleg-Scan im Rechnungsformular', () => {
     await dialog.locator('#invoice-date').fill('2026-02-08')
     await dialog.locator('#invoice-workshop').fill('Garage Steinach')
     await dialog.locator('input[type="file"]').setInputFiles(fixture('test-invoice.png'))
-    await expect(dialog.getByText('Felder aus dem Beleg ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 30_000 })
+    await expect(dialog.getByText('Felder aus der Rechnung ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 30_000 })
     await expect(dialog.locator('#invoice-date')).toHaveValue('2026-02-08')
     await expect(dialog.locator('#invoice-workshop')).toHaveValue('Garage Steinach')
   })
@@ -291,7 +291,7 @@ test.describe('Beleg-Scan im Rechnungsformular', () => {
     const vehicleId = await openInvoiceForm(page)
     const dialog = page.locator('[data-pc-name="dialog"]')
     await dialog.locator('input[type="file"]').setInputFiles(fixture('test-invoice.png'))
-    await expect(dialog.getByText('Felder aus dem Beleg ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 30_000 })
+    await expect(dialog.getByText('Felder aus der Rechnung ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 30_000 })
     await dialog.getByRole('button', { name: 'Speichern' }).click()
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
 

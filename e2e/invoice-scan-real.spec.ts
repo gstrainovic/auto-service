@@ -61,7 +61,7 @@ test.describe('Beleg-Scan mit echtem Mistral @soft', () => {
       // Kilometerstand im Schweizer Format, falls erkannt
       if (form.mileage)
         expect(form.mileage).toMatch(/^\d{1,3}(’\d{3})* km$/)
-      expect(form.message).toContain('Felder aus dem Beleg ausgefüllt')
+      expect(form.message).toContain('Felder aus der Rechnung ausgefüllt')
       expect(form.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
       expect(form.amount).not.toBe('')
       expect(form.items.length).toBeGreaterThan(0)
@@ -86,7 +86,7 @@ test.describe('Beleg-Scan mit echtem Mistral @soft', () => {
       model: await dialog.getByLabel('Modell').inputValue(),
       year: await dialog.getByLabel('Baujahr').inputValue(),
       mileage: await dialog.getByLabel('Kilometerstand').inputValue(),
-      plate: await dialog.getByLabel('Kennzeichen').inputValue(),
+      plate: await dialog.getByLabel('Kontrollschild').inputValue(),
       vin: await dialog.locator('#vin').inputValue(),
     }
     // eslint-disable-next-line no-console

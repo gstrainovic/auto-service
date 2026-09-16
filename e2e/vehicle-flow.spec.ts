@@ -15,7 +15,7 @@ test.describe('Vehicle Flow', () => {
     await page.getByLabel('Modell').fill('320d')
     await page.getByLabel('Baujahr').fill('2020')
     await page.getByLabel('Kilometerstand').fill('45000')
-    await page.getByLabel('Kennzeichen').fill('M-AB 1234')
+    await page.getByLabel('Kontrollschild').fill('M-AB 1234')
     await page.getByRole('button', { name: 'Speichern' }).click()
 
     // READ
@@ -63,7 +63,7 @@ test.describe('Vehicle Flow', () => {
     await expect(page.getByText('VW Golf')).not.toBeVisible({ timeout: 5_000 })
   })
 
-  test('VF-003: delete a vehicle from card', async ({ page }) => {
+  test('VF-003: card has no delete button, deleting happens on the vehicle page', async ({ page }) => {
     // CREATE
     await page.goto('/vehicles')
     await page.getByRole('button', { name: 'Hinzufügen' }).click()
@@ -73,14 +73,17 @@ test.describe('Vehicle Flow', () => {
     await page.getByLabel('Kilometerstand').fill('30000')
     await page.getByRole('button', { name: 'Speichern' }).click()
 
-    // READ
-    await expect(page.getByText('Audi A4').first()).toBeVisible()
-
-    // DELETE from card with confirmation (tests AND cleans up)
+    // READ: kein Papierkorb neben dem Öffnen-Pfeil (Fehlklick-Risiko am Handy)
     const audiCard = page.locator('[data-pc-name="card"]', { hasText: 'Audi A4' }).first()
-    await audiCard.getByRole('button', { name: 'Löschen' }).click()
+    await expect(audiCard).toBeVisible()
+    await expect(audiCard.getByRole('button', { name: 'Löschen' })).toHaveCount(0)
+
+    // DELETE on the vehicle page with confirmation (tests AND cleans up)
+    await audiCard.click()
+    await page.locator('button:has-text("Löschen")').first().click()
     await expect(page.getByText('Fahrzeug löschen?')).toBeVisible()
     await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
+    await expect(page).toHaveURL(/\/vehicles$/)
     await expect(page.getByText('Audi A4')).not.toBeVisible()
   })
 
@@ -92,7 +95,7 @@ test.describe('Vehicle Flow', () => {
     await dialog.getByLabel('Marke').fill('Test')
     await dialog.getByLabel('Modell').fill('Status')
     await dialog.getByLabel('Baujahr').fill('2022')
-    await dialog.getByLabel('Kennzeichen').fill('M-AB 1234')
+    await dialog.getByLabel('Kontrollschild').fill('M-AB 1234')
     await dialog.getByRole('button', { name: 'Speichern' }).click()
 
     // READ - Status badge visible
@@ -100,11 +103,12 @@ test.describe('Vehicle Flow', () => {
     await expect(card).toBeVisible()
     await expect(card.locator('[data-pc-name="badge"]').first()).toBeVisible()
 
-    // Kennzeichen Badge visible
+    // Kontrollschild-Badge visible
     await expect(card.locator('.license-badge')).toContainText('M-AB 1234')
 
-    // DELETE (cleanup)
-    await card.getByRole('button', { name: 'Löschen' }).click()
+    // DELETE (cleanup) on the vehicle page
+    await card.click()
+    await page.locator('button:has-text("Löschen")').first().click()
     await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
     await expect(page.getByText('Test Status')).not.toBeVisible()
   })

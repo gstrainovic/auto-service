@@ -224,7 +224,7 @@ function exportYearZip(): void {
   }
   const images = files.length - 1
   saveFile(new Blob([createZip(files)], { type: 'application/zip' }), yearExportFilename(exportYear.value))
-  exportNote.value = `CSV und ${images} ${images === 1 ? 'Beleg' : 'Belege'} geladen.`
+  exportNote.value = `CSV und ${images} ${images === 1 ? 'Rechnungsbild' : 'Rechnungsbilder'} geladen.`
 }
 
 // Exportmenü: CSV und PDF über alle Fahrzeuge, Jahresabschluss als ZIP fürs gewählte Jahr
@@ -232,7 +232,7 @@ const exportMenu = ref<InstanceType<typeof Menu> | null>(null)
 const exportItems = computed(() => [
   { label: 'CSV für Excel, alle Fahrzeuge', icon: 'pi pi-file-excel', command: exportFleetCsv },
   { label: 'PDF-Übersicht, alle Fahrzeuge', icon: 'pi pi-file-pdf', command: exportFleetPdf },
-  ...(years.value.length ? [{ label: `Jahresabschluss ${exportYear.value}: ZIP mit CSV und Belegen`, icon: 'pi pi-download', command: exportYearZip }] : []),
+  ...(years.value.length ? [{ label: `Jahresabschluss ${exportYear.value}: ZIP mit CSV und Rechnungsbildern`, icon: 'pi pi-download', command: exportYearZip }] : []),
 ])
 
 async function exportFleetPdf(): Promise<void> {
@@ -334,7 +334,7 @@ const totalInvoiceCount = computed(() =>
       <Button
         v-if="ownVehicles.length > 0"
         icon="pi pi-camera"
-        label="Beleg erfassen"
+        label="Rechnung fotografieren"
         @click="startReceipt"
       />
     </div>

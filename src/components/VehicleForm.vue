@@ -3,7 +3,7 @@ import Button from 'primevue/button'
 import FloatLabel from 'primevue/floatlabel'
 import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
-import { reactive, ref, watchEffect } from 'vue'
+import { reactive, watchEffect } from 'vue'
 import { useVehicleScan } from '../composables/useVehicleScan'
 import { LOCALE } from '../lib/locale'
 import { fillVehicleFields } from '../services/vehicle-scan'
@@ -19,13 +19,24 @@ const props = defineProps<{
   }
 }>()
 
-const emit = defineEmits<{ save: [vehicle: typeof form] }>()
+const emit = defineEmits<{ save: [vehicle: VehicleFormData] }>()
 
+interface VehicleFormData {
+  make: string
+  model: string
+  year: number
+  mileage: number
+  licensePlate: string
+  vin: string
+}
+
+// Baujahr und Kilometerstand starten leer: 0 heisst unbekannt und wird nirgends angezeigt.
+// Vorbelegte Werte (aktuelles Jahr, «0 km») lasen Laien als Fehler oder liessen sie beim Gebrauchtwagen stehen.
 const form = reactive({
   make: '',
   model: '',
-  year: new Date().getFullYear(),
-  mileage: 0,
+  year: null as number | null,
+  mileage: null as number | null,
   licensePlate: '',
   vin: '',
 })
@@ -34,17 +45,19 @@ watchEffect(() => {
   if (props.initialData) {
     form.make = props.initialData.make
     form.model = props.initialData.model
-    form.year = props.initialData.year
-    form.mileage = props.initialData.mileage
+    form.year = props.initialData.year || null
+    form.mileage = props.initialData.mileage || null
     form.licensePlate = props.initialData.licensePlate
     form.vin = props.initialData.vin || ''
   }
 })
 
+function toData(): VehicleFormData {
+  return { ...form, year: form.year ?? 0, mileage: form.mileage ?? 0 }
+}
+
 // Neues Fahrzeug: Fahrzeugausweis oder Kaufvertrag lesen und leere Felder füllen (beim Bearbeiten nicht angeboten)
 const scan = useVehicleScan()
-// Baujahr ist mit dem aktuellen Jahr vorbelegt; erst eine Eingabe des Nutzers schützt es vor dem Scan
-const yearTouched = ref(false)
 
 async function onDocument(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement
@@ -53,13 +66,15 @@ async function onDocument(event: Event): Promise<void> {
   if (!file)
     return
   const fields = await scan.handleFile(file)
-  if (fields)
-    Object.assign(form, fillVehicleFields({ ...form }, fields, { yearTouched: yearTouched.value }))
+  if (fields) {
+    const filled = fillVehicleFields(toData(), fields)
+    Object.assign(form, { ...filled, year: filled.year || null, mileage: filled.mileage || null })
+  }
 }
 
 function onSubmit(event: Event): void {
   event.preventDefault()
-  emit('save', { ...form })
+  emit('save', toData())
 }
 </script>
 
@@ -112,9 +127,9 @@ function onSubmit(event: Event): void {
         v-model="form.year"
         input-id="year"
         :use-grouping="false"
-        required
+        :min="1886"
+        :max="new Date().getFullYear() + 1"
         class="w-full"
-        @input="yearTouched = true"
       />
       <label for="year">Baujahr</label>
     </FloatLabel>
@@ -126,19 +141,19 @@ function onSubmit(event: Event): void {
         :min="0"
         :locale="LOCALE"
         suffix=" km"
-        required
         class="w-full"
       />
       <label for="mileage">Kilometerstand</label>
     </FloatLabel>
 
+    <!-- Schweizer Begriffe wie auf dem Fahrzeugausweis (Feld 15 und 23) -->
     <FloatLabel>
       <InputText
         id="licensePlate"
         v-model="form.licensePlate"
         class="w-full"
       />
-      <label for="licensePlate">Kennzeichen</label>
+      <label for="licensePlate">Kontrollschild</label>
     </FloatLabel>
 
     <FloatLabel>
@@ -147,7 +162,7 @@ function onSubmit(event: Event): void {
         v-model="form.vin"
         class="w-full"
       />
-      <label for="vin">FIN (Fahrzeug-Identnummer)</label>
+      <label for="vin">Fahrgestellnummer</label>
     </FloatLabel>
 
     <Button type="submit" label="Speichern" :disabled="scan.scanning.value" />

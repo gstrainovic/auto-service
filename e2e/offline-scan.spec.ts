@@ -28,7 +28,7 @@ test.describe('Beleg ohne Verbindung', () => {
     await page.getByRole('button', { name: /rechnung.*hinzufügen/i }).click()
     const dialog = page.locator('[data-pc-name="dialog"]', { hasText: 'Neue Rechnung' })
     await dialog.locator('input[type="file"]').setInputFiles(photo)
-    await expect(dialog.getByText(/Offline: Der Beleg wird gespeichert/)).toBeVisible({ timeout: 30_000 })
+    await expect(dialog.getByText(/Offline: Die Rechnung wird gespeichert/)).toBeVisible({ timeout: 30_000 })
     await expect(dialog.locator('.image-preview img')).toBeVisible()
 
     // Datum von Hand, der Rest bleibt leer

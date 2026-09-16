@@ -23,7 +23,7 @@ test.describe('Fahrzeug per Fahrzeugausweis', () => {
     await expect(dialog.getByLabel('Modell')).toHaveValue('3 DUX')
     await expect(dialog.getByLabel('Baujahr')).toHaveValue('1964')
     await expect(dialog.getByLabel('Kilometerstand')).toHaveValue('405’260 km')
-    await expect(dialog.getByLabel('Kennzeichen')).toHaveValue('BS')
+    await expect(dialog.getByLabel('Kontrollschild')).toHaveValue('BS')
     await expect(dialog.locator('#vin')).toHaveValue('2 100 728')
     // Ausweis ist quer und bleibt quer
     const dims = await dialog.locator('.doc-preview').evaluate((img: HTMLImageElement) => ({ w: img.naturalWidth, h: img.naturalHeight }))

@@ -141,7 +141,7 @@ function handleCancel() {
       <div class="beleg">
         <label class="upload-label" :class="{ disabled: isScanning }">
           <i class="pi pi-camera" />
-          {{ imagePreview || pdfName || batch ? 'Andere Belege wählen' : 'Beleg fotografieren oder PDF wählen' }}
+          {{ imagePreview || pdfName || batch ? 'Andere Rechnung wählen' : 'Rechnung fotografieren oder PDF wählen' }}
           <input
             type="file"
             accept="image/*,application/pdf"
@@ -162,7 +162,7 @@ function handleCancel() {
           {{ scan.message.value }}
         </small>
         <div v-if="imagePreview" class="image-preview">
-          <img :src="imagePreview" alt="Beleg">
+          <img :src="imagePreview" alt="Rechnung">
         </div>
         <div v-else-if="pdfName && !batch" class="pdf-name">
           <i class="pi pi-file-pdf" /> {{ pdfName }}

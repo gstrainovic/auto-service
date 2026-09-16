@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { Plan } from '@strainovic/ai-proxy/plans'
-import type { Vehicle } from '../stores/vehicles'
 import { PLANS } from '@strainovic/ai-proxy/plans'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
@@ -8,7 +7,6 @@ import Message from 'primevue/message'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import LastServicesDialog from '../components/LastServicesDialog.vue'
-import SellVehicleDialog from '../components/SellVehicleDialog.vue'
 import VehicleCard from '../components/VehicleCard.vue'
 import VehicleForm from '../components/VehicleForm.vue'
 import { fetchUsage } from '../services/ai-access'
@@ -19,8 +17,6 @@ import { useVehiclesStore } from '../stores/vehicles'
 const route = useRoute()
 const store = useVehiclesStore()
 const showForm = ref(false)
-// Fahrzeug, dessen Löschung gerade bestätigt wird (gleicher Dialog und gleiche Kaskade wie auf der Detailseite)
-const confirmDeleteId = ref<string | null>(null)
 
 onMounted(async () => {
   await store.load()
@@ -52,20 +48,6 @@ const limit = computed(() => vehicleLimit(activeVehicles(store.vehicles).length,
 const active = computed(() => activeVehicles(store.vehicles))
 const sold = computed(() => soldVehicles(store.vehicles))
 const showSold = ref(false)
-
-// Verkauft statt gelöscht: aus dem Löschdialog heraus erreichbar
-const sellVehicle = ref<Vehicle | null>(null)
-function openSell(): void {
-  sellVehicle.value = store.vehicles.find(v => v.id === confirmDeleteId.value) ?? null
-  confirmDeleteId.value = null
-}
-
-async function deleteVehicle(): Promise<void> {
-  if (!confirmDeleteId.value)
-    return
-  await store.removeWithRelated(confirmDeleteId.value)
-  confirmDeleteId.value = null
-}
 </script>
 
 <template>
@@ -104,7 +86,6 @@ async function deleteVehicle(): Promise<void> {
       v-for="v in active"
       :key="v.id"
       :vehicle="v"
-      @delete="confirmDeleteId = $event"
     />
 
     <!-- Verkaufte Fahrzeuge bleiben für Kosten und Belege erhalten, stehen aber zugeklappt unten -->
@@ -121,7 +102,6 @@ async function deleteVehicle(): Promise<void> {
           v-for="v in sold"
           :key="v.id"
           :vehicle="v"
-          @delete="confirmDeleteId = $event"
         />
       </template>
     </section>
@@ -141,26 +121,6 @@ async function deleteVehicle(): Promise<void> {
       :vehicle-name="lastServicesFor?.name"
       @update:visible="v => { if (!v) lastServicesFor = null }"
     />
-
-    <Dialog
-      :visible="!!confirmDeleteId"
-      modal
-      header="Fahrzeug löschen?"
-      @update:visible="v => { if (!v) confirmDeleteId = null }"
-    >
-      <p>Alle Rechnungen und Wartungseinträge werden ebenfalls gelöscht.</p>
-      <p class="delete-hint">
-        Verkauft? Dann besser «Verkauft eintragen»: Das Fahrzeug verschwindet aus den Fälligkeiten, Kosten und Belege
-        bleiben für den Jahresabschluss erhalten.
-      </p>
-      <template #footer>
-        <Button label="Abbrechen" text @click="confirmDeleteId = null" />
-        <Button label="Verkauft eintragen" icon="pi pi-tag" outlined @click="openSell" />
-        <Button label="Löschen" severity="danger" @click="deleteVehicle" />
-      </template>
-    </Dialog>
-
-    <SellVehicleDialog :vehicle="sellVehicle" @close="sellVehicle = null" />
   </main>
 </template>
 
@@ -210,10 +170,5 @@ async function deleteVehicle(): Promise<void> {
 
 .sold-section {
   margin-top: 1.5rem;
-}
-
-.delete-hint {
-  color: var(--p-text-muted-color);
-  font-size: 0.875rem;
 }
 </style>

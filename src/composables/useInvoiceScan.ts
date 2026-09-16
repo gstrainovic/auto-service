@@ -59,7 +59,7 @@ export function useInvoiceScan() {
       const { note, vehicleId } = plateAssignment(parsed.licensePlate, context.vehicles ?? [], context.currentVehicleId)
       if (!note)
         return ''
-      return vehicleId === context.currentVehicleId ? ` Achtung: ${note}.` : ` Achtung: Beleg nennt ${note.replace(/^Kontrollschild /, 'Kontrollschild ')}, nicht dieses Fahrzeug.`
+      return vehicleId === context.currentVehicleId ? ` Achtung: ${note}.` : ` Achtung: Rechnung nennt ${note.replace(/^Kontrollschild /, 'Kontrollschild ')}, nicht dieses Fahrzeug.`
     }
     message.value = ''
     imageBase64.value = null
@@ -82,7 +82,7 @@ export function useInvoiceScan() {
       imageBase64.value = base64
       imagePreview.value = `data:${getImageMimeType()};base64,${base64}`
       status.value = 'done'
-      message.value = 'Offline: Der Beleg wird gespeichert, der Scan läuft nach, sobald du wieder online bist.'
+      message.value = 'Offline: Die Rechnung wird gespeichert, der Scan läuft nach, sobald du wieder online bist.'
       return { kind: 'single', fields: {}, scanPending: true }
     }
 
@@ -92,7 +92,7 @@ export function useInvoiceScan() {
 
       // Ein einzelnes Foto: wie bisher Vorschau und Vorbefüllung
       if (files.length === 1 && files[0]!.type !== 'application/pdf') {
-        progress.value = 'Beleg wird ausgerichtet und gelesen …'
+        progress.value = 'Rechnung wird ausgerichtet und gelesen …'
         const rotated = await prepareImage(files[0]!)
         imageBase64.value = rotated
         imagePreview.value = `data:${getImageMimeType()};base64,${rotated}`
@@ -135,7 +135,7 @@ export function useInvoiceScan() {
       if (scanned.length === 1 && files.length === 1)
         return single(scannedToFormFields(scanned[0]!.parsed), `${plateHint(scanned[0]!.parsed)}${failedNote}`)
       if (!scanned.length)
-        return fail(`Auf den Belegen war keine Rechnung zu lesen. Bitte Felder selbst ausfüllen.${failedNote}`)
+        return fail(`Auf den Fotos war keine Rechnung zu lesen. Bitte Felder selbst ausfüllen.${failedNote}`)
 
       const entries = buildBatch(scanned, existing, context)
       status.value = 'done'
@@ -155,8 +155,8 @@ export function useInvoiceScan() {
   function single(fields: ScannedFields, note = ''): ScanOutcome {
     status.value = 'done'
     message.value = (Object.keys(fields).length
-      ? 'Felder aus dem Beleg ausgefüllt. Bitte prüfen.'
-      : 'Auf dem Beleg war nichts Verwertbares zu lesen. Bitte Felder selbst ausfüllen.') + note
+      ? 'Felder aus der Rechnung ausgefüllt. Bitte prüfen.'
+      : 'Auf dem Foto war nichts Verwertbares zu lesen. Bitte Felder selbst ausfüllen.') + note
     return { kind: 'single', fields }
   }
 

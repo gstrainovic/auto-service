@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { PLANS } from '@strainovic/ai-proxy/plans'
 import { clearInstantDB, countEntities, expect, test, waitForEntity } from './fixtures/test-fixtures'
 
 const PROXY = 'http://localhost:8787'
@@ -84,9 +85,12 @@ test.describe('AI Proxy (Abo-Modus)', () => {
 
     const card = page.locator('.settings-card', { hasText: 'Abo & Nutzung' })
     await expect(card).toBeVisible()
-    await expect(card).toContainText('Gratis')
-    await expect(card).toContainText(/2\s*\/\s*5/)
-    await expect(card).toContainText(/1[’'.]?234\s*\/\s*100[’'.]?000/)
+    await expect(card).toContainText('Testzeit')
+    await expect(card).toContainText(/noch \d+ Tage/)
+    // Zahlen aus dem Plan-Katalog, damit der Test bei einer Kontingent-Änderung nicht bricht
+    await expect(card).toContainText(new RegExp(`2\\s*/\\s*${PLANS.free.limits.ocrPages}`))
+    await expect(card).toContainText(/1[’'.]?234\s*\/\s*/)
+    await expect(card).toContainText('Fair Use')
     await expect(page.locator('input[type="password"]')).toHaveCount(0)
     // Ohne Zahlungsanbieter kein Checkout-Button, sondern Kontakt für die Jahresrechnung
     await expect(card.getByRole('button', { name: /wechseln/ })).toHaveCount(0)

@@ -35,7 +35,7 @@ export function userMessage(err: unknown): string {
   if (has(429) || /rate.?limit/i.test(msg))
     return RATE
   // Der ai-proxy formuliert das Monatslimit schon für Nutzer (mit Kontingent und Plan)
-  if (err instanceof Error && err.message.startsWith('Monatslimit erreicht'))
+  if (err instanceof Error && (err.message.startsWith('Monatslimit erreicht') || err.message.startsWith('Testzeit vorbei')))
     return err.message
   if (has(402) || /limit/i.test(msg))
     return LIMIT

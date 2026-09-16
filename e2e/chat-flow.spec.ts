@@ -27,7 +27,7 @@ test.describe('Chat Flow', () => {
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
     // Step 2: Verify welcome message
-    await expect(page.getByText('Fahrzeuge verwalten')).toBeVisible()
+    await expect(page.getByText(/Schick mir ein Foto der Werkstattrechnung/)).toBeVisible()
 
     // Step 3: Ask to create a vehicle
     const input = page.getByPlaceholder('Nachricht...')

@@ -370,7 +370,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
       <Button icon="pi pi-arrow-left" text to="/vehicles" as="router-link" />
       <div class="spacer" />
       <Button icon="pi pi-pencil" label="Bearbeiten" text severity="primary" @click="editVehicle = true" />
-      <Button v-if="!vehicle?.soldAt" icon="pi pi-tag" label="Verkauft" text severity="secondary" @click="sellVehicle = true" />
+      <Button v-if="!vehicle?.soldAt" icon="pi pi-tag" label="Verkauft eintragen" text severity="secondary" @click="sellVehicle = true" />
       <Button icon="pi pi-trash" label="Löschen" text severity="secondary" @click="confirmDeleteVehicle = true" />
     </div>
 
@@ -558,7 +558,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
           <TabPanel value="costs">
             <div class="tab-header costs-actions">
               <Button v-tooltip.bottom="'Alle Rechnungspositionen als Tabelle für Excel'" icon="pi pi-file-excel" label="CSV für Excel" severity="secondary" outlined :disabled="!vehicleInvoices.length" @click="exportCsv" />
-              <Button v-tooltip.bottom="'Stammdaten, Wartungen, Kosten und Rechnungen, für dich und den Treuhänder'" icon="pi pi-file-pdf" label="PDF-Dossier" severity="primary" @click="exportPdf" />
+              <Button v-tooltip.bottom="'Stammdaten, Wartungen, Kosten und Rechnungen, für dich und den Treuhänder'" icon="pi pi-file-pdf" label="Kostenbericht (PDF)" severity="primary" @click="exportPdf" />
             </div>
             <!-- Übergabemappe: dasselbe Fahrzeug, aber für den Käufer statt für die Buchhaltung -->
             <div class="service-record">

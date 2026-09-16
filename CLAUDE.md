@@ -196,6 +196,12 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
   keine Serverabfrage voraussetzen; `db.queryOnce` scheitert offline.
 - Jahresabschluss: `src/services/year-export.ts` baut CSV und Belegbilder eines Jahres, `src/services/zip.ts` packt sie
   ungepackt in ein ZIP (keine Abhängigkeit, Bilder sind schon komprimiert).
+- Abo und Testzeit: kein Gratis-Plan. Ohne Abo läuft eine Testzeit von 30 Tagen mit allem (ai-proxy `trial.ts`, Beginn beim
+  ersten Aufruf, Subscription mit `status: 'trial'`); danach antworten Scan und Chat mit 402 `trial_expired`, Lesen,
+  Erfassen von Hand und Exporte bleiben frei. Preisstaffel in `yearlyPriceChf` (36 CHF erstes Fahrzeug, 24 CHF je
+  weiteres), `PriceTable.vue` rechnet damit; Fair-Use-Bremse 20 Anfragen pro Minute im Proxy (`rate-limit.ts`).
+- Texte: Hauptknopf überall «30 Tage gratis testen» (führt zum Login), das Lead-Formular gibt es nur noch auf `/betrieb`
+  («Wir richten es für dich ein»). Du-Form auch für Betriebe, bewusst.
 - Speicherwege: Rechnungen immer über `saveInvoice` (`src/services/invoice-save.ts`: Rechnung, eine Wartung pro Kategorie
   mit `invoiceId`, höherer Kilometerstand, eine Transaktion; Chat, Formular und Stapel) und beim Bearbeiten über
   `updateInvoice` (zieht Datum, Kilometerstand und Positionen in die verknüpften Wartungen nach), Wartungen ohne Rechnung über
@@ -271,7 +277,10 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - **Playwright startet Server automatisch** (Vite + InstantDB) — kein manuelles `podman-compose up` nötig
 - `npm run test:e2e` führt beide Projekt-Varianten aus (146 Tests: 73 online + 73 offline; 2 weitere nur via `test:e2e:soft`)
 - Playwright startet drei Server: Vite (`VITE_INSTANTDB_MODE=local`, `VITE_AI_PROXY_URL=http://localhost:8787`),
-  InstantDB (podman-compose) und den AI-Proxy (`npm run dev:proxy` im Auth-Bypass, Key aus `.env` explizit per `env`)
+  InstantDB (podman-compose) und den AI-Proxy (`npm run dev:proxy` im Auth-Bypass, Key aus `.env` explizit per `env`,
+  `AI_PROXY_BURST_LIMIT=10000`, weil alle Tests einen Nutzer teilen und die Fair-Use-Bremse sonst 429 liefert)
+- Läuft der Proxy schon (Playwright nimmt den bestehenden Port 8787), muss er selbst mit `AI_PROXY_BURST_LIMIT=10000`
+  gestartet sein, sonst fallen Chat-Tests mit «429 (Too Many Requests)» als Konsolenfehler.
 
 ### Offline-Testing
 Die `simulateOffline` Fixture blockiert alle Requests zu `localhost:8888` (InstantDB-Server).

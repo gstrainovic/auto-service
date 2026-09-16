@@ -36,6 +36,8 @@ export interface UsageInfo {
   month: string
   usage: Record<LimitKind, number>
   limits: Record<LimitKind, number>
+  /** Testzeit ohne Abo; null bei aktivem Abo */
+  trial?: { active: boolean, daysLeft: number, endsAt: string } | null
 }
 
 async function proxyFetch(path: string, init: RequestInit = {}): Promise<Response> {

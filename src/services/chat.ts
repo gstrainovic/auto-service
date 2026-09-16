@@ -123,14 +123,13 @@ Halte deine Antworten kurz und hilfreich.`
 export const WELCOME_MESSAGE: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
-  content: `Hallo! Ich bin dein Wartungsheft-Assistent. Ich kann dir helfen mit:
+  content: `Hallo! Schick mir ein Foto der Werkstattrechnung, ich trage sie ein. Oder frag mich, zum Beispiel:
 
-- **Fahrzeuge verwalten** — anlegen, bearbeiten, löschen
-- **Dokumente scannen** — Rechnungen, Kaufverträge, Fahrzeugausweise, Service-Hefte
-- **Wartungsstatus prüfen** — was ist fällig, was wurde gemacht
-- **Fragen beantworten** — Intervalle, Empfehlungen, Kosten
+- «Wann muss der Caddy zum Service?»
+- «Was hat der Ducato dieses Jahr gekostet?»
+- «Trag ein: Ölwechsel gestern bei 68'500 km»
 
-Schick mir einfach eine Nachricht oder ein Foto!`,
+Fahrzeugausweis, Kaufvertrag und Serviceheft kann ich ebenfalls lesen.`,
 }
 
 function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]) {

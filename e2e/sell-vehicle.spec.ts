@@ -31,7 +31,7 @@ test.describe('Verkauft oder abgegeben', () => {
     await expect(page.getByRole('region', { name: 'Fällige Arbeiten' })).toContainText('MFK / Prüfung')
 
     await page.goto(`/vehicles/${vehicleId}`)
-    await page.getByRole('button', { name: 'Verkauft' }).click()
+    await page.getByRole('button', { name: 'Verkauft eintragen' }).click()
     const dialog = page.getByTestId('sell-vehicle-dialog')
     await expect(dialog).toContainText('Fiat Ducato')
     await dialog.locator('#sold-date').fill('2026-09-01')
@@ -57,7 +57,7 @@ test.describe('Verkauft oder abgegeben', () => {
     await page.goto('/vehicles')
     await page.locator('.vehicle-card', { hasText: 'Fiat Ducato' }).getByRole('button', { name: 'Löschen' }).click()
     await expect(page.getByText('Fahrzeug löschen?')).toBeVisible()
-    await page.getByRole('button', { name: 'Verkauft eintragen' }).click()
+    await page.locator('[data-pc-name="dialog"]', { hasText: 'Fahrzeug löschen?' }).getByRole('button', { name: 'Verkauft eintragen' }).click()
 
     const dialog = page.getByTestId('sell-vehicle-dialog')
     await dialog.locator('#sold-date').fill('2026-09-01')

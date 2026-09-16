@@ -62,7 +62,7 @@ function handleSignOut() {
         <nav class="nav-list">
           <RouterLink to="/dashboard" class="nav-item" @click="drawer = false">
             <i class="pi pi-home" />
-            <span>Dashboard</span>
+            <span>Übersicht</span>
           </RouterLink>
           <RouterLink to="/vehicles" class="nav-item" @click="drawer = false">
             <i class="pi pi-car" />

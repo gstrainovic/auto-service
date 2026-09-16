@@ -17,9 +17,12 @@ const benefits = [
     title="Alle Firmenfahrzeuge im Blick, ohne Excel und Aktenordner"
     problem="Bei drei bis fünfzehn Fahrzeugen kostet die Verwaltung Stunden im Monat: Belege verstreut, kein Überblick, wann welcher Wagen zum Service war, und am Jahresende weiss niemand, was welches Fahrzeug gekostet hat."
     :benefits="benefits"
-    price="36 CHF im Jahr für drei Fahrzeuge, jedes weitere 30 CHF"
-    price-note="Zehn Fahrzeuge kosten 246 CHF im Jahr, also rund 2 CHF pro Fahrzeug und Monat. Jahresrechnung, keine Grundgebühr, kein Telematik-Kasten. Die ersten drei Betriebe ein Jahr lang kostenlos, wir erfassen Fahrzeuge und Altbelege."
-    cta="Frühzugang anfragen"
+    price="Rund 2 CHF pro Fahrzeug und Monat"
+    price-note="Kein Telematik-Kasten, keine Grundgebühr, Jahresrechnung. 30 Tage gratis mit der ganzen Flotte."
+    offer="Die ersten drei Betriebe: ein Jahr kostenlos. Wir erfassen deine Fahrzeuge und die Altbelege, du fotografierst nur noch."
+    :vehicles="5"
+    cta="30 Tage gratis testen"
+    secondary-cta="Wir richten es für dich ein"
     note-label="Anzahl Fahrzeuge"
   />
 </template>

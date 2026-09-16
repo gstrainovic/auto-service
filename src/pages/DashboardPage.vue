@@ -9,6 +9,7 @@ import type { InvoiceFormData, MaintenanceFormData } from '../types/forms'
 import Badge from 'primevue/badge'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
+import Menu from 'primevue/menu'
 import Message from 'primevue/message'
 import Select from 'primevue/select'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
@@ -226,6 +227,14 @@ function exportYearZip(): void {
   exportNote.value = `CSV und ${images} ${images === 1 ? 'Beleg' : 'Belege'} geladen.`
 }
 
+// Exportmenü: CSV und PDF über alle Fahrzeuge, Jahresabschluss als ZIP fürs gewählte Jahr
+const exportMenu = ref<InstanceType<typeof Menu> | null>(null)
+const exportItems = computed(() => [
+  { label: 'CSV für Excel, alle Fahrzeuge', icon: 'pi pi-file-excel', command: exportFleetCsv },
+  { label: 'PDF-Übersicht, alle Fahrzeuge', icon: 'pi pi-file-pdf', command: exportFleetPdf },
+  ...(years.value.length ? [{ label: `Jahresabschluss ${exportYear.value}: ZIP mit CSV und Belegen`, icon: 'pi pi-download', command: exportYearZip }] : []),
+])
+
 async function exportFleetPdf(): Promise<void> {
   const result = await db.queryOnce({ maintenances: {} })
   const maintenances = (result?.data?.maintenances || []) as Maintenance[]
@@ -320,7 +329,7 @@ const totalInvoiceCount = computed(() =>
   <main class="page-container">
     <div class="page-header">
       <h2 class="page-title">
-        Dashboard
+        Übersicht
       </h2>
       <Button
         v-if="ownVehicles.length > 0"
@@ -333,7 +342,7 @@ const totalInvoiceCount = computed(() =>
     <div v-if="vehiclesStore.vehicles.length === 0" class="empty-state">
       <i class="pi pi-car empty-icon" />
       <div class="empty-text">
-        Füge dein erstes Fahrzeug hinzu um loszulegen.
+        Leg dein erstes Fahrzeug an. Mit dem Fahrzeugausweis geht es am schnellsten.
       </div>
       <div class="empty-actions">
         <Button
@@ -341,16 +350,9 @@ const totalInvoiceCount = computed(() =>
           icon="pi pi-plus"
           @click="router.push('/vehicles?action=add')"
         />
-        <Button
-          label="Rechnung im Chat fotografieren"
-          icon="pi pi-camera"
-          severity="secondary"
-          outlined
-          @click="router.push('/dashboard?chat=open')"
-        />
       </div>
       <p class="empty-hint">
-        Oder du fotografierst im Chat (Button unten rechts) eine Werkstattrechnung, die KI legt Fahrzeug und Rechnung an.
+        Danach fotografierst du die erste Werkstattrechnung, den Rest liest Wartungsheft heraus.
       </p>
     </div>
 
@@ -424,26 +426,14 @@ const totalInvoiceCount = computed(() =>
     <section v-if="fleetRows.length" class="fleet-costs">
       <div class="fleet-costs-header">
         <h3>Kosten pro Fahrzeug und Jahr</h3>
+        <!-- Alle Exporte hinter einem Knopf, damit die Zeile am Handy nicht zerfällt -->
         <div class="fleet-costs-actions">
-          <Button icon="pi pi-file-excel" label="CSV für Excel, alle Fahrzeuge" severity="secondary" outlined size="small" @click="exportFleetCsv" />
-          <Button icon="pi pi-file-pdf" label="PDF-Übersicht, alle Fahrzeuge" severity="primary" size="small" @click="exportFleetPdf" />
+          <Select v-if="years.length" id="export-year" v-model="exportYear" :options="years" size="small" aria-label="Jahr für den Jahresabschluss" />
+          <Button icon="pi pi-download" label="Export" size="small" aria-haspopup="true" aria-controls="export-menu" @click="exportMenu?.toggle($event)" />
+          <Menu id="export-menu" ref="exportMenu" :model="exportItems" popup />
         </div>
       </div>
-
-      <!-- Jahresabschluss: ein Jahr, CSV und alle Belegbilder in einem ZIP für den Treuhänder -->
-      <div v-if="years.length" class="year-export">
-        <label for="export-year">Jahresabschluss</label>
-        <Select id="export-year" v-model="exportYear" :options="years" aria-label="Jahr für den Jahresabschluss" />
-        <Button
-          icon="pi pi-download"
-          :label="`ZIP mit CSV und Belegen ${exportYear}`"
-          severity="secondary"
-          outlined
-          size="small"
-          @click="exportYearZip"
-        />
-        <small v-if="exportNote" role="status">{{ exportNote }}</small>
-      </div>
+      <small v-if="exportNote" role="status" class="fleet-hint">{{ exportNote }}</small>
       <div class="fleet-table-wrap">
         <table class="fleet-table" aria-label="Kosten pro Fahrzeug und Jahr">
           <thead>
@@ -496,7 +486,7 @@ const totalInvoiceCount = computed(() =>
         <Badge
           v-else-if="getDueCounts(vehicle.id).total > 0"
           class="vehicle-progress"
-          :value="`${getDueCounts(vehicle.id).due}/${getDueCounts(vehicle.id).total} fällig`"
+          :value="getDueCounts(vehicle.id).due ? `${getDueCounts(vehicle.id).due} fällig` : 'OK'"
           :severity="getDueCounts(vehicle.id).due > 0 ? 'warn' : 'success'"
         />
       </div>

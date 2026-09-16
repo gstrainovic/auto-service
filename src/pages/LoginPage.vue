@@ -59,7 +59,7 @@ function handleBack() {
         <h1>Wartungsheft</h1>
       </router-link>
       <p class="login-tagline">
-        Wartungen, Rechnungen und Kosten deiner Fahrzeuge an einem Ort.
+        30 Tage alles gratis. Kein Passwort — wir schicken dir einen Code.
       </p>
 
       <Message v-if="error" severity="error" :closable="false">
@@ -69,7 +69,7 @@ function handleBack() {
       <!-- Step 1: E-Mail eingeben -->
       <form v-if="!sentEmail" @submit.prevent="handleSendCode">
         <p class="login-description">
-          E-Mail-Adresse eingeben um einen Anmelde-Code zu erhalten.
+          E-Mail-Adresse eingeben, der Anmelde-Code kommt per Mail.
         </p>
         <div class="login-field">
           <InputText

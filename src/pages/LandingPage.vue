@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { useRouter } from 'vue-router'
+import PriceTable from '../components/PriceTable.vue'
 import { useAuth } from '../composables/useAuth'
 
 const router = useRouter()
@@ -26,7 +27,7 @@ function goToApp() {
         <nav class="landing-nav">
           <a href="#features">Features</a>
           <a href="#how-it-works">So funktioniert's</a>
-          <a href="#fuer-wen">Für wen</a>
+          <a href="#preise">Preise</a>
           <router-link to="/betrieb">
             Für Betriebe
           </router-link>
@@ -34,7 +35,7 @@ function goToApp() {
             Für Privathalter
           </router-link>
           <Button
-            :label="user ? 'Zum Dashboard' : 'Kostenlos starten'"
+            :label="user ? 'Zur Übersicht' : '30 Tage gratis testen'"
             size="small"
             @click="goToApp"
           />
@@ -45,14 +46,14 @@ function goToApp() {
     <!-- Hero -->
     <section class="hero">
       <div class="landing-container hero-inner">
-        <h1>Nie wieder Wartung vergessen.</h1>
+        <h1>Rechnung fotografieren. Alles andere macht Wartungsheft.</h1>
         <p class="hero-subtitle">
-          Fotografiere deine Werkstattrechnung. Die KI erledigt den Rest.
-          Wartungsplan, Kostenübersicht und digitales Serviceheft in einer App.
+          Serviceheft, Fälligkeiten und Kosten pro Fahrzeug — ohne Abtippen.
+          Für ein Auto oder die ganze Flotte.
         </p>
         <div class="hero-actions">
           <Button
-            :label="user ? 'Zum Dashboard' : 'Kostenlos starten'"
+            :label="user ? 'Zur Übersicht' : '30 Tage gratis testen'"
             icon="pi pi-arrow-right"
             icon-pos="right"
             size="large"
@@ -61,16 +62,16 @@ function goToApp() {
         </div>
         <div class="hero-stats">
           <div class="hero-stat">
-            <strong>3 Sekunden</strong>
-            <span>Rechnung scannen</span>
+            <strong>Ein Foto</strong>
+            <span>statt Abtippen</span>
           </div>
           <div class="hero-stat">
             <strong>Offline nutzbar</strong>
             <span>Scan läuft später nach</span>
           </div>
           <div class="hero-stat">
-            <strong>KI aus der EU</strong>
-            <span>Mistral AI, Frankreich</span>
+            <strong>Aus der Schweiz</strong>
+            <span>Server hier, KI in der EU</span>
           </div>
         </div>
       </div>
@@ -103,14 +104,14 @@ function goToApp() {
     <!-- Features -->
     <section id="features" class="section">
       <div class="landing-container">
-        <h2>Alles was du brauchst</h2>
+        <h2>Was Wartungsheft dir abnimmt</h2>
         <div class="features-grid">
           <div class="feature-card">
             <div class="feature-icon">
               <i class="pi pi-camera" />
             </div>
             <h3>KI-Rechnungsscanner</h3>
-            <p>Rechnung abfotografieren. Werkstatt, Datum, Betrag, Einzelpositionen — alles automatisch extrahiert.</p>
+            <p>Rechnung abfotografieren. Werkstatt, Datum, Betrag, Einzelpositionen — alles automatisch extrahiert. Scannen ohne Limit im Alltag.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">
@@ -118,13 +119,6 @@ function goToApp() {
             </div>
             <h3>Wartungs-Tracker</h3>
             <p>Farbcodierte Anzeige: Grün (ok), Gelb (bald fällig), Rot (überfällig). Für Öl, Bremsen, MFK und mehr.</p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon">
-              <i class="pi pi-comments" />
-            </div>
-            <h3>Chat-Assistent</h3>
-            <p>"Wann ist der nächste Service fällig?" — Frag einfach. Der KI-Assistent kennt dein Auto.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">
@@ -137,8 +131,8 @@ function goToApp() {
             <div class="feature-icon">
               <i class="pi pi-shield" />
             </div>
-            <h3>Datenschutz</h3>
-            <p>Daten auf Servern in der Schweiz. KI-Verarbeitung durch Mistral AI in Frankreich, ohne Training mit deinen Daten. Kein eigener API-Key nötig.</p>
+            <h3>Schweizer Anbieter, Schweizer Server</h3>
+            <p>Entwickelt und betrieben von Strainovic IT in Steinach SG. Daten auf Servern in der Schweiz, KI-Verarbeitung durch Mistral AI in Frankreich (EU), ohne Training mit deinen Daten. Kein eigener API-Key nötig.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">
@@ -188,7 +182,7 @@ function goToApp() {
               3
             </div>
             <h3>Bestätigen</h3>
-            <p>«Ja, passt» — und alles wird gespeichert. Die Fälligkeiten rechnen sich neu, egal ob du im Chat oder im Formular erfasst.</p>
+            <p>Prüfen, speichern. Fälligkeiten, Serviceheft und Kosten sind sofort aktuell.</p>
           </div>
         </div>
       </div>
@@ -199,8 +193,7 @@ function goToApp() {
       <div class="landing-container">
         <h2>Für wen ist Wartungsheft?</h2>
         <p class="section-subtitle">
-          Ein Werkzeug, eine Preisliste: 36 CHF im Jahr für bis zu drei Fahrzeuge, jedes weitere 30 CHF.
-          Kostenlos ausprobieren kannst du es in jedem Fall.
+          Ein Werkzeug, eine Preisliste. Der Unterschied liegt im Alltag, nicht im Preis.
         </p>
         <div class="pricing-grid pricing-grid-two">
           <div class="pricing-card">
@@ -246,13 +239,20 @@ function goToApp() {
       </div>
     </section>
 
+    <section id="preise" class="section section-alt">
+      <div class="landing-container">
+        <h2>Preise</h2>
+        <PriceTable />
+      </div>
+    </section>
+
     <!-- CTA -->
     <section class="section section-cta">
       <div class="landing-container cta-inner">
-        <h2>Bereit, dein Auto im Griff zu haben?</h2>
-        <p>Kostenlos starten. Keine Kreditkarte nötig.</p>
+        <h2>Bereit? 30 Tage gratis, keine Kreditkarte.</h2>
+        <p>Anmelden mit E-Mail, kein Passwort. Nach 30 Tagen entscheidest du.</p>
         <Button
-          :label="user ? 'Zum Dashboard' : 'Jetzt starten'"
+          :label="user ? 'Zur Übersicht' : '30 Tage gratis testen'"
           icon="pi pi-arrow-right"
           icon-pos="right"
           size="large"
@@ -269,7 +269,7 @@ function goToApp() {
             <i class="pi pi-car" />
             <span>Wartungsheft</span>
           </div>
-          <p>KI-gestützte Fahrzeugwartung. Made in Switzerland.</p>
+          <p>Aus Steinach SG. Schweizer Server, KI in der EU.</p>
         </div>
         <div class="footer-links">
           <router-link to="/betrieb">

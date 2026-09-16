@@ -31,7 +31,7 @@ test.describe('Dashboard Progress', () => {
     const last = page.getByTestId('last-services-dialog')
     await last.locator('#last-oelwechsel-date').fill(new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10))
     await last.getByRole('button', { name: '1 Eintrag speichern' }).click()
-    await expect(page.getByText('0/9 fällig')).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('.vehicle-progress')).toHaveText('OK', { timeout: 10_000 })
     await expect(page.getByRole('button', { name: '8 Arbeiten ohne Eintrag anzeigen' })).toBeVisible()
 
     // DELETE

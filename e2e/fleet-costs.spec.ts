@@ -67,7 +67,8 @@ test.describe('Fuhrpark-Kosten und Währungsumrechnung', () => {
     await seedFleet(page)
     await page.goto('/dashboard')
     const download = page.waitForEvent('download')
-    await page.getByRole('button', { name: 'CSV für Excel, alle Fahrzeuge' }).click()
+    await page.getByRole('button', { name: 'Export' }).click()
+    await page.getByRole('menuitem', { name: 'CSV für Excel, alle Fahrzeuge' }).click()
     const file = await download
     expect(file.suggestedFilename()).toMatch(/^wartungsheft-alle-fahrzeuge-\d{4}-\d{2}-\d{2}\.csv$/)
     const text = await (await file.createReadStream()).toArray().then(chunks => Buffer.concat(chunks as Buffer[]).toString('utf8'))
@@ -80,7 +81,8 @@ test.describe('Fuhrpark-Kosten und Währungsumrechnung', () => {
     await seedFleet(page)
     await page.goto('/dashboard')
     const download = page.waitForEvent('download')
-    await page.getByRole('button', { name: 'PDF-Übersicht, alle Fahrzeuge' }).click()
+    await page.getByRole('button', { name: 'Export' }).click()
+    await page.getByRole('menuitem', { name: 'PDF-Übersicht, alle Fahrzeuge' }).click()
     const file = await download
     expect(file.suggestedFilename()).toMatch(/^wartungsheft-alle-fahrzeuge-\d{4}-\d{2}-\d{2}\.pdf$/)
     const bytes = await (await file.createReadStream()).toArray().then(chunks => Buffer.concat(chunks as Buffer[]))

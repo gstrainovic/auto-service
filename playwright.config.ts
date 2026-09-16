@@ -26,6 +26,8 @@ export default defineConfig({
       timeout: 30000,
       env: {
         AI_PROXY_AUTH_BYPASS: '1',
+        // alle Tests teilen einen Nutzer: Fair-Use-Bremse (20/min) würde die Chat-Tests mit 429 stoppen
+        AI_PROXY_BURST_LIMIT: '10000',
         PORT: '8787',
         MISTRAL_API_KEY: envFile.MISTRAL_API_KEY ?? '',
         INSTANT_API_URI: envFile.INSTANT_API_URI ?? 'http://localhost:8888',

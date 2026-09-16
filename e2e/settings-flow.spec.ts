@@ -46,27 +46,27 @@ test.describe('Settings Flow', () => {
     await expect(page.locator('.settings-card', { hasText: 'Erinnerungen' }).getByRole('switch')).toBeChecked()
   })
 
-  test('SE-003: default theme is dark', async ({ page }) => {
-    // Clear localStorage to simulate first visit
+  test('SE-003: default theme follows the system', async ({ page }) => {
+    // Clear localStorage to simulate first visit; the browser prefers dark here
+    await page.emulateMedia({ colorScheme: 'dark' })
     await page.goto('/settings')
     await page.evaluate(() => localStorage.removeItem('theme'))
     await page.reload()
 
-    // HTML should have dark-mode class by default
+    // Standard ist «System»: der Browser wünscht hier dunkel, also dunkel
     await expect(page.locator('html.dark-mode')).toBeAttached()
-
-    // Settings dropdown should show "Dunkel"
-    await expect(page.getByRole('combobox', { name: 'Dunkel' })).toBeVisible()
+    await expect(page.getByRole('combobox', { name: 'System' })).toBeVisible()
   })
 
   test('SE-004: switch theme from dark to light and back', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' })
     await page.goto('/settings')
 
-    // Start in dark mode
+    // Start: System, der Browser wünscht dunkel
     await expect(page.locator('html.dark-mode')).toBeAttached()
 
     // Switch to light
-    await page.getByRole('combobox', { name: 'Dunkel' }).click()
+    await page.getByRole('combobox', { name: 'System' }).click()
     await page.getByRole('option', { name: 'Hell' }).click()
     await expect(page.locator('html.dark-mode')).not.toBeAttached()
 

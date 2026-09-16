@@ -2,8 +2,10 @@
 import type { LeadSegment } from '../lib/leads'
 import Button from 'primevue/button'
 import { nextTick, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useLeadsStore } from '../stores/leads'
 import LeadForm from './LeadForm.vue'
+import PriceTable from './PriceTable.vue'
 
 // Landing Page als Türattrappe (business-plan/09-validierung.md, M3): Problem in einem Satz,
 // drei Nutzen, Preis sichtbar, ein Button. Der Button öffnet nur ein E-Mail-Formular, kein Zahlungsvorgang.
@@ -16,9 +18,25 @@ const props = defineProps<{
   priceNote: string
   cta: string
   noteLabel?: string
+  /** Startwert des Preisreglers */
+  vehicles?: number
+  /** Obergrenze des Preisreglers */
+  maxVehicles?: number
+  /** zweiter Weg: Einrichtung durch uns, öffnet das Lead-Formular */
+  secondaryCta?: string
+  /** Angebot im Rahmen, z. B. die ersten drei Betriebe gratis */
+  offer?: string
 }>()
 
+const router = useRouter()
 const leads = useLeadsStore()
+
+// Hauptweg ist die Testzeit: der Klick zählt als Interesse und führt zur Anmeldung
+function startTrial() {
+  leads.trackCta(props.segment)
+  router.push('/login')
+}
+
 const showForm = ref(false)
 const formEl = ref<HTMLElement | null>(null)
 
@@ -63,7 +81,14 @@ async function openForm() {
       <section class="hypo-price">
         <strong>{{ price }}</strong>
         <span>{{ priceNote }}</span>
-        <Button v-if="!showForm" :label="cta" size="large" icon="pi pi-arrow-right" icon-pos="right" @click="openForm" />
+        <PriceTable :vehicles="vehicles ?? 1" :max="maxVehicles ?? 25" compact class="hypo-price-table" />
+        <p v-if="offer" class="hypo-offer">
+          {{ offer }}
+        </p>
+        <div class="hypo-actions">
+          <Button :label="cta" size="large" icon="pi pi-arrow-right" icon-pos="right" @click="startTrial" />
+          <Button v-if="secondaryCta && !showForm" :label="secondaryCta" size="large" outlined @click="openForm" />
+        </div>
       </section>
 
       <section v-if="showForm" ref="formEl" class="hypo-form">
@@ -73,7 +98,7 @@ async function openForm() {
 
     <footer class="hypo-footer">
       <div class="hypo-container footer-inner">
-        <span>Goran Strainovic, Strainovic IT, Steinach</span>
+        <span>Goran Strainovic, Strainovic IT, Steinach SG · Schweizer Server, KI in der EU</span>
         <router-link to="/impressum">
           Impressum
         </router-link>
@@ -206,6 +231,28 @@ async function openForm() {
 .hypo-price span {
   color: var(--p-text-muted-color);
   margin-bottom: 1rem;
+}
+
+.hypo-price-table {
+  width: 100%;
+  text-align: left;
+  margin-bottom: 1.5rem;
+}
+
+.hypo-offer {
+  margin: 0 0 1.25rem;
+  padding: 0.9rem 1.2rem;
+  border: 1px solid var(--p-primary-color);
+  border-radius: var(--p-border-radius);
+  background: color-mix(in srgb, var(--p-primary-color) 10%, transparent);
+  font-weight: 600;
+}
+
+.hypo-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .hypo-form {

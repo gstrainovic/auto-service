@@ -11,7 +11,7 @@ import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
 import { userMessage } from '../lib/errors'
 import { db, tx } from '../lib/instantdb'
-import { formatCurrency, formatMonth, formatNumber } from '../lib/locale'
+import { formatCurrency, formatDate, formatMonth, formatNumber } from '../lib/locale'
 import { fetchUsage, startCheckout } from '../services/ai-access'
 import { exportDatabase, importDatabase } from '../services/db-export'
 import { useRemindersStore } from '../stores/reminders'
@@ -61,8 +61,18 @@ const upgradePlans = computed(() => Object.values(PLANS).filter(p => p.priceChfP
 const limitKinds = Object.keys(LIMIT_LABELS) as LimitKind[]
 
 function planName(plan: Plan): string {
-  return plan.id === 'free' ? 'Gratis, 1 Fahrzeug' : plan.name
+  return plan.id === 'free' ? 'Testzeit' : plan.name
 }
+
+// Testzeit: 30 Tage alles, danach brauchen KI-Scan und Chat ein Abo; Lesen, Erfassen und Exporte bleiben frei
+const trialNote = computed(() => {
+  const trial = usage.value?.trial
+  if (!trial)
+    return ''
+  if (trial.active)
+    return `Testzeit: noch ${trial.daysLeft} ${trial.daysLeft === 1 ? 'Tag' : 'Tage'} mit allem, bis ${formatDate(trial.endsAt)}. Danach kostet Wartungsheft ${formatCurrency(yearlyPriceChf(1))} im Jahr für ein Fahrzeug.`
+  return `Testzeit vorbei: KI-Scan und Chat brauchen ein Abo (${formatCurrency(yearlyPriceChf(1))} im Jahr für ein Fahrzeug, jedes weitere ${formatCurrency(yearlyPriceChf(2) - yearlyPriceChf(1))}). Lesen, Erfassen von Hand und Exporte gehen weiter.`
+})
 
 // Abgerechnet wird im Jahr; die Staffel rechnet pro Fahrzeug, darum der Jahrespreis des Plans
 function planPrice(plan: Plan): string {
@@ -162,7 +172,7 @@ async function clearOcrCache(): Promise<void> {
       await db.transact(entries.map((e: any) => tx.ocrcache[e.id].delete()))
     }
     ocrCacheCount.value = 0
-    toast.add({ severity: 'success', summary: 'OCR-Cache geleert', life: 3000 })
+    toast.add({ severity: 'success', summary: 'Scan-Zwischenspeicher geleert', life: 3000 })
   }
   catch {}
 }
@@ -251,6 +261,9 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
             <span>Aktueller Plan: <strong>{{ planName(currentPlan) }}</strong></span>
             <span class="plan-price">{{ planPrice(currentPlan) }}</span>
           </div>
+          <Message v-if="trialNote" :severity="usage.trial?.active ? 'info' : 'warn'" :closable="false" class="trial-note">
+            {{ trialNote }}
+          </Message>
           <div v-for="kind in limitKinds" :key="kind" class="usage-row">
             <div class="usage-label">
               <span>{{ LIMIT_LABELS[kind] }}</span>
@@ -260,16 +273,17 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
           </div>
           <div class="provider-info">
             Zähler gelten für {{ formatMonth(usage.month) }}. KI-Verarbeitung über Mistral (Frankreich, EU) ist im Abo enthalten, kein eigener API-Key nötig.
+            Die Schwellen sind Fair Use gegen Missbrauch, kein Sparziel: normaler Gebrauch kommt nie in ihre Nähe.
           </div>
           <div v-if="!billingEnabled" class="provider-info">
-            Mehr Kontingent oder ein Abo für den Betrieb? Schreib uns an
+            Mehr Fahrzeuge oder ein Abo für den Betrieb? Schreib uns an
             <a :href="`mailto:${CONTACT_EMAIL}`">{{ CONTACT_EMAIL }}</a>, wir richten es ein und stellen eine Jahresrechnung.
           </div>
           <div v-else-if="upgradePlans.length" class="upgrade-list">
             <div v-for="plan in upgradePlans" :key="plan.id" class="upgrade-row">
               <div>
                 <strong>{{ planName(plan) }}</strong> · {{ planPrice(plan) }} ·
-                {{ formatNumber(plan.limits.ocrPages) }} Scans, Chat-Kontingent {{ formatNumber(plan.limits.chatTokens) }}
+                {{ plan.maxVehicles }} {{ plan.maxVehicles === 1 ? 'Fahrzeug' : 'Fahrzeuge' }}, Scannen ohne Limit im Alltag
               </div>
               <Button
                 :label="`Auf ${planName(plan)} wechseln`"
@@ -315,7 +329,7 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
 
         <div class="cache-section">
           <Button
-            label="OCR-Cache leeren"
+            label="Scan-Zwischenspeicher leeren"
             icon="pi pi-trash"
             outlined
             severity="danger"
@@ -324,7 +338,7 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
             @click="clearOcrCache"
           />
           <span class="cache-count">
-            {{ ocrCacheCount }} Einträge im Cache
+            {{ ocrCacheCount }} gespeicherte Scans
           </span>
         </div>
       </template>

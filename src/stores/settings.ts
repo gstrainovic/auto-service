@@ -21,7 +21,7 @@ function readHomeCurrency(): HomeCurrency {
 
 export const useSettingsStore = defineStore('settings', () => {
   const theme = ref<ThemeMode>(
-    (localStorage.getItem('theme') as ThemeMode) || 'dark',
+    (localStorage.getItem('theme') as ThemeMode) || 'system',
   )
 
   watch(theme, (v) => {

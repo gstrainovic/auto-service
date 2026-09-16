@@ -100,7 +100,8 @@ test.describe('Kosten und Export', () => {
     await expect(page.getByLabel('Jahr für den Jahresabschluss')).toBeVisible()
 
     const download = page.waitForEvent('download')
-    await page.getByRole('button', { name: /ZIP mit CSV und Belegen 2026/ }).click()
+    await page.getByRole('button', { name: 'Export' }).click()
+    await page.getByRole('menuitem', { name: /Jahresabschluss 2026/ }).click()
     const file = await download
     expect(file.suggestedFilename()).toBe('wartungsheft-jahresabschluss-2026.zip')
     const bytes = await (await file.createReadStream()).toArray().then(chunks => Buffer.concat(chunks as Buffer[]))
@@ -134,13 +135,13 @@ test.describe('Kosten und Export', () => {
     expect(priced.length).toBeGreaterThan(bytes.length)
   })
 
-  test('RE-003: PDF-Dossier wird als Datei geladen', async ({ page }) => {
+  test('RE-003: Kostenbericht wird als PDF geladen', async ({ page }) => {
     const vehicleId = await seedVehicleWithInvoices(page)
     await page.goto(`/vehicles/${vehicleId}`)
     await page.getByRole('tab', { name: 'Kosten' }).click()
 
     const download = page.waitForEvent('download')
-    await page.getByRole('button', { name: 'PDF-Dossier' }).click()
+    await page.getByRole('button', { name: 'Kostenbericht (PDF)' }).click()
     const file = await download
     expect(file.suggestedFilename()).toMatch(/^wartungsheft-vw-caddy-sg-12345-\d{4}-\d{2}-\d{2}\.pdf$/)
     const bytes = await (await file.createReadStream()).toArray().then(chunks => Buffer.concat(chunks as Buffer[]))

@@ -43,22 +43,14 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
       `wartungsheft-backups` anlegen, `backup.sh` um den Upload erweitern, Aufbewahrung im Container prüfen
 - [ ] Health-Checks (`api.`/health/system, `ai.`/health) in ein Uptime-Monitoring aufnehmen, sobald ein Pilot läuft
 
-### Preismodell: ein Preis pro Fahrzeug statt zwei Zielgruppen-Preise (Entscheid des Nutzers offen)
+### Preismodell
 
-Heute versprechen die zwei Landing Pages 36 CHF im Jahr (privat, bis drei Fahrzeuge) und 29 bis 49 CHF im Monat
-(Betrieb) für dasselbe Produkt; funktional unterscheidet sich nichts, und ein Fahrzeuglimit gibt es im Code nirgends.
-Der Markt für Fuhrpark-Software rechnet pro Fahrzeug und Monat (Fleetio ab 4 USD, Fleethouse 2,90 €, CARMADA 6 € plus
-19 € Grundgebühr, Vimcar 13,90 €), Privat-Apps dagegen pauschal, und bei Privathaltern steht die Abo-Aversion aus
-`business-plan/beobachtungen.md` dagegen.
+Umgesetzt: eine Preisliste, gestaffelt nach Fahrzeugen (36 CHF im Jahr für bis zu drei, jedes weitere 30 CHF),
+KI-Kontingent pro Fahrzeug, beide Landing Pages gleich. Offen bleibt die Durchsetzung:
 
-- [ ] Entscheid: eine Preisliste, gestaffelt nach Fahrzeugen statt nach Zielgruppe. Vorschlag: 36 CHF im Jahr für bis
-      zu drei Fahrzeuge (deckt Privathalter, Zahl bleibt wie getestet), jedes weitere Fahrzeug 30 CHF im Jahr; zehn
-      Fahrzeuge kosten damit 246 CHF im Jahr, rund 2 CHF pro Fahrzeug und Monat
-- [ ] KI-Kontingent an die Fahrzeuge koppeln statt an Plangrössen: Scans pro Fahrzeug und Monat (Vorschlag 5, Minimum
-      15 pro Konto), Chat-Kontingent gleich mitziehen; `plans.ts` kennt heute nur feste Plangrenzen
-- [ ] Beide Landing Pages auf die eine Preisliste umstellen; Unterschied bleibt der Kontext, nicht das Produkt:
-      Betriebe bekommen Jahresrechnung, Concierge-Einrichtung und später mehrere Nutzer pro Konto
-- [ ] Fahrzeuggrenze im Code durchsetzen (heute unbegrenzt), sonst ist die Staffel eine reine Behauptung
+- [ ] Fahrzeuggrenze wirklich sperren, sobald ein Zahlungsweg existiert: `vehicleLimit` meldet heute nur, solange
+      `VITE_BILLING_ENABLED=true` gesetzt ist; ohne Kaufweg wäre eine Sperre bloss ein Ärgernis
+- [ ] Preise je Plan beim Zahlungsanbieter hinterlegen (Stripe- oder Payrexx-Preis-IDs `klein`, `mittel`, `gross`)
 
 ## Sobald über die Schweiz hinaus verkauft wird (DACH oder global)
 

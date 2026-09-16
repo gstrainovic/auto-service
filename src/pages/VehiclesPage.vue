@@ -1,13 +1,18 @@
 <script setup lang="ts">
+import type { Plan } from '@strainovic/ai-proxy/plans'
 import type { Vehicle } from '../stores/vehicles'
+import { PLANS } from '@strainovic/ai-proxy/plans'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
+import Message from 'primevue/message'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import LastServicesDialog from '../components/LastServicesDialog.vue'
 import SellVehicleDialog from '../components/SellVehicleDialog.vue'
 import VehicleCard from '../components/VehicleCard.vue'
 import VehicleForm from '../components/VehicleForm.vue'
+import { fetchUsage } from '../services/ai-access'
+import { vehicleLimit } from '../services/vehicle-limit'
 import { activeVehicles, soldVehicles } from '../services/vehicle-status'
 import { useVehiclesStore } from '../stores/vehicles'
 
@@ -32,6 +37,17 @@ async function onSave(data: any) {
   if (id)
     lastServicesFor.value = { id, name: `${data.make} ${data.model}` }
 }
+
+// Fahrzeuge der Preisstaffel: Hinweis erst, wenn es einen Zahlungsweg gibt (services/vehicle-limit.ts)
+const plan = ref<Plan | undefined>()
+onMounted(async () => {
+  try {
+    const usage = await fetchUsage()
+    plan.value = PLANS[usage.plan as keyof typeof PLANS]
+  }
+  catch {}
+})
+const limit = computed(() => vehicleLimit(activeVehicles(store.vehicles).length, plan.value, import.meta.env.VITE_BILLING_ENABLED === 'true'))
 
 const active = computed(() => activeVehicles(store.vehicles))
 const sold = computed(() => soldVehicles(store.vehicles))
@@ -65,6 +81,13 @@ async function deleteVehicle(): Promise<void> {
         @click="showForm = true"
       />
     </div>
+
+    <Message v-if="limit.note" severity="secondary" :closable="false" class="limit-note">
+      <template #icon>
+        <i class="pi pi-info-circle" />
+      </template>
+      {{ limit.note }}
+    </Message>
 
     <div v-if="store.vehicles.length === 0" class="empty-state">
       <i class="pi pi-car empty-icon" />

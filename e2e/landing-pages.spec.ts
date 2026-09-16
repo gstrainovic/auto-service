@@ -6,7 +6,9 @@ test.describe('Landing Pages', () => {
   test('LP-001: Betrieb zeigt Problem, Nutzen, Preis und Frühzugang-Button', async ({ page }) => {
     await page.goto('/betrieb')
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Firmenfahrzeuge')
-    await expect(page.getByText(/29.*49 CHF/)).toBeVisible()
+    // dieselbe Preisliste wie für Privathalter, gestaffelt nach Fahrzeugen
+    await expect(page.getByText(/36 CHF im Jahr für drei Fahrzeuge/)).toBeVisible()
+    await expect(page.getByText(/246 CHF im Jahr/)).toBeVisible()
     await expect(page.getByRole('button', { name: 'Frühzugang anfragen' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Impressum' })).toBeVisible()
   })

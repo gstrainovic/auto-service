@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { LimitKind, Plan } from '@strainovic/ai-proxy/plans'
-import { PLANS } from '@strainovic/ai-proxy/plans'
+import { PLANS, yearlyPriceChf } from '@strainovic/ai-proxy/plans'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import Message from 'primevue/message'
@@ -61,11 +61,14 @@ const upgradePlans = computed(() => Object.values(PLANS).filter(p => p.priceChfP
 const limitKinds = Object.keys(LIMIT_LABELS) as LimitKind[]
 
 function planName(plan: Plan): string {
-  return plan.id === 'free' ? 'Gratis' : plan.name
+  return plan.id === 'free' ? 'Gratis, 1 Fahrzeug' : plan.name
 }
 
+// Abgerechnet wird im Jahr; die Staffel rechnet pro Fahrzeug, darum der Jahrespreis des Plans
 function planPrice(plan: Plan): string {
-  return `${formatCurrency(plan.priceChfPerMonth)} / Monat`
+  if (plan.priceChfPerMonth === 0)
+    return 'gratis'
+  return `${formatCurrency(yearlyPriceChf(plan.maxVehicles ?? 0))} / Jahr`
 }
 
 function importSummary(imported: Record<string, number>): string {

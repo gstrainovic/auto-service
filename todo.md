@@ -19,9 +19,6 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 - [ ] Auswertung gegen die Abbruchkriterien, Ergebnis und Entscheid in Kapitel 9 eintragen
 - [ ] Pilot-Betrieb anlegen: Fahrzeuge erfassen, erste Rechnungen von Hand einlesen, Jahresrechnung per QR-Rechnung stellen (kein Zahlungsanbieter)
 
-### Bekannte Lücken, klein
-- [ ] Bestehende Daten: beim Cayenne steht das Fahrzeug auf 231'457 km, der letzte Ölwechsel auf 252'586 km (neue Einträge heben den Stand, alte nicht); einmalig nachziehen, nach Rückfrage
-
 ### Betrieb, nebenbei
 - [ ] **Vom Nutzer, einmalig:** In Horizon (https://api.pub2.infomaniak.cloud/horizon, Benutzer `PCU-CTPZLR8`) anmelden
       und unter «Identity → Application Credentials» ein Credential `claude-backup` **ohne Rollenauswahl** anlegen, damit
@@ -30,7 +27,8 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
       alles mit 403, und aus einem Application-Credential-Token heraus lässt sich kein zweites anlegen
       («Using method 'application_credential' is not allowed»). Danach übernehme ich: Container
       `wartungsheft-backups` anlegen, `backup.sh` um den Upload erweitern, Aufbewahrung im Container prüfen
-- [ ] Health-Checks (`api.`/health/system, `ai.`/health) in ein Uptime-Monitoring aufnehmen, sobald ein Pilot läuft
+- [ ] Health-Checks laufen heute nur im täglichen Claude-Lauf (`~/projects/find-jobs/AGENTS.md`, «Tagescheck
+      Wartungsheft»). Sobald ein Pilot zahlt, zusätzlich ein Dienst, der unabhängig vom Laptop prüft und meldet
 
 ### Preismodell
 

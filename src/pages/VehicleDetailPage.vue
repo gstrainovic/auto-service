@@ -7,6 +7,7 @@ import type { Maintenance } from '../stores/maintenances'
 import type { InvoiceFormData, MaintenanceFormData } from '../types/forms'
 import Badge from 'primevue/badge'
 import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
 import Dialog from 'primevue/dialog'
 import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
@@ -34,7 +35,7 @@ import { resolveRates } from '../services/fx'
 import { formToInvoiceInput } from '../services/invoice-form'
 import { saveInvoice, updateInvoice } from '../services/invoice-save'
 import { saveMaintenances } from '../services/maintenance-save'
-import { buildDossier, dossierFilename } from '../services/pdf-report'
+import { buildDossier, buildServiceRecord, dossierFilename, serviceRecordFilename } from '../services/pdf-report'
 import { categoryLabel, costsByYear, invoicesToCsv } from '../services/report'
 import { soldLabel } from '../services/vehicle-status'
 import { useInvoicesStore } from '../stores/invoices'
@@ -323,6 +324,21 @@ function exportCsv(): void {
   saveFile(new Blob([csv], { type: 'text/csv;charset=utf-8' }), name)
 }
 
+// Übergabemappe für den Käufer: Auszug, Historie, Belege; Preise nur auf Wunsch
+const serviceRecordPrices = ref(false)
+function exportServiceRecord(): void {
+  if (!vehicle.value)
+    return
+  const doc = buildServiceRecord({
+    vehicle: vehicle.value,
+    invoices: vehicleInvoices.value,
+    maintenances: vehicleMaintenances.value,
+    currency: currencyOpts.value,
+    withPrices: serviceRecordPrices.value,
+  })
+  saveFile(doc.output('blob'), serviceRecordFilename(vehicle.value))
+}
+
 function exportPdf(): void {
   if (!vehicle.value)
     return
@@ -542,7 +558,15 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
           <TabPanel value="costs">
             <div class="tab-header costs-actions">
               <Button v-tooltip.bottom="'Alle Rechnungspositionen als Tabelle für Excel'" icon="pi pi-file-excel" label="CSV für Excel" severity="secondary" outlined :disabled="!vehicleInvoices.length" @click="exportCsv" />
-              <Button v-tooltip.bottom="'Stammdaten, Wartungen, Kosten und Rechnungen, z. B. für den Verkauf'" icon="pi pi-file-pdf" label="PDF-Dossier" severity="primary" @click="exportPdf" />
+              <Button v-tooltip.bottom="'Stammdaten, Wartungen, Kosten und Rechnungen, für dich und den Treuhänder'" icon="pi pi-file-pdf" label="PDF-Dossier" severity="primary" @click="exportPdf" />
+            </div>
+            <!-- Übergabemappe: dasselbe Fahrzeug, aber für den Käufer statt für die Buchhaltung -->
+            <div class="service-record">
+              <Button v-tooltip.bottom="'Auszug, Wartungshistorie und Belege als Mappe für den Käufer'" icon="pi pi-book" label="Serviceheft für den Verkauf" severity="secondary" outlined @click="exportServiceRecord" />
+              <label class="service-record-prices">
+                <Checkbox v-model="serviceRecordPrices" binary input-id="service-record-prices" />
+                <span>mit Preisen</span>
+              </label>
             </div>
             <div v-if="yearCosts.length" class="costs-table-wrap">
               <table class="costs-table" aria-label="Kosten pro Jahr">
@@ -919,6 +943,23 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.25rem 0.75rem;
+}
+
+.service-record {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.service-record-prices {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+  cursor: pointer;
 }
 
 .delete-hint {

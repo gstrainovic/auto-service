@@ -10,6 +10,7 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { formatCurrency, formatDate, formatNumber, normalizeCurrency } from '../lib/locale'
 import { categoryLabel, costsByYear, fleetCostsByVehicleYear, formatKm, maintenanceRows } from './report'
+import { serviceRecordSummary } from './service-record'
 import { soldLabel } from './vehicle-status'
 
 export interface DossierInput {
@@ -155,6 +156,106 @@ function footer(doc: jsPDF): void {
     doc.text(`wartungsheft.ch · Seite ${p} von ${pages}`, MARGIN, doc.internal.pageSize.getHeight() - 8)
     doc.setTextColor(0)
   }
+}
+
+export interface ServiceRecordInput extends DossierInput {
+  /** Preise und Rechnungsbeträge zeigen; beim Verkauf meist unerwünscht */
+  withPrices?: boolean
+}
+
+export function serviceRecordFilename(vehicle: VehicleInfo, at: Date = new Date()): string {
+  return `serviceheft-${slug(`${vehicle.make} ${vehicle.model} ${vehicle.licensePlate}`)}-${isoDate(at)}.pdf`
+}
+
+/**
+ * Übergabemappe für den Käufer: Auszug auf der ersten Seite, danach die Wartungshistorie, die Belege als Bilder
+ * und am Schluss eine Seite über Wartungsheft. Ohne `withPrices` steht nirgends ein Betrag.
+ */
+export function buildServiceRecord(input: ServiceRecordInput): jsPDF {
+  const { vehicle, invoices, maintenances, generatedAt = new Date(), withPrices = false, currency } = input
+  const doc = newDoc()
+  const summary = serviceRecordSummary(maintenances, generatedAt)
+  let y = title(doc, MARGIN, `Serviceheft ${vehicle.make} ${vehicle.model}`, `Stand ${formatDate(generatedAt)}`)
+
+  autoTable(doc, {
+    startY: y,
+    theme: 'plain',
+    styles: { fontSize: 10, cellPadding: 1.2 },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 } },
+    body: [
+      ['Kennzeichen', vehicle.licensePlate],
+      ['Baujahr', vehicle.year ? String(vehicle.year) : ''],
+      ['Fahrgestellnummer', vehicle.vin ?? ''],
+      ['Kilometerstand', formatKm(vehicle.mileage)],
+      ['Einträge', summary.count ? `${summary.count} von ${formatDate(summary.from)} bis ${formatDate(summary.to)}` : 'keine'],
+      ['Belegte Laufleistung', summary.firstMileage && summary.lastMileage ? `${formatKm(summary.firstMileage)} bis ${formatKm(summary.lastMileage)}` : ''],
+      ['Historie', summary.gapless ? 'lückenlos dokumentiert' : `mit Lücken (${summary.note})`],
+      ['Belege', `${invoices.filter(i => i.imageData).length} von ${invoices.length} Rechnungen mit Foto`],
+    ],
+  })
+  y = finalY(doc) + 8
+
+  y = heading(doc, y, 'Wartungshistorie')
+  const rows = maintenanceRows(maintenances)
+  autoTable(doc, {
+    startY: y,
+    head: [['Datum', 'Arbeit', 'Kilometerstand']],
+    body: rows.length ? rows : [['—', 'Keine Einträge', '']],
+    styles: { fontSize: 9 },
+    headStyles: HEAD,
+  })
+  y = finalY(doc) + 8
+
+  if (withPrices) {
+    y = heading(doc, y, 'Kosten pro Jahr')
+    const years = costsByYear(invoices, currency)
+    autoTable(doc, {
+      startY: y,
+      head: [['Jahr', 'Total']],
+      body: years.length ? years.map(r => [String(r.year), formatCurrency(r.total, r.currency)]) : [['—', '']],
+      styles: { fontSize: 9 },
+      headStyles: HEAD,
+    })
+  }
+
+  // Belege als Bildseiten, damit der Käufer die Rechnungen sieht und nicht nur die Liste
+  for (const invoice of [...invoices].sort((a, b) => a.date.localeCompare(b.date))) {
+    if (!invoice.imageData)
+      continue
+    doc.addPage()
+    doc.setFontSize(11)
+    const head = [formatDate(invoice.date), invoice.workshopName, withPrices ? formatCurrency(invoice.totalAmount, normalizeCurrency(invoice.currency)) : '']
+      .filter(Boolean)
+      .join(' · ')
+    doc.text(head, MARGIN, MARGIN)
+    try {
+      const format = invoice.imageData.startsWith('/9j/') ? 'JPEG' : 'WEBP'
+      const width = doc.internal.pageSize.getWidth() - 2 * MARGIN
+      doc.addImage(invoice.imageData, format, MARGIN, MARGIN + 6, width, 0)
+    }
+    catch {
+      doc.setFontSize(9)
+      doc.text('Beleg konnte nicht eingebettet werden.', MARGIN, MARGIN + 12)
+    }
+  }
+
+  // Schlussseite: wer das Heft geführt hat
+  doc.addPage()
+  let z = title(doc, MARGIN, 'Geführt mit Wartungsheft', 'wartungsheft.ch')
+  doc.setFontSize(10)
+  for (const line of [
+    'Werkstattrechnung fotografieren, die KI liest Werkstatt, Datum, Betrag und Positionen heraus.',
+    'Fälligkeiten für Service, Bremsen, Reifen und MFK, mit E-Mail-Erinnerung.',
+    'Kosten pro Fahrzeug und Jahr, Export für den Treuhänder.',
+    'Dieses Serviceheft als PDF, jederzeit neu erstellt.',
+    'Daten auf Servern in der Schweiz, KI-Verarbeitung in der EU.',
+  ]) {
+    doc.text(`•  ${line}`, MARGIN, z)
+    z += 6
+  }
+
+  footer(doc)
+  return doc
 }
 
 export function buildDossier(input: DossierInput): jsPDF {

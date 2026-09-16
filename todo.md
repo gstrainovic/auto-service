@@ -19,13 +19,6 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 - [ ] Auswertung gegen die Abbruchkriterien, Ergebnis und Entscheid in Kapitel 9 eintragen
 - [ ] Pilot-Betrieb anlegen: Fahrzeuge erfassen, erste Rechnungen von Hand einlesen, Jahresrechnung per QR-Rechnung stellen (kein Zahlungsanbieter)
 
-### Versprechen der Landing Page einlösen
-- [ ] Serviceheft-PDF für die Übergabe (Käufer-Mappe, eigener Knopf neben dem PDF-Dossier): erste Seite als Auszug
-      (Fahrzeug, Kilometerstand, Zeitraum, Anzahl Einträge, lückenlos ja/nein, letzte Arbeiten), danach die
-      Wartungshistorie, Belege als Anhang; Preise abwählbar, weil der Verkäufer seine Kosten selten zeigen will.
-      Werbung dezent: letzte Seite mit den Funktionen von Wartungsheft, auf jeder Seite unten die Fusszeile mit
-      wartungsheft.ch
-
 ### Bekannte Lücken, klein
 - [ ] Bestehende Daten: beim Cayenne steht das Fahrzeug auf 231'457 km, der letzte Ölwechsel auf 252'586 km (neue Einträge heben den Stand, alte nicht); einmalig nachziehen, nach Rückfrage
 

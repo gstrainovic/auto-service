@@ -113,6 +113,27 @@ test.describe('Kosten und Export', () => {
     await expect(page.getByText('CSV und 1 Beleg geladen.')).toBeVisible()
   })
 
+  test('RE-006: Serviceheft für den Verkauf lädt als PDF, Preise nur auf Wunsch', async ({ page }) => {
+    const vehicleId = await seedVehicleWithInvoices(page)
+    await page.goto(`/vehicles/${vehicleId}`)
+    await page.getByRole('tab', { name: 'Kosten' }).click()
+
+    const download = page.waitForEvent('download')
+    await page.getByRole('button', { name: 'Serviceheft für den Verkauf' }).click()
+    const file = await download
+    expect(file.suggestedFilename()).toMatch(/^serviceheft-vw-caddy-sg-12345-\d{4}-\d{2}-\d{2}\.pdf$/)
+    const bytes = await (await file.createReadStream()).toArray().then(chunks => Buffer.concat(chunks as Buffer[]))
+    expect(bytes.subarray(0, 5).toString()).toBe('%PDF-')
+    expect(bytes.length).toBeGreaterThan(2000)
+
+    // mit Preisen wird das PDF grösser, weil die Kostenseite dazukommt
+    await page.locator('#service-record-prices').click()
+    const withPrices = page.waitForEvent('download')
+    await page.getByRole('button', { name: 'Serviceheft für den Verkauf' }).click()
+    const priced = await (await (await withPrices).createReadStream()).toArray().then(chunks => Buffer.concat(chunks as Buffer[]))
+    expect(priced.length).toBeGreaterThan(bytes.length)
+  })
+
   test('RE-003: PDF-Dossier wird als Datei geladen', async ({ page }) => {
     const vehicleId = await seedVehicleWithInvoices(page)
     await page.goto(`/vehicles/${vehicleId}`)

@@ -188,6 +188,12 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
   entscheidet die Beschreibung der Wartung, zu welchem Eintrag sie gehört.
 - Verkauft oder abgegeben statt gelöscht (`src/services/vehicle-status.ts`): `soldAt` und `soldMileage` am Fahrzeug,
   `activeVehicles` filtert Dashboard, Karten und Erinnerungen, Kosten und Exporte enthalten das Fahrzeug weiter.
+- Serviceheft für den Verkauf: `buildServiceRecord` (pdf-report.ts) mit Kennzahlen aus `service-record.ts`
+  (Zeitraum, Anzahl, Laufleistung, lückenlos ja/nein), Belegbildern als eigene Seiten und einer Schlussseite über
+  Wartungsheft; Preise nur mit `withPrices`.
+- Offline: ohne Verbindung wird der Beleg mit `scanPending` gespeichert (kein Tesseract, es lädt vom CDN),
+  `useOfflineScanQueue` holt den Scan beim `online`-Ereignis nach und füllt nur leere Felder. Speicherwege dürfen
+  keine Serverabfrage voraussetzen; `db.queryOnce` scheitert offline.
 - Jahresabschluss: `src/services/year-export.ts` baut CSV und Belegbilder eines Jahres, `src/services/zip.ts` packt sie
   ungepackt in ein ZIP (keine Abhängigkeit, Bilder sind schon komprimiert).
 - Speicherwege: Rechnungen immer über `saveInvoice` (`src/services/invoice-save.ts`: Rechnung, eine Wartung pro Kategorie

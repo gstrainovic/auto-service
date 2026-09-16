@@ -204,6 +204,10 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
   ersten Aufruf, Subscription mit `status: 'trial'`); danach antworten Scan und Chat mit 402 `trial_expired`, Lesen,
   Erfassen von Hand und Exporte bleiben frei. Preisstaffel in `yearlyPriceChf` (36 CHF erstes Fahrzeug, 24 CHF je
   weiteres), `PriceTable.vue` rechnet damit; Fair-Use-Bremse 20 Anfragen pro Minute im Proxy (`rate-limit.ts`).
+- Wortwahl in der App: «Rechnung» (nie «Beleg»), «Kontrollschild» und «Fahrgestellnummer» wie auf dem Schweizer
+  Ausweis (nie «Kennzeichen», «FIN»). Formular «Neues Fahrzeug» belegt nichts vor: Baujahr und Kilometerstand 0 heisst
+  unbekannt, der Ausweis-Scan füllt leere Felder. Löschen eines Fahrzeugs nur auf der Fahrzeugseite, nicht auf der Karte.
+  Persona-Durchgänge (Neulenker, Rentner, CEO, Fahrer) mit Screenshots auf 390px, bevor UI-Texte als fertig gelten.
 - Texte: Hauptknopf überall «30 Tage gratis testen» (führt zum Login, Klick zählt in `events` über `useEventsStore`).
   Kein Lead-Formular: Fragen gehen per mailto an `info@wartungsheft.ch` (Footer aller Landing Pages, auf `/betrieb`
   zusätzlich unter dem Knopf mit Betreff). Kein Pilotangebot, keine Einrichtung vor Ort. Du-Form auch für Betriebe, bewusst.
@@ -269,7 +273,9 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - z.enum(MAINTENANCE_CATEGORIES) enforces valid categories in AI schemas
 - InstantDB: Entity-IDs müssen UUIDs sein (nutze `id()` Funktion)
 - Alle Modell-Aufrufe mit `temperature: 0` (Tool-Entscheidungen reproduzierbarer)
-- Guard `claimsActionWithoutTool` in `sendChatMessage`: behauptet das Modell "wurde eingetragen" ohne Tool-Aufruf, wird einmal mit `toolChoice: 'required'` nachgefasst
+- Guard `claimsActionWithoutTool` (`src/services/chat-guard.ts`, reine Funktion mit Unit-Test) in `sendChatMessage`:
+  behauptet das Modell «eingetragen» ohne Aufruf eines **schreibenden** Tools (`WRITE_TOOLS`; ein `list_vehicles` allein
+  zählt nicht), wird einmal mit `toolChoice: 'required'` nachgefasst. Muster: Partizip mit Hilfsverb, vor `:`/`.`/Ende, oder ✅
 - System-Prompt: keine wörtlichen Erfolgssätze als Beispiele — Mistral kopiert sie sonst ohne Tool-Aufruf (nur Format beschreiben)
 - Lade-Blase im Chat hat zusätzlich die Klasse `chat-message-loading` (für Test-Selektoren)
 

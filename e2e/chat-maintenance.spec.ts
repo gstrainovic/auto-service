@@ -62,7 +62,7 @@ test.describe('Chat Maintenance Tool', () => {
 
     // Verify NO spurious invoice was created (add_maintenance should not create invoices)
     await page.getByRole('tab', { name: /Rechnungen/ }).click()
-    await expect(page.getByText(/Keine Rechnungen/i)).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByText(/^Keine Rechnungen./)).toBeVisible({ timeout: 5_000 })
 
     // Cleanup: delete vehicle
     await page.locator('button:has-text("Löschen")').first().click()

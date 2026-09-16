@@ -7,6 +7,7 @@ import { db, id as instantId, tx } from '../lib/instantdb'
 import { formatCurrency, formatDate, formatNumber, normalizeCurrency } from '../lib/locale'
 import { callMistralOcr, callMistralOcrPdf, getModel, hashImage, MAINTENANCE_CATEGORIES, parseInvoice, parseServiceBook, parseVehicleDocument, withRetry } from './ai'
 import { correctCategory } from './category-correction'
+import { claimsActionWithoutTool } from './chat-guard'
 import { saveInvoice } from './invoice-save'
 import { checkDueMaintenances, getMaintenanceSchedule } from './maintenance-schedule'
 
@@ -843,11 +844,4 @@ Zeige die erkannten Daten strukturiert an. Frage den Benutzer ob die Daten korre
     text: extracted.text || 'Erledigt.',
     toolResults: extracted.toolResults,
   }
-}
-
-const ACTION_CLAIM = /\b(?:wurde|wurden|habe ich|ist|sind)\b[^.]{1,80}\b(?:angelegt|eingetragen|gespeichert|erfasst|gelöscht|aktualisiert|erstellt|hinzugefügt)\b|\*\*(?:Wartung eingetragen|Fahrzeug angelegt|Rechnung erfasst|Löschung|Änderung)\*\*/i
-
-function claimsActionWithoutTool(result: { text: string, steps?: Array<{ toolCalls?: unknown[] }> }): boolean {
-  const anyToolCall = (result.steps ?? []).some(s => (s.toolCalls?.length ?? 0) > 0)
-  return !anyToolCall && ACTION_CLAIM.test(result.text || '')
 }

@@ -19,25 +19,8 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 - [ ] Auswertung gegen die Abbruchkriterien, Ergebnis und Entscheid in Kapitel 9 eintragen
 - [ ] Pilot-Betrieb anlegen: Fahrzeuge erfassen, erste Rechnungen von Hand einlesen, Jahresrechnung per QR-Rechnung stellen (kein Zahlungsanbieter)
 
-### Aus der Review vom Pilot-Stand (Entscheid des Nutzers offen)
-- [ ] Kostentabelle Fahrzeugseite: Zeile «Gesamt» unter der Total-Zeile streichen (doppelt)
-- [ ] Fahrzeugkarten unter «Fahrzeuge» kompakter, Klickbarkeit sichtbar (Chevron), Kosten des Jahres statt Leerfläche
-
-### Aus dem Ablauf-Review (vor dem Pilot, Reihenfolge = Priorität)
-- [ ] Wartungsdialog: Status «Geplant» (gespeichert als `due`) zählt nirgends; auswerten (geplanter Termin in der Fälligkeitsliste) oder entfernen
-- [ ] Jahresabschluss: Jahr im Export wählbar, ZIP mit CSV und Belegbildern
-- [ ] «Verkauft / abgegeben» mit Datum und km statt nur Löschen; Kosten bleiben in den Exporten
-- [ ] Kilometerstand schnell aktualisieren (Stift an der km-Anzeige, auch im Dashboard)
-- [ ] Einstiege: Dashboard-Knopf «Beleg erfassen» mit Fahrzeugwahl; leere Seiten verweisen noch auf den Chat statt aufs Formular; Chat kennt das offene Fahrzeug; Menüpunkt «KI-Assistent» öffnet den Chat
-- [ ] Landing `/betrieb`: «Garantie pro Fahrzeug» gibt es nicht, «Wartungsplan aktualisiert sich automatisch» stimmt nur beim Chat
-- [ ] Mülleimer auf dem Dashboard löscht alle Einträge des Typs, auch aus Rechnungen → dort entfernen
-- [ ] Rechnung bearbeiten (Datum, km) zieht die verknüpften Wartungen nicht mit
-- [ ] Wartungsdialog: Label «Datum *» überdeckt das Feld; Badge «Ölwechsel überfällig» am Handy abgeschnitten
-
 ### Bekannte Lücken, klein
 - [ ] Bestehende Daten: beim Cayenne steht das Fahrzeug auf 231'457 km, der letzte Ölwechsel auf 252'586 km (neue Einträge heben den Stand, alte nicht); einmalig nachziehen, nach Rückfrage
-- [ ] Wartungsplan aus dem Service-Heft mit mehrfach gleichem Typ (`sonstiges` für Getriebeöl und Differentialöl): Einträge werden über den Typ gematcht und gekeyt, eigene ID pro Plan-Eintrag nötig
-- [ ] Chat-Drawer mobil: Drop-Zone ausblenden, Schnellaktions-Chips horizontal scrollbar; Buttons einheitlich (primäre Aktion oben rechts)
 
 ### Betrieb, nebenbei
 - [ ] Backups zusätzlich ausserhalb der Instanz ablegen (Object Storage im selben OpenStack-Projekt, eigenes Application Credential nur dafür); Restore einmal nach README durchspielen

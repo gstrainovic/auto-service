@@ -181,7 +181,7 @@ function goToApp() {
               3
             </div>
             <h3>Bestätigen</h3>
-            <p>"Ja, passt" — und alles wird gespeichert. Wartungsplan aktualisiert sich automatisch.</p>
+            <p>«Ja, passt» — und alles wird gespeichert. Die Fälligkeiten rechnen sich neu, egal ob du im Chat oder im Formular erfasst.</p>
           </div>
         </div>
       </div>

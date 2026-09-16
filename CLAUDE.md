@@ -182,8 +182,17 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
   ohne `Date`-Zeitzonen (`addMonths` mit Tagesklammerung). Dashboard und Fahrzeugkarte rechnen live aus
   `useMaintenancesStore`; `fleetDueList` (Fälligkeitsliste oben im Dashboard), `dueDescription` («fällig seit …»),
   `vehicleDueStatus` (Karte, `unknown` = «Noch keine Wartung erfasst»). Deep-Link `/dashboard#fahrzeug-<id>`.
+  Status «Geplant» (gespeichert als `due`) ist ein vereinbarter Termin: über `plannedMaintenances` wird daraus
+  `plannedAt` (nächster Termin in der Zukunft), die Erinnerung lässt solche Arbeiten aus. Jeder Plan-Eintrag hat einen
+  eigenen `key` (Art plus Bezeichnung); kommt eine Art mehrfach vor (Getriebeöl und Differentialöl als `sonstiges`),
+  entscheidet die Beschreibung der Wartung, zu welchem Eintrag sie gehört.
+- Verkauft oder abgegeben statt gelöscht (`src/services/vehicle-status.ts`): `soldAt` und `soldMileage` am Fahrzeug,
+  `activeVehicles` filtert Dashboard, Karten und Erinnerungen, Kosten und Exporte enthalten das Fahrzeug weiter.
+- Jahresabschluss: `src/services/year-export.ts` baut CSV und Belegbilder eines Jahres, `src/services/zip.ts` packt sie
+  ungepackt in ein ZIP (keine Abhängigkeit, Bilder sind schon komprimiert).
 - Speicherwege: Rechnungen immer über `saveInvoice` (`src/services/invoice-save.ts`: Rechnung, eine Wartung pro Kategorie
-  mit `invoiceId`, höherer Kilometerstand, eine Transaktion; Chat, Formular und Stapel), Wartungen ohne Rechnung über
+  mit `invoiceId`, höherer Kilometerstand, eine Transaktion; Chat, Formular und Stapel) und beim Bearbeiten über
+  `updateInvoice` (zieht Datum, Kilometerstand und Positionen in die verknüpften Wartungen nach), Wartungen ohne Rechnung über
   `saveMaintenances` (`src/services/maintenance-save.ts`: Formular, «Erledigt eintragen», `LastServicesDialog` nach dem
   Anlegen, Serviceheft). Nie direkt `tx.invoices`/`tx.maintenances` aus Seiten schreiben.
 - Serviceheft ohne Chat: `ServiceBookDialog.vue` (Fahrzeugseite «Serviceheft hinterlegen», Dashboard-Hinweis) mit
@@ -296,6 +305,8 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | AP | AI Proxy | AP-001: Chat via Proxy zählt Tokens, AP-002: Monatslimit-Meldung, AP-003: Settings zeigen Abo & Nutzung |
 | DJ | Fälligkeit als Ablauf | DJ-001 bis DJ-005: Nachtragen nach dem Anlegen, Fälligkeitsliste, «Erledigt eintragen», Mail-Link |
 | SB | Serviceheft ohne Chat | SB-001 bis SB-003: Scan, Duplikate, Intervalle von Hand |
+| IE | Rechnung bearbeiten | IE-001, IE-002: Datum und km nachziehen, Positionen abgleichen |
+| SV | Verkauft oder abgegeben | SV-001, SV-002: raus aus Fälligkeiten, Kosten bleiben, rückgängig |
 
 **Gesamt: 73 Tests pro Projekt** (+2 `@soft`) — `npm run test:e2e --list` zeigt alle
 

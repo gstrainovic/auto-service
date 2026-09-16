@@ -19,6 +19,7 @@ import { db, tx } from '../lib/instantdb'
 import { hashImage } from '../services/ai'
 import { getAiAccess } from '../services/ai-access'
 import { sendChatMessage, WELCOME_MESSAGE } from '../services/chat'
+import { useVehiclesStore } from '../stores/vehicles'
 import MediaViewer from './MediaViewer.vue'
 import ToolResultCard from './ToolResultCard.vue'
 
@@ -34,6 +35,14 @@ const open = defineModel<boolean>({ default: false })
 
 const route = useRoute()
 const toast = useToast()
+
+// Offene Fahrzeugseite (/vehicles/<id>): dieses Fahrzeug gilt im Chat ohne Nachfrage
+const vehiclesStore = useVehiclesStore()
+const currentVehicle = computed(() => {
+  const id = route.path.startsWith('/vehicles/') ? String(route.params.id ?? '') : ''
+  const vehicle = id ? vehiclesStore.vehicles.find(v => v.id === id) : undefined
+  return vehicle ? { id: vehicle.id, name: `${vehicle.make} ${vehicle.model}` } : null
+})
 
 const messages = ref<ChatMessage[]>([WELCOME_MESSAGE])
 const input = ref('')
@@ -285,6 +294,8 @@ async function send() {
   try {
     const response = await sendChatMessage(messages.value, {
       access: await getAiAccess(),
+      // Auf einer Fahrzeugseite ist das Fahrzeug gesetzt; der Chat muss nicht danach fragen
+      ...(currentVehicle.value ? { currentVehicle: currentVehicle.value } : {}),
     }, imagesBase64.length ? imagesBase64 : undefined, pdfBase64s.length ? pdfBase64s : undefined)
 
     const assistantMsg: ChatMessage = {
@@ -371,7 +382,10 @@ async function clearChat() {
   >
     <template #header>
       <div class="chat-header">
-        <span class="chat-title">KI-Assistent</span>
+        <span class="chat-title">
+          KI-Assistent
+          <small v-if="currentVehicle" class="chat-context">{{ currentVehicle.name }}</small>
+        </span>
         <div class="chat-header-actions">
           <Button
             v-tooltip.bottom="'Chat löschen'"
@@ -589,6 +603,17 @@ async function clearChat() {
           style="display: none"
           @change="onFileChange"
         >
+        <!-- Am Handy ersetzt dieser Knopf die Drop-Zone; Ziehen geht dort nicht -->
+        <Button
+          v-tooltip.top="'Datei anhängen'"
+          icon="pi pi-paperclip"
+          text
+          rounded
+          severity="secondary"
+          aria-label="Datei anhängen"
+          class="chat-attach-btn"
+          @click="pickFile"
+        />
         <Button
           v-tooltip.top="'Foto aufnehmen'"
           icon="pi pi-camera"
@@ -635,6 +660,13 @@ async function clearChat() {
 </template>
 
 <style scoped>
+.chat-context {
+  display: block;
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color);
+}
+
 .chat-fab {
   position: fixed;
   bottom: 24px;
@@ -792,6 +824,11 @@ async function clearChat() {
   margin-bottom: 0.5rem;
 }
 
+/* Am Desktop reicht die Drop-Zone, dort bleibt der Büroklammer-Knopf weg */
+.chat-attach-btn {
+  display: none;
+}
+
 .chat-drop-hint:hover {
   border-color: var(--p-primary-color);
   color: var(--p-primary-color);
@@ -873,6 +910,31 @@ async function clearChat() {
 
 .chat-suggestion-chip i {
   font-size: 0.9rem;
+}
+
+/* Am Handy: Ziehen gibt es nicht, die Schnellaktionen brauchen zu viel Höhe */
+@media (max-width: 640px) {
+  .chat-drop-hint {
+    display: none;
+  }
+
+  .chat-attach-btn {
+    display: inline-flex;
+  }
+
+  .chat-suggestions {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .chat-suggestions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chat-suggestion-chip {
+    flex: 0 0 auto;
+  }
 }
 </style>
 

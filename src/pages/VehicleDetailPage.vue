@@ -5,6 +5,7 @@ import type { CurrencyOptions } from '../services/report'
 import type { Invoice, InvoiceItem } from '../stores/invoices'
 import type { Maintenance } from '../stores/maintenances'
 import type { InvoiceFormData, MaintenanceFormData } from '../types/forms'
+import Badge from 'primevue/badge'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputNumber from 'primevue/inputnumber'
@@ -19,18 +20,23 @@ import Tabs from 'primevue/tabs'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import InvoiceFormDialog from '../components/InvoiceFormDialog.vue'
+import LastServicesDialog from '../components/LastServicesDialog.vue'
 import MaintenanceFormDialog from '../components/MaintenanceFormDialog.vue'
 import MediaViewer from '../components/MediaViewer.vue'
+import MileageDialog from '../components/MileageDialog.vue'
+import SellVehicleDialog from '../components/SellVehicleDialog.vue'
 import ServiceBookDialog from '../components/ServiceBookDialog.vue'
 import VehicleForm from '../components/VehicleForm.vue'
 import { db } from '../lib/instantdb'
 import { DEFAULT_CURRENCY, formatCurrency, formatDate, formatNumber, LOCALE, normalizeCurrency } from '../lib/locale'
 import { MAINTENANCE_CATEGORIES } from '../services/ai'
 import { resolveRates } from '../services/fx'
-import { saveInvoice } from '../services/invoice-save'
+import { formToInvoiceInput } from '../services/invoice-form'
+import { saveInvoice, updateInvoice } from '../services/invoice-save'
 import { saveMaintenances } from '../services/maintenance-save'
 import { buildDossier, dossierFilename } from '../services/pdf-report'
 import { categoryLabel, costsByYear, invoicesToCsv } from '../services/report'
+import { soldLabel } from '../services/vehicle-status'
 import { useInvoicesStore } from '../stores/invoices'
 import { useMaintenancesStore } from '../stores/maintenances'
 import { useSettingsStore } from '../stores/settings'
@@ -43,10 +49,19 @@ const invoicesStore = useInvoicesStore()
 const maintenancesStore = useMaintenancesStore()
 const tab = ref('maintenance')
 const showServiceBook = ref(false)
+const editMileage = ref(false)
+const sellVehicle = ref(false)
+const showLastServices = ref(false)
 
 const vehicle = computed(() =>
   vehiclesStore.vehicles.find(v => v.id === route.params.id),
 )
+const soldNote = computed(() => (vehicle.value ? soldLabel(vehicle.value) : ''))
+
+async function undoSell(): Promise<void> {
+  if (vehicle.value)
+    await vehiclesStore.update(vehicle.value.id, { soldAt: null, soldMileage: null })
+}
 // Die Stores halten alle Rechnungen und Wartungen des Kontos; hier zählt nur dieses Fahrzeug
 const vehicleInvoices = computed(() => invoicesStore.getByVehicleId(route.params.id as string))
 const vehicleMaintenances = computed(() => maintenancesStore.getByVehicleId(route.params.id as string))
@@ -158,11 +173,17 @@ function openEditInvoice(inv: Invoice): void {
 }
 
 async function saveInvoiceEdit(): Promise<void> {
-  if (!editInvoice.value)
+  if (!editInvoice.value || !vehicle.value)
     return
-  await invoicesStore.update(editInvoice.value.id, {
-    ...editInvoiceForm.value,
-    mileageAtService: editInvoiceForm.value.mileageAtService || null,
+  // Gleicher Weg wie beim Anlegen: die Wartungen aus dieser Rechnung ziehen Datum, Kilometerstand und Positionen mit
+  await updateInvoice(editInvoice.value.id, {
+    vehicleId: vehicle.value.id,
+    workshopName: editInvoiceForm.value.workshopName,
+    date: editInvoiceForm.value.date,
+    totalAmount: editInvoiceForm.value.totalAmount,
+    currency: editInvoiceForm.value.currency,
+    mileageAtService: editInvoiceForm.value.mileageAtService,
+    items: editInvoiceForm.value.items,
   })
   editInvoice.value = null
   selectedInvoice.value = null
@@ -232,23 +253,7 @@ async function handleAddInvoice(data: InvoiceFormData): Promise<void> {
     return
 
   // Gleicher Speicherweg wie der Chat: Rechnung, eine Wartung pro Kategorie, Kilometerstand nachziehen
-  await saveInvoice({
-    vehicleId: vehicle.value.id,
-    workshopName: data.workshop ?? '',
-    date: data.date,
-    totalAmount: data.amount ?? 0,
-    currency: data.currency || DEFAULT_CURRENCY,
-    // Kilometerstand nur, wenn im Formular angegeben; der heutige Fahrzeugstand wäre bei alten Belegen falsch
-    mileageAtService: data.mileage || undefined,
-    // Positionen aus dem Beleg-Scan haben Vorrang; sonst eine Position aus Kategorie und Beschreibung
-    items: data.items?.length
-      ? data.items.map(i => ({ ...i }))
-      : data.category
-        ? [{ description: data.description || '', category: data.category, amount: data.amount || 0 }]
-        : [],
-    // InvoiceForm liefert das Foto als imageBase64
-    imageData: data.images?.[0] ?? (data as { imageBase64?: string }).imageBase64,
-  })
+  await saveInvoice(formToInvoiceInput(data, vehicle.value.id))
 
   showAddInvoiceDialog.value = false
 }
@@ -349,6 +354,7 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
       <Button icon="pi pi-arrow-left" text to="/vehicles" as="router-link" />
       <div class="spacer" />
       <Button icon="pi pi-pencil" label="Bearbeiten" text severity="primary" @click="editVehicle = true" />
+      <Button v-if="!vehicle?.soldAt" icon="pi pi-tag" label="Verkauft" text severity="secondary" @click="sellVehicle = true" />
       <Button icon="pi pi-trash" label="Löschen" text severity="secondary" @click="confirmDeleteVehicle = true" />
     </div>
 
@@ -359,9 +365,32 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
       <div class="vehicle-subtitle">
         {{ vehicle.year }} · {{ vehicle.licensePlate }}
       </div>
+
+      <!-- Verkauft: keine Fälligkeiten und Erinnerungen mehr, Kosten und Belege bleiben -->
+      <Message v-if="soldNote" severity="secondary" :closable="false" class="sold-note">
+        <template #icon>
+          <i class="pi pi-tag" />
+        </template>
+        <span class="sold-note-body">
+          <span>{{ soldNote }}. Kosten und Belege bleiben erhalten.</span>
+          <Button label="Doch behalten" text size="small" @click="undoSell" />
+        </span>
+      </Message>
       <div class="vehicle-mileage">
         <i class="pi pi-gauge" /> {{ vehicle.mileage ? `${formatNumber(vehicle.mileage)} km` : '–' }}
+        <Button
+          v-tooltip.top="'Kilometerstand ändern'"
+          icon="pi pi-pencil"
+          text
+          rounded
+          size="small"
+          severity="secondary"
+          aria-label="Kilometerstand ändern"
+          @click="editMileage = true"
+        />
       </div>
+
+      <MileageDialog :vehicle="editMileage ? vehicle : null" @close="editMileage = false" />
 
       <Tabs v-model:value="tab">
         <TabList>
@@ -434,9 +463,10 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                 <div class="maintenance-content">
                   <div class="maintenance-label">
                     {{ m.description || categoryLabel(m.type) }}
+                    <Badge v-if="m.status !== 'done'" value="Geplant" severity="info" class="planned-badge" />
                   </div>
                   <div class="maintenance-caption">
-                    {{ formatDate(m.doneAt) }}{{ m.mileageAtService ? ` · ${formatNumber(m.mileageAtService)} km` : '' }}
+                    {{ m.status === 'done' ? formatDate(m.doneAt) : `Termin am ${formatDate(m.doneAt)}` }}{{ m.mileageAtService ? ` · ${formatNumber(m.mileageAtService)} km` : '' }}
                   </div>
                 </div>
                 <div class="maintenance-actions">
@@ -463,7 +493,11 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
             </div>
             <div v-if="vehicleMaintenances.length === 0" class="empty-state">
               <i class="pi pi-wrench empty-icon" />
-              <p>Keine Wartungseinträge. Scanne eine Rechnung im Chat!</p>
+              <p>Noch keine Wartungen erfasst. Ohne sie kennt Wartungsheft keine Termine.</p>
+              <div class="empty-actions">
+                <Button label="Letzte Wartungen nachtragen" icon="pi pi-history" @click="showLastServices = true" />
+                <Button label="Serviceheft scannen" icon="pi pi-book" severity="secondary" outlined @click="showServiceBook = true" />
+              </div>
             </div>
           </TabPanel>
 
@@ -497,7 +531,10 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
             </div>
             <div v-if="vehicleInvoices.length === 0" class="empty-state">
               <i class="pi pi-file empty-icon" />
-              <p>Keine Rechnungen. Scanne deine erste Werkstattrechnung!</p>
+              <p>Keine Rechnungen. Foto oder PDF der Werkstattrechnung hochladen, die KI füllt das Formular aus.</p>
+              <div class="empty-actions">
+                <Button label="Erste Rechnung erfassen" icon="pi pi-camera" @click="showAddInvoiceDialog = true" />
+              </div>
             </div>
           </TabPanel>
 
@@ -540,9 +577,6 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
                   </tr>
                 </tbody>
               </table>
-              <div class="costs-grand">
-                Gesamt {{ grandTotals }}
-              </div>
               <!-- Nur Hinweise, die zur Tabelle gehören, je eine Zeile; Erklärungen der Exporte stehen als Tooltip an den Knöpfen -->
               <p v-if="convertedCount > 0" class="costs-hint">
                 <i class="pi pi-info-circle" />
@@ -786,11 +820,18 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
     <!-- Confirm delete vehicle -->
     <Dialog v-model:visible="confirmDeleteVehicle" modal header="Fahrzeug löschen?">
       <p>Alle Rechnungen und Wartungseinträge werden ebenfalls gelöscht.</p>
+      <p class="delete-hint">
+        Verkauft? Dann besser «Verkauft eintragen»: Das Fahrzeug verschwindet aus den Fälligkeiten, Kosten und Belege
+        bleiben für den Jahresabschluss erhalten.
+      </p>
       <template #footer>
         <Button label="Abbrechen" text @click="confirmDeleteVehicle = false" />
+        <Button label="Verkauft eintragen" icon="pi pi-tag" outlined @click="confirmDeleteVehicle = false; sellVehicle = true" />
         <Button label="Löschen" severity="danger" @click="deleteVehicle" />
       </template>
     </Dialog>
+
+    <SellVehicleDialog :vehicle="sellVehicle ? vehicle ?? null : null" @close="sellVehicle = false" />
 
     <!-- Add invoice dialog -->
     <InvoiceFormDialog
@@ -811,6 +852,12 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
     />
 
     <ServiceBookDialog v-model:visible="showServiceBook" :vehicle="vehicle ?? null" />
+
+    <LastServicesDialog
+      v-model:visible="showLastServices"
+      :vehicle-id="vehicle?.id ?? null"
+      :vehicle-name="vehicle ? `${vehicle.make} ${vehicle.model}` : undefined"
+    />
   </main>
 </template>
 
@@ -860,6 +907,22 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
   display: flex;
   gap: 0.25rem;
   flex-wrap: wrap;
+}
+
+.sold-note {
+  margin: 0.5rem 0;
+}
+
+.sold-note-body {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+}
+
+.delete-hint {
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
 }
 
 .schedule-hint-body {
@@ -968,6 +1031,13 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
   text-align: center;
   padding: 2rem 1rem;
   color: var(--text-color-secondary);
+}
+
+.empty-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .empty-icon {
@@ -1162,12 +1232,6 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
   color: var(--p-text-muted-color);
   font-size: 0.8rem;
   margin-left: 0.25rem;
-}
-
-.costs-grand {
-  margin-top: 0.75rem;
-  font-weight: 600;
-  text-align: right;
 }
 
 .costs-hint {

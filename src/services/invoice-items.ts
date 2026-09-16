@@ -84,6 +84,55 @@ export function planInvoiceSave(input: InvoiceSaveInput, vehicle: { mileage?: nu
   }
 }
 
+export interface LinkedMaintenance {
+  id: string
+  type: string
+  doneAt: string
+  mileageAtService?: number | null
+  description?: string
+}
+
+export interface InvoiceUpdatePlan {
+  updates: { id: string, doneAt: string, mileageAtService: number | null, description: string }[]
+  creates: { type: string, description: string, doneAt: string, mileageAtService: number | null }[]
+  deletes: string[]
+  vehicleMileage?: number
+}
+
+/**
+ * Was beim Bearbeiten einer Rechnung mit den daraus entstandenen Wartungen passiert: Datum, Kilometerstand und
+ * Beschreibung nachziehen, neue Kategorien anlegen, weggefallene löschen. Ohne Änderung bleibt alles unberührt.
+ */
+export function planInvoiceUpdate(
+  input: InvoiceSaveInput,
+  linked: LinkedMaintenance[],
+  vehicle: { mileage?: number | null },
+): InvoiceUpdatePlan {
+  const plan = planInvoiceSave(input, vehicle)
+  const byType = new Map(linked.map(m => [m.type, m]))
+  const updates: InvoiceUpdatePlan['updates'] = []
+  const creates: InvoiceUpdatePlan['creates'] = []
+  for (const wanted of plan.maintenances) {
+    const found = byType.get(wanted.type)
+    if (!found) {
+      creates.push(wanted)
+      continue
+    }
+    byType.delete(wanted.type)
+    const changed = found.doneAt !== wanted.doneAt
+      || (found.mileageAtService ?? null) !== wanted.mileageAtService
+      || (found.description ?? '') !== wanted.description
+    if (changed)
+      updates.push({ id: found.id, doneAt: wanted.doneAt, mileageAtService: wanted.mileageAtService, description: wanted.description })
+  }
+  return {
+    updates,
+    creates,
+    deletes: [...byType.values()].map(m => m.id),
+    ...(plan.vehicleMileage ? { vehicleMileage: plan.vehicleMileage } : {}),
+  }
+}
+
 /** Wartungseinträge aus Positionen: einer pro Kategorie, Beschreibungen verbunden, Reihenfolge der Rechnung */
 export function maintenancesFromItems(items: ItemLike[]): { category: string, description: string }[] {
   const byCategory = new Map<string, string[]>()

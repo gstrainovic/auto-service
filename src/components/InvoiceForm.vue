@@ -204,7 +204,9 @@ function handleCancel() {
       </div>
 
       <template v-if="!batch">
-        <FloatLabel>
+        <!-- Datumsfelder zeigen immer «TT.MM.JJJJ», ein schwebendes Label läge darüber -->
+        <div class="field">
+          <label for="invoice-date">Datum *</label>
           <InputText
             id="invoice-date"
             v-model="formData.date"
@@ -213,8 +215,7 @@ function handleCancel() {
             :invalid="!!errors.date"
             fluid
           />
-          <label for="invoice-date">Datum *</label>
-        </FloatLabel>
+        </div>
         <small v-if="errors.date" class="error">{{ errors.date }}</small>
 
         <FloatLabel>
@@ -375,6 +376,17 @@ function handleCancel() {
   color: var(--status-error);
   display: block;
   margin-top: calc(var(--spacing-xs) * -1);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.field > label {
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
 }
 
 .field-hint {

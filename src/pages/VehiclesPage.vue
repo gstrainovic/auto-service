@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import type { Vehicle } from '../stores/vehicles'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import LastServicesDialog from '../components/LastServicesDialog.vue'
+import SellVehicleDialog from '../components/SellVehicleDialog.vue'
 import VehicleCard from '../components/VehicleCard.vue'
 import VehicleForm from '../components/VehicleForm.vue'
+import { activeVehicles, soldVehicles } from '../services/vehicle-status'
 import { useVehiclesStore } from '../stores/vehicles'
 
 const route = useRoute()
@@ -28,6 +31,17 @@ async function onSave(data: any) {
   showForm.value = false
   if (id)
     lastServicesFor.value = { id, name: `${data.make} ${data.model}` }
+}
+
+const active = computed(() => activeVehicles(store.vehicles))
+const sold = computed(() => soldVehicles(store.vehicles))
+const showSold = ref(false)
+
+// Verkauft statt gelöscht: aus dem Löschdialog heraus erreichbar
+const sellVehicle = ref<Vehicle | null>(null)
+function openSell(): void {
+  sellVehicle.value = store.vehicles.find(v => v.id === confirmDeleteId.value) ?? null
+  confirmDeleteId.value = null
 }
 
 async function deleteVehicle(): Promise<void> {
@@ -64,11 +78,30 @@ async function deleteVehicle(): Promise<void> {
     </div>
 
     <VehicleCard
-      v-for="v in store.vehicles"
+      v-for="v in active"
       :key="v.id"
       :vehicle="v"
       @delete="confirmDeleteId = $event"
     />
+
+    <!-- Verkaufte Fahrzeuge bleiben für Kosten und Belege erhalten, stehen aber zugeklappt unten -->
+    <section v-if="sold.length" class="sold-section">
+      <Button
+        :label="`${sold.length} ${sold.length === 1 ? 'verkauftes Fahrzeug' : 'verkaufte Fahrzeuge'}`"
+        :icon="showSold ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+        text
+        severity="secondary"
+        @click="showSold = !showSold"
+      />
+      <template v-if="showSold">
+        <VehicleCard
+          v-for="v in sold"
+          :key="v.id"
+          :vehicle="v"
+          @delete="confirmDeleteId = $event"
+        />
+      </template>
+    </section>
 
     <Dialog
       v-model:visible="showForm"
@@ -93,11 +126,18 @@ async function deleteVehicle(): Promise<void> {
       @update:visible="v => { if (!v) confirmDeleteId = null }"
     >
       <p>Alle Rechnungen und Wartungseinträge werden ebenfalls gelöscht.</p>
+      <p class="delete-hint">
+        Verkauft? Dann besser «Verkauft eintragen»: Das Fahrzeug verschwindet aus den Fälligkeiten, Kosten und Belege
+        bleiben für den Jahresabschluss erhalten.
+      </p>
       <template #footer>
         <Button label="Abbrechen" text @click="confirmDeleteId = null" />
+        <Button label="Verkauft eintragen" icon="pi pi-tag" outlined @click="openSell" />
         <Button label="Löschen" severity="danger" @click="deleteVehicle" />
       </template>
     </Dialog>
+
+    <SellVehicleDialog :vehicle="sellVehicle" @close="sellVehicle = null" />
   </main>
 </template>
 
@@ -143,5 +183,14 @@ async function deleteVehicle(): Promise<void> {
 
 .empty-text {
   margin-bottom: 1.5rem;
+}
+
+.sold-section {
+  margin-top: 1.5rem;
+}
+
+.delete-hint {
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
 }
 </style>

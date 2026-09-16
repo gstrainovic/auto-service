@@ -10,6 +10,7 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { formatCurrency, formatDate, formatNumber, normalizeCurrency } from '../lib/locale'
 import { categoryLabel, costsByYear, fleetCostsByVehicleYear, formatKm, maintenanceRows } from './report'
+import { soldLabel } from './vehicle-status'
 
 export interface DossierInput {
   vehicle: VehicleInfo
@@ -85,6 +86,7 @@ function renderVehicle(doc: jsPDF, y: number, { vehicle, invoices, maintenances,
       ['Baujahr', vehicle.year ? String(vehicle.year) : ''],
       ['Fahrgestellnummer', vehicle.vin ?? ''],
       ['Kilometerstand', formatKm(vehicle.mileage)],
+      ...(vehicle.soldAt ? [['Verkauft', soldLabel(vehicle).replace(/^Verkauft am /, '')]] : []),
     ],
   })
   y = finalY(doc) + 8

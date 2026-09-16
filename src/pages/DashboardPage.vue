@@ -1,27 +1,36 @@
 <script setup lang="ts">
 import type { RateMap } from '../services/fx'
+import type { BatchEntry } from '../services/invoice-scan'
 import type { DueResult, DueStatus } from '../services/maintenance-schedule'
 import type { CurrencyOptions } from '../services/report'
 import type { Maintenance } from '../stores/maintenances'
 import type { Vehicle } from '../stores/vehicles'
-import type { MaintenanceFormData } from '../types/forms'
+import type { InvoiceFormData, MaintenanceFormData } from '../types/forms'
 import Badge from 'primevue/badge'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
+import Select from 'primevue/select'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import InvoiceFormDialog from '../components/InvoiceFormDialog.vue'
 import LastServicesDialog from '../components/LastServicesDialog.vue'
 import MaintenanceFormDialog from '../components/MaintenanceFormDialog.vue'
+import MileageDialog from '../components/MileageDialog.vue'
 import ServiceBookDialog from '../components/ServiceBookDialog.vue'
 import StatCard from '../components/StatCard.vue'
-import { db, tx } from '../lib/instantdb'
+import { db } from '../lib/instantdb'
 import { formatCurrency, formatDate, formatNumber, normalizeCurrency } from '../lib/locale'
 import { resolveRates } from '../services/fx'
+import { formToInvoiceInput } from '../services/invoice-form'
+import { saveInvoice } from '../services/invoice-save'
 import { saveMaintenances } from '../services/maintenance-save'
 import { checkDueMaintenances, dueDescription, fleetDueList, getMaintenanceSchedule, vehicleDueStatus } from '../services/maintenance-schedule'
 import { buildFleetReport, fleetReportFilename } from '../services/pdf-report'
 import { fleetCostsByVehicleYear, invoicesToCsvRows } from '../services/report'
+import { activeVehicles } from '../services/vehicle-status'
+import { invoiceYears, yearExportFilename, yearExportFiles } from '../services/year-export'
+import { createZip } from '../services/zip'
 import { useInvoicesStore } from '../stores/invoices'
 import { useMaintenancesStore } from '../stores/maintenances'
 import { useSettingsStore } from '../stores/settings'
@@ -32,7 +41,6 @@ const route = useRoute()
 const vehiclesStore = useVehiclesStore()
 const invoicesStore = useInvoicesStore()
 const maintenancesStore = useMaintenancesStore()
-const confirmDelete = ref<{ vehicleId: string, type: string, label: string } | null>(null)
 onMounted(async () => {
   await vehiclesStore.load()
   await invoicesStore.load()
@@ -44,22 +52,28 @@ onMounted(async () => {
   }
 })
 
+// Verkaufte Fahrzeuge zeigen keine Fälligkeiten mehr, bleiben aber in Kosten und Exporten
+const ownVehicles = computed(() => activeVehicles(vehiclesStore.vehicles))
+
 // Fälligkeiten live aus dem Store: nach «Erledigt eintragen», einer Rechnung oder dem Chat sofort aktuell
-const dueMap = computed<Record<string, DueResult[]>>(() => Object.fromEntries(vehiclesStore.vehicles.map(vehicle => [
+const dueMap = computed<Record<string, DueResult[]>>(() => Object.fromEntries(ownVehicles.value.map(vehicle => [
   vehicle.id,
   checkDueMaintenances({
     currentMileage: vehicle.mileage,
-    // Nur erledigte Arbeiten zählen als «zuletzt gemacht», geplante Einträge nicht
+    // Nur erledigte Arbeiten zählen als «zuletzt gemacht», geplante sind vereinbarte Termine
     lastMaintenances: maintenancesStore.maintenances
       .filter(m => m.vehicleId === vehicle.id && m.status === 'done')
-      .map(m => ({ type: m.type, mileageAtService: m.mileageAtService, doneAt: m.doneAt })),
+      .map(m => ({ type: m.type, mileageAtService: m.mileageAtService, doneAt: m.doneAt, description: m.description })),
+    plannedMaintenances: maintenancesStore.maintenances
+      .filter(m => m.vehicleId === vehicle.id && m.status !== 'done')
+      .map(m => ({ type: m.type, doneAt: m.doneAt })),
     schedule: getMaintenanceSchedule(vehicle.customSchedule as any),
   }),
 ])))
 
 // Flottenblick: bald fällig und überfällig über alle Fahrzeuge
-const fleetDue = computed(() => fleetDueList(vehiclesStore.vehicles, dueMap.value))
-const vehiclesWithoutSchedule = computed(() => vehiclesStore.vehicles.filter(v => !v.customSchedule?.length))
+const fleetDue = computed(() => fleetDueList(ownVehicles.value, dueMap.value))
+const vehiclesWithoutSchedule = computed(() => ownVehicles.value.filter(v => !v.customSchedule?.length))
 
 // Intervalle ohne jeden Eintrag je Fahrzeug zugeklappt
 const expandedUnknown = ref<Set<string>>(new Set())
@@ -111,6 +125,8 @@ async function saveDone(data: MaintenanceFormData): Promise<void> {
 // Fahrzeug ohne jeden Eintrag: letzte Wartungen nachtragen
 const lastServicesFor = ref<{ id: string, name: string } | null>(null)
 const serviceBookFor = ref<Vehicle | null>(null)
+// Kilometerstand schnell nachführen, ohne Umweg über «Bearbeiten»
+const mileageFor = ref<Vehicle | null>(null)
 
 function scrollToVehicle(vehicleId: string): void {
   document.getElementById(`fahrzeug-${vehicleId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -151,18 +167,70 @@ function exportFleetCsv(): void {
   saveFile(new Blob([csv], { type: 'text/csv;charset=utf-8' }), fleetReportFilename().replace(/\.pdf$/, '.csv'))
 }
 
+// Beleg erfassen ohne Umweg über die Fahrzeugseite; bei mehreren Fahrzeugen zuerst die Wahl
+const receiptFor = ref<Vehicle | null>(null)
+const chooseVehicle = ref(false)
+
+function startReceipt(): void {
+  if (ownVehicles.value.length === 1)
+    receiptFor.value = ownVehicles.value[0]!
+  else
+    chooseVehicle.value = true
+}
+
+function openReceiptFor(vehicle: Vehicle): void {
+  chooseVehicle.value = false
+  receiptFor.value = vehicle
+}
+
+async function saveReceipt(data: InvoiceFormData): Promise<void> {
+  if (!receiptFor.value)
+    return
+  await saveInvoice(formToInvoiceInput(data, receiptFor.value.id))
+  receiptFor.value = null
+}
+
+async function saveReceiptBatch(entries: BatchEntry[]): Promise<void> {
+  if (!receiptFor.value)
+    return
+  for (const { draft, imageBase64, vehicleId } of entries) {
+    if (!draft)
+      continue
+    await saveInvoice({
+      ...draft,
+      vehicleId: vehicleId ?? receiptFor.value.id,
+      items: draft.items.map(i => ({ ...i })),
+      ...(imageBase64 ? { imageData: imageBase64 } : {}),
+    })
+  }
+  receiptFor.value = null
+}
+
+// Jahresabschluss als ZIP: CSV und Belegbilder eines Jahres
+const years = computed(() => invoiceYears(invoicesStore.invoices))
+const exportYear = ref<number>(new Date().getFullYear())
+const exportNote = ref('')
+watch(years, (list) => {
+  if (list.length && !list.includes(exportYear.value))
+    exportYear.value = list[0]!
+}, { immediate: true })
+
+function exportYearZip(): void {
+  const files = yearExportFiles({ year: exportYear.value, vehicles: vehiclesStore.vehicles, invoices: invoicesStore.invoices, currency: currencyOpts.value })
+  if (!files.length) {
+    exportNote.value = `Keine Rechnungen aus ${exportYear.value}.`
+    return
+  }
+  const images = files.length - 1
+  saveFile(new Blob([createZip(files)], { type: 'application/zip' }), yearExportFilename(exportYear.value))
+  exportNote.value = `CSV und ${images} ${images === 1 ? 'Beleg' : 'Belege'} geladen.`
+}
+
 async function exportFleetPdf(): Promise<void> {
   const result = await db.queryOnce({ maintenances: {} })
   const maintenances = (result?.data?.maintenances || []) as Maintenance[]
   const doc = buildFleetReport({ vehicles: vehiclesStore.vehicles, invoices: invoicesStore.invoices, maintenances, currency: currencyOpts.value })
   saveFile(doc.output('blob'), fleetReportFilename())
-}
-
-async function deleteMaintenance(vehicleId: string, type: string) {
-  const maintenances = maintenancesStore.maintenances.filter(m => m.vehicleId === vehicleId && m.type === type)
-  if (maintenances.length)
-    await db.transact(maintenances.map(m => tx.maintenances[m.id].delete()))
-  confirmDelete.value = null
 }
 
 function getStatusIcon(status: DueStatus): string {
@@ -250,9 +318,17 @@ const totalInvoiceCount = computed(() =>
 
 <template>
   <main class="page-container">
-    <h2 class="page-title">
-      Dashboard
-    </h2>
+    <div class="page-header">
+      <h2 class="page-title">
+        Dashboard
+      </h2>
+      <Button
+        v-if="ownVehicles.length > 0"
+        icon="pi pi-camera"
+        label="Beleg erfassen"
+        @click="startReceipt"
+      />
+    </div>
 
     <div v-if="vehiclesStore.vehicles.length === 0" class="empty-state">
       <i class="pi pi-car empty-icon" />
@@ -293,7 +369,7 @@ const totalInvoiceCount = computed(() =>
     </div>
 
     <!-- Flottenblick: was über alle Fahrzeuge bald fällig oder überfällig ist, dringendstes zuerst -->
-    <section v-if="vehiclesStore.vehicles.length > 0" class="fleet-due" aria-label="Fällige Arbeiten">
+    <section v-if="ownVehicles.length > 0" class="fleet-due" aria-label="Fällige Arbeiten">
       <h3>Fällig</h3>
       <p v-if="!fleetDue.length" class="fleet-due-empty">
         <i class="pi pi-check-circle" /> Nichts überfällig und nichts in den nächsten 30 Tagen oder 1'000 km fällig.
@@ -326,7 +402,7 @@ const totalInvoiceCount = computed(() =>
         </template>
         <div class="schedule-hint-body">
           <span>
-            {{ vehiclesWithoutSchedule.length === vehiclesStore.vehicles.length ? (vehiclesStore.vehicles.length === 1 ? 'Dein Fahrzeug nutzt' : 'Alle Fahrzeuge nutzen') : `${vehiclesWithoutSchedule.length} ${vehiclesWithoutSchedule.length === 1 ? 'Fahrzeug nutzt' : 'Fahrzeuge nutzen'}` }}
+            {{ vehiclesWithoutSchedule.length === ownVehicles.length ? (ownVehicles.length === 1 ? 'Dein Fahrzeug nutzt' : 'Alle Fahrzeuge nutzen') : `${vehiclesWithoutSchedule.length} ${vehiclesWithoutSchedule.length === 1 ? 'Fahrzeug nutzt' : 'Fahrzeuge nutzen'}` }}
             allgemeine Wartungsintervalle. Mit dem Serviceheft werden sie genau:
           </span>
           <span class="schedule-hint-actions">
@@ -352,6 +428,21 @@ const totalInvoiceCount = computed(() =>
           <Button icon="pi pi-file-excel" label="CSV für Excel, alle Fahrzeuge" severity="secondary" outlined size="small" @click="exportFleetCsv" />
           <Button icon="pi pi-file-pdf" label="PDF-Übersicht, alle Fahrzeuge" severity="primary" size="small" @click="exportFleetPdf" />
         </div>
+      </div>
+
+      <!-- Jahresabschluss: ein Jahr, CSV und alle Belegbilder in einem ZIP für den Treuhänder -->
+      <div v-if="years.length" class="year-export">
+        <label for="export-year">Jahresabschluss</label>
+        <Select id="export-year" v-model="exportYear" :options="years" aria-label="Jahr für den Jahresabschluss" />
+        <Button
+          icon="pi pi-download"
+          :label="`ZIP mit CSV und Belegen ${exportYear}`"
+          severity="secondary"
+          outlined
+          size="small"
+          @click="exportYearZip"
+        />
+        <small v-if="exportNote" role="status">{{ exportNote }}</small>
       </div>
       <div class="fleet-table-wrap">
         <table class="fleet-table" aria-label="Kosten pro Fahrzeug und Jahr">
@@ -389,7 +480,7 @@ const totalInvoiceCount = computed(() =>
       </p>
     </section>
 
-    <div v-for="vehicle in vehiclesStore.vehicles" :id="`fahrzeug-${vehicle.id}`" :key="vehicle.id" class="vehicle-section">
+    <div v-for="vehicle in ownVehicles" :id="`fahrzeug-${vehicle.id}`" :key="vehicle.id" class="vehicle-section">
       <div class="vehicle-header">
         <h3 class="vehicle-title">
           <router-link :to="`/vehicles/${vehicle.id}`">
@@ -410,7 +501,18 @@ const totalInvoiceCount = computed(() =>
         />
       </div>
       <p class="vehicle-subtitle">
-        {{ formatNumber(vehicle.mileage) }} km<template v-if="vehicle.licensePlate">
+        {{ formatNumber(vehicle.mileage) }} km
+        <Button
+          v-tooltip.top="'Kilometerstand ändern'"
+          icon="pi pi-pencil"
+          text
+          rounded
+          size="small"
+          severity="secondary"
+          class="mileage-edit"
+          :aria-label="`Kilometerstand ${vehicle.make} ${vehicle.model} ändern`"
+          @click="mileageFor = vehicle"
+        /><template v-if="vehicle.licensePlate">
           · {{ vehicle.licensePlate }}
         </template><template v-if="getVehicleInvoiceCount(vehicle.id) > 0">
           · <span class="vehicle-cost">{{ getVehicleTotalCost(vehicle.id) }} · {{ getVehicleInvoiceCount(vehicle.id) }} {{ getVehicleInvoiceCount(vehicle.id) === 1 ? 'Rechnung' : 'Rechnungen' }}</span>
@@ -428,7 +530,7 @@ const totalInvoiceCount = computed(() =>
       </div>
 
       <div v-if="visibleItems(vehicle.id).length" class="maintenance-list">
-        <div v-for="item in visibleItems(vehicle.id)" :key="item.type" class="maintenance-item">
+        <div v-for="item in visibleItems(vehicle.id)" :key="item.key" class="maintenance-item">
           <div class="maintenance-icon">
             <i :class="getStatusIcon(item.status)" :style="{ color: getStatusColor(item.status) }" />
           </div>
@@ -460,16 +562,6 @@ const totalInvoiceCount = computed(() =>
               :aria-label="`${item.label} erledigt eintragen`"
               @click="openDone(vehicle.id, item)"
             />
-            <Button
-              v-if="item.lastDoneAt"
-              icon="pi pi-trash"
-              text
-              rounded
-              size="small"
-              severity="secondary"
-              :aria-label="`${item.label} Einträge löschen`"
-              @click="confirmDelete = { vehicleId: vehicle.id, type: item.type, label: item.label }"
-            />
           </div>
         </div>
       </div>
@@ -493,6 +585,41 @@ const totalInvoiceCount = computed(() =>
       @submit="saveDone"
     />
 
+    <MileageDialog :vehicle="mileageFor" @close="mileageFor = null" />
+
+    <!-- Beleg erfassen: bei mehreren Fahrzeugen zuerst fragen, für welches -->
+    <Dialog
+      :visible="chooseVehicle"
+      modal
+      header="Für welches Fahrzeug?"
+      data-testid="choose-vehicle-dialog"
+      :style="{ width: 'min(420px, 94vw)' }"
+      @update:visible="chooseVehicle = false"
+    >
+      <div class="vehicle-choice">
+        <Button
+          v-for="v in ownVehicles"
+          :key="v.id"
+          :label="`${v.make} ${v.model}${v.licensePlate ? ` · ${v.licensePlate}` : ''}`"
+          icon="pi pi-car"
+          severity="secondary"
+          outlined
+          @click="openReceiptFor(v)"
+        />
+      </div>
+    </Dialog>
+
+    <InvoiceFormDialog
+      :visible="!!receiptFor"
+      title="Neue Rechnung"
+      :existing-invoices="invoicesStore.invoices"
+      :vehicles="vehiclesStore.vehicles"
+      :vehicle-id="receiptFor?.id"
+      @update:visible="v => { if (!v) receiptFor = null }"
+      @submit="saveReceipt"
+      @submit-batch="saveReceiptBatch"
+    />
+
     <ServiceBookDialog
       :visible="!!serviceBookFor"
       :vehicle="serviceBookFor"
@@ -505,30 +632,6 @@ const totalInvoiceCount = computed(() =>
       :vehicle-name="lastServicesFor?.name"
       @update:visible="v => { if (!v) lastServicesFor = null }"
     />
-
-    <Dialog
-      :visible="!!confirmDelete"
-      header="Wartungseintrag löschen?"
-      modal
-      @update:visible="confirmDelete = null"
-    >
-      <p>
-        Alle Einträge für <strong>{{ confirmDelete?.label }}</strong> werden gelöscht.
-        Diese Aktion kann nicht rückgängig gemacht werden.
-      </p>
-      <template #footer>
-        <Button
-          label="Abbrechen"
-          text
-          @click="confirmDelete = null"
-        />
-        <Button
-          label="Löschen"
-          severity="danger"
-          @click="confirmDelete && deleteMaintenance(confirmDelete.vehicleId, confirmDelete.type)"
-        />
-      </template>
-    </Dialog>
   </main>
 </template>
 
@@ -613,6 +716,30 @@ const totalInvoiceCount = computed(() =>
   flex-wrap: wrap;
 }
 
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.vehicle-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.year-export {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.75rem 0;
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+}
+
 .fleet-table-wrap {
   overflow-x: auto;
 }
@@ -671,6 +798,12 @@ const totalInvoiceCount = computed(() =>
   min-width: 0;
   font-size: 1.25rem;
   font-weight: 500;
+}
+
+.mileage-edit {
+  width: 1.75rem;
+  height: 1.75rem;
+  vertical-align: -0.4rem;
 }
 
 .vehicle-subtitle {

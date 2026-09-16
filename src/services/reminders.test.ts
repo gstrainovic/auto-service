@@ -50,6 +50,19 @@ describe('buildReminders', () => {
     expect(ben.text).toContain('Ölwechsel: bald fällig')
   })
 
+  it('erinnert nicht an verkaufte Fahrzeuge', () => {
+    const sold = vehicles.map(v => (v.id === 'v1' ? { ...v, soldAt: daysAgo(3) } : v))
+    const reminders = buildReminders({ users, vehicles: sold, maintenances, settings: [], now })
+    expect(reminders.map(r => r.userId)).toEqual(['u2'])
+  })
+
+  it('erinnert nicht an Arbeiten mit vereinbartem Termin in der Zukunft', () => {
+    const inDays = (n: number) => iso(new Date(Date.now() + n * 86_400_000))
+    const planned = [...maintenances, { vehicleId: 'v1', type: 'reifen', doneAt: inDays(14), mileageAtService: null, status: 'due' }]
+    const reminders = buildReminders({ users, vehicles, maintenances: planned, settings: [], now })
+    expect(reminders.map(r => r.userId)).toEqual(['u2'])
+  })
+
   it('verlinkt bei mehreren Fahrzeugen auf die Fälligkeitsliste im Dashboard', () => {
     const more = [...maintenances, { vehicleId: 'v2', type: 'reifen', doneAt: daysAgo(5 * 365), mileageAtService: 1000, status: 'done' }]
     const [anna] = buildReminders({ users, vehicles, maintenances: more, settings: [], now })

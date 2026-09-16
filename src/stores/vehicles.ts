@@ -19,6 +19,9 @@ export interface Vehicle {
   vin?: string
   licensePlate: string
   customSchedule?: VehicleScheduleItem[]
+  /** Tag der Übergabe beim Verkauf; gesetzt heisst: raus aus Fälligkeiten, drin in Kosten und Exporten */
+  soldAt?: string | null
+  soldMileage?: number | null
   createdAt: string
   updatedAt: string
 }

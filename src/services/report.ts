@@ -127,6 +127,9 @@ export interface VehicleInfo {
   year?: number
   vin?: string
   mileage?: number
+  /** verkauft oder abgegeben: steht im Dossier, die Kosten bleiben in allen Auswertungen */
+  soldAt?: string | null
+  soldMileage?: number | null
 }
 
 export interface FleetRow {

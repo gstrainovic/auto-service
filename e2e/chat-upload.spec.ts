@@ -76,8 +76,13 @@ test.describe('Chat Upload Enhancements', () => {
     // Clicking the drop hint should trigger file input
     await expect(dropHint).toHaveCSS('cursor', 'pointer')
 
-    // Paperclip button should NOT exist
-    await expect(page.locator('[data-pc-name="drawer"] .pi-paperclip')).toHaveCount(0)
+    // Am Desktop bleibt der Büroklammer-Knopf weg, die Drop-Zone reicht
+    await expect(page.locator('[data-pc-name="drawer"] .pi-paperclip')).toBeHidden()
+
+    // Am Handy gibt es kein Ziehen: Drop-Zone weg, Büroklammer sichtbar
+    await page.setViewportSize({ width: 390, height: 780 })
+    await expect(dropHint).toBeHidden()
+    await expect(page.locator('[data-pc-name="drawer"] .pi-paperclip')).toBeVisible()
 
     // Maximize button should exist
     const maximizeBtn = page.locator('[data-pc-name="drawer"] .chat-maximize-btn')

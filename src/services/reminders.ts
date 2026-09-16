@@ -5,6 +5,7 @@
 import type { DueResult } from './maintenance-schedule'
 import { formatDate, formatNumber } from '../lib/locale'
 import { checkDueMaintenances, getMaintenanceSchedule } from './maintenance-schedule'
+import { activeVehicles } from './vehicle-status'
 
 export interface ReminderUser {
   id: string
@@ -19,6 +20,8 @@ export interface ReminderVehicle {
   licensePlate?: string
   mileage: number
   customSchedule?: any
+  soldAt?: string | null
+  soldMileage?: number | null
 }
 
 export interface ReminderMaintenance {
@@ -27,6 +30,7 @@ export interface ReminderMaintenance {
   doneAt: string
   mileageAtService?: number | null
   status: string
+  description?: string
 }
 
 /** Entität `settings` in InstantDB, ein Dokument pro Nutzer (creatorId) */
@@ -86,12 +90,16 @@ function itemLine(item: DueResult): string {
 }
 
 function dueItems(v: ReminderVehicle, maintenances: ReminderMaintenance[]): DueResult[] {
-  const done = maintenances.filter(m => m.vehicleId === v.id && m.status === 'done')
+  const own = maintenances.filter(m => m.vehicleId === v.id)
+  const done = own.filter(m => m.status === 'done')
   return checkDueMaintenances({
     currentMileage: v.mileage,
-    lastMaintenances: done.map(m => ({ type: m.type, doneAt: m.doneAt, mileageAtService: m.mileageAtService })),
+    lastMaintenances: done.map(m => ({ type: m.type, doneAt: m.doneAt, mileageAtService: m.mileageAtService, description: m.description })),
+    plannedMaintenances: own.filter(m => m.status !== 'done').map(m => ({ type: m.type, doneAt: m.doneAt })),
     schedule: getMaintenanceSchedule(v.customSchedule),
-  }).filter(i => i.status === 'due' || i.status === 'overdue')
+  })
+    // vereinbarter Termin: der Nutzer weiss Bescheid, keine Erinnerung
+    .filter(i => (i.status === 'due' || i.status === 'overdue') && !i.plannedAt)
 }
 
 export function buildReminders(input: {
@@ -101,7 +109,8 @@ export function buildReminders(input: {
   settings: ReminderSetting[]
   now: Date
 }): Reminder[] {
-  const { users, vehicles, maintenances, settings } = input
+  const { users, vehicles, maintenances, settings, now } = input
+  const today = now.toISOString().slice(0, 10)
   const byUser = new Map(settings.map(s => [s.creatorId, s]))
   const reminders: Reminder[] = []
 
@@ -114,7 +123,8 @@ export function buildReminders(input: {
     const blocks: string[] = []
     const entries: DueEntry[] = []
     const names: string[] = []
-    for (const v of vehicles.filter(v => v.creatorId === user.id)) {
+    // verkaufte Fahrzeuge gehören dem Nutzer nicht mehr, ihre Termine sind seine Sache nicht
+    for (const v of activeVehicles(vehicles.filter(v => v.creatorId === user.id), today)) {
       const items = dueItems(v, maintenances)
       if (!items.length)
         continue

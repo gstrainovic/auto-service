@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { itemsExceedTotal, maintenancesFromItems, newVehicleMileage, planInvoiceSave, repairItems } from './invoice-items'
+import { itemsExceedTotal, maintenancesFromItems, newVehicleMileage, planInvoiceSave, planInvoiceUpdate, repairItems } from './invoice-items'
 
 describe('newVehicleMileage', () => {
   it('liefert den neuen Stand nur, wenn er höher ist', () => {
@@ -7,6 +7,42 @@ describe('newVehicleMileage', () => {
     expect(newVehicleMileage(252586, 231457)).toBeUndefined()
     expect(newVehicleMileage(0, null)).toBeUndefined()
     expect(newVehicleMileage(undefined, 5)).toBe(5)
+  })
+})
+
+describe('planInvoiceUpdate', () => {
+  const base = { vehicleId: 'v1', workshopName: 'Seestern', date: '2026-02-10', totalAmount: 300, currency: 'CHF', mileageAtService: 250000 }
+
+  it('zieht Datum und Kilometerstand der verknüpften Wartungen nach', () => {
+    const plan = planInvoiceUpdate(
+      { ...base, items: [{ description: 'Motoröl', category: 'oelwechsel', amount: 300 }] },
+      [{ id: 'm1', type: 'oelwechsel', doneAt: '2025-01-01', mileageAtService: 200000 }],
+      { mileage: 240000 },
+    )
+    expect(plan.updates).toEqual([{ id: 'm1', doneAt: '2026-02-10', mileageAtService: 250000, description: 'Motoröl' }])
+    expect(plan.creates).toEqual([])
+    expect(plan.deletes).toEqual([])
+    expect(plan.vehicleMileage).toBe(250000)
+  })
+
+  it('legt Wartungen für neue Kategorien an und löscht die weggefallenen', () => {
+    const plan = planInvoiceUpdate(
+      { ...base, items: [{ description: 'Bremsbeläge', category: 'bremsen', amount: 300 }] },
+      [{ id: 'm1', type: 'oelwechsel', doneAt: '2026-02-10', mileageAtService: 250000 }],
+      { mileage: 250000 },
+    )
+    expect(plan.deletes).toEqual(['m1'])
+    expect(plan.creates).toEqual([{ type: 'bremsen', description: 'Bremsbeläge', doneAt: '2026-02-10', mileageAtService: 250000 }])
+    expect(plan.updates).toEqual([])
+  })
+
+  it('lässt Wartungen ohne Änderung in Ruhe', () => {
+    const plan = planInvoiceUpdate(
+      { ...base, items: [{ description: 'Motoröl', category: 'oelwechsel', amount: 300 }] },
+      [{ id: 'm1', type: 'oelwechsel', doneAt: '2026-02-10', mileageAtService: 250000, description: 'Motoröl' }],
+      { mileage: 250000 },
+    )
+    expect(plan).toMatchObject({ updates: [], creates: [], deletes: [] })
   })
 })
 

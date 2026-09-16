@@ -33,7 +33,7 @@ async function createVehicleAndOpen(
     await page.getByLabel(/Kennzeichen/).fill(data.plate)
 
   await page.getByRole('button', { name: 'Speichern' }).click()
-  await expect(page.getByText(`${data.make} ${data.model}`)).toBeVisible()
+  await expect(page.locator('.vehicle-card', { hasText: `${data.make} ${data.model}` })).toBeVisible()
 
   // Click the vehicle card
   await page
@@ -293,8 +293,9 @@ test.describe('Invoice CRUD', () => {
     // Verify — reopen
     await page.getByRole('tab', { name: 'Rechnungen' }).click()
     await page.getByText('Werkstatt Schmidt').click()
+    // Beschreibung und die daraus korrigierte Kategorie heissen beide «Luftfilter»
     await expect(
-      page.locator('[data-pc-name="dialog"]').getByText('Luftfilter'),
+      page.locator('[data-pc-name="dialog"]').getByText('Luftfilter').first(),
     ).toBeVisible({ timeout: 5_000 })
 
     // DELETE (cleanup) - close dialog first, then delete vehicle
@@ -499,7 +500,7 @@ test.describe('Maintenance CRUD', () => {
     await expect(page.getByText('Motoröl 5W-30 gewechselt')).not.toBeVisible({
       timeout: 5_000,
     })
-    await expect(page.getByText(/keine wartungseinträge/i)).toBeVisible()
+    await expect(page.getByText(/noch keine wartungen erfasst/i)).toBeVisible()
 
     // DELETE vehicle (cleanup)
     await deleteVehicleViaUI(page)

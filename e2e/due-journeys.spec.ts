@@ -128,6 +128,48 @@ test.describe('Fälligkeit als Ablauf', () => {
     await expect(page.locator('.vehicle-section', { hasText: 'VW Caddy' }).locator('.vehicle-subtitle')).toContainText('69\'200 km')
   })
 
+  test('DJ-006: vereinbarter Termin steht an der fälligen Arbeit', async ({ page }) => {
+    const [vehicleId] = await seed(page, [{ make: 'VW', model: 'Caddy', mileage: 68500, maintenances: [{ type: 'tuev', daysAgo: 3 * 365 }] }])
+    await page.goto('/dashboard')
+    const due = page.getByRole('region', { name: 'Fällige Arbeiten' })
+    await due.locator('.fleet-due-item', { hasText: 'MFK / Prüfung' }).getByRole('button', { name: 'Erledigt eintragen' }).click()
+
+    // Termin in der Zukunft statt erledigt
+    const dialog = page.getByRole('dialog', { name: 'MFK / Prüfung erledigt · VW Caddy' })
+    await dialog.locator('#maintenance-status').click()
+    await page.getByRole('option', { name: 'Geplant (Termin vereinbart)' }).click()
+    const inTwoWeeks = new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10)
+    await dialog.locator('#maintenance-date').fill(inTwoWeeks)
+    await dialog.getByRole('button', { name: 'Speichern' }).click()
+    await expect(dialog).not.toBeVisible()
+
+    const item = due.locator('.fleet-due-item', { hasText: 'MFK / Prüfung' })
+    await expect(item).toContainText('Termin am')
+    // Eintrag steht auf der Fahrzeugseite als «Geplant», nicht als erledigte Wartung
+    await page.goto(`/vehicles/${vehicleId}`)
+    await expect(page.locator('.maintenance-item', { hasText: 'MFK / Prüfung' }).first()).toContainText('Geplant')
+  })
+
+  test('DJ-007: Kilometerstand lässt sich im Dashboard direkt nachführen', async ({ page }) => {
+    await seed(page, [{ make: 'VW', model: 'Caddy', mileage: 68500, maintenances: [{ type: 'oelwechsel', daysAgo: 40, km: 60000 }] }])
+    await page.goto('/dashboard')
+    const section = page.locator('.vehicle-section', { hasText: 'VW Caddy' })
+    await section.getByRole('button', { name: 'Kilometerstand VW Caddy ändern' }).click()
+
+    const dialog = page.getByTestId('mileage-dialog')
+    await expect(dialog).toContainText('bisher 68\'500 km')
+    const input = dialog.locator('#mileage-input')
+    await input.click()
+    await input.press('Control+a')
+    await input.pressSequentially('74200')
+    await dialog.getByRole('button', { name: 'Speichern' }).click()
+    await expect(dialog).not.toBeVisible()
+
+    await expect(section.locator('.vehicle-subtitle')).toContainText('74\'200 km')
+    // Ölwechsel wird nach Kilometern fällig: 60'000 + 15'000 = 75'000, also bald fällig
+    await expect(page.getByRole('region', { name: 'Fällige Arbeiten' })).toContainText('Ölwechsel')
+  })
+
   test('DJ-005: Link aus der Erinnerungs-Mail springt zum Fahrzeug', async ({ page }) => {
     const names = Array.from({ length: 5 }, (_, i) => ({ make: 'Opel', model: `Vivaro ${i + 1}`, mileage: 10000, maintenances: [{ type: 'tuev', daysAgo: 3 * 365 }] }))
     const ids = await seed(page, names)

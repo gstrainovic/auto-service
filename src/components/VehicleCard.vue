@@ -5,9 +5,13 @@ import Button from 'primevue/button'
 import Card from 'primevue/card'
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { formatNumber } from '../lib/locale'
+import { formatCurrency, formatNumber } from '../lib/locale'
 import { checkDueMaintenances, getMaintenanceSchedule, vehicleDueStatus } from '../services/maintenance-schedule'
+import { fleetCostsByVehicleYear } from '../services/report'
+import { soldLabel } from '../services/vehicle-status'
+import { useInvoicesStore } from '../stores/invoices'
 import { useMaintenancesStore } from '../stores/maintenances'
+import { useSettingsStore } from '../stores/settings'
 
 const props = defineProps<{ vehicle: Vehicle }>()
 const emit = defineEmits<{ delete: [id: string] }>()
@@ -15,16 +19,22 @@ const router = useRouter()
 
 // Fälligkeit live aus dem Store (nach «Erledigt eintragen» oder einer Rechnung sofort aktuell)
 const maintenancesStore = useMaintenancesStore()
+const settings = useSettingsStore()
 onMounted(() => maintenancesStore.load())
 
 const dueItems = computed(() => checkDueMaintenances({
   currentMileage: props.vehicle.mileage,
-  // Nur erledigte Einträge zählen, geplante sind noch keine Wartung
+  // Nur erledigte Einträge zählen als Wartung, geplante sind vereinbarte Termine
   lastMaintenances: maintenancesStore.maintenances
     .filter(m => m.vehicleId === props.vehicle.id && m.status === 'done')
-    .map(m => ({ type: m.type, mileageAtService: m.mileageAtService, doneAt: m.doneAt })),
+    .map(m => ({ type: m.type, mileageAtService: m.mileageAtService, doneAt: m.doneAt, description: m.description })),
+  plannedMaintenances: maintenancesStore.maintenances
+    .filter(m => m.vehicleId === props.vehicle.id && m.status !== 'done')
+    .map(m => ({ type: m.type, doneAt: m.doneAt })),
   schedule: getMaintenanceSchedule(props.vehicle.customSchedule as any),
 }))
+// Verkauft: keine Fälligkeit mehr, nur noch der Vermerk
+const sold = computed(() => soldLabel(props.vehicle))
 const maintenanceStatus = computed(() => vehicleDueStatus(dueItems.value))
 // Arbeit, die den Status auslöst (z. B. «Ölwechsel»), für den Badge-Text
 const statusItemLabel = computed(() => dueItems.value.find(i => i.status === maintenanceStatus.value)?.label ?? '')
@@ -50,6 +60,21 @@ const statusLabel = computed(() => {
   return 'OK'
 })
 
+// Kosten des laufenden Jahres, damit die Karte etwas sagt statt leer zu bleiben
+const invoicesStore = useInvoicesStore()
+onMounted(() => invoicesStore.load())
+const currentYear = new Date().getFullYear()
+const yearCost = computed(() => {
+  const invoices = invoicesStore.invoices.filter(i => i.vehicleId === props.vehicle.id && i.date?.startsWith(String(currentYear)))
+  if (!invoices.length)
+    return ''
+  const rows = fleetCostsByVehicleYear([props.vehicle], invoices, { homeCurrency: settings.homeCurrency, rates: new Map() })
+  return rows
+    .filter(r => r.year === currentYear)
+    .map(r => formatCurrency(r.total, r.currency))
+    .join(' + ')
+})
+
 function navigateToDetail(): void {
   router.push(`/vehicles/${props.vehicle.id}`)
 }
@@ -65,7 +90,8 @@ function onDelete(event: Event): void {
     <template #title>
       <div class="title-row">
         <span>{{ vehicle.make }} {{ vehicle.model }}</span>
-        <Badge :value="statusLabel" :severity="statusSeverity" />
+        <Badge v-if="sold" :value="sold" severity="secondary" />
+        <Badge v-else :value="statusLabel" :severity="statusSeverity" />
       </div>
     </template>
     <template #subtitle>
@@ -75,22 +101,28 @@ function onDelete(event: Event): void {
       </div>
     </template>
     <template #content>
-      <div v-if="vehicle.mileage" class="mileage">
-        <i class="pi pi-gauge" />
-        {{ formatNumber(vehicle.mileage) }} km
-      </div>
-    </template>
-    <template #footer>
-      <div class="card-actions">
+      <!-- Eine Zeile statt Leerfläche: km, Kosten des laufenden Jahres, Löschen und Chevron als Klick-Hinweis -->
+      <div class="card-row">
+        <span v-if="vehicle.mileage" class="mileage">
+          <i class="pi pi-gauge" />
+          {{ formatNumber(vehicle.mileage) }} km
+        </span>
+        <span v-if="yearCost" class="year-cost">
+          <i class="pi pi-wallet" />
+          {{ yearCost }} in {{ currentYear }}
+        </span>
+        <span class="card-spacer" />
         <Button
           v-tooltip.top="'Fahrzeug löschen'"
           icon="pi pi-trash"
           severity="secondary"
           text
           rounded
+          size="small"
           aria-label="Löschen"
           @click="onDelete"
         />
+        <i class="pi pi-chevron-right chevron" />
       </div>
     </template>
   </Card>
@@ -108,23 +140,49 @@ function onDelete(event: Event): void {
   transform: translateY(-2px);
 }
 
-.mileage {
+.card-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+}
+
+.mileage,
+.year-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.card-spacer {
+  flex: 1;
+}
+
+.chevron {
   color: var(--p-text-muted-color);
 }
 
-.card-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
+/* Am Handy hat «Ölwechsel überfällig» neben dem Fahrzeugnamen keinen Platz: Badge darf umbrechen und mehrzeilig werden */
 .title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+}
+
+.title-row > span {
+  min-width: 0;
+}
+
+.title-row :deep(.p-badge) {
+  max-width: 100%;
+  height: auto;
+  line-height: 1.25;
+  padding: 0.15rem 0.5rem;
+  white-space: normal;
+  text-align: right;
 }
 
 .subtitle-row {

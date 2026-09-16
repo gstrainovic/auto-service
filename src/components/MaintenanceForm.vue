@@ -53,7 +53,7 @@ const categoryOptions = MAINTENANCE_CATEGORIES.map(cat => ({
 // Status options
 const statusOptions = [
   { label: 'Erledigt', value: 'done' },
-  { label: 'Geplant', value: 'planned' },
+  { label: 'Geplant (Termin vereinbart)', value: 'planned' },
 ]
 
 function handleSubmit() {
@@ -85,7 +85,9 @@ function handleCancel() {
       </FloatLabel>
       <small v-if="errors.category" class="error">{{ errors.category }}</small>
 
-      <FloatLabel>
+      <!-- Datumsfelder zeigen immer «TT.MM.JJJJ», ein schwebendes Label läge darüber -->
+      <div class="field">
+        <label for="maintenance-date">{{ formData.status === 'planned' ? 'Termin *' : 'Datum *' }}</label>
         <InputText
           id="maintenance-date"
           v-model="formData.date"
@@ -94,8 +96,7 @@ function handleCancel() {
           :invalid="!!errors.date"
           fluid
         />
-        <label for="maintenance-date">Datum *</label>
-      </FloatLabel>
+      </div>
       <small v-if="errors.date" class="error">{{ errors.date }}</small>
 
       <FloatLabel>
@@ -156,6 +157,17 @@ function handleCancel() {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.field > label {
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
 }
 
 .form-actions {

@@ -297,9 +297,9 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
         if (!vehicle)
           return { error: 'Fahrzeug nicht gefunden' }
         const schedule = getMaintenanceSchedule(vehicle.customSchedule)
-        // Nur erledigte Arbeiten zählen; geplante Einträge sind noch keine Wartung
-        const maintenances = (result.data.maintenances || []).filter((m: any) => m.vehicleId === vehicleId && m.status === 'done')
-        const lastMaintenances = maintenances.map((m: any) => ({
+        // Nur erledigte Arbeiten zählen als Wartung; geplante Einträge sind vereinbarte Termine
+        const own = (result.data.maintenances || []).filter((m: any) => m.vehicleId === vehicleId)
+        const lastMaintenances = own.filter((m: any) => m.status === 'done').map((m: any) => ({
           type: m.type,
           mileageAtService: m.mileageAtService,
           doneAt: m.doneAt,
@@ -307,6 +307,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
         const status = checkDueMaintenances({
           currentMileage: vehicle.mileage,
           lastMaintenances,
+          plannedMaintenances: own.filter((m: any) => m.status !== 'done').map((m: any) => ({ type: m.type, doneAt: m.doneAt })),
           schedule,
         })
         return {
@@ -525,6 +526,19 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
 export interface ChatOptions {
   access: AiAccess
   model?: string
+  /** Fahrzeug, dessen Seite gerade offen ist: Rechnungen und Wartungen ohne Nachfrage diesem zuordnen */
+  currentVehicle?: { id: string, name: string }
+}
+
+/** Systemtext mit dem offenen Fahrzeug, damit der Chat nicht nach dem Fahrzeug fragen muss */
+function systemPrompt(opts: ChatOptions): string {
+  if (!opts.currentVehicle)
+    return SYSTEM_PROMPT
+  return `${SYSTEM_PROMPT}
+
+OFFENES FAHRZEUG:
+Der Benutzer ist gerade auf der Seite von «${opts.currentVehicle.name}» (vehicleId: ${opts.currentVehicle.id}).
+Ohne andere Angabe gilt dieses Fahrzeug für Rechnungen, Wartungen und Fragen. Nicht nach dem Fahrzeug fragen.`
 }
 
 function buildAiMessages(messages: ChatMessage[], imagesBase64?: string[]) {
@@ -638,7 +652,7 @@ export async function sendChatMessage(
       .map((t, i) => `--- Seite ${i + 1} ---\n${t}`)
       .join('\n\n')
 
-    const phase1System = `${SYSTEM_PROMPT}
+    const phase1System = `${systemPrompt(opts)}
 
 Der Benutzer hat ein PDF-Dokument mit ${ocrPages.length} Seite(n) hochgeladen.
 Jede Seite kann eine separate Rechnung, ein Service-Heft, ein Kaufvertrag oder ein anderes Dokument sein.
@@ -683,7 +697,7 @@ Analysiere jede Seite einzeln. Nenne den Dokumenttyp. Zeige die erkannten Daten 
       ? `\n\n--- OCR-ERGEBNIS (exakter Text vom Dokument) ---\n${ocrTexts.map((t, i) => `Bild ${i + 1}:\n${t}`).join('\n\n')}\n--- ENDE OCR ---\n\nDer OCR-Text oben ist maschinengelesen und daher bei Zahlen, Tabellen und Beträgen GENAUER als deine eigene Bilderkennung. Verwende die Werte aus dem OCR-Text.`
       : ''
 
-    const phase1System = `${SYSTEM_PROMPT}
+    const phase1System = `${systemPrompt(opts)}
 
 Analysiere das Bild sorgfältig. Das Bild kann gedreht sein (90° oder 180°) — lies den Text in der richtigen Leserichtung.
 
@@ -793,7 +807,7 @@ Zeige die erkannten Daten strukturiert an. Frage den Benutzer ob die Daten korre
     model,
     maxRetries: 0,
     temperature: 0,
-    system: SYSTEM_PROMPT,
+    system: systemPrompt(opts),
     messages: aiMessages,
     tools,
     stopWhen: stepCountIs(maxSteps),
@@ -807,7 +821,7 @@ Zeige die erkannten Daten strukturiert an. Frage den Benutzer ob die Daten korre
       model,
       maxRetries: 0,
       temperature: 0,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt(opts),
       messages: [
         ...aiMessages,
         { role: 'user' as const, content: '[System] Du hast eine Aktion beschrieben, aber kein Tool aufgerufen. Führe die Aktion JETZT mit dem passenden Tool aus.' },

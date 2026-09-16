@@ -61,7 +61,6 @@ test.describe('Fuhrpark-Kosten und Währungsumrechnung', () => {
     await expect(table.getByRole('columnheader', { name: /2026/ })).toBeVisible()
     await expect(table.getByRole('row').filter({ hasText: 'Reifen' })).toContainText('95.00')
     await expect(table.locator('tr.costs-total-row')).toContainText('CHF 495.00')
-    await expect(page.getByText('Gesamt CHF 495.00')).toBeVisible()
   })
 
   test('FC-003: CSV über alle Fahrzeuge enthält beide Fahrzeuge und den Kurs', async ({ page }) => {
@@ -100,7 +99,6 @@ test.describe('Fuhrpark-Kosten und Währungsumrechnung', () => {
     await expect(table.getByRole('columnheader', { name: /2025/ })).toBeVisible()
     await expect(table.getByRole('columnheader', { name: /2026/ })).toHaveCount(0)
     await expect(table.locator('tr.costs-total-row')).toContainText('CHF 250.00')
-    await expect(page.getByText('Gesamt CHF 250.00')).toBeVisible()
   })
 
   test('FC-004: Heimwährung ist in den Einstellungen wählbar', async ({ page }) => {

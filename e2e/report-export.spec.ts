@@ -48,7 +48,6 @@ test.describe('Kosten und Export', () => {
     const total = table.locator('tr.costs-total-row')
     await expect(total).toContainText('CHF 890.50')
     await expect(total).toContainText('CHF 480.00')
-    await expect(page.getByText('Gesamt CHF 1\'370.50')).toBeVisible()
   })
 
   test('RE-002: CSV-Export liefert eine Excel-taugliche Datei', async ({ page }) => {
@@ -86,6 +85,32 @@ test.describe('Kosten und Export', () => {
     expect(text).toContain('2026-04-01;Garage Kunz;;Nicht zugeordnet / MwSt.;Differenz zum Rechnungstotal;30.00;CHF')
     // Rechnungen ohne Differenz bekommen keine Zusatzzeile
     expect(text.match(/Differenz zum Rechnungstotal/g)).toHaveLength(1)
+  })
+
+  test('RE-005: Jahresabschluss lädt ein ZIP mit CSV und Belegbildern', async ({ page }) => {
+    await seedVehicleWithInvoices(page)
+    // ein Beleg mit Bild, damit das Archiv auch Belege enthält
+    await page.evaluate(async () => {
+      const { db, tx } = (window as any).__instantdb
+      const result = await db.queryOnce({ invoices: {} })
+      const inv = (result.data.invoices || []).find((i: any) => i.date === '2026-03-10')
+      await db.transact([tx.invoices[inv.id].update({ imageData: '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAg=' })])
+    })
+    await page.goto('/dashboard')
+    await expect(page.getByLabel('Jahr für den Jahresabschluss')).toBeVisible()
+
+    const download = page.waitForEvent('download')
+    await page.getByRole('button', { name: /ZIP mit CSV und Belegen 2026/ }).click()
+    const file = await download
+    expect(file.suggestedFilename()).toBe('wartungsheft-jahresabschluss-2026.zip')
+    const bytes = await (await file.createReadStream()).toArray().then(chunks => Buffer.concat(chunks as Buffer[]))
+    // gültiges ZIP mit CSV und einem Beleg
+    expect(bytes.subarray(0, 4).toString('hex')).toBe('504b0304')
+    const dump = bytes.toString('latin1')
+    expect(dump).toContain('kosten-2026.csv')
+    expect(dump).toContain('belege/2026-03-10-vw-caddy-pneu-egger.jpg')
+    expect(dump).not.toContain('2025-11-02')
+    await expect(page.getByText('CSV und 1 Beleg geladen.')).toBeVisible()
   })
 
   test('RE-003: PDF-Dossier wird als Datei geladen', async ({ page }) => {

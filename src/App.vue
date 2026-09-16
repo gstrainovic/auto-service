@@ -23,9 +23,10 @@ watch(user, (u) => {
     router.replace('/login')
 })
 
+// Chat direkt öffnen, ohne die Seite zu wechseln: der Chat kennt so das offene Fahrzeug
 function openChat() {
   drawer.value = false
-  router.push('/dashboard?chat=open')
+  chatOpen.value = true
 }
 
 function handleSignOut() {

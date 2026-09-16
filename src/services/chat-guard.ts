@@ -15,13 +15,15 @@ export const WRITE_TOOLS = new Set([
   'add_maintenance',
 ])
 
-// Partizip am Satzende oder vor Doppelpunkt («Wartung … eingetragen:»), mit Hilfsverb («wurde eingetragen»)
-// oder mit Häkchen; Fragen («eintragen?») bleiben aussen vor
+// Partizip mit Hilfsverb («wurde eingetragen»), am Satzende oder vor Doppelpunkt («Wartung … eingetragen:»), oder
+// hinter einem Häkchen. «erfasst» nur mit Hilfsverb: «Ich habe folgende Daten erfasst:» ist die Vorschau vor der
+// Bestätigung, kein Erfolg. Fragen («eintragen?») bleiben aussen vor.
 const ACTION_WORDS = 'angelegt|eingetragen|gespeichert|erfasst|gelöscht|aktualisiert|erstellt|hinzugefügt'
+const DONE_WORDS = 'angelegt|eingetragen|gespeichert|gelöscht|aktualisiert|erstellt|hinzugefügt'
 const ACTION_CLAIM = new RegExp(
   `\\b(?:wurde|wurden|habe ich|ist|sind)\\b[^.?]{1,80}\\b(?:${ACTION_WORDS})\\b`
-  + `|\\b(?:${ACTION_WORDS})\\s*(?:[:.!]|$)`
-  + `|✅`,
+  + `|\\b(?:${DONE_WORDS})\\s*(?:[:.!]|$)`
+  + `|✅[^\\n]{0,80}\\b(?:${DONE_WORDS})\\b`,
   'i',
 )
 

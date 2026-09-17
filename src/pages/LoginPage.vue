@@ -71,6 +71,9 @@ function handleBack() {
       <form v-if="!sentEmail" @submit.prevent="handleSendCode">
         <p class="login-description">
           E-Mail-Adresse eingeben, der Anmelde-Code kommt per Mail.
+          Wie wir mit deiner Adresse umgehen, steht in der <router-link to="/datenschutz">
+            Datenschutzerklärung
+          </router-link>.
         </p>
         <div class="login-field">
           <InputText

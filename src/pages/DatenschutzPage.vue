@@ -10,7 +10,7 @@ import LandingHeader from '../components/LandingHeader.vue'
     <main class="legal-container legal-content">
       <h1>Datenschutzerklärung</h1>
       <p class="legal-updated">
-        Stand: Februar 2026
+        Stand: September 2026
       </p>
 
       <h2>1. Verantwortliche Stelle</h2>
@@ -119,9 +119,9 @@ import LandingHeader from '../components/LandingHeader.vue'
       </table>
       <p>
         <strong>Wichtig:</strong> Die KI-Anfragen laufen über unseren Server mit unserem
-        Mistral-Konto; Sie brauchen keinen eigenen API-Key. Das Training mit Kundendaten ist in
-        diesem Konto deaktiviert. Bilder und Texte werden bei Mistral nur zur Verarbeitung der
-        Anfrage übermittelt und nicht dauerhaft gespeichert.
+        Mistral-Konto; Sie schliessen keinen eigenen Vertrag mit Mistral ab. Das Training mit
+        Kundendaten ist in diesem Konto deaktiviert. Bilder und Texte werden bei Mistral nur zur
+        Verarbeitung der Anfrage übermittelt und nicht dauerhaft gespeichert.
       </p>
 
       <h2>6. Datenspeicherung</h2>
@@ -170,9 +170,9 @@ import LandingHeader from '../components/LandingHeader.vue'
             <td>USA / Irland</td>
           </tr>
           <tr>
-            <td>KI-Anbieter (nach Wahl)</td>
-            <td>Bild-/Dokumentanalyse</td>
-            <td>Siehe Abschnitt 5</td>
+            <td>Mistral AI</td>
+            <td>Bild- und Dokumentanalyse, Chat-Assistent (Abschnitt 5)</td>
+            <td>Frankreich (EU)</td>
           </tr>
         </tbody>
       </table>

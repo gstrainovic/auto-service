@@ -115,6 +115,8 @@ HINWEIS AUF SERVICE-HEFT:
 - Zeige diesen Hinweis:
   - Proaktiv, wenn über ein Fahrzeug ohne customSchedule gesprochen wird (z.B. bei get_vehicle, get_maintenance_status)
   - Aber NICHT wiederholt — einmal pro Gespräch pro Fahrzeug reicht
+  - NIE bei einem Fahrzeug mit «✅ Service-Heft hinterlegt» oder hasCustomSchedule: true. Dessen Plan stammt schon aus
+    dem Service-Heft; empfiehl dort NICHT, es zu fotografieren oder zu schicken. Halte dich an serviceBookHint im Tool-Ergebnis.
 - Formulierung z.B.: "💡 Tipp: Der Wartungsplan für deinen [Marke Modell] basiert auf allgemeinen Intervallen. Fotografiere dein Service-Heft und schick mir die Bilder — dann hinterlege ich die genauen Hersteller-Intervalle für dein Fahrzeug."
 
 Antworte immer auf Deutsch.
@@ -317,9 +319,14 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
           plannedMaintenances: own.filter((m: any) => m.status !== 'done').map((m: any) => ({ type: m.type, doneAt: m.doneAt })),
           schedule,
         })
+        const hasCustomSchedule = !!vehicle.customSchedule?.length
         return {
           ...status,
-          hasCustomSchedule: !!vehicle.customSchedule?.length,
+          hasCustomSchedule,
+          // Anweisung im Tool-Ergebnis, weil Mistral den Prompt-Hinweis sonst auch bei hinterlegtem Serviceheft bringt
+          serviceBookHint: hasCustomSchedule
+            ? 'Wartungsplan stammt aus dem hinterlegten Serviceheft. KEIN Tipp zum Serviceheft, NICHT empfehlen, es zu fotografieren.'
+            : 'Kein eigener Wartungsplan (allgemeine Intervalle). Einmal kurz empfehlen, das Serviceheft zu fotografieren.',
           vehicle: `${vehicle.make} ${vehicle.model}`,
         }
       },
@@ -774,7 +781,7 @@ Zeige die erkannten Daten strukturiert an. Frage den Benutzer ob die Daten korre
   const vehicleResult = await db.queryOnce({ vehicles: {} })
   const vehicles = vehicleResult.data.vehicles || []
   const vehicleList = vehicles.map((v: any) => {
-    const scheduleInfo = v.customSchedule?.length ? '✅ Service-Heft' : '⚠️ allgemeiner Wartungsplan'
+    const scheduleInfo = v.customSchedule?.length ? '✅ Service-Heft hinterlegt, kein Tipp nötig' : '⚠️ allgemeiner Wartungsplan, Service-Heft fehlt'
     return `- ${v.make} ${v.model} (${v.year}), ${v.mileage} km${v.licensePlate ? `, ${v.licensePlate}` : ''} [${scheduleInfo}]: ID=${v.id}`
   }).join('\n')
 

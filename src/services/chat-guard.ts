@@ -32,9 +32,13 @@ export interface GuardResult {
   steps?: Array<{ toolCalls?: Array<{ toolName?: string }> }>
 }
 
+// Verneinte Sätze («noch keine Wartungen eingetragen», «kein Fahrzeug angelegt») sind Auskunft, kein Erfolg
+const NEGATION = /\b(?:kein|keine|keinen|keinem|keiner|nicht|noch nicht|nichts)\b/i
+
 export function claimsActionWithoutTool(result: GuardResult): boolean {
   const wroteSomething = (result.steps ?? []).some(s => (s.toolCalls ?? []).some(c => WRITE_TOOLS.has(c.toolName ?? '')))
   if (wroteSomething)
     return false
-  return ACTION_CLAIM.test(result.text || '')
+  const sentences = (result.text || '').split(/(?<=[.!?:])\s+|\n+/)
+  return sentences.some(s => !NEGATION.test(s) && ACTION_CLAIM.test(s))
 }

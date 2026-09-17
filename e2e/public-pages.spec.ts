@@ -24,7 +24,8 @@ test.describe('Public Pages', () => {
     await expect(page.getByRole('heading', { name: /Ihre Rechte/ })).toBeVisible()
     await expect(page.getByRole('heading', { name: /Cookies/ })).toBeVisible()
     // AI provider table: Mistral only
-    await expect(page.getByRole('cell', { name: 'Mistral AI' })).toBeVisible()
+    // Mistral steht in Abschnitt 5 (KI) und Abschnitt 7 (Weitergabe)
+    await expect(page.getByRole('cell', { name: 'Mistral AI' })).toHaveCount(2)
     await expect(page.getByText(/Anthropic|OpenAI|OpenRouter|Ollama/)).toHaveCount(0)
     // EDÖB reference
     await expect(page.getByText('EDÖB')).toBeVisible()

@@ -22,6 +22,12 @@ describe('claimsActionWithoutTool', () => {
     expect(claimsActionWithoutTool({ text: 'Für welches Fahrzeug, den VW Golf oder den Porsche Cayenne?', steps: [] })).toBe(false)
   })
 
+  it('lässt Verneinungen durch («noch keine Wartungen eingetragen» ist Auskunft, kein Erfolg)', () => {
+    const status = 'Für den Toyota Yaris sind noch keine Wartungen eingetragen. 💡 Tipp: Der Wartungsplan basiert auf allgemeinen Intervallen.'
+    expect(claimsActionWithoutTool({ text: status, steps: [{ toolCalls: [{ toolName: 'get_maintenance_status' }] }] })).toBe(false)
+    expect(claimsActionWithoutTool({ text: 'Es wurde kein Fahrzeug angelegt, weil die Marke fehlt.', steps: [] })).toBe(false)
+  })
+
   it('lässt die Vorschau nach einer Bildanalyse durch (sonst würde add_invoice ohne Bestätigung erzwungen)', () => {
     const preview = 'Ich habe folgende Daten erfasst:\n- ✅ Werkstatt: Garage Muster\n- ✅ Betrag: CHF 250.00\n\nPasst das so?'
     expect(claimsActionWithoutTool({ text: preview, steps: [{ toolCalls: [{ toolName: 'scan_document' }] }] })).toBe(false)

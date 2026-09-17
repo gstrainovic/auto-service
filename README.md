@@ -371,4 +371,10 @@ npm run test:e2e -- --project=offline   # Nur offline
 
 ## Lizenz
 
-Privat
+Wartungsheft ist freie Software unter der [GNU Affero General Public License v3.0](./LICENSE) (AGPL-3.0-only). Du darfst es nutzen, verändern und weitergeben. Wer eine veränderte Version betreibt und anderen über ein Netzwerk zugänglich macht, muss den Quellcode dieser Version offenlegen.
+
+Selbst hosten geht (Abschnitt «Produktion»), das Abo unter https://wartungsheft.ch ist der bequeme Weg: KI-Kontingent, Erinnerungen, Backups und Updates inklusive.
+
+Für Unternehmen, die AGPL nicht einsetzen können, bietet Strainovic IT Wartungsheft auf Anfrage unter einer kommerziellen Lizenz an. Beiträge von Dritten unterliegen dem [Contributor License Agreement](./CLA.md), das diese Doppellizenzierung ermöglicht.
+
+Copyright (C) 2026 Goran Strainovic, Strainovic IT

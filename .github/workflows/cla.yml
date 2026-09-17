@@ -1,0 +1,71 @@
+name: CLA Check
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  cla:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prüfen, ob der PR-Autor das CLA unterschrieben hat
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const allowlist = ['gstrainovic'];
+            const botSuffix = '[bot]';
+            const author = context.payload.pull_request.user.login;
+
+            if (allowlist.includes(author) || author.endsWith(botSuffix)) {
+              core.info(`${author} ist auf der Allowlist, kein CLA nötig.`);
+              return;
+            }
+
+            // Signaturdatei aus dem PR-Head lesen, damit ein Eintrag im selben PR zählt
+            const { data } = await github.rest.repos.getContent({
+              owner: context.payload.pull_request.head.repo.owner.login,
+              repo: context.payload.pull_request.head.repo.name,
+              path: 'CLA_SIGNATURES.md',
+              ref: context.payload.pull_request.head.sha,
+            });
+            const content = Buffer.from(data.content, 'base64').toString('utf8');
+
+            // Erste Tabellenspalte jeder Zeile = GitHub-Benutzername
+            const signed = content
+              .split('\n')
+              .map(line => line.match(/^\|\s*([^|]+?)\s*\|/))
+              .filter(Boolean)
+              .map(m => m[1].toLowerCase());
+
+            if (signed.includes(author.toLowerCase())) {
+              core.info(`${author} hat das CLA unterschrieben.`);
+              return;
+            }
+
+            const body = [
+              `Danke für deinen Beitrag, @${author}!`,
+              '',
+              'Bevor wir ihn mergen können, brauchen wir deine Zustimmung zum [Contributor License Agreement](../blob/main/CLA.md).',
+              'Trage dich dazu in [`CLA_SIGNATURES.md`](../blob/main/CLA_SIGNATURES.md) ein und pushe die Änderung in diesen Pull Request. Der Check läuft dann automatisch erneut.',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+            const alreadyAsked = comments.some(c => c.body?.includes('Contributor License Agreement'));
+            if (!alreadyAsked) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body,
+              });
+            }
+
+            core.setFailed(`${author} hat das CLA noch nicht unterschrieben.`);

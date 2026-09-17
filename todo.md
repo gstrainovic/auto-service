@@ -16,12 +16,6 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 - [ ] Wöchentlich Zahlen ziehen (Caddy-Log, `events`, Postfach, README Abschnitt 6) und in Kapitel 9 notieren
 - [ ] Auswertung gegen die Abbruchkriterien, Ergebnis und Entscheid in Kapitel 9 eintragen
 - [ ] Pilot-Betrieb: nach der Testzeit Jahresrechnung per QR-Rechnung stellen (kein Zahlungsanbieter); der Betrieb erfasst selbst
-- [ ] Login-Seite: Link auf Datenschutz neben dem E-Mail-Feld (Adresse wird dort erhoben, heute nur im Footer)
-- [ ] Datenschutzerklärung nachziehen: Abschnitt 7 nennt «KI-Anbieter (nach Wahl)», es gibt nur Mistral; «Stand: Februar 2026» ist überholt (Resend, Infomaniak, Proxy statt eigenem API-Key)
-- [ ] Weicher Test CS-001 (`@soft`, Chat nennt Serviceheft-Hinweis) fällt seit dem Guard-Umbau; Formulierungstest, nicht Teil der Standard-Suite, prüfen ob Prompt oder Test anzupassen ist
-
-### Vom Nutzer, Entscheid
-- [ ] Lizenz: Repo ist öffentlich auf GitHub ohne LICENSE (README «Privat», `"private": true`), also alle Rechte vorbehalten, aber lesbar. Entweder AGPL-3.0 mit CLA und kommerzieller Zweitlizenz wie `../dms` (schreckt Selbst-Hoster ab, die es vermarkten wollen, weil sie Änderungen offenlegen müssen), oder Repo auf privat stellen. Gorans Entscheid.
 
 ### Betrieb, nebenbei
 - [ ] **Vom Nutzer, einmalig:** In Horizon (https://api.pub2.infomaniak.cloud/horizon, Benutzer `PCU-CTPZLR8`) anmelden

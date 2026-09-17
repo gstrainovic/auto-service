@@ -4,6 +4,10 @@ Die App läuft unter https://wartungsheft.ch (Landing Pages `/betrieb` und `/pri
 
 Produktname «Wartungsheft» (wartungsheft.ch) in allen Texten, Titeln, Manifest und Chat-Prompts; «auto-service» bleibt nur als Repo-, Paket- und Pfadname.
 
+Produktgrenze (business-plan/03-produkt.md «Abgrenzung»): Serviceheft mit Rechnungen, pro Fahrzeug. Kein Tankbuch, kein Fahrtenbuch,
+keine Buchhaltung, keine Übernahme-Checklisten, keine Fahrer-Fahrzeug-Zuordnung oder Rollen, kein Aufpreis für Betriebe.
+Eine Preisliste pro Fahrzeug (36 CHF erstes, 24 CHF je weiteres), Funktionen für alle gleich.
+
 ## Commands
 npm run dev          # Vite + InstantDB + AI-Proxy (startet, was nicht läuft; Proxy-Log /tmp/ai-proxy-dev.log)
 npm run dev:vite     # Vite dev server only (no InstantDB check)

@@ -52,11 +52,12 @@ function chf(value: number): string {
 
     <!-- Privat: ein Preis, Parität mit Drivvo Person, dafür Belegscan, MFK und keine Werbung -->
     <div v-if="audience === 'privat'" class="price-card" data-testid="price-privat">
-      <div class="price-headline">
+      <!-- Auf den Angebotsseiten steht der Preis schon als Überschrift (compact), hier nur auf der Startseite -->
+      <div v-if="!compact" class="price-headline">
         <strong>{{ formatNumber(PRIVATE_YEARLY_CHF) }} CHF im Jahr</strong>
         <span>{{ chf(PRIVATE_YEARLY_CHF / 12) }} im Monat, bis {{ PRIVATE_MAX_VEHICLES }} Fahrzeuge</span>
       </div>
-      <p v-if="!compact" class="price-intro">
+      <p class="price-intro">
         Ein Preis für dein Auto, das Motorrad und den Wohnwagen zusammen. 30 Tage gratis testen, mit allem;
         danach brauchen nur KI-Scan und Chat das Abo. Mehr als {{ PRIVATE_MAX_VEHICLES }} Fahrzeuge? Dann gilt die Betriebsliste.
       </p>
@@ -64,7 +65,7 @@ function chf(value: number): string {
 
     <!-- Betrieb: pro Fahrzeug, ohne Grundgebühr, Jahresrechnung auf die Firma -->
     <div v-else data-testid="price-betrieb">
-      <div class="price-headline">
+      <div v-if="!compact" class="price-headline">
         <strong>{{ formatNumber(BUSINESS_VEHICLE_YEARLY_CHF) }} CHF pro Fahrzeug und Jahr</strong>
         <span>{{ chf(BUSINESS_VEHICLE_YEARLY_CHF / 12) }} pro Fahrzeug und Monat, keine Grundgebühr, Jahresrechnung auf die Firma</span>
       </div>

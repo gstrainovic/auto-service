@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { LimitKind, Plan } from '@strainovic/ai-proxy/plans'
-import { PLANS, yearlyPriceChf } from '@strainovic/ai-proxy/plans'
+import { BUSINESS_VEHICLE_YEARLY_CHF, PLANS, PRIVATE_MAX_VEHICLES, PRIVATE_YEARLY_CHF } from '@strainovic/ai-proxy/plans'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import Message from 'primevue/message'
@@ -70,15 +70,16 @@ const trialNote = computed(() => {
   if (!trial)
     return ''
   if (trial.active)
-    return `Testzeit: noch ${trial.daysLeft} ${trial.daysLeft === 1 ? 'Tag' : 'Tage'} mit allem, bis ${formatDate(trial.endsAt)}. Danach kostet Wartungsheft ${formatCurrency(yearlyPriceChf(1))} im Jahr für ein Fahrzeug.`
-  return `Testzeit vorbei: KI-Scan und Chat brauchen ein Abo (${formatCurrency(yearlyPriceChf(1))} im Jahr für ein Fahrzeug, jedes weitere ${formatCurrency(yearlyPriceChf(2) - yearlyPriceChf(1))}). Lesen, Erfassen von Hand und Exporte gehen weiter.`
+    return `Testzeit: noch ${trial.daysLeft} ${trial.daysLeft === 1 ? 'Tag' : 'Tage'} mit allem, bis ${formatDate(trial.endsAt)}. Danach kostet Wartungsheft ${formatCurrency(PRIVATE_YEARLY_CHF)} im Jahr (privat, bis ${PRIVATE_MAX_VEHICLES} Fahrzeuge) oder ${formatCurrency(BUSINESS_VEHICLE_YEARLY_CHF)} pro Fahrzeug und Jahr (Betrieb).`
+  return `Testzeit vorbei: KI-Scan und Chat brauchen ein Abo (privat ${formatCurrency(PRIVATE_YEARLY_CHF)} im Jahr bis ${PRIVATE_MAX_VEHICLES} Fahrzeuge, Betrieb ${formatCurrency(BUSINESS_VEHICLE_YEARLY_CHF)} pro Fahrzeug und Jahr). Lesen, Erfassen von Hand und Exporte gehen weiter.`
 })
 
-// Abgerechnet wird im Jahr; die Staffel rechnet pro Fahrzeug, darum der Jahrespreis des Plans
+// Abgerechnet wird im Jahr: Privat pro Konto, Betrieb pro Fahrzeug
 function planPrice(plan: Plan): string {
   if (plan.priceChfPerMonth === 0)
     return 'gratis'
-  return `${formatCurrency(yearlyPriceChf(plan.maxVehicles ?? 0))} / Jahr`
+  const yearly = formatCurrency(Math.round(plan.priceChfPerMonth * 12 * 100) / 100)
+  return plan.perVehicle ? `${yearly} pro Fahrzeug und Jahr` : `${yearly} / Jahr`
 }
 
 function importSummary(imported: Record<string, number>): string {
@@ -296,7 +297,7 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
             <div v-for="plan in upgradePlans" :key="plan.id" class="upgrade-row">
               <div>
                 <strong>{{ planName(plan) }}</strong> · {{ planPrice(plan) }} ·
-                {{ plan.maxVehicles }} {{ plan.maxVehicles === 1 ? 'Fahrzeug' : 'Fahrzeuge' }}, Scannen ohne Limit im Alltag
+                {{ plan.maxVehicles ? `bis ${plan.maxVehicles} Fahrzeuge` : 'Rechnung auf die Firma' }}, Scannen ohne Limit im Alltag
               </div>
               <Button
                 :label="`Auf ${planName(plan)} wechseln`"

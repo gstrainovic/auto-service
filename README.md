@@ -191,7 +191,7 @@ pro Nutzer und Monat in InstantDB (`usage`) und setzt die Plan-Limits aus `@stra
 
 ### 4. Stripe (Abo-Zahlung, optional)
 
-1. Produkte mit monatlichen Preisen in CHF anlegen (Basic, Pro) → Price-IDs in `STRIPE_PRICE_BASIC` / `STRIPE_PRICE_PRO`.
+1. Produkte in CHF anlegen: `privat` 25 CHF im Jahr, `betrieb` 36 CHF pro Fahrzeug und Jahr (Menge = Fahrzeuge) → Price-IDs in `STRIPE_PRICE_PRIVAT` / `STRIPE_PRICE_BETRIEB`.
 2. Webhook auf `https://ai.example.ch/stripe/webhook` mit Events `checkout.session.completed`,
    `customer.subscription.updated`, `customer.subscription.deleted` → Secret in `STRIPE_WEBHOOK_SECRET`.
 3. Customer Portal im Stripe-Dashboard aktivieren (Kündigung, Zahlungsmittel).

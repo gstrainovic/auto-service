@@ -32,7 +32,7 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 
 - [ ] Fahrzeuggrenze wirklich sperren, sobald ein Zahlungsweg existiert: `vehicleLimit` meldet heute nur, solange
       `VITE_BILLING_ENABLED=true` gesetzt ist; ohne Kaufweg wäre eine Sperre bloss ein Ärgernis
-- [ ] Preise je Plan beim Zahlungsanbieter hinterlegen (Stripe- oder Payrexx-Preis-IDs `klein`, `mittel`, `gross`)
+- [ ] Preise je Plan beim Zahlungsanbieter hinterlegen (Stripe- oder Payrexx-Preis-IDs `privat` 25 CHF im Jahr, `betrieb` 36 CHF pro Fahrzeug und Jahr mit Menge)
 
 ## Sobald über die Schweiz hinaus verkauft wird (DACH oder global)
 
@@ -49,7 +49,7 @@ Bei bestätigter Kleinbetriebs-Hypothese (H1):
 - [ ] Preis aus den Antworten festlegen, `src/shared/plans.ts` und Businessplan angleichen
 
 Bei bestätigter Privathalter-Hypothese (H2):
-- [ ] Jahresabo 36 CHF per QR-Rechnung an die Warteliste, Kanäle aus Kapitel 5
+- [ ] Jahresabo 25 CHF per QR-Rechnung an die Warteliste, Kanäle aus Kapitel 5
 
 Zahlungsanbieter Payrexx (Entscheid und Preise in business-plan/04), erst wenn ein Kunde monatlich per Karte statt Rechnung zahlen will:
 - [ ] Payrexx-Konto anlegen (Standard, Startup-Rabatt), verifizieren, Payrexx Pay aktivieren, Testmodus, API-Key und Webhook-Signing-Key notieren
@@ -61,5 +61,5 @@ Zahlungsanbieter Payrexx (Entscheid und Preise in business-plan/04), erst wenn e
 
 ## Geparkt
 
-- [ ] Businessplan: Preise in `src/shared/plans.ts` (5/15 CHF) und Kapitel 4 (3/7 EUR) angleichen, sobald der Preis aus der Validierung feststeht; Kapitel 8 R2 (InstantDB-Cloud eingestellt, Abschaltung 31.08.2027) als eingetreten vermerken
+- [ ] Businessplan: Kapitel 4 (Unit Economics, Streams 2 bis 5) und Kapitel 2 und 3 (Ollama, Provider-Wechsel, Self-Hosted-Paket) auf den heutigen Stand bringen; Kapitel 8 R2 (InstantDB-Cloud eingestellt, Abschaltung 31.08.2027) als eingetreten vermerken
 - [ ] InstantDB-Client auf 1.x heben (`@instantdb/core` + `@instantdb/admin` auf 0.22.121 gepinnt, lokaler Server-Checkout `~/instant` vom 02.02.2026; Produktion läuft schon mit Server-Image `latest`). Erst lokalen Server aktualisieren, dann beide Pakete gemeinsam, dann E2E + `npm run test:unit`. Nicht während eines laufenden Pilots.

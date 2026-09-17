@@ -179,7 +179,7 @@ function goToApp() {
       <div class="landing-container">
         <h2>Für wen ist Wartungsheft?</h2>
         <p class="section-subtitle">
-          Ein Werkzeug, eine Preisliste. Der Unterschied liegt im Alltag, nicht im Preis.
+          Ein Werkzeug, gleiche Funktionen. Privat 25 CHF im Jahr, Betriebe 36 CHF pro Fahrzeug mit Rechnung auf die Firma.
         </p>
         <div class="pricing-grid pricing-grid-two">
           <div class="pricing-card">

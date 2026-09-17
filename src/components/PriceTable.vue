@@ -1,30 +1,36 @@
 <script setup lang="ts">
 /**
- * Die eine Preisliste, für Private und Betriebe gleich: Tabelle mit typischen Flottengrössen und ein Regler für
- * die eigene Anzahl. Rechnet mit yearlyPriceChf aus dem Plan-Katalog, damit Seite und Abrechnung nie auseinanderlaufen.
+ * Zwei Listen, gleiche Funktionen (business-plan/03-produkt.md «Abgrenzung»): Privat 25 CHF im Jahr bis fünf
+ * Fahrzeuge, Betrieb 36 CHF pro Fahrzeug und Jahr mit Jahresrechnung auf die Firma. Rechnet mit yearlyPriceChf aus
+ * dem Plan-Katalog, damit Seite und Abrechnung nie auseinanderlaufen.
  */
-import { FIRST_VEHICLE_CHF, FURTHER_VEHICLE_CHF, yearlyPriceChf } from '@strainovic/ai-proxy/plans'
+import type { Audience } from '@strainovic/ai-proxy/plans'
+import { BUSINESS_VEHICLE_YEARLY_CHF, PRIVATE_MAX_VEHICLES, PRIVATE_YEARLY_CHF, yearlyPriceChf } from '@strainovic/ai-proxy/plans'
+import SelectButton from 'primevue/selectbutton'
 import Slider from 'primevue/slider'
 import { computed, ref } from 'vue'
 import { formatCurrency, formatNumber } from '../lib/locale'
 
 const props = withDefaults(defineProps<{
-  /** Startwert des Reglers: Private 1, Betriebe 5 */
+  /** Liste, die zuerst offen ist; mit `fixed` ohne Umschalter (Angebotsseiten) */
+  audience?: Audience
+  fixed?: boolean
+  /** Startwert des Reglers für Betriebe */
   vehicles?: number
   /** kompakt: ohne Einleitungssatz, für die Angebotsseiten */
   compact?: boolean
-  /** Obergrenze des Reglers: Privathalter 5, sonst 25 */
-  max?: number
-}>(), { vehicles: 1, compact: false, max: 25 })
+}>(), { audience: 'privat', fixed: false, vehicles: 5, compact: false })
 
+const audience = ref<Audience>(props.audience)
+const AUDIENCES = [
+  { label: 'Privat', value: 'privat' as Audience },
+  { label: 'Betrieb', value: 'betrieb' as Audience },
+]
+
+const MAX = 25
+const ROWS = [1, 3, 5, 10, 25]
 const count = ref(props.vehicles)
-const MAX = props.max
-// Privathalter sehen nur die kleinen Stufen, Betriebe die ganze Staffel
-const ROWS = [1, 3, 5, 10, 25].filter(n => n <= props.max)
-
-const yearly = computed(() => yearlyPriceChf(count.value))
-const monthly = computed(() => yearly.value / 12)
-const perVehicle = computed(() => yearly.value / count.value / 12)
+const yearly = computed(() => yearlyPriceChf(count.value, 'betrieb'))
 
 function chf(value: number): string {
   return formatCurrency(Math.round(value * 100) / 100)
@@ -33,77 +39,92 @@ function chf(value: number): string {
 
 <template>
   <div class="price-table" data-testid="price-table">
-    <p v-if="!compact" class="price-intro">
-      Eine Liste für alle: <strong>{{ formatNumber(FIRST_VEHICLE_CHF) }} CHF im Jahr</strong> für das erste Fahrzeug,
-      jedes weitere <strong>{{ formatNumber(FURTHER_VEHICLE_CHF) }} CHF</strong>. Je mehr Fahrzeuge, desto günstiger pro Stück.
-      30 Tage gratis testen, mit allem; danach brauchen nur KI-Scan und Chat das Abo.
-    </p>
+    <SelectButton
+      v-if="!fixed"
+      v-model="audience"
+      :options="AUDIENCES"
+      option-label="label"
+      option-value="value"
+      :allow-empty="false"
+      class="price-switch"
+      aria-label="Privat oder Betrieb"
+    />
 
-    <table class="price-grid" aria-label="Preisliste">
-      <thead>
-        <tr>
-          <th>Fahrzeuge</th>
-          <th class="num">
-            pro Jahr
-          </th>
-          <th class="num">
-            pro Monat
-          </th>
-          <th class="num">
-            pro Fahrzeug und Monat
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>30 Tage testen</td>
-          <td class="num">
-            gratis
-          </td>
-          <td class="num">
-            –
-          </td>
-          <td class="num muted">
-            alle Funktionen
-          </td>
-        </tr>
-        <tr v-for="n in ROWS" :key="n" :class="{ current: n === count }">
-          <td>{{ n }}</td>
-          <td class="num">
-            {{ chf(yearlyPriceChf(n)) }}
-          </td>
-          <td class="num">
-            {{ chf(yearlyPriceChf(n) / 12) }}
-          </td>
-          <td class="num muted">
-            {{ chf(yearlyPriceChf(n) / n / 12) }}
-          </td>
-        </tr>
-        <tr v-if="MAX >= 25">
-          <td>mehr als {{ MAX }}</td>
-          <td class="num" colspan="3">
-            auf Anfrage
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="price-calc">
-      <label for="price-vehicles">Wie viele Fahrzeuge hast du?</label>
-      <div class="price-calc-row">
-        <Slider v-model="count" input-id="price-vehicles" :min="1" :max="MAX" class="price-slider" aria-label="Fahrzeuge für die Preisrechnung" />
-        <span class="price-count">{{ count }}</span>
+    <!-- Privat: ein Preis, Parität mit Drivvo Person, dafür Belegscan, MFK und keine Werbung -->
+    <div v-if="audience === 'privat'" class="price-card" data-testid="price-privat">
+      <div class="price-headline">
+        <strong>{{ formatNumber(PRIVATE_YEARLY_CHF) }} CHF im Jahr</strong>
+        <span>{{ chf(PRIVATE_YEARLY_CHF / 12) }} im Monat, bis {{ PRIVATE_MAX_VEHICLES }} Fahrzeuge</span>
       </div>
-      <p class="price-result" data-testid="price-result">
-        <strong>{{ chf(yearly) }} im Jahr</strong>
-        <span>{{ chf(monthly) }} im Monat, {{ chf(perVehicle) }} pro Fahrzeug und Monat</span>
+      <p v-if="!compact" class="price-intro">
+        Ein Preis für dein Auto, das Motorrad und den Wohnwagen zusammen. 30 Tage gratis testen, mit allem;
+        danach brauchen nur KI-Scan und Chat das Abo. Mehr als {{ PRIVATE_MAX_VEHICLES }} Fahrzeuge? Dann gilt die Betriebsliste.
       </p>
+    </div>
+
+    <!-- Betrieb: pro Fahrzeug, ohne Grundgebühr, Jahresrechnung auf die Firma -->
+    <div v-else data-testid="price-betrieb">
+      <div class="price-headline">
+        <strong>{{ formatNumber(BUSINESS_VEHICLE_YEARLY_CHF) }} CHF pro Fahrzeug und Jahr</strong>
+        <span>{{ chf(BUSINESS_VEHICLE_YEARLY_CHF / 12) }} pro Fahrzeug und Monat, keine Grundgebühr, Jahresrechnung auf die Firma</span>
+      </div>
+      <table class="price-grid" aria-label="Preisliste">
+        <thead>
+          <tr>
+            <th>Fahrzeuge</th>
+            <th class="num">
+              pro Jahr
+            </th>
+            <th class="num">
+              pro Monat
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>30 Tage testen</td>
+            <td class="num">
+              gratis
+            </td>
+            <td class="num muted">
+              alle Funktionen
+            </td>
+          </tr>
+          <tr v-for="n in ROWS" :key="n" :class="{ current: n === count }">
+            <td>{{ n }}</td>
+            <td class="num">
+              {{ chf(yearlyPriceChf(n, 'betrieb')) }}
+            </td>
+            <td class="num">
+              {{ chf(yearlyPriceChf(n, 'betrieb') / 12) }}
+            </td>
+          </tr>
+          <tr>
+            <td>mehr als {{ MAX }}</td>
+            <td class="num" colspan="2">
+              auf Anfrage
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="price-calc">
+        <label for="price-vehicles">Wie viele Fahrzeuge hat dein Betrieb?</label>
+        <div class="price-calc-row">
+          <Slider v-model="count" input-id="price-vehicles" :min="1" :max="MAX" class="price-slider" aria-label="Fahrzeuge für die Preisrechnung" />
+          <span class="price-count">{{ count }}</span>
+        </div>
+        <p class="price-result" data-testid="price-result">
+          <strong>{{ chf(yearly) }} im Jahr</strong>
+          <span>{{ chf(yearly / 12) }} im Monat</span>
+        </p>
+      </div>
     </div>
 
     <ul class="price-includes">
       <li><i class="pi pi-check" /> Scannen ohne Limit im Alltag, Chat-Assistent, E-Mail-Erinnerungen</li>
       <li><i class="pi pi-check" /> Kosten pro Fahrzeug und Jahr für Excel, PDF-Dossier, Serviceheft für den Verkauf</li>
-      <li><i class="pi pi-check" /> Jahresrechnung, keine Grundgebühr, jederzeit kündbar</li>
+      <li><i class="pi pi-check" /> Jahresrechnung, keine Grundgebühr, jederzeit kündbar, gleiche Funktionen für alle</li>
     </ul>
   </div>
 </template>
@@ -117,9 +138,38 @@ function chf(value: number): string {
   margin: 0 auto;
 }
 
+.price-switch {
+  align-self: center;
+}
+
+.price-card {
+  padding: 1.25rem;
+  background: var(--p-surface-card);
+  border: 1px solid var(--p-surface-border);
+  border-radius: var(--p-border-radius);
+  text-align: center;
+}
+
+.price-headline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.price-headline strong {
+  font-size: 1.6rem;
+}
+
+.price-headline span {
+  color: var(--p-text-muted-color);
+  font-size: 0.95rem;
+}
+
 .price-intro {
   margin: 0;
-  text-align: center;
   color: var(--p-text-muted-color);
   line-height: 1.6;
 }
@@ -170,6 +220,7 @@ function chf(value: number): string {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  margin-top: 1rem;
   padding: 1rem 1.25rem;
   background: var(--p-surface-card);
   border: 1px solid var(--p-surface-border);
@@ -228,12 +279,5 @@ function chf(value: number): string {
 .price-includes i {
   color: var(--p-primary-color);
   margin-right: 0.4rem;
-}
-
-@media (max-width: 560px) {
-  .price-grid th:last-child,
-  .price-grid td:last-child {
-    display: none;
-  }
 }
 </style>

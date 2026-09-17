@@ -6,7 +6,8 @@ Produktname «Wartungsheft» (wartungsheft.ch) in allen Texten, Titeln, Manifest
 
 Produktgrenze (business-plan/03-produkt.md «Abgrenzung»): Serviceheft mit Rechnungen, pro Fahrzeug. Kein Tankbuch, kein Fahrtenbuch,
 keine Buchhaltung, keine Übernahme-Checklisten, keine Fahrer-Fahrzeug-Zuordnung oder Rollen, kein Aufpreis für Betriebe.
-Eine Preisliste pro Fahrzeug (36 CHF erstes, 24 CHF je weiteres), Funktionen für alle gleich.
+Zwei Preislisten, gleiche Funktionen: Privat 25 CHF im Jahr bis 5 Fahrzeuge, Betrieb 36 CHF pro Fahrzeug und Jahr
+mit Rechnung auf die Firma (`plans.ts`: `yearlyPriceChf(n, audience)`, Pläne `free`, `privat`, `betrieb`).
 
 ## Commands
 npm run dev          # Vite + InstantDB + AI-Proxy (startet, was nicht läuft; Proxy-Log /tmp/ai-proxy-dev.log)
@@ -206,8 +207,8 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
   ungepackt in ein ZIP (keine Abhängigkeit, Bilder sind schon komprimiert).
 - Abo und Testzeit: kein Gratis-Plan. Ohne Abo läuft eine Testzeit von 30 Tagen mit allem (ai-proxy `trial.ts`, Beginn beim
   ersten Aufruf, Subscription mit `status: 'trial'`); danach antworten Scan und Chat mit 402 `trial_expired`, Lesen,
-  Erfassen von Hand und Exporte bleiben frei. Preisstaffel in `yearlyPriceChf` (36 CHF erstes Fahrzeug, 24 CHF je
-  weiteres), `PriceTable.vue` rechnet damit; Fair-Use-Bremse 20 Anfragen pro Minute im Proxy (`rate-limit.ts`).
+  Erfassen von Hand und Exporte bleiben frei. Preise in `yearlyPriceChf(n, audience)` (privat 25 CHF bis 5 Fahrzeuge, Betrieb
+  36 CHF pro Fahrzeug), `PriceTable.vue` mit Umschalter Privat/Betrieb rechnet damit; Fair-Use-Bremse 20 Anfragen pro Minute im Proxy (`rate-limit.ts`).
 - Wortwahl in der App: «Rechnung» (nie «Beleg»), «Kontrollschild» und «Fahrgestellnummer» wie auf dem Schweizer
   Ausweis (nie «Kennzeichen», «FIN»). Formular «Neues Fahrzeug» belegt nichts vor: Baujahr und Kilometerstand 0 heisst
   unbekannt, der Ausweis-Scan füllt leere Felder. Löschen eines Fahrzeugs nur auf der Fahrzeugseite, nicht auf der Karte.

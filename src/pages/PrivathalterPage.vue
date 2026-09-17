@@ -15,10 +15,8 @@ const benefits = [
     title="Dein Wartungsheft, gepflegt vom Handy aus"
     problem="Belege in der Schublade und im Handschuhfach, der Service vergessen, und beim Verkauf fehlt die Hälfte der Historie."
     :benefits="benefits"
-    price="36 CHF im Jahr für dein Fahrzeug"
+    price="25 CHF im Jahr, bis 5 Fahrzeuge"
     price-note="30 Tage gratis mit allem, danach entscheidest du. Anmelden mit E-Mail, kein Passwort, keine Kreditkarte."
-    :vehicles="1"
-    :max-vehicles="5"
     cta="30 Tage gratis testen"
   />
 </template>

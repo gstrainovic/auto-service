@@ -6,12 +6,14 @@ test.describe('Landing Pages', () => {
   test('LP-001: Betrieb zeigt Problem, Nutzen, Preis, Test-Button und Kontaktadresse', async ({ page }) => {
     await page.goto('/betrieb')
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Firmenfahrzeuge')
-    // dieselbe Preistabelle wie für Privathalter: Stufen plus Regler
+    // Betriebsliste: 36 CHF pro Fahrzeug und Jahr, Stufen plus Regler, kein Umschalter
+    await expect(page.getByTestId('price-betrieb')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Privat' })).toHaveCount(0)
     const table = page.getByRole('table', { name: 'Preisliste' })
-    await expect(table.getByRole('row').filter({ hasText: /^10\s*CHF/ })).toContainText('CHF 252.00')
-    await expect(table.getByRole('row').filter({ hasText: /^3\s*CHF/ })).toContainText('CHF 84.00')
-    // Regler startet bei fünf Fahrzeugen: 36 + 4 × 24 = 132
-    await expect(page.getByTestId('price-result')).toContainText('CHF 132.00 im Jahr')
+    await expect(table.getByRole('row').filter({ hasText: /^10\s*CHF/ })).toContainText('CHF 360.00')
+    await expect(table.getByRole('row').filter({ hasText: /^3\s*CHF/ })).toContainText('CHF 108.00')
+    // Regler startet bei fünf Fahrzeugen: 5 × 36 = 180
+    await expect(page.getByTestId('price-result')).toContainText('CHF 180.00 im Jahr')
     // Hauptknopf beim Preis; im Kopf derselbe Knopf, der im lokalen Modus (immer eingeloggt) «Zur Übersicht» heisst
     await expect(page.getByRole('main').getByRole('button', { name: '30 Tage gratis testen' })).toBeVisible()
     await expect(page.getByRole('banner').getByRole('button', { name: /30 Tage gratis testen|Zur Übersicht/ })).toBeVisible()
@@ -26,7 +28,10 @@ test.describe('Landing Pages', () => {
   test('LP-002: Privathalter zeigt Jahrespreis und Test-Button', async ({ page }) => {
     await page.goto('/privathalter')
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-    await expect(page.getByText('36 CHF im Jahr')).toBeVisible()
+    // Privatliste: ein Preis bis fünf Fahrzeuge, keine Tabelle
+    await expect(page.getByText('25 CHF im Jahr, bis 5 Fahrzeuge')).toBeVisible()
+    await expect(page.getByTestId('price-privat')).toBeVisible()
+    await expect(page.getByRole('table', { name: 'Preisliste' })).toHaveCount(0)
     await expect(page.getByRole('main').getByRole('button', { name: '30 Tage gratis testen' })).toBeVisible()
     await expect(page.getByRole('banner').getByRole('button', { name: /30 Tage gratis testen|Zur Übersicht/ })).toBeVisible()
     await expect(page.getByRole('link', { name: 'info@wartungsheft.ch' })).toBeVisible()

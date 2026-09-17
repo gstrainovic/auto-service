@@ -17,10 +17,8 @@ const props = defineProps<{
   price: string
   priceNote: string
   cta: string
-  /** Startwert des Preisreglers */
+  /** Startwert des Preisreglers (Betrieb) */
   vehicles?: number
-  /** Obergrenze des Preisreglers */
-  maxVehicles?: number
   /** Betreff der Kontakt-Mail; ohne Angabe keine Kontaktzeile unter dem Knopf */
   contactSubject?: string
 }>()
@@ -60,7 +58,7 @@ function startTrial() {
       <section class="hypo-price">
         <strong>{{ price }}</strong>
         <span>{{ priceNote }}</span>
-        <PriceTable :vehicles="vehicles ?? 1" :max="maxVehicles ?? 25" compact class="hypo-price-table" />
+        <PriceTable :audience="segment === 'betrieb' ? 'betrieb' : 'privat'" fixed :vehicles="vehicles ?? 5" compact class="hypo-price-table" />
         <div class="hypo-actions">
           <Button :label="cta" size="large" icon="pi pi-arrow-right" icon-pos="right" @click="startTrial" />
         </div>

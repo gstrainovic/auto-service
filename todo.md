@@ -49,7 +49,7 @@ Bei bestätigter Kleinbetriebs-Hypothese (H1):
 - [ ] Preis aus den Antworten festlegen, `src/shared/plans.ts` und Businessplan angleichen
 
 Bei bestätigter Privathalter-Hypothese (H2):
-- [ ] Jahresabo 25 CHF per QR-Rechnung an die Warteliste, Kanäle aus Kapitel 5
+- [ ] Jahresabo 25 CHF per QR-Rechnung an die angemeldeten Nutzer nach der Testzeit, Kanäle aus Kapitel 5
 
 Zahlungsanbieter Payrexx (Entscheid und Preise in business-plan/04), erst wenn ein Kunde monatlich per Karte statt Rechnung zahlen will:
 - [ ] Payrexx-Konto anlegen (Standard, Startup-Rabatt), verifizieren, Payrexx Pay aktivieren, Testmodus, API-Key und Webhook-Signing-Key notieren

@@ -293,7 +293,8 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Alle Modell-Aufrufe mit `temperature: 0` (Tool-Entscheidungen reproduzierbarer)
 - Guard `claimsActionWithoutTool` (`src/services/chat-guard.ts`, reine Funktion mit Unit-Test) in `sendChatMessage`:
   behauptet das Modell «eingetragen» ohne Aufruf eines **schreibenden** Tools (`WRITE_TOOLS`; ein `list_vehicles` allein
-  zählt nicht), wird einmal mit `toolChoice: 'required'` nachgefasst. Muster: Partizip mit Hilfsverb, vor `:`/`.`/Ende, oder ✅
+  zählt nicht), wird einmal mit `toolChoice: 'required'` nachgefasst, und zwar nur im ersten Schritt (`prepareStep`): nach
+  dem Tool-Ergebnis antwortet Mistral auf `tool_choice: "any"` nie. Muster: Partizip mit Hilfsverb, vor `:`/`.`/Ende, oder ✅
 - System-Prompt: keine wörtlichen Erfolgssätze als Beispiele — Mistral kopiert sie sonst ohne Tool-Aufruf (nur Format beschreiben)
 - Lade-Blase im Chat hat zusätzlich die Klasse `chat-message-loading` (für Test-Selektoren)
 

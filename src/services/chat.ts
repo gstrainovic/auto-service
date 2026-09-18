@@ -841,7 +841,9 @@ Zeige die erkannten Daten strukturiert an. Frage den Benutzer ob die Daten korre
         { role: 'user' as const, content: '[System] Du hast eine Aktion beschrieben, aber kein Tool aufgerufen. Führe die Aktion JETZT mit dem passenden Tool aus.' },
       ],
       tools,
-      toolChoice: 'required',
+      // Tool-Zwang nur im ersten Schritt: gälte er auch nach dem Tool-Ergebnis, antwortete Mistral auf
+      // tool_choice "any" nie, und der Chat hing in der Lade-Blase
+      prepareStep: ({ stepNumber }) => (stepNumber === 0 ? { toolChoice: 'required' } : {}),
       stopWhen: stepCountIs(maxSteps),
     }))
   }

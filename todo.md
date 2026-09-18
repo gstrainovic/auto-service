@@ -54,5 +54,4 @@ Zahlungsanbieter Payrexx (Entscheid und Preise in business-plan/04), erst wenn e
 
 ## Geparkt
 
-- [ ] Businessplan: Kapitel 4 (Unit Economics, Streams 2 bis 5) und Kapitel 2 und 3 (Ollama, Provider-Wechsel, Self-Hosted-Paket) auf den heutigen Stand bringen; Kapitel 8 R2 (InstantDB-Cloud eingestellt, Abschaltung 31.08.2027) als eingetreten vermerken
 - [ ] InstantDB-Client auf 1.x heben (`@instantdb/core` + `@instantdb/admin` auf 0.22.121 gepinnt, lokaler Server-Checkout `~/instant` vom 02.02.2026; Produktion läuft schon mit Server-Image `latest`). Erst lokalen Server aktualisieren, dann beide Pakete gemeinsam, dann E2E + `npm run test:unit`. Nicht während eines laufenden Pilots.

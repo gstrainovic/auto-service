@@ -1,12 +1,12 @@
 import type { Page } from '@playwright/test'
 import { Buffer } from 'node:buffer'
-import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
+import { clearInstantDB, expect, test, waitForInstantDB } from './fixtures/test-fixtures'
 
 // Kostenübersicht pro Jahr und Kategorie, CSV für Excel/Treuhänder, PDF-Dossier für Verkauf und Übergabe
 
 async function seedVehicleWithInvoices(page: Page): Promise<string> {
   await page.goto('/')
-  await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 30_000 })
+  await waitForInstantDB(page)
   return page.evaluate(async () => {
     const { db, tx, id: genId } = (window as any).__instantdb
     const vehicleId = genId()

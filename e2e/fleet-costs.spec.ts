@@ -1,13 +1,13 @@
 import type { Page } from '@playwright/test'
 import { Buffer } from 'node:buffer'
-import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
+import { clearInstantDB, expect, test, waitForInstantDB } from './fixtures/test-fixtures'
 
 // Fuhrpark-Übersicht auf dem Dashboard (Kosten pro Fahrzeug und Jahr in der Heimwährung) und
 // Umrechnung fremder Währungen zum EZB-Kurs am Rechnungsdatum (Frankfurter-API, hier gemockt)
 
 async function seedFleet(page: Page): Promise<{ v1: string, v2: string }> {
   await page.goto('/')
-  await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 30_000 })
+  await waitForInstantDB(page)
   return page.evaluate(async () => {
     const { db, tx, id: genId } = (window as any).__instantdb
     const v1 = genId()

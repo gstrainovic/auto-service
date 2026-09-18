@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
+import { clearInstantDB, expect, test, waitForInstantDB } from './fixtures/test-fixtures'
 
 // Kernablauf Fälligkeit: Fahrzeug anlegen, letzte Wartungen nachtragen, Fälliges im Dashboard sehen und erledigen
 
@@ -7,7 +7,7 @@ const isoDaysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).to
 
 async function seed(page: Page, vehicles: { make: string, model: string, mileage: number, maintenances: { type: string, daysAgo: number, km?: number }[] }[]): Promise<string[]> {
   await page.goto('/')
-  await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 30_000 })
+  await waitForInstantDB(page)
   const data = vehicles.map(v => ({ ...v, maintenances: v.maintenances.map(m => ({ ...m, doneAt: isoDaysAgo(m.daysAgo) })) }))
   return page.evaluate(async (input) => {
     const { db, tx, id: genId } = (window as any).__instantdb

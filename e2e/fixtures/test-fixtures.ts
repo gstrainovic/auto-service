@@ -17,9 +17,22 @@ const IGNORED_ERRORS = [
 ]
 
 /**
- * Clears all InstantDB data via the app's client API.
- * Used to ensure clean state before each test.
+ * Wartet, bis `window.__instantdb` da ist und die Verbindung zum Server steht (Status `authenticated`).
+ *
+ * Ohne diesen Wartepunkt löst `db.transact` direkt nach einem Seitenaufruf mit `enqueued` auf (Verbindung noch
+ * `opened`), und ein folgendes `page.goto` verliert die Mutation, bevor sie in IndexedDB liegt. Lokal (Podman) ist die
+ * Verbindung schneller als der Seitenaufbau, über den SSH-Tunnel zur Dev-Instanz nicht: dort fiel etwa jeder zehnte
+ * Seed aus. Im Offline-Projekt (`window.__e2eOffline`) gibt es keine Verbindung, dann reicht `__instantdb`.
  */
+export async function waitForInstantDB(page: Page, timeout = 30_000) {
+  await page.waitForFunction(() => {
+    const idb = (window as any).__instantdb
+    if (!idb)
+      return false
+    return (window as any).__e2eOffline || idb.db._reactor?.status === 'authenticated'
+  }, { timeout })
+}
+
 /** Zählt Entitäten direkt in InstantDB (Endzustand statt KI-Text prüfen). */
 export async function countEntities(page: Page, entity: string): Promise<number> {
   return page.evaluate(async (name) => {
@@ -131,7 +144,7 @@ export async function clearInstantDB(page: Page) {
   await page.goto('/')
 
   // Wait for InstantDB to be ready
-  await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 30000 })
+  await waitForInstantDB(page)
 
   // Use InstantDB client to delete all entities
   await page.evaluate(async () => {
@@ -198,6 +211,9 @@ export const test = base.extend<TestOptions>({
     if (simulateOffline) {
       // Block all InstantDB server requests to simulate offline mode
       // This tests that the app works with IndexedDB-only (no server sync)
+      await page.addInitScript(() => {
+        ;(window as any).__e2eOffline = true
+      })
       await page.route('**/localhost:8888/**', route => route.abort('connectionrefused'))
       await page.route('**/127.0.0.1:8888/**', route => route.abort('connectionrefused'))
     }

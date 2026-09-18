@@ -1,5 +1,5 @@
 import process from 'node:process'
-import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
+import { clearInstantDB, expect, test, waitForInstantDB } from './fixtures/test-fixtures'
 
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
 
@@ -71,7 +71,7 @@ test.describe('Chat Schedule Hint', { tag: '@soft' }, () => {
     await expect(page.getByText('Mazda 3').first()).toBeVisible({ timeout: 10_000 })
 
     // Set customSchedule directly via InstantDB
-    await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 10_000 })
+    await waitForInstantDB(page)
     await page.evaluate(async () => {
       const { db, tx } = (window as any).__instantdb
       const result = await db.queryOnce({ vehicles: {} })

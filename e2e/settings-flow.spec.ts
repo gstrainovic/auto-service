@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
+import { clearInstantDB, expect, test, waitForInstantDB } from './fixtures/test-fixtures'
 
 async function serverHasEmailReminders(page: Page, expected: boolean): Promise<void> {
   await expect.poll(() => page.evaluate(async () => {
@@ -84,7 +84,7 @@ test.describe('Settings Flow', () => {
     await page.goto('/settings')
 
     // Wait for InstantDB to be ready, then insert a test vehicle
-    await page.waitForFunction(() => (window as any).__instantdb)
+    await waitForInstantDB(page)
     const testVehicleId = await page.evaluate(async () => {
       const { db, tx, id: genId } = (window as any).__instantdb
       const vehicleId = genId()

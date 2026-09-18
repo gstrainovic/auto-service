@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import path from 'node:path'
-import { clearInstantDB, countEntities, expect, mockInvoiceScan, test } from './fixtures/test-fixtures'
+import { clearInstantDB, countEntities, expect, mockInvoiceScan, test, waitForInstantDB } from './fixtures/test-fixtures'
 
 // Serviceheft ohne Chat: Seite fotografieren, Intervalle und Stempel prüfen, speichern. Mistral gemockt
 // (SCAN_SERVICE_BOOK), das Bild ist nur Träger für den Upload.
@@ -9,7 +9,7 @@ const photo = path.join(import.meta.dirname, 'fixtures', 'fahrzeugausweis-schwei
 
 async function seedVehicle(page: Page, opts: { maintenance?: { type: string, doneAt: string } } = {}): Promise<string> {
   await page.goto('/')
-  await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 30_000 })
+  await waitForInstantDB(page)
   return page.evaluate(async (o) => {
     const { db, tx, id: genId } = (window as any).__instantdb
     const vId = genId()

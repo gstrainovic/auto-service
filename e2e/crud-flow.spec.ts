@@ -1,4 +1,5 @@
-import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
+import type { Page } from '@playwright/test'
+import { clearInstantDB, expect, test, waitForInstantDB } from './fixtures/test-fixtures'
 
 // Helper: create a vehicle via UI and navigate to its detail page
 async function createVehicleAndOpen(
@@ -49,11 +50,9 @@ function getVehicleIdFromUrl(page: any): string {
   return match ? match[1] : ''
 }
 
-// Helper: wait for __instantdb to be exposed on window (set by instantdb.ts in dev mode)
-async function waitForDb(page: any) {
-  await page.waitForFunction(() => !!(window as any).__instantdb, {
-    timeout: 10_000,
-  })
+// Helper: wait for __instantdb on window and the server connection (see waitForInstantDB)
+async function waitForDb(page: Page) {
+  await waitForInstantDB(page)
 }
 
 // Helper: seed an invoice via page.evaluate into InstantDB

@@ -345,6 +345,9 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`
+- **Seeds über `db.transact` erst nach `waitForInstantDB(page)`** (Fixture): wartet auf `__instantdb` **und** Verbindungsstatus
+  `authenticated`. Direkt nach `page.goto` ist die Verbindung noch `opened`, `transact` löst dann mit `enqueued` auf, und das
+  nächste `page.goto` verliert die Mutation. Lokal mit Podman kaum sichtbar, über den SSH-Tunnel zur Dev-Instanz jeder zehnte Seed.
 - PrimeVue icon-only buttons need CSS class selectors (.chat-fab), not getByRole
 - Nach «Fahrzeug speichern» öffnet die App `LastServicesDialog`. Die Fixture schliesst ihn per `addLocatorHandler` mit
   «Später»; Specs, die ihn prüfen, setzen `test.use({ keepLastServicesDialog: true })`. Mehrere offene Dialoge über

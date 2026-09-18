@@ -1,12 +1,12 @@
 import type { Page } from '@playwright/test'
-import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
+import { clearInstantDB, expect, test, waitForInstantDB } from './fixtures/test-fixtures'
 
 // Rechnung bearbeiten: die Wartungen, die aus der Rechnung entstanden sind, ziehen Datum, Kilometerstand
 // und Positionen mit. Sonst rechnet die Fälligkeit mit alten Werten weiter.
 
 async function seedInvoiceWithMaintenance(page: Page): Promise<string> {
   await page.goto('/')
-  await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 30_000 })
+  await waitForInstantDB(page)
   return page.evaluate(async () => {
     const { db, tx, id: genId } = (window as any).__instantdb
     const vehicleId = genId()

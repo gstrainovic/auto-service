@@ -1,4 +1,4 @@
-import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
+import { clearInstantDB, expect, test, waitForInstantDB } from './fixtures/test-fixtures'
 
 // Helper: create a vehicle via UI and navigate to its detail page
 async function createVehicleAndOpen(page: any, data: { make: string, model: string, year: string, mileage: string }) {
@@ -25,7 +25,7 @@ async function createVehicleAndOpen(page: any, data: { make: string, model: stri
 }
 
 async function waitForDb(page: any) {
-  await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 10_000 })
+  await waitForInstantDB(page)
 }
 
 // Helper: delete vehicle via UI

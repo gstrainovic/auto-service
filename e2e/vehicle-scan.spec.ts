@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { clearInstantDB, expect, mockInvoiceScan, test } from './fixtures/test-fixtures'
+import { clearInstantDB, expect, mockInvoiceScan, test, waitForInstantDB } from './fixtures/test-fixtures'
 
 // «Neues Fahrzeug» per Fahrzeugausweis: Foto lesen, leere Felder füllen, speichern.
 // Bild: gemeinfreier Beispiel-Fahrzeugausweis von Wikimedia Commons (e2e/fixtures/LIZENZEN.md). Mistral gemockt.
@@ -47,7 +47,7 @@ test.describe('Fahrzeug per Fahrzeugausweis', () => {
 
   test('VS-003: beim Bearbeiten eines Fahrzeugs gibt es keinen Ausweis-Scan', async ({ page }) => {
     await page.goto('/')
-    await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 30_000 })
+    await waitForInstantDB(page)
     const id = await page.evaluate(async () => {
       const { db, tx, id: genId } = (window as any).__instantdb
       const v = genId()

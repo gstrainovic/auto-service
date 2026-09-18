@@ -1,11 +1,11 @@
 import type { Page } from '@playwright/test'
-import { clearInstantDB, countEntities, expect, test } from './fixtures/test-fixtures'
+import { clearInstantDB, countEntities, expect, test, waitForInstantDB } from './fixtures/test-fixtures'
 
 // Verkauft oder abgegeben statt gelöscht: raus aus Fälligkeiten und Erinnerungen, drin in Kosten und Belegen.
 
 async function seedVehicleWithCosts(page: Page): Promise<string> {
   await page.goto('/')
-  await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 30_000 })
+  await waitForInstantDB(page)
   return page.evaluate(async () => {
     const { db, tx, id: genId } = (window as any).__instantdb
     const vehicleId = genId()

@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
-import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
+import { clearInstantDB, expect, test, waitForInstantDB } from './fixtures/test-fixtures'
 
 // Beleg-Scan im Formular mit ECHTEM Mistral über den lokalen AI-Proxy und echten Fotos aus tmp/ (gitignored).
 // Kostet OCR-Seiten, darum nur im Projekt ai-soft: npx playwright test e2e/invoice-scan-real.spec.ts --project=ai-soft
@@ -15,7 +15,7 @@ const pdf = path.join(TMP, 'test-images-9pages.pdf')
 
 async function openInvoiceForm(page: Page): Promise<void> {
   await page.goto('/')
-  await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 30_000 })
+  await waitForInstantDB(page)
   const vehicleId = await page.evaluate(async () => {
     const { db, tx, id: genId } = (window as any).__instantdb
     const v = genId()
@@ -105,7 +105,7 @@ test.describe('Beleg-Scan mit echtem Mistral @soft', () => {
     // Seite 10/11 (Regelwartung, kleine Wartung alle 30'000 km oder 2 Jahre) und der Wartungsnachweis mit sechs Stempeln
     const pages = ['IMG_20260201_112605535.jpg', 'IMG_20260201_112613253.jpg', 'IMG_20260201_112713720.jpg'].map(f => path.join(dir, f))
     await page.goto('/')
-    await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 30_000 })
+    await waitForInstantDB(page)
     const vehicleId = await page.evaluate(async () => {
       const { db, tx, id: genId } = (window as any).__instantdb
       const v = genId()

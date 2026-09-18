@@ -2,14 +2,14 @@ import type { Page } from '@playwright/test'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { clearInstantDB, expect, mockInvoiceScan, SCAN_INVOICE, test } from './fixtures/test-fixtures'
+import { clearInstantDB, expect, mockInvoiceScan, SCAN_INVOICE, test, waitForInstantDB } from './fixtures/test-fixtures'
 
 // Beleg-Scan im Formular «+ Rechnung hinzufügen»: Foto oder PDF wird ausgerichtet, gelesen und füllt die Felder.
 // Mistral ist gemockt (mockInvoiceScan), getestet werden Ablauf, Vorbefüllung und Speichern.
 
 async function openInvoiceForm(page: Page): Promise<string> {
   await page.goto('/')
-  await page.waitForFunction(() => !!(window as any).__instantdb, { timeout: 30_000 })
+  await waitForInstantDB(page)
   const vehicleId = await page.evaluate(async () => {
     const { db, tx, id: genId } = (window as any).__instantdb
     const v = genId()

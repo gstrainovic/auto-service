@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { EntrySource } from '../services/entry-source'
 import type { RateMap } from '../services/fx'
 import type { BatchEntry } from '../services/invoice-scan'
 import type { DueResult } from '../services/maintenance-schedule'
@@ -307,7 +308,7 @@ async function handleAddInvoice(data: InvoiceFormData): Promise<void> {
     return
 
   // Gleicher Speicherweg wie der Chat: Rechnung, eine Wartung pro Kategorie, Kilometerstand nachziehen
-  await saveInvoice(formToInvoiceInput(data, vehicle.value.id))
+  await saveInvoice(formToInvoiceInput(data, vehicle.value.id), 'formular')
 
   showAddInvoiceDialog.value = false
 }
@@ -324,7 +325,7 @@ async function handleAddInvoiceBatch(entries: BatchEntry[]): Promise<void> {
       vehicleId: vehicleId ?? vehicle.value.id,
       items: draft.items.map(i => ({ ...i })),
       ...(imageBase64 ? { imageData: imageBase64 } : {}),
-    })
+    }, 'stapel')
   }
 }
 
@@ -400,7 +401,7 @@ function exportPdf(): void {
 }
 
 // Gleicher Speicherweg wie das Dashboard: erledigte Arbeit hebt auch den Kilometerstand
-async function storeMaintenance(data: MaintenanceFormData): Promise<void> {
+async function storeMaintenance(data: MaintenanceFormData, source: EntrySource): Promise<void> {
   if (!vehicle.value)
     return
   await saveMaintenances([{
@@ -410,16 +411,16 @@ async function storeMaintenance(data: MaintenanceFormData): Promise<void> {
     doneAt: data.date,
     mileageAtService: data.mileage || undefined,
     status: data.status === 'planned' ? 'due' : 'done',
-  }])
+  }], source)
 }
 
 async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
-  await storeMaintenance(data)
+  await storeMaintenance(data, 'formular')
   showAddMaintenanceDialog.value = false
 }
 
 async function saveEntry(data: MaintenanceFormData): Promise<void> {
-  await storeMaintenance(data)
+  await storeMaintenance(data, 'wartungsplan')
   entryFor.value = null
 }
 </script>

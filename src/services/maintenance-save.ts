@@ -1,7 +1,8 @@
 /**
- * Wartung ohne Rechnung speichern (Formular, «Erledigt eintragen», letzte Wartungen nach dem Anlegen): Eintrag und,
+ * Wartung ohne Rechnung speichern (Formular, «Erledigt eintragen», Wartungsplan, Serviceheft): Eintrag und,
  * bei erledigten Arbeiten, höherer Kilometerstand am Fahrzeug in einer Transaktion.
  */
+import type { EntrySource } from './entry-source'
 import { getCurrentUserId } from '../composables/useAuth'
 import { db, id, tx } from '../lib/instantdb'
 import { newVehicleMileage } from './invoice-items'
@@ -15,7 +16,7 @@ export interface MaintenanceInput {
   status: 'done' | 'due' | 'overdue'
 }
 
-export async function saveMaintenances(entries: MaintenanceInput[]): Promise<void> {
+export async function saveMaintenances(entries: MaintenanceInput[], source: EntrySource): Promise<void> {
   if (!entries.length)
     return
   // Offline beantwortet InstantDB keine Abfrage; dann werden nur die Wartungen geschrieben
@@ -30,6 +31,7 @@ export async function saveMaintenances(entries: MaintenanceInput[]): Promise<voi
     ...e,
     description: e.description ?? '',
     mileageAtService: e.mileageAtService || null,
+    source,
     creatorId,
     createdAt: now,
     updatedAt: now,

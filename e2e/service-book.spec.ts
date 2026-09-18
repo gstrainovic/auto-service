@@ -59,6 +59,12 @@ test.describe('Serviceheft ohne Chat', () => {
     await expect(plan.locator('.plan-item', { hasText: 'Kühlmittel' })).toContainText('60 Monate')
     await expect(plan.locator('.plan-item', { hasText: 'Klimaanlage' })).toHaveCount(0)
     expect(await countEntities(page, 'maintenances')).toBe(2)
+    // Herkunft am Datensatz: Stempel kommen aus dem Serviceheft
+    const sources = await page.evaluate(async () => {
+      const { db } = (window as any).__instantdb
+      return ((await db.queryOnce({ maintenances: {} })).data.maintenances as { source?: string }[]).map(m => m.source)
+    })
+    expect(sources).toEqual(['serviceheft', 'serviceheft'])
     // Stempel mit 61'200 km hebt den Fahrzeugstand
     await expect(page.getByText('61\'200 km').first()).toBeVisible()
   })

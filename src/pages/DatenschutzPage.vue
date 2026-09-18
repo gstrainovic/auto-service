@@ -53,6 +53,10 @@ import LandingHeader from '../components/LandingHeader.vue'
         <li>Werkstattname, Datum, Betrag</li>
         <li>Einzelpositionen (Arbeiten und Teile)</li>
         <li>Hochgeladene Bilder und PDFs von Rechnungen</li>
+        <li>
+          Über welchen Weg ein Eintrag entstand (Chat, Formular, Serviceheft …), um die App dort zu verbessern, wo sie
+          genutzt wird. Klicks und Bewegungen in der App zeichnen wir nicht auf.
+        </li>
       </ul>
 
       <h3>3.4 Technische Daten</h3>

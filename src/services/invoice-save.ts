@@ -3,6 +3,7 @@
  * Kategorie (mit invoiceId, damit Löschen und Bearbeiten sie mitnehmen) und höherer Kilometerstand am Fahrzeug,
  * alles in einer Transaktion. Die Regeln stehen in planInvoiceSave (invoice-items.ts, getestet).
  */
+import type { EntrySource } from './entry-source'
 import type { InvoiceSaveInput, InvoiceSavePlan, InvoiceUpdatePlan } from './invoice-items'
 import { getCurrentUserId } from '../composables/useAuth'
 import { db, id, tx } from '../lib/instantdb'
@@ -24,7 +25,7 @@ async function findVehicle(vehicleId: string): Promise<{ mileage?: number | null
   return (vehicles || []).find((v: any) => v.id === vehicleId) ?? {}
 }
 
-export async function saveInvoice(input: InvoiceSaveInput & { imageData?: string, ocrCacheId?: string, scanPending?: boolean }): Promise<{ invoiceId: string, plan: InvoiceSavePlan }> {
+export async function saveInvoice(input: InvoiceSaveInput & { imageData?: string, ocrCacheId?: string, scanPending?: boolean }, source: EntrySource): Promise<{ invoiceId: string, plan: InvoiceSavePlan }> {
   const { imageData, ocrCacheId, scanPending, ...data } = input
   // Offline beantwortet InstantDB keine Abfrage; dann wird ohne Fahrzeugdaten gespeichert und der
   // Kilometerstand bleibt, wie er ist.
@@ -42,6 +43,7 @@ export async function saveInvoice(input: InvoiceSaveInput & { imageData?: string
       ...(imageData ? { imageData } : {}),
       ...(ocrCacheId ? { ocrCacheId } : {}),
       ...(scanPending ? { scanPending: true } : {}),
+      source,
       creatorId,
       createdAt: now,
       updatedAt: now,
@@ -53,6 +55,7 @@ export async function saveInvoice(input: InvoiceSaveInput & { imageData?: string
       nextDueDate: '',
       nextDueMileage: 0,
       status: 'done',
+      source,
       creatorId,
       createdAt: now,
       updatedAt: now,
@@ -95,6 +98,8 @@ export async function updateInvoice(invoiceId: string, input: InvoiceSaveInput):
       nextDueDate: '',
       nextDueMileage: 0,
       status: 'done',
+      // neue Position einer bestehenden Rechnung: Herkunft der Rechnung, abgelesen an ihren Wartungen
+      source: linked.find(l => l.source)?.source ?? 'formular',
       creatorId,
       createdAt: now,
       updatedAt: now,

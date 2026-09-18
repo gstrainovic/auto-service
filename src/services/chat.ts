@@ -1,4 +1,5 @@
 import type { AiAccess } from './ai-access'
+import type { EntrySource } from './entry-source'
 import { generateText, stepCountIs, tool } from 'ai'
 import { z } from 'zod'
 import { getCurrentUserId } from '../composables/useAuth'
@@ -182,6 +183,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
             mileage: mileage || 0,
             licensePlate: licensePlate || '',
             vin: vin || '',
+            source: 'chat' satisfies EntrySource,
             creatorId: getCurrentUserId(),
             createdAt: now,
           }),
@@ -396,7 +398,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
         const ocrCacheId = imgRaw ? await hashImage(imgRaw) : ''
         // Gleicher Speicherweg wie Formular und Stapel: Kategorien korrigieren, Positionen prüfen,
         // eine Wartung pro Kategorie, Kilometerstand nachziehen
-        const { plan } = await saveInvoice({ vehicleId, workshopName, date, totalAmount, currency, mileageAtService, items, imageData, ocrCacheId })
+        const { plan } = await saveInvoice({ vehicleId, workshopName, date, totalAmount, currency, mileageAtService, items, imageData, ocrCacheId }, 'chat')
         return {
           success: true,
           message: `Rechnung erfasst`,
@@ -489,6 +491,7 @@ function createTools(access: AiAccess, modelId?: string, imagesBase64?: string[]
             nextDueDate: '',
             nextDueMileage: 0,
             status: 'done',
+            source: 'chat' satisfies EntrySource,
             creatorId: getCurrentUserId(),
             createdAt: Date.now(),
           }),

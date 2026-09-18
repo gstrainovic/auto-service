@@ -27,7 +27,7 @@ onMounted(async () => {
 // Nach dem Anlegen auf die Fahrzeugseite: dort führt die Einrichtungs-Checkliste durch Ausweis, Serviceheft,
 // letzte Wartungen und Rechnungen
 async function onSave(data: any) {
-  const id = await store.add(data)
+  const id = await store.add(data, 'formular')
   showForm.value = false
   if (id)
     router.push(`/vehicles/${id}`)

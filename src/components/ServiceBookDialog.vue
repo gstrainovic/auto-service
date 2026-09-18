@@ -106,7 +106,7 @@ async function save(): Promise<void> {
       doneAt: e.doneAt,
       mileageAtService: e.mileage,
       status: 'done' as const,
-    })))
+    })), 'serviceheft')
     emit('saved')
     emit('update:visible', false)
   }

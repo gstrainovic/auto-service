@@ -1,3 +1,4 @@
+import type { EntrySource } from '../services/entry-source'
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 import { getCurrentUserId } from '../composables/useAuth'
@@ -60,12 +61,13 @@ export const useVehiclesStore = defineStore('vehicles', () => {
     )
   }
 
-  async function add(vehicle: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  async function add(vehicle: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt'>, source: EntrySource): Promise<string> {
     const now = new Date().toISOString()
     const newId = id()
     await db.transact([
       (tx.vehicles as any)[newId].update({
         ...vehicle,
+        source,
         creatorId: getCurrentUserId(),
         createdAt: now,
         updatedAt: now,

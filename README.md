@@ -292,6 +292,18 @@ curl -s -X POST https://api.wartungsheft.ch/admin/query -H "Content-Type: applic
   -H "App-Id: $INSTANT_APP_ID" -H "Authorization: Bearer $INSTANT_ADMIN_TOKEN" -d '{"query":{"events":{}}}'
 ```
 
+- Nutzungswege in der App: Fahrzeuge, Rechnungen und Wartungen tragen ihre Herkunft `source` (`chat`, `formular`,
+  `stapel`, `wartungsplan`, `serviceheft`, `dashboard`; `src/services/entry-source.ts`, ältere Einträge ohne Feld).
+  Zählung pro Herkunft, ohne Belegbilder zu laden (`fields`):
+
+```bash
+set -a; . /opt/auto-service/deploy/.env; set +a
+curl -s -X POST https://api.wartungsheft.ch/admin/query -H "Content-Type: application/json" \
+  -H "App-Id: $INSTANT_APP_ID" -H "Authorization: Bearer $INSTANT_ADMIN_TOKEN" \
+  -d '{"query":{"vehicles":{"$":{"fields":["source"]}},"invoices":{"$":{"fields":["source"]}},"maintenances":{"$":{"fields":["source"]}}}}' \
+  | python3 -c 'import sys,json,collections;d=json.load(sys.stdin);[print(k,dict(collections.Counter(r.get("source","(leer)") for r in v))) for k,v in d.items()]'
+```
+
 ### 7. E-Mail-Erinnerungen
 
 Täglich um 07:00 UTC (`/etc/cron.d/wartungsheft-reminders`, Nutzer `debian`) läuft der Container `reminders` aus

@@ -223,7 +223,9 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
   mit `invoiceId`, höherer Kilometerstand, eine Transaktion; Chat, Formular und Stapel) und beim Bearbeiten über
   `updateInvoice` (zieht Datum, Kilometerstand und Positionen in die verknüpften Wartungen nach), Wartungen ohne Rechnung über
   `saveMaintenances` (`src/services/maintenance-save.ts`: Formular, «Erledigt eintragen», «Eintragen» im Wartungsplan,
-  Serviceheft). Nie direkt `tx.invoices`/`tx.maintenances` aus Seiten schreiben.
+  Serviceheft). Nie direkt `tx.invoices`/`tx.maintenances` aus Seiten schreiben. Jeder Speicherweg verlangt die Herkunft
+  `source` (`EntrySource` in `src/services/entry-source.ts`, auch `vehiclesStore.add` und die Chat-Tools); sie ersetzt
+  einen Analytics-Dienst, Auswertung in README «6. Health-Checks und Zahlen».
 - Fahrzeugseite: Tabs Wartungsplan (Standard), Verlauf (erfasste Wartungen), Rechnungen, Kosten; auf 390px passen die vier
   Tabs nur mit den kurzen Namen und der Handy-Schrift aus `VehicleDetailPage.vue`. Ein Weg pro Aufgabe:
   «wann zuletzt» fragt jede Zeile des Wartungsplans selbst («Eintragen», Vorbelegung `doneFormInitial`: nie erfasst =
@@ -305,7 +307,7 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Tests folgen **CRUD-Paradigma**: Create → Read → Update → Delete
 - Tests laufen automatisch **zweimal**: online + offline (via Network-Blocking)
 - **Playwright startet Server automatisch** (Vite + InstantDB) — kein manuelles `podman-compose up` nötig
-- `npm run test:e2e` führt beide Projekt-Varianten aus (254 Tests: 127 online + 127 offline; 8 weitere nur via `test:e2e:soft`)
+- `npm run test:e2e` führt beide Projekt-Varianten aus (262 Tests: 131 online + 131 offline; 8 weitere nur via `test:e2e:soft`)
 - Playwright startet drei Server: Vite (`VITE_INSTANTDB_MODE=local`, `VITE_AI_PROXY_URL=http://localhost:8787`),
   InstantDB (podman-compose) und den AI-Proxy (`npm run dev:proxy` im Auth-Bypass, Key aus `.env` explizit per `env`,
   `AI_PROXY_BURST_LIMIT=10000`, weil alle Tests einen Nutzer teilen und die Fair-Use-Bremse sonst 429 liefert)
@@ -353,8 +355,9 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | IE | Rechnung bearbeiten | IE-001, IE-002: Datum und km nachziehen, Positionen abgleichen |
 | SV | Verkauft oder abgegeben | SV-001, SV-002: raus aus Fälligkeiten, Kosten bleiben, rückgängig |
 | EF | Einrichtung Fahrzeug | EF-001 bis EF-006: Checkliste nach dem Anlegen, Wartungsplan fragt «zuletzt», Serviceheft-Knopf, Verlauf, Ausblenden |
+| HK | Herkunft am Datensatz | HK-001 bis HK-004: `source` bei Formular, Rechnung samt Wartungen, Wartungsplan, Dashboard |
 
-**Gesamt: 127 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
+**Gesamt: 131 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`

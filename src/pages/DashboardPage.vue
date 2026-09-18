@@ -114,7 +114,7 @@ async function saveDone(data: MaintenanceFormData): Promise<void> {
     doneAt: data.date,
     mileageAtService: data.mileage,
     status: data.status === 'planned' ? 'due' : 'done',
-  }])
+  }], 'dashboard')
   doneFor.value = null
 }
 
@@ -180,7 +180,7 @@ function openReceiptFor(vehicle: Vehicle): void {
 async function saveReceipt(data: InvoiceFormData): Promise<void> {
   if (!receiptFor.value)
     return
-  await saveInvoice(formToInvoiceInput(data, receiptFor.value.id))
+  await saveInvoice(formToInvoiceInput(data, receiptFor.value.id), 'dashboard')
   receiptFor.value = null
 }
 
@@ -195,7 +195,7 @@ async function saveReceiptBatch(entries: BatchEntry[]): Promise<void> {
       vehicleId: vehicleId ?? receiptFor.value.id,
       items: draft.items.map(i => ({ ...i })),
       ...(imageBase64 ? { imageData: imageBase64 } : {}),
-    })
+    }, 'stapel')
   }
   receiptFor.value = null
 }

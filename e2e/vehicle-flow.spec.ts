@@ -18,7 +18,9 @@ test.describe('Vehicle Flow', () => {
     await page.getByLabel('Kontrollschild').fill('M-AB 1234')
     await page.getByRole('button', { name: 'Speichern' }).click()
 
-    // READ
+    // READ: nach dem Speichern direkt auf der Fahrzeugseite, in der Liste als Karte
+    await page.waitForURL(/\/vehicles\/.+/)
+    await page.goto('/vehicles')
     await expect(page.locator('.vehicle-card', { hasText: 'BMW 320d' })).toBeVisible()
     await expect(page.getByText('45\'000 km')).toBeVisible()
 
@@ -72,6 +74,8 @@ test.describe('Vehicle Flow', () => {
     await page.getByLabel('Baujahr').fill('2021')
     await page.getByLabel('Kilometerstand').fill('30000')
     await page.getByRole('button', { name: 'Speichern' }).click()
+    await page.waitForURL(/\/vehicles\/.+/)
+    await page.goto('/vehicles')
 
     // READ: kein Papierkorb neben dem Öffnen-Pfeil (Fehlklick-Risiko am Handy)
     const audiCard = page.locator('[data-pc-name="card"]', { hasText: 'Audi A4' }).first()
@@ -97,6 +101,8 @@ test.describe('Vehicle Flow', () => {
     await dialog.getByLabel('Baujahr').fill('2022')
     await dialog.getByLabel('Kontrollschild').fill('M-AB 1234')
     await dialog.getByRole('button', { name: 'Speichern' }).click()
+    await page.waitForURL(/\/vehicles\/.+/)
+    await page.goto('/vehicles')
 
     // READ - Status badge visible
     const card = page.locator('[data-pc-name="card"]', { hasText: 'Test Status' }).first()

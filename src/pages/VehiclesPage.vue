@@ -5,8 +5,7 @@ import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
-import LastServicesDialog from '../components/LastServicesDialog.vue'
+import { useRoute, useRouter } from 'vue-router'
 import VehicleCard from '../components/VehicleCard.vue'
 import VehicleForm from '../components/VehicleForm.vue'
 import { fetchUsage } from '../services/ai-access'
@@ -15,6 +14,7 @@ import { activeVehicles, soldVehicles } from '../services/vehicle-status'
 import { useVehiclesStore } from '../stores/vehicles'
 
 const route = useRoute()
+const router = useRouter()
 const store = useVehiclesStore()
 const showForm = ref(false)
 
@@ -24,14 +24,13 @@ onMounted(async () => {
     showForm.value = true
 })
 
-// Nach dem Anlegen gleich nach den letzten Wartungen fragen; ohne sie gibt es keine Fälligkeit und keine Erinnerung
-const lastServicesFor = ref<{ id: string, name: string } | null>(null)
-
+// Nach dem Anlegen auf die Fahrzeugseite: dort führt die Einrichtungs-Checkliste durch Ausweis, Serviceheft,
+// letzte Wartungen und Rechnungen
 async function onSave(data: any) {
   const id = await store.add(data)
   showForm.value = false
   if (id)
-    lastServicesFor.value = { id, name: `${data.make} ${data.model}` }
+    router.push(`/vehicles/${id}`)
 }
 
 // Fahrzeuge der Preisstaffel: Hinweis erst, wenn es einen Zahlungsweg gibt (services/vehicle-limit.ts)
@@ -114,13 +113,6 @@ const showSold = ref(false)
     >
       <VehicleForm @save="onSave" />
     </Dialog>
-
-    <LastServicesDialog
-      :visible="!!lastServicesFor"
-      :vehicle-id="lastServicesFor?.id ?? null"
-      :vehicle-name="lastServicesFor?.name"
-      @update:visible="v => { if (!v) lastServicesFor = null }"
-    />
   </main>
 </template>
 

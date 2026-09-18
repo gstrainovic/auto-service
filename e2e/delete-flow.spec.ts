@@ -16,11 +16,8 @@ test.describe('Delete Flow', () => {
     await page.getByLabel('Kontrollschild').fill('HH-VW 1234')
     await page.getByRole('button', { name: 'Speichern' }).click()
 
-    // READ
-    await expect(page.locator('.vehicle-card', { hasText: 'VW Golf' })).toBeVisible()
-
-    // Navigate to vehicle detail
-    await page.getByText('VW Golf').click()
+    // READ: nach dem Speichern direkt auf der Fahrzeugseite
+    await page.waitForURL(/\/vehicles\/.+/)
     await expect(page.getByText('HH-VW 1234')).toBeVisible()
 
     // DELETE with confirmation (tests AND cleans up)

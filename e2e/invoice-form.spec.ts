@@ -10,14 +10,9 @@ async function createTestVehicle(page: any) {
   await page.getByLabel('Kontrollschild').fill('M-AB 1234')
   await page.getByRole('button', { name: 'Speichern' }).click()
 
-  // Wait for the vehicle to appear in the list
-  await expect(page.locator('.vehicle-card', { hasText: 'BMW 320d' })).toBeVisible()
-
-  // Click to navigate to detail page
-  await page.locator('.vehicle-card').filter({ hasText: 'BMW 320d' }).click()
-
-  // Wait for navigation and get ID from URL
+  // Nach dem Speichern führt die App direkt auf die Fahrzeugseite; ID aus der URL
   await page.waitForURL(/\/vehicles\/.+/)
+  await expect(page.getByRole('heading', { name: 'BMW 320d' })).toBeVisible()
   const url = page.url()
   const match = url.match(/\/vehicles\/(.+)/)
   return match ? match[1] : ''

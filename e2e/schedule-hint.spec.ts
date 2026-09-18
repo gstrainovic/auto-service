@@ -18,10 +18,9 @@ async function createVehicleAndOpen(page: any, data: { make: string, model: stri
   await mileageInput.pressSequentially(data.mileage)
 
   await page.getByRole('button', { name: 'Speichern' }).click()
-  await expect(page.locator('.vehicle-card', { hasText: `${data.make} ${data.model}` })).toBeVisible()
-
-  await page.locator('.vehicle-card', { hasText: `${data.make} ${data.model}` }).click()
+  // Nach dem Speichern führt die App direkt auf die Fahrzeugseite
   await expect(page).toHaveURL(/\/vehicles\/.+/, { timeout: 5_000 })
+  await expect(page.getByRole('heading', { name: `${data.make} ${data.model}` })).toBeVisible()
 }
 
 async function waitForDb(page: any) {
@@ -49,9 +48,10 @@ test.describe('Schedule Hint', () => {
       mileage: '60000',
     })
 
-    // VehicleDetailPage: banner should be visible on maintenance tab (default)
-    await expect(page.locator('.schedule-hint')).toBeVisible()
-    await expect(page.locator('.schedule-hint')).toContainText('allgemeinen Intervallen')
+    // Fahrzeugseite: Tab Wartungsplan (Standard) nennt die Quelle und bietet das Serviceheft als Hauptknopf an
+    const source = page.locator('.plan-source')
+    await expect(source).toContainText('allgemeinen Intervallen')
+    await expect(source.getByRole('button', { name: 'Serviceheft fotografieren' })).toBeVisible()
 
     // Dashboard: banner should also be visible
     await page.goto('/')
@@ -92,10 +92,10 @@ test.describe('Schedule Hint', () => {
     await page.reload()
     await expect(page.getByText('Honda Civic')).toBeVisible()
 
-    // VehicleDetailPage: banner should NOT be visible
-    await expect(page.locator('.schedule-hint')).not.toBeVisible()
-    // Custom schedule should be shown instead
-    await expect(page.getByText('Fahrzeugspezifischer Wartungsplan')).toBeVisible()
+    // Fahrzeugseite: Plan aus dem Serviceheft statt allgemeiner Intervalle
+    await expect(page.locator('.plan-source')).toContainText('Intervalle aus dem Serviceheft')
+    await expect(page.locator('.plan-source')).not.toContainText('allgemeinen Intervallen')
+    await expect(page.locator('.plan-item')).toHaveCount(1)
 
     // Dashboard: banner should NOT be visible
     await page.goto('/')

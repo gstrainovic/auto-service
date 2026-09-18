@@ -21,6 +21,14 @@ export interface LastMaintenance {
 /** done = erledigt und nicht bald fällig, due = innerhalb der Vorwarnung, overdue = überschritten, unknown = kein Eintrag vorhanden */
 export type DueStatus = 'done' | 'due' | 'overdue' | 'unknown'
 
+/** Darstellung eines Status, gleich in Dashboard und Wartungsplan der Fahrzeugseite */
+export const DUE_STATUS_VIEW: Record<DueStatus, { label: string, icon: string, color: string, severity: 'danger' | 'warn' | 'success' | 'secondary' }> = {
+  overdue: { label: 'Überfällig', icon: 'pi pi-exclamation-triangle', color: 'var(--p-red-500)', severity: 'danger' },
+  due: { label: 'Bald fällig', icon: 'pi pi-clock', color: 'var(--p-yellow-500)', severity: 'warn' },
+  unknown: { label: 'Kein Eintrag', icon: 'pi pi-question-circle', color: 'var(--p-text-muted-color)', severity: 'secondary' },
+  done: { label: 'OK', icon: 'pi pi-check-circle', color: 'var(--p-green-500)', severity: 'success' },
+}
+
 /** Vorwarnung: so viele Tage oder Kilometer vor dem Termin gilt eine Arbeit als «bald fällig» */
 export const DUE_SOON_DAYS = 30
 export const DUE_SOON_KM = 1000
@@ -77,15 +85,25 @@ function knownMileage(m: LastMaintenance): number | undefined {
   return m.mileageAtService ? m.mileageAtService : undefined
 }
 
-/** Neuester Eintrag, der zur Bezeichnung des Plan-Eintrags passt; ohne Treffer der neueste der Art */
-function latestMatching(maintenances: LastMaintenance[], item: ScheduleItem): LastMaintenance | undefined {
-  const words = item.label.toLowerCase().split(/[^a-zäöüß0-9]+/).filter(w => w.length > 3)
+function labelWords(label: string): string[] {
+  return label.toLowerCase().split(/[^a-zäöüß0-9]+/).filter(w => w.length > 3)
+}
+
+function describes(m: LastMaintenance, words: string[]): boolean {
+  const text = (m.description ?? '').toLowerCase()
+  return !!text && words.some(w => text.includes(w))
+}
+
+/**
+ * Neuester Eintrag, der zur Bezeichnung des Plan-Eintrags passt; ohne Treffer der neueste der Art, aber keiner,
+ * dessen Beschreibung eindeutig zu einem anderen Plan-Eintrag derselben Art gehört
+ */
+function latestMatching(maintenances: LastMaintenance[], item: ScheduleItem, siblings: ScheduleItem[]): LastMaintenance | undefined {
   const sameType = maintenances.filter(m => m.type === item.type)
-  const matching = sameType.filter((m) => {
-    const text = (m.description ?? '').toLowerCase()
-    return !!text && words.some(w => text.includes(w))
-  })
-  return latestByType(matching.length ? matching : sameType).get(item.type)
+  const matching = sameType.filter(m => describes(m, labelWords(item.label)))
+  const others = siblings.filter(s => s !== item).map(s => labelWords(s.label))
+  const unclaimed = sameType.filter(m => !others.some(words => describes(m, words)))
+  return latestByType(matching.length ? matching : unclaimed).get(item.type)
 }
 
 /** Neuester Eintrag pro Typ: nach Datum, bei gleichem Datum nach Kilometerstand */
@@ -128,7 +146,7 @@ export function checkDueMaintenances(params: {
   const scheduleResults = schedule.map((item) => {
     const key = `${item.type}|${item.label}`
     const last = (perType.get(item.type) ?? 0) > 1
-      ? latestMatching(lastMaintenances, item)
+      ? latestMatching(lastMaintenances, item, schedule.filter(s => s.type === item.type))
       : latest.get(item.type)
     if (!last) {
       return {
@@ -186,6 +204,39 @@ export function checkDueMaintenances(params: {
     }))
 
   return [...scheduleResults, ...extraResults]
+}
+
+/** Fälligkeiten eines Fahrzeugs aus allen seinen Wartungen: erledigte zählen als «zuletzt», geplante als Termin */
+export function dueForVehicle(
+  vehicle: { mileage: number, customSchedule?: ScheduleItem[] | { type: string, label: string, intervalKm: number, intervalMonths: number }[] },
+  maintenances: { type: string, status?: string, doneAt: string, mileageAtService?: number | null, description?: string }[],
+): DueResult[] {
+  return checkDueMaintenances({
+    currentMileage: vehicle.mileage,
+    lastMaintenances: maintenances
+      .filter(m => m.status === 'done')
+      .map(m => ({ type: m.type, mileageAtService: m.mileageAtService, doneAt: m.doneAt, description: m.description })),
+    plannedMaintenances: maintenances
+      .filter(m => m.status !== 'done')
+      .map(m => ({ type: m.type, doneAt: m.doneAt })),
+    schedule: getMaintenanceSchedule(vehicle.customSchedule as ScheduleItem[] | undefined),
+  })
+}
+
+/**
+ * Vorbelegung für «Eintragen» an einer Arbeit: Fälliges ist meist heute erledigt; noch nie Erfasstes fragt
+ * «wann zuletzt», dort wäre heute falsch. Kilometerstand 0 heisst unbekannt.
+ */
+export function doneFormInitial(item: DueResult, vehicleMileage: number, today: string): { category: MaintenanceCategory, date: string, mileage: number | undefined, status: 'done', description: string } {
+  const unknown = item.status === 'unknown'
+  return {
+    category: item.type as MaintenanceCategory,
+    date: unknown ? '' : today,
+    mileage: unknown || !vehicleMileage ? undefined : vehicleMileage,
+    status: 'done',
+    // Bezeichnung aus dem Plan: ordnet den Eintrag bei doppelter Art (Getriebeöl, Differentialöl) der richtigen Zeile zu
+    description: item.label,
+  }
 }
 
 export interface FleetDueEntry {

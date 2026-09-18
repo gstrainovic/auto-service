@@ -22,6 +22,8 @@ export interface Vehicle {
   /** Tag der Übergabe beim Verkauf; gesetzt heisst: raus aus Fälligkeiten, drin in Kosten und Exporten */
   soldAt?: string | null
   soldMileage?: number | null
+  /** Einrichtungs-Checkliste auf der Fahrzeugseite ausgeblendet */
+  setupHidden?: boolean
   createdAt: string
   updatedAt: string
 }

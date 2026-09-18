@@ -56,7 +56,8 @@ function toData(): VehicleFormData {
   return { ...form, year: form.year ?? 0, mileage: form.mileage ?? 0 }
 }
 
-// Neues Fahrzeug: Fahrzeugausweis oder Kaufvertrag lesen und leere Felder füllen (beim Bearbeiten nicht angeboten)
+// Fahrzeugausweis oder Kaufvertrag lesen und leere Felder füllen; auch beim Bearbeiten, dort ergänzt der Ausweis
+// z. B. die Fahrgestellnummer nach einem Kaufvertrag (Schritt «Fahrzeugausweis» der Einrichtung)
 const scan = useVehicleScan()
 
 async function onDocument(event: Event): Promise<void> {
@@ -80,7 +81,7 @@ function onSubmit(event: Event): void {
 
 <template>
   <form class="vehicle-form" @submit="onSubmit">
-    <div v-if="!initialData" class="doc-scan">
+    <div class="doc-scan">
       <label class="upload-label" :class="{ disabled: scan.scanning.value }">
         <i class="pi pi-id-card" />
         Fahrzeugausweis fotografieren

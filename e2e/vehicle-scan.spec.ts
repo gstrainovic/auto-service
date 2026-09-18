@@ -31,7 +31,7 @@ test.describe('Fahrzeug per Fahrzeugausweis', () => {
 
     await dialog.getByRole('button', { name: 'Speichern' }).click()
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
-    await expect(page.locator('.vehicle-card', { hasText: 'Saurer 3 DUX' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Saurer 3 DUX' })).toBeVisible()
   })
 
   test('VS-002: Eingaben vor dem Scan bleiben, Scan-Fehler lässt das Formular bedienbar', async ({ page }) => {
@@ -45,7 +45,8 @@ test.describe('Fahrzeug per Fahrzeugausweis', () => {
     await expect(dialog.getByLabel('Marke')).toHaveValue('Porsche')
   })
 
-  test('VS-003: beim Bearbeiten eines Fahrzeugs gibt es keinen Ausweis-Scan', async ({ page }) => {
+  test('VS-003: beim Bearbeiten ergänzt der Ausweis nur leere Felder (z. B. nach einem Kaufvertrag)', async ({ page }) => {
+    await mockInvoiceScan(page)
     await page.goto('/')
     await waitForInstantDB(page)
     const id = await page.evaluate(async () => {
@@ -56,9 +57,21 @@ test.describe('Fahrzeug per Fahrzeugausweis', () => {
       return v as string
     })
     await page.goto(`/vehicles/${id}`)
-    await page.getByRole('button', { name: 'Bearbeiten' }).first().click()
-    const dialog = page.locator('[data-pc-name="dialog"]')
+    // Checkliste: ohne Fahrgestellnummer ist der Ausweis offen, ihr Knopf öffnet das Formular mit Scan
+    const setup = page.getByTestId('setup-checklist')
+    await expect(setup.locator('[data-step="ausweis"]')).toContainText('Fehlt noch: Fahrgestellnummer')
+    await setup.getByRole('button', { name: 'Fahrzeugausweis fotografieren' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Fahrzeug bearbeiten' })
     await expect(dialog.getByLabel('Marke')).toHaveValue('VW')
-    await expect(dialog.getByText('Fahrzeugausweis fotografieren')).toHaveCount(0)
+
+    await dialog.locator('input[type="file"]').setInputFiles(ausweis)
+    await expect(dialog.getByText('Felder aus dem Dokument ausgefüllt. Bitte prüfen.')).toBeVisible({ timeout: 60_000 })
+    // Vorhandenes bleibt, nur die leere Fahrgestellnummer kommt aus dem Ausweis
+    await expect(dialog.getByLabel('Marke')).toHaveValue('VW')
+    await expect(dialog.getByLabel('Kontrollschild')).toHaveValue('SG 1')
+    await expect(dialog.locator('#vin')).toHaveValue('2 100 728')
+    await dialog.getByRole('button', { name: 'Speichern' }).click()
+    await expect(dialog).not.toBeVisible()
+    await expect(setup.locator('[data-step="ausweis"]')).toHaveClass(/done/)
   })
 })

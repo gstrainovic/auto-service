@@ -36,9 +36,13 @@ test.describe('Empty States', () => {
     await dialog.getByLabel('Modell').fill('Empty')
     await dialog.getByRole('button', { name: 'Speichern' }).click()
 
-    await page.getByText('Test Empty').click()
+    await page.waitForURL(/\/vehicles\/.+/)
     await page.getByRole('tab', { name: 'Rechnungen' }).click()
-    await expect(page.getByText(/^Keine Rechnungen./)).toBeVisible()
+    const invoices = page.getByRole('tabpanel', { name: 'Rechnungen' })
+    await expect(invoices.getByText(/^Keine Rechnungen./)).toBeVisible()
+    // Ein Knopf pro Aufgabe: der leere Tab hat nur «Rechnung hinzufügen» oben, keinen zweiten im Leer-Zustand
+    await expect(invoices.getByRole('button')).toHaveCount(1)
+    await expect(invoices.getByRole('button', { name: 'Rechnung hinzufügen' })).toBeVisible()
 
     // DELETE
     await page.locator('button:has-text("Löschen")').first().click()

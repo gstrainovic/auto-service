@@ -31,7 +31,7 @@ test.describe('Serviceheft ohne Chat', () => {
     await mockInvoiceScan(page)
     const vehicleId = await seedVehicle(page)
     await page.goto(`/vehicles/${vehicleId}`)
-    await page.getByRole('button', { name: 'Serviceheft hinterlegen' }).click()
+    await page.locator('.plan-source').getByRole('button', { name: 'Serviceheft fotografieren' }).click()
 
     const dialog = page.getByTestId('service-book-dialog')
     await expect(dialog).toBeVisible()
@@ -53,11 +53,11 @@ test.describe('Serviceheft ohne Chat', () => {
     await dialog.getByRole('button', { name: 'Plan und 2 Einträge speichern' }).click()
     await expect(dialog).not.toBeVisible()
 
-    await expect(page.getByText('Fahrzeugspezifischer Wartungsplan')).toBeVisible()
-    const plan = page.locator('.custom-schedule-section')
-    await expect(plan.locator('.schedule-item', { hasText: 'Ölwechsel' })).toContainText('20\'000 km / 12 Monate')
-    await expect(plan.locator('.schedule-item', { hasText: 'Kühlmittel' })).toContainText('60 Monate')
-    await expect(plan.locator('.schedule-item', { hasText: 'Klimaanlage' })).toHaveCount(0)
+    await expect(page.locator('.plan-source')).toContainText('Intervalle aus dem Serviceheft')
+    const plan = page.getByRole('tabpanel', { name: 'Wartungsplan' })
+    await expect(plan.locator('.plan-item', { hasText: 'Ölwechsel' })).toContainText('20\'000 km / 12 Monate')
+    await expect(plan.locator('.plan-item', { hasText: 'Kühlmittel' })).toContainText('60 Monate')
+    await expect(plan.locator('.plan-item', { hasText: 'Klimaanlage' })).toHaveCount(0)
     expect(await countEntities(page, 'maintenances')).toBe(2)
     // Stempel mit 61'200 km hebt den Fahrzeugstand
     await expect(page.getByText('61\'200 km').first()).toBeVisible()
@@ -67,7 +67,7 @@ test.describe('Serviceheft ohne Chat', () => {
     await mockInvoiceScan(page)
     const vehicleId = await seedVehicle(page, { maintenance: { type: 'oelwechsel', doneAt: '2025-06-12' } })
     await page.goto(`/vehicles/${vehicleId}`)
-    await page.getByRole('button', { name: 'Serviceheft hinterlegen' }).click()
+    await page.locator('.plan-source').getByRole('button', { name: 'Serviceheft fotografieren' }).click()
     const dialog = page.getByTestId('service-book-dialog')
 
     await dialog.locator('input[type="file"]').setInputFiles(photo)

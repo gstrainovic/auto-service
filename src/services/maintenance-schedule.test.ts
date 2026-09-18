@@ -1,8 +1,64 @@
 import type { DueResult } from './maintenance-schedule'
 import { describe, expect, it } from 'vitest'
-import { addMonths, checkDueMaintenances, dueDescription, fleetDueList, getMaintenanceSchedule, vehicleDueStatus } from './maintenance-schedule'
+import { addMonths, checkDueMaintenances, doneFormInitial, dueDescription, dueForVehicle, fleetDueList, getMaintenanceSchedule, vehicleDueStatus } from './maintenance-schedule'
 
 const schedule = getMaintenanceSchedule()
+
+describe('dueForVehicle', () => {
+  const today = new Date().toISOString().slice(0, 10)
+  const inAWeek = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10)
+
+  it('zählt nur Erledigtes als «zuletzt», Geplantes als Termin', () => {
+    const items = dueForVehicle({ mileage: 50000 }, [
+      { type: 'oelwechsel', status: 'done', doneAt: today, mileageAtService: 50000 },
+      { type: 'tuev', status: 'due', doneAt: inAWeek },
+    ])
+    const oil = items.find(i => i.type === 'oelwechsel')!
+    const mfk = items.find(i => i.type === 'tuev')!
+    expect(oil.lastDoneAt).toBe(today)
+    expect(mfk.status).toBe('unknown')
+    expect(mfk.plannedAt).toBe(inAWeek)
+  })
+
+  it('nimmt den Plan aus dem Serviceheft, sonst die allgemeinen Intervalle', () => {
+    const custom = [{ type: 'oelwechsel', label: 'Motoröl', intervalKm: 20000, intervalMonths: 24 }]
+    expect(dueForVehicle({ mileage: 0, customSchedule: custom }, []).map(i => i.label)).toEqual(['Motoröl'])
+    expect(dueForVehicle({ mileage: 0 }, [])).toHaveLength(schedule.length)
+  })
+})
+
+describe('doneFormInitial', () => {
+  const base: DueResult = { key: 'tuev|MFK', type: 'tuev', label: 'MFK', status: 'overdue', lastDoneAt: '2023-01-01', nextDueDate: '2025-01-01' }
+
+  it('fällige Arbeit: heute und aktueller Kilometerstand vorbelegt', () => {
+    expect(doneFormInitial(base, 68500, '2026-09-18')).toEqual({ category: 'tuev', date: '2026-09-18', mileage: 68500, status: 'done', description: 'MFK' })
+  })
+
+  it('noch nie erfasst: Datum und km leer, gefragt ist «wann zuletzt», nicht «heute»', () => {
+    expect(doneFormInitial({ ...base, status: 'unknown', lastDoneAt: undefined }, 68500, '2026-09-18'))
+      .toEqual({ category: 'tuev', date: '', mileage: undefined, status: 'done', description: 'MFK' })
+  })
+
+  it('übernimmt die Bezeichnung aus dem Plan als Beschreibung, damit der Eintrag bei doppelter Art die richtige Zeile trifft', () => {
+    const gear: DueResult = { key: 'sonstiges|Getriebeöl', type: 'sonstiges', label: 'Getriebeöl', status: 'unknown' }
+    const initial = doneFormInitial(gear, 0, '2026-09-18')
+    const schedule = [
+      { type: 'sonstiges' as const, label: 'Getriebeöl', intervalKm: 0, intervalMonths: 60 },
+      { type: 'sonstiges' as const, label: 'Differentialöl', intervalKm: 0, intervalMonths: 60 },
+    ]
+    const items = checkDueMaintenances({
+      currentMileage: 0,
+      lastMaintenances: [{ type: initial.category, doneAt: '2026-01-10', description: initial.description }],
+      schedule,
+    })
+    expect(items.find(i => i.label === 'Getriebeöl')!.lastDoneAt).toBe('2026-01-10')
+    expect(items.find(i => i.label === 'Differentialöl')!.status).toBe('unknown')
+  })
+
+  it('lässt die Kilometer leer, wenn der Stand 0 (unbekannt) ist', () => {
+    expect(doneFormInitial(base, 0, '2026-09-18').mileage).toBeUndefined()
+  })
+})
 
 describe('fleetDueList', () => {
   const vehicles = [

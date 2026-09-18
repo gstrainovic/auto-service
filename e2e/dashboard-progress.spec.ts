@@ -1,9 +1,6 @@
 import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
 test.describe('Dashboard Progress', () => {
-  // Der Test öffnet «Letzte Wartungen nachtragen» selbst, die Fixture darf den Dialog nicht wegklicken
-  test.use({ keepLastServicesDialog: true })
-
   test.beforeEach(async ({ page }) => {
     await clearInstantDB(page)
   })
@@ -16,7 +13,8 @@ test.describe('Dashboard Progress', () => {
     await dialog.getByLabel('Marke').fill('BMW')
     await dialog.getByLabel('Modell').fill('320d')
     await dialog.getByRole('button', { name: 'Speichern' }).click()
-    await page.getByTestId('last-services-dialog').getByRole('button', { name: 'Später' }).click()
+    await page.waitForURL(/\/vehicles\/.+/)
+    const vehicleUrl = page.url()
 
     // READ - Dashboard zeigt Progress (dueMap wird async berechnet)
     await page.goto('/')
@@ -26,11 +24,14 @@ test.describe('Dashboard Progress', () => {
     await expect(page.locator('.maintenance-item', { hasText: 'Kein Eintrag' })).toHaveCount(0)
     await expect(page.getByText('Überfällig', { exact: true })).toHaveCount(0)
 
-    // Nach einem nachgetragenen Ölwechsel zählt der Fortschritt: 0 von 9 fällig, 8 Arbeiten ohne Eintrag zugeklappt
-    await page.locator('.vehicle-section').getByRole('button', { name: 'Letzte Wartungen nachtragen' }).click()
-    const last = page.getByTestId('last-services-dialog')
-    await last.locator('#last-oelwechsel-date').fill(new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10))
-    await last.getByRole('button', { name: '1 Eintrag speichern' }).click()
+    // Nach einem Ölwechsel aus dem Wartungsplan zählt der Fortschritt: 0 von 9 fällig, 8 Arbeiten ohne Eintrag zugeklappt
+    await page.goto(vehicleUrl)
+    await page.getByRole('button', { name: 'Ölwechsel eintragen' }).click()
+    const entry = page.getByRole('dialog', { name: 'Ölwechsel eintragen' })
+    await entry.locator('#maintenance-date').fill(new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10))
+    await entry.getByRole('button', { name: 'Speichern' }).click()
+    await expect(entry).not.toBeVisible()
+    await page.goto('/')
     await expect(page.locator('.vehicle-progress')).toHaveText('OK', { timeout: 10_000 })
     await expect(page.getByRole('button', { name: '8 Arbeiten ohne Eintrag anzeigen' })).toBeVisible()
 

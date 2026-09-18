@@ -66,8 +66,8 @@ test.describe('Schedule Flow', () => {
     await page.goto('/vehicles')
     await page.getByText('Volkswagen Golf VIII').first().click()
 
-    // Switch to maintenance tab (already default)
-    await expect(page.getByText('Fahrzeugspezifischer Wartungsplan').first()).toBeVisible({ timeout: 15_000 })
+    // Tab Wartungsplan (Standard) zeigt den Plan aus dem Serviceheft
+    await expect(page.locator('.plan-source')).toContainText('Intervalle aus dem Serviceheft', { timeout: 15_000 })
 
     // DELETE (cleanup)
     await page.locator('button:has-text("Löschen")').first().click()

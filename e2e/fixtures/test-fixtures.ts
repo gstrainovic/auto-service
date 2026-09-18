@@ -3,8 +3,6 @@ import { test as base } from '@playwright/test'
 
 export interface TestOptions {
   simulateOffline: boolean
-  /** true: Dialog «Wann wurde zuletzt …?» nach dem Anlegen eines Fahrzeugs bleibt offen (Standard: schliesst mit «Später») */
-  keepLastServicesDialog: boolean
 }
 
 // Only unfixable third-party errors here — everything else must be fixed, not ignored.
@@ -198,16 +196,8 @@ function isIgnoredError(msg: string, offline: boolean): boolean {
 
 export const test = base.extend<TestOptions>({
   simulateOffline: [false, { option: true }],
-  keepLastServicesDialog: [false, { option: true }],
 
-  page: async ({ page, simulateOffline, keepLastServicesDialog }, use) => {
-    // Nach «Fahrzeug speichern» fragt die App nach den letzten Wartungen. Specs, die das nicht prüfen, klicken «Später».
-    if (!keepLastServicesDialog) {
-      await page.addLocatorHandler(page.getByTestId('last-services-dialog'), async (dialog) => {
-        await dialog.getByRole('button', { name: 'Später' }).click()
-      })
-    }
-
+  page: async ({ page, simulateOffline }, use) => {
     if (simulateOffline) {
       // Block all InstantDB server requests to simulate offline mode
       // This tests that the app works with IndexedDB-only (no server sync)

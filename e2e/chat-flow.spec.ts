@@ -164,6 +164,9 @@ test.describe('Chat Flow', () => {
     await expect(page.getByText('Toyota Corolla').first()).toBeVisible({ timeout: 10_000 })
 
     // Step 2: Create SECOND vehicle — VW Golf (the RIGHT one, matches VW workshop invoice)
+    // Nach dem Speichern steht die App auf der Fahrzeugseite, das nächste Fahrzeug kommt aus der Liste
+    await page.waitForURL(/\/vehicles\/.+/)
+    await page.goto('/vehicles')
     await page.getByRole('button', { name: 'Hinzufügen' }).click()
     await page.getByLabel('Marke').fill('VW')
     await page.getByLabel('Modell').fill('Golf')

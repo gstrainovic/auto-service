@@ -42,7 +42,7 @@ test.describe('Rechnung bearbeiten', () => {
     await expect(dialog).not.toBeVisible()
 
     // Wartung auf dem Wartungs-Tab trägt die neuen Werte
-    await page.getByRole('tab', { name: 'Wartungen' }).click()
+    await page.getByRole('tab', { name: 'Verlauf' }).click()
     const entry = page.locator('.maintenance-item', { hasText: 'Motoröl' })
     await expect(entry).toContainText('11.03.2026')
     await expect(entry).toContainText('67\'000 km')
@@ -63,7 +63,7 @@ test.describe('Rechnung bearbeiten', () => {
     await dialog.getByRole('button', { name: 'Speichern' }).click()
     await expect(dialog).not.toBeVisible()
 
-    await page.getByRole('tab', { name: 'Wartungen' }).click()
+    await page.getByRole('tab', { name: 'Verlauf' }).click()
     await expect(page.locator('.maintenance-item', { hasText: 'Bremsbeläge vorne' })).toBeVisible()
     await expect(page.locator('.maintenance-item', { hasText: 'Motoröl' })).toHaveCount(0)
   })

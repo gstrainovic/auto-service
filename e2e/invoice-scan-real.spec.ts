@@ -114,7 +114,7 @@ test.describe('Beleg-Scan mit echtem Mistral @soft', () => {
       return v as string
     })
     await page.goto(`/vehicles/${vehicleId}`)
-    await page.getByRole('button', { name: 'Serviceheft hinterlegen' }).click()
+    await page.locator('.plan-source').getByRole('button', { name: 'Serviceheft fotografieren' }).click()
     const dialog = page.getByTestId('service-book-dialog')
     await dialog.locator('input[type="file"]').setInputFiles(pages)
     await expect(dialog.getByRole('status')).toContainText('Bitte prüfen', { timeout: 170_000 })

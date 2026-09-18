@@ -10,7 +10,9 @@ async function createTestVehicle(page: any) {
   await page.getByLabel('Kilometerstand').fill('45000')
   await page.getByLabel('Kontrollschild').fill('M-AB 1234')
   await page.getByRole('button', { name: 'Speichern' }).click()
-  await expect(page.locator('.vehicle-card', { hasText: 'BMW 320d' })).toBeVisible()
+  // Nach dem Speichern führt die App direkt auf die Fahrzeugseite
+  await page.waitForURL(/\/vehicles\/.+/)
+  await expect(page.getByRole('heading', { name: 'BMW 320d' })).toBeVisible()
 }
 
 test.describe('Image Upload', () => {
@@ -22,8 +24,6 @@ test.describe('Image Upload', () => {
 
   test('IU-001: invoice form shows image preview after upload', async ({ page }) => {
     await createTestVehicle(page)
-    await page.locator('.vehicle-card').filter({ hasText: 'BMW 320d' }).click()
-    await page.waitForURL(/\/vehicles\/.+/)
     await page.getByRole('tab', { name: 'Rechnungen' }).click()
     await page.getByRole('button', { name: /rechnung.*hinzufügen/i }).click()
 
@@ -40,8 +40,6 @@ test.describe('Image Upload', () => {
 
   test('IU-002: invoice form submits with image', async ({ page }) => {
     await createTestVehicle(page)
-    await page.locator('.vehicle-card').filter({ hasText: 'BMW 320d' }).click()
-    await page.waitForURL(/\/vehicles\/.+/)
     await page.getByRole('tab', { name: 'Rechnungen' }).click()
     await page.getByRole('button', { name: /rechnung.*hinzufügen/i }).click()
 

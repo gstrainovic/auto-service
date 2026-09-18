@@ -34,13 +34,9 @@ async function createVehicleAndOpen(
     await page.getByLabel('Kontrollschild').fill(data.plate)
 
   await page.getByRole('button', { name: 'Speichern' }).click()
-  await expect(page.locator('.vehicle-card', { hasText: `${data.make} ${data.model}` })).toBeVisible()
-
-  // Click the vehicle card
-  await page
-    .locator('.vehicle-card', { hasText: `${data.make} ${data.model}` })
-    .click()
+  // Nach dem Speichern führt die App direkt auf die Fahrzeugseite
   await expect(page).toHaveURL(/\/vehicles\/.+/, { timeout: 5_000 })
+  await expect(page.getByRole('heading', { name: `${data.make} ${data.model}` })).toBeVisible()
 }
 
 // Helper: get vehicle ID from the current URL
@@ -151,7 +147,7 @@ test.describe('Vehicle CRUD', () => {
     // Verify updated values
     await expect(page.getByText('Mercedes C220')).toBeVisible()
     await expect(page.getByText('2022')).toBeVisible()
-    await expect(page.getByText('30\'000 km')).toBeVisible()
+    await expect(page.locator('.vehicle-mileage')).toContainText('30\'000 km')
 
     // DELETE (cleanup)
     await deleteVehicleViaUI(page)
@@ -421,7 +417,8 @@ test.describe('Maintenance CRUD', () => {
     const vehicleId = getVehicleIdFromUrl(page)
     await seedMaintenance(page, vehicleId)
 
-    // Should be on maintenance tab by default
+    // Erfasste Wartungen stehen im Tab «Verlauf», Standard ist der Wartungsplan
+    await page.getByRole('tab', { name: 'Verlauf' }).click()
     await expect(page.getByText('Motoröl 5W-30 gewechselt')).toBeVisible({
       timeout: 10_000,
     })
@@ -476,6 +473,7 @@ test.describe('Maintenance CRUD', () => {
     const vehicleId = getVehicleIdFromUrl(page)
     await seedMaintenance(page, vehicleId)
 
+    await page.getByRole('tab', { name: 'Verlauf' }).click()
     await expect(page.getByText('Motoröl 5W-30 gewechselt')).toBeVisible({
       timeout: 10_000,
     })
@@ -516,6 +514,7 @@ test.describe('Maintenance CRUD', () => {
     const vehicleId = getVehicleIdFromUrl(page)
     await seedMaintenance(page, vehicleId)
 
+    await page.getByRole('tab', { name: 'Verlauf' }).click()
     await expect(page.getByText('Motoröl 5W-30 gewechselt')).toBeVisible({
       timeout: 10_000,
     })

@@ -15,7 +15,6 @@ import Select from 'primevue/select'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import InvoiceFormDialog from '../components/InvoiceFormDialog.vue'
-import LastServicesDialog from '../components/LastServicesDialog.vue'
 import MaintenanceFormDialog from '../components/MaintenanceFormDialog.vue'
 import MileageDialog from '../components/MileageDialog.vue'
 import ServiceBookDialog from '../components/ServiceBookDialog.vue'
@@ -26,7 +25,7 @@ import { resolveRates } from '../services/fx'
 import { formToInvoiceInput } from '../services/invoice-form'
 import { saveInvoice } from '../services/invoice-save'
 import { saveMaintenances } from '../services/maintenance-save'
-import { checkDueMaintenances, dueDescription, fleetDueList, getMaintenanceSchedule, vehicleDueStatus } from '../services/maintenance-schedule'
+import { doneFormInitial, DUE_STATUS_VIEW, dueDescription, dueForVehicle, fleetDueList, vehicleDueStatus } from '../services/maintenance-schedule'
 import { buildFleetReport, fleetReportFilename } from '../services/pdf-report'
 import { fleetCostsByVehicleYear, invoicesToCsvRows } from '../services/report'
 import { activeVehicles } from '../services/vehicle-status'
@@ -70,17 +69,7 @@ const ownVehicles = computed(() => activeVehicles(vehiclesStore.vehicles))
 // Fälligkeiten live aus dem Store: nach «Erledigt eintragen», einer Rechnung oder dem Chat sofort aktuell
 const dueMap = computed<Record<string, DueResult[]>>(() => Object.fromEntries(ownVehicles.value.map(vehicle => [
   vehicle.id,
-  checkDueMaintenances({
-    currentMileage: vehicle.mileage,
-    // Nur erledigte Arbeiten zählen als «zuletzt gemacht», geplante sind vereinbarte Termine
-    lastMaintenances: maintenancesStore.maintenances
-      .filter(m => m.vehicleId === vehicle.id && m.status === 'done')
-      .map(m => ({ type: m.type, mileageAtService: m.mileageAtService, doneAt: m.doneAt, description: m.description })),
-    plannedMaintenances: maintenancesStore.maintenances
-      .filter(m => m.vehicleId === vehicle.id && m.status !== 'done')
-      .map(m => ({ type: m.type, doneAt: m.doneAt })),
-    schedule: getMaintenanceSchedule(vehicle.customSchedule as any),
-  }),
+  dueForVehicle(vehicle, maintenancesStore.getByVehicleId(vehicle.id)),
 ])))
 
 // Flottenblick: bald fällig und überfällig über alle Fahrzeuge
@@ -112,12 +101,7 @@ function openDone(vehicleId: string, item: DueResult): void {
   doneFor.value = {
     vehicleId,
     title: `${item.label} erledigt${vehicle ? ` · ${vehicle.make} ${vehicle.model}` : ''}`,
-    initial: {
-      category: item.type as MaintenanceFormData['category'],
-      date: new Date().toISOString().slice(0, 10),
-      mileage: vehicle?.mileage || undefined,
-      status: 'done',
-    },
+    initial: doneFormInitial(item, vehicle?.mileage ?? 0, new Date().toISOString().slice(0, 10)),
   }
 }
 async function saveDone(data: MaintenanceFormData): Promise<void> {
@@ -134,8 +118,6 @@ async function saveDone(data: MaintenanceFormData): Promise<void> {
   doneFor.value = null
 }
 
-// Fahrzeug ohne jeden Eintrag: letzte Wartungen nachtragen
-const lastServicesFor = ref<{ id: string, name: string } | null>(null)
 const serviceBookFor = ref<Vehicle | null>(null)
 // Kilometerstand schnell nachführen, ohne Umweg über «Bearbeiten»
 const mileageFor = ref<Vehicle | null>(null)
@@ -253,45 +235,10 @@ async function exportFleetPdf(): Promise<void> {
   saveFile(doc.output('blob'), fleetReportFilename())
 }
 
-function getStatusIcon(status: DueStatus): string {
-  if (status === 'overdue')
-    return 'pi pi-exclamation-triangle'
-  if (status === 'due')
-    return 'pi pi-clock'
-  if (status === 'unknown')
-    return 'pi pi-question-circle'
-  return 'pi pi-check-circle'
-}
-
-function getStatusColor(status: DueStatus): string {
-  if (status === 'overdue')
-    return 'var(--p-red-500)'
-  if (status === 'due')
-    return 'var(--p-yellow-500)'
-  if (status === 'unknown')
-    return 'var(--p-text-muted-color)'
-  return 'var(--p-green-500)'
-}
-
-function getStatusSeverity(status: DueStatus): 'danger' | 'warn' | 'success' | 'secondary' {
-  if (status === 'overdue')
-    return 'danger'
-  if (status === 'due')
-    return 'warn'
-  if (status === 'unknown')
-    return 'secondary'
-  return 'success'
-}
-
-function getStatusLabel(status: DueStatus): string {
-  if (status === 'overdue')
-    return 'Überfällig'
-  if (status === 'due')
-    return 'Bald fällig'
-  if (status === 'unknown')
-    return 'Kein Eintrag'
-  return 'OK'
-}
+const getStatusIcon = (status: DueStatus): string => DUE_STATUS_VIEW[status].icon
+const getStatusColor = (status: DueStatus): string => DUE_STATUS_VIEW[status].color
+const getStatusSeverity = (status: DueStatus) => DUE_STATUS_VIEW[status].severity
+const getStatusLabel = (status: DueStatus): string => DUE_STATUS_VIEW[status].label
 
 /** Zähler im Badge: fällige und überfällige Arbeiten gegenüber allen Intervallen (ohne erledigte Arbeiten ausserhalb des Plans) */
 function getDueCounts(vehicleId: string): { due: number, total: number } {
@@ -423,7 +370,7 @@ const totalInvoiceCount = computed(() =>
             <Button
               v-for="v in vehiclesWithoutSchedule"
               :key="v.id"
-              :label="ownVehicles.length === 1 ? 'Serviceheft hinterlegen' : `${v.make} ${v.model}`"
+              :label="ownVehicles.length === 1 ? 'Serviceheft fotografieren' : `${v.make} ${v.model}`"
               :aria-label="`Serviceheft ${v.make} ${v.model}`"
               icon="pi pi-book"
               size="small"
@@ -523,11 +470,13 @@ const totalInvoiceCount = computed(() =>
 
       <div v-if="vehicleDueStatus(dueMap[vehicle.id] ?? []) === 'unknown'" class="no-history">
         <span>Ohne erfasste Wartungen kennt Wartungsheft keine Termine und schickt keine Erinnerung.</span>
+        <!-- Ein Ort für «wann zuletzt»: der Wartungsplan auf der Fahrzeugseite -->
         <Button
-          label="Letzte Wartungen nachtragen"
+          label="Letzte Wartungen eintragen"
           icon="pi pi-history"
           size="small"
-          @click="lastServicesFor = { id: vehicle.id, name: `${vehicle.make} ${vehicle.model}` }"
+          as="router-link"
+          :to="`/vehicles/${vehicle.id}`"
         />
       </div>
 
@@ -626,13 +575,6 @@ const totalInvoiceCount = computed(() =>
       :visible="!!serviceBookFor"
       :vehicle="serviceBookFor"
       @update:visible="v => { if (!v) serviceBookFor = null }"
-    />
-
-    <LastServicesDialog
-      :visible="!!lastServicesFor"
-      :vehicle-id="lastServicesFor?.id ?? null"
-      :vehicle-name="lastServicesFor?.name"
-      @update:visible="v => { if (!v) lastServicesFor = null }"
     />
   </main>
 </template>

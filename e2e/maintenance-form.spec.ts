@@ -10,11 +10,9 @@ async function createTestVehicle(page: any) {
   await page.getByLabel('Kontrollschild').fill('M-AB 1234')
   await page.getByRole('button', { name: 'Speichern' }).click()
 
-  await expect(page.locator('.vehicle-card', { hasText: 'BMW 320d' })).toBeVisible()
-
-  await page.locator('.vehicle-card').filter({ hasText: 'BMW 320d' }).click()
-
+  // Nach dem Speichern führt die App direkt auf die Fahrzeugseite
   await page.waitForURL(/\/vehicles\/.+/)
+  await expect(page.getByRole('heading', { name: 'BMW 320d' })).toBeVisible()
   const url = page.url()
   const match = url.match(/\/vehicles\/(.+)/)
   return match ? match[1] : ''
@@ -28,8 +26,7 @@ test.describe('Maintenance Form', () => {
   test('MF-001: validation errors show', async ({ page }) => {
     const vId = await createTestVehicle(page)
     await page.goto(`/vehicles/${vId}`)
-
-    // Wartung tab is already selected by default
+    await page.getByRole('tab', { name: 'Verlauf' }).click()
 
     // Open maintenance form dialog
     await page.getByRole('button', { name: /wartung.*hinzufügen/i }).click()
@@ -45,8 +42,7 @@ test.describe('Maintenance Form', () => {
   test('MF-002: submit creates maintenance', async ({ page }) => {
     const vId = await createTestVehicle(page)
     await page.goto(`/vehicles/${vId}`)
-
-    // Wartung tab is already selected by default
+    await page.getByRole('tab', { name: 'Verlauf' }).click()
 
     // Open maintenance form dialog
     await page.getByRole('button', { name: /wartung.*hinzufügen/i }).click()

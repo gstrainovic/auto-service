@@ -32,26 +32,30 @@ test.describe('Fälligkeit als Ablauf', () => {
   })
 
   test.describe('nach dem Anlegen', () => {
-    test.use({ keepLastServicesDialog: true })
+    async function enter(page: Page, label: string, date: string, km?: string): Promise<void> {
+      await page.locator('.plan-item', { hasText: label }).getByRole('button', { name: `${label} eintragen` }).click()
+      const dialog = page.getByRole('dialog', { name: `${label} eintragen` })
+      await dialog.locator('#maintenance-date').fill(date)
+      if (km)
+        await dialog.locator('#maintenance-mileage input').pressSequentially(km)
+      await dialog.getByRole('button', { name: 'Speichern' }).click()
+      await expect(dialog).not.toBeVisible()
+    }
 
-    test('DJ-001: neues Fahrzeug fragt nach den letzten Wartungen, danach ist die Fälligkeit bekannt', async ({ page }) => {
+    test('DJ-001: neues Fahrzeug führt in den Wartungsplan, danach ist die Fälligkeit bekannt', async ({ page }) => {
       await page.goto('/vehicles?action=add')
       const form = page.getByRole('dialog', { name: 'Neues Fahrzeug' })
       await form.getByLabel('Marke').fill('Skoda')
       await form.getByLabel('Modell').fill('Octavia')
       await form.getByRole('button', { name: 'Speichern' }).click()
 
-      const dialog = page.getByTestId('last-services-dialog')
-      await expect(dialog).toBeVisible()
-      await expect(dialog).toContainText('Skoda Octavia')
-      await expect(dialog.getByRole('button', { name: 'Speichern' })).toBeDisabled()
+      await page.waitForURL(/\/vehicles\/.+/)
+      await expect(page.getByRole('tab', { name: 'Wartungsplan' })).toHaveAttribute('aria-selected', 'true')
       // Ölwechsel vor gut 13 Monaten bei 80'000 km: überfällig
-      await dialog.locator('#last-oelwechsel-date').fill(isoDaysAgo(400))
-      await dialog.locator('#last-oelwechsel-km').pressSequentially('80000')
-      await dialog.locator('#last-tuev-date').fill(isoDaysAgo(100))
-      await dialog.getByRole('button', { name: '2 Einträge speichern' }).click()
-      await expect(dialog).not.toBeVisible()
+      await enter(page, 'Ölwechsel', isoDaysAgo(400), '80000')
+      await enter(page, 'MFK / Prüfung', isoDaysAgo(100))
 
+      await page.goto('/vehicles')
       const card = page.locator('.vehicle-card', { hasText: 'Skoda Octavia' })
       await expect(card).toContainText('Ölwechsel überfällig')
 
@@ -65,22 +69,25 @@ test.describe('Fälligkeit als Ablauf', () => {
       await expect(page.locator('.vehicle-section', { hasText: 'Skoda Octavia' }).locator('.vehicle-subtitle')).toContainText('80\'000 km')
     })
 
-    test('DJ-002: «Später» schliesst ohne Einträge, das Dashboard bietet das Nachtragen wieder an', async ({ page }) => {
+    test('DJ-002: ohne Einträge führt das Dashboard in den Wartungsplan des Fahrzeugs', async ({ page }) => {
       await page.goto('/vehicles?action=add')
       const form = page.getByRole('dialog', { name: 'Neues Fahrzeug' })
       await form.getByLabel('Marke').fill('Dacia')
       await form.getByLabel('Modell').fill('Duster')
       await form.getByRole('button', { name: 'Speichern' }).click()
-      await page.getByTestId('last-services-dialog').getByRole('button', { name: 'Später' }).click()
+      await page.waitForURL(/\/vehicles\/.+/)
 
+      await page.goto('/vehicles')
       await expect(page.locator('.vehicle-card', { hasText: 'Dacia Duster' })).toContainText('Noch keine Wartung erfasst')
       await page.goto('/dashboard')
       const section = page.locator('.vehicle-section', { hasText: 'Dacia Duster' })
       await expect(section.locator('.vehicle-progress')).toHaveText('Noch keine Wartung erfasst')
       // neun «Kein Eintrag»-Zeilen bleiben weg, stattdessen ein klarer nächster Schritt
       await expect(section.locator('.maintenance-item')).toHaveCount(0)
-      await section.getByRole('button', { name: 'Letzte Wartungen nachtragen' }).click()
-      await expect(page.getByTestId('last-services-dialog')).toContainText('Dacia Duster')
+      await section.getByRole('link', { name: 'Letzte Wartungen eintragen' }).click()
+      await expect(page.getByRole('heading', { name: 'Dacia Duster' })).toBeVisible()
+      await expect(page.getByRole('tab', { name: 'Wartungsplan' })).toHaveAttribute('aria-selected', 'true')
+      await expect(page.locator('.plan-item', { hasText: 'Ölwechsel' })).toContainText('noch nie erfasst')
     })
   })
 
@@ -147,6 +154,8 @@ test.describe('Fälligkeit als Ablauf', () => {
     await expect(item).toContainText('Termin am')
     // Eintrag steht auf der Fahrzeugseite als «Geplant», nicht als erledigte Wartung
     await page.goto(`/vehicles/${vehicleId}`)
+    await expect(page.locator('.plan-item', { hasText: 'MFK / Prüfung' })).toContainText('Termin am')
+    await page.getByRole('tab', { name: 'Verlauf' }).click()
     await expect(page.locator('.maintenance-item', { hasText: 'MFK / Prüfung' }).first()).toContainText('Geplant')
   })
 

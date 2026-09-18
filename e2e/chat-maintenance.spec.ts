@@ -57,8 +57,8 @@ test.describe('Chat Maintenance Tool', () => {
     await page.getByText('VW Golf').first().click()
 
     // Check maintenance tab — should show the Ölwechsel entry
-    await page.getByRole('tab', { name: /Wartung/ }).click()
-    await expect(page.getByText(/Ölwechsel/i).first()).toBeVisible({ timeout: 10_000 })
+    await page.getByRole('tab', { name: 'Verlauf' }).click()
+    await expect(page.getByRole('tabpanel', { name: 'Verlauf' }).getByText(/Ölwechsel/i).first()).toBeVisible({ timeout: 10_000 })
 
     // Verify NO spurious invoice was created (add_maintenance should not create invoices)
     await page.getByRole('tab', { name: /Rechnungen/ }).click()

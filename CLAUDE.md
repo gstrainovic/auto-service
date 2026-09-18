@@ -222,9 +222,19 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Speicherwege: Rechnungen immer über `saveInvoice` (`src/services/invoice-save.ts`: Rechnung, eine Wartung pro Kategorie
   mit `invoiceId`, höherer Kilometerstand, eine Transaktion; Chat, Formular und Stapel) und beim Bearbeiten über
   `updateInvoice` (zieht Datum, Kilometerstand und Positionen in die verknüpften Wartungen nach), Wartungen ohne Rechnung über
-  `saveMaintenances` (`src/services/maintenance-save.ts`: Formular, «Erledigt eintragen», `LastServicesDialog` nach dem
-  Anlegen, Serviceheft). Nie direkt `tx.invoices`/`tx.maintenances` aus Seiten schreiben.
-- Serviceheft ohne Chat: `ServiceBookDialog.vue` (Fahrzeugseite «Serviceheft hinterlegen», Dashboard-Hinweis) mit
+  `saveMaintenances` (`src/services/maintenance-save.ts`: Formular, «Erledigt eintragen», «Eintragen» im Wartungsplan,
+  Serviceheft). Nie direkt `tx.invoices`/`tx.maintenances` aus Seiten schreiben.
+- Fahrzeugseite: Tabs Wartungsplan (Standard), Verlauf (erfasste Wartungen), Rechnungen, Kosten; auf 390px passen die vier
+  Tabs nur mit den kurzen Namen und der Handy-Schrift aus `VehicleDetailPage.vue`. Ein Weg pro Aufgabe:
+  «wann zuletzt» fragt jede Zeile des Wartungsplans selbst («Eintragen», Vorbelegung `doneFormInitial`: nie erfasst =
+  Datum leer, sonst heute; Bezeichnung des Plans als Beschreibung), neue Arbeiten über «Wartung hinzufügen» im Verlauf.
+  Fälligkeiten pro Fahrzeug immer über `dueForVehicle`, Status-Darstellung über `DUE_STATUS_VIEW` (beide
+  `maintenance-schedule.ts`, auch im Dashboard).
+- Einrichtung statt Wizard: «Fahrzeug speichern» führt auf die Fahrzeugseite, dort `SetupChecklist.vue` mit den Schritten
+  aus `src/services/vehicle-setup.ts` (Fahrzeugausweis, Serviceheft, letzte Wartungen, Rechnungen). Haken folgen aus den
+  Daten, nicht aus Klicks; der erste offene Schritt ist der Hauptknopf, jeder ist überspringbar, «Ausblenden» setzt
+  `setupHidden` am Fahrzeug. Der Ausweis-Scan im Fahrzeugformular geht auch beim Bearbeiten (füllt nur leere Felder).
+- Serviceheft ohne Chat: `ServiceBookDialog.vue` (Wartungsplan «Serviceheft fotografieren», Checkliste, Dashboard-Hinweis) mit
   `useServiceBookScan` (Fotos oder PDF) und reiner Logik in `src/services/service-book.ts` (Intervall-Zeilen, Hersteller-
   Intervalle einmischen, Stempel als Vorschläge mit Duplikatprüfung 14 Tage). Speichert `customSchedule` komplett.
 - Fehler an Nutzer nur über `userMessage` in `src/lib/errors.ts` (402/429/Netz/Auth in deutsche Sätze; die Limit-Meldung
@@ -294,7 +304,7 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Tests folgen **CRUD-Paradigma**: Create → Read → Update → Delete
 - Tests laufen automatisch **zweimal**: online + offline (via Network-Blocking)
 - **Playwright startet Server automatisch** (Vite + InstantDB) — kein manuelles `podman-compose up` nötig
-- `npm run test:e2e` führt beide Projekt-Varianten aus (240 Tests: 120 online + 120 offline; 8 weitere nur via `test:e2e:soft`)
+- `npm run test:e2e` führt beide Projekt-Varianten aus (254 Tests: 127 online + 127 offline; 8 weitere nur via `test:e2e:soft`)
 - Playwright startet drei Server: Vite (`VITE_INSTANTDB_MODE=local`, `VITE_AI_PROXY_URL=http://localhost:8787`),
   InstantDB (podman-compose) und den AI-Proxy (`npm run dev:proxy` im Auth-Bypass, Key aus `.env` explizit per `env`,
   `AI_PROXY_BURST_LIMIT=10000`, weil alle Tests einen Nutzer teilen und die Fair-Use-Bremse sonst 429 liefert)
@@ -335,14 +345,15 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | IU | Image Upload | IU-001: preview, IU-002: submit with image |
 | IC | Icons | IC-001: all pi-* classes exist in PrimeIcons |
 | PP | Public Pages | PP-001 bis PP-004: Impressum, Datenschutz, Navigation, Redirect |
-| HY | Hygiene | HY-001: keine ungenutzten Dependencies, HY-002: keine ungenutzten Komponenten |
+| HY | Hygiene | HY-001: keine ungenutzten Dependencies, HY-002: keine ungenutzten Komponenten, HY-003: kein Tooltip wiederholt die Knopf-Beschriftung |
 | AP | AI Proxy | AP-001: Chat via Proxy zählt Tokens, AP-002: Monatslimit-Meldung, AP-003: Settings zeigen Abo & Nutzung |
-| DJ | Fälligkeit als Ablauf | DJ-001 bis DJ-005: Nachtragen nach dem Anlegen, Fälligkeitsliste, «Erledigt eintragen», Mail-Link |
+| DJ | Fälligkeit als Ablauf | DJ-001 bis DJ-007: Wartungsplan nach dem Anlegen, Fälligkeitsliste, «Erledigt eintragen», Mail-Link, Termin, km |
 | SB | Serviceheft ohne Chat | SB-001 bis SB-003: Scan, Duplikate, Intervalle von Hand |
 | IE | Rechnung bearbeiten | IE-001, IE-002: Datum und km nachziehen, Positionen abgleichen |
 | SV | Verkauft oder abgegeben | SV-001, SV-002: raus aus Fälligkeiten, Kosten bleiben, rückgängig |
+| EF | Einrichtung Fahrzeug | EF-001 bis EF-006: Checkliste nach dem Anlegen, Wartungsplan fragt «zuletzt», Serviceheft-Knopf, Verlauf, Ausblenden |
 
-**Gesamt: 120 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
+**Gesamt: 127 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`
@@ -350,9 +361,11 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
   `authenticated`. Direkt nach `page.goto` ist die Verbindung noch `opened`, `transact` löst dann mit `enqueued` auf, und das
   nächste `page.goto` verliert die Mutation. Lokal mit Podman kaum sichtbar, über den SSH-Tunnel zur Dev-Instanz jeder zehnte Seed.
 - PrimeVue icon-only buttons need CSS class selectors (.chat-fab), not getByRole
-- Nach «Fahrzeug speichern» öffnet die App `LastServicesDialog`. Die Fixture schliesst ihn per `addLocatorHandler` mit
-  «Später»; Specs, die ihn prüfen, setzen `test.use({ keepLastServicesDialog: true })`. Mehrere offene Dialoge über
-  `getByTestId` unterscheiden (`last-services-dialog`, `service-book-dialog`)
+- Nach «Fahrzeug speichern» steht die App auf der Fahrzeugseite (`waitForURL(/\/vehicles\/.+/)`), nicht mehr in der Liste;
+  wer die Karte prüft, geht danach mit `page.goto('/vehicles')` zurück. Standard-Tab ist Wartungsplan, der Verlauf
+  (`.maintenance-item`, «Wartung hinzufügen») braucht vorher einen Klick auf den Tab «Verlauf». «Serviceheft
+  fotografieren» steht in Checkliste und Wartungsplan, darum über `.plan-source` eingrenzen.
+- `offline` hängt von `online` ab: `--project=offline` allein startet alle Online-Tests mit, für einzelne Specs `--no-deps`
 - .env loaded by playwright.config.ts, keys injected via page.evaluate → localStorage
 - Alle AI-Tests nutzen Mistral als Default (schnell, zuverlässig, ~3–6s für Vision+Tools)
 - Use .first() for assertions that may match multiple elements (AI can create duplicates)

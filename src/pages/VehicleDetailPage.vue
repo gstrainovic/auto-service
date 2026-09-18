@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import type { RateMap } from '../services/fx'
 import type { BatchEntry } from '../services/invoice-scan'
+import type { DueResult } from '../services/maintenance-schedule'
 import type { CurrencyOptions } from '../services/report'
+import type { SetupStepKey } from '../services/vehicle-setup'
 import type { Invoice, InvoiceItem } from '../stores/invoices'
 import type { Maintenance } from '../stores/maintenances'
 import type { InvoiceFormData, MaintenanceFormData } from '../types/forms'
@@ -21,12 +23,12 @@ import Tabs from 'primevue/tabs'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import InvoiceFormDialog from '../components/InvoiceFormDialog.vue'
-import LastServicesDialog from '../components/LastServicesDialog.vue'
 import MaintenanceFormDialog from '../components/MaintenanceFormDialog.vue'
 import MediaViewer from '../components/MediaViewer.vue'
 import MileageDialog from '../components/MileageDialog.vue'
 import SellVehicleDialog from '../components/SellVehicleDialog.vue'
 import ServiceBookDialog from '../components/ServiceBookDialog.vue'
+import SetupChecklist from '../components/SetupChecklist.vue'
 import VehicleForm from '../components/VehicleForm.vue'
 import { db } from '../lib/instantdb'
 import { DEFAULT_CURRENCY, formatCurrency, formatDate, formatNumber, LOCALE, normalizeCurrency } from '../lib/locale'
@@ -35,8 +37,10 @@ import { resolveRates } from '../services/fx'
 import { formToInvoiceInput } from '../services/invoice-form'
 import { saveInvoice, updateInvoice } from '../services/invoice-save'
 import { saveMaintenances } from '../services/maintenance-save'
+import { doneFormInitial, DUE_STATUS_VIEW, dueDescription, dueForVehicle, getMaintenanceSchedule } from '../services/maintenance-schedule'
 import { buildDossier, buildServiceRecord, dossierFilename, serviceRecordFilename } from '../services/pdf-report'
 import { categoryLabel, costsByYear, invoicesToCsv } from '../services/report'
+import { setupSteps } from '../services/vehicle-setup'
 import { soldLabel } from '../services/vehicle-status'
 import { useInvoicesStore } from '../stores/invoices'
 import { useMaintenancesStore } from '../stores/maintenances'
@@ -48,11 +52,12 @@ const router = useRouter()
 const vehiclesStore = useVehiclesStore()
 const invoicesStore = useInvoicesStore()
 const maintenancesStore = useMaintenancesStore()
-const tab = ref('maintenance')
+const tab = ref('plan')
 const showServiceBook = ref(false)
 const editMileage = ref(false)
 const sellVehicle = ref(false)
-const showLastServices = ref(false)
+const editVehicle = ref(false)
+const showAddInvoiceDialog = ref(false)
 
 const vehicle = computed(() =>
   vehiclesStore.vehicles.find(v => v.id === route.params.id),
@@ -70,6 +75,56 @@ const vehicleMaintenances = computed(() => maintenancesStore.getByVehicleId(rout
 const sortedMaintenances = computed(() => [...vehicleMaintenances.value].sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || '')))
 const sortedInvoices = computed(() => [...vehicleInvoices.value].sort((a, b) => (b.date || '').localeCompare(a.date || '')))
 
+// Wartungsplan: eine Zeile pro Arbeit mit Intervall, zuletzt, nächstem Termin und Status (live aus dem Store)
+const planRows = computed(() => {
+  if (!vehicle.value)
+    return []
+  const due = dueForVehicle(vehicle.value, vehicleMaintenances.value)
+  return getMaintenanceSchedule(vehicle.value.customSchedule as any).map(s => ({
+    schedule: s,
+    item: due.find(d => d.key === `${s.type}|${s.label}`)!,
+  }))
+})
+
+function intervalText(s: { intervalKm: number, intervalMonths: number }): string {
+  return [s.intervalKm > 0 && `${formatNumber(s.intervalKm)} km`, s.intervalMonths > 0 && `${s.intervalMonths} Monate`].filter(Boolean).join(' / ')
+}
+
+// «Eintragen» an einer Plan-Zeile: fällige Arbeit mit heute vorbelegt, nie erfasste fragt «wann zuletzt»
+const entryFor = ref<{ title: string, initial: Partial<MaintenanceFormData> } | null>(null)
+function openEntry(item: DueResult): void {
+  entryFor.value = {
+    title: `${item.label} eintragen`,
+    initial: doneFormInitial(item, vehicle.value?.mileage ?? 0, new Date().toISOString().slice(0, 10)),
+  }
+}
+
+// Einrichtung: Haken aus den Daten, ausblendbar pro Fahrzeug; verkaufte Fahrzeuge brauchen keine Einrichtung
+const setup = computed(() => vehicle.value
+  ? setupSteps({
+      vehicle: vehicle.value,
+      doneMaintenances: vehicleMaintenances.value.filter(m => m.status === 'done').length,
+      invoices: vehicleInvoices.value.length,
+    })
+  : [])
+const showSetup = computed(() => !!vehicle.value && !vehicle.value.soldAt && !vehicle.value.setupHidden && setup.value.some(s => !s.done))
+
+function onSetupAction(key: SetupStepKey): void {
+  if (key === 'ausweis')
+    editVehicle.value = true
+  else if (key === 'serviceheft')
+    showServiceBook.value = true
+  else if (key === 'wartungen')
+    tab.value = 'plan'
+  else
+    showAddInvoiceDialog.value = true
+}
+
+async function hideSetup(): Promise<void> {
+  if (vehicle.value)
+    await vehiclesStore.update(vehicle.value.id, { setupHidden: true })
+}
+
 const selectedInvoice = ref<Invoice | null>(null)
 const confirmDeleteInvoice = ref(false)
 const confirmDeleteVehicle = ref(false)
@@ -79,11 +134,9 @@ const mediaViewerOpen = ref(false)
 const mediaViewerOcr = ref('')
 
 // New form dialogs
-const showAddInvoiceDialog = ref(false)
 const showAddMaintenanceDialog = ref(false)
 
 // Edit state
-const editVehicle = ref(false)
 const editInvoice = ref<Invoice | null>(null)
 const editInvoiceForm = ref({
   workshopName: '',
@@ -346,11 +399,10 @@ function exportPdf(): void {
   saveFile(doc.output('blob'), dossierFilename(vehicle.value))
 }
 
-async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
+// Gleicher Speicherweg wie das Dashboard: erledigte Arbeit hebt auch den Kilometerstand
+async function storeMaintenance(data: MaintenanceFormData): Promise<void> {
   if (!vehicle.value)
     return
-
-  // Gleicher Speicherweg wie Dashboard und Nachtragen: erledigte Arbeit hebt auch den Kilometerstand
   await saveMaintenances([{
     vehicleId: vehicle.value.id,
     type: data.category,
@@ -359,8 +411,16 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
     mileageAtService: data.mileage || undefined,
     status: data.status === 'planned' ? 'due' : 'done',
   }])
+}
 
+async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
+  await storeMaintenance(data)
   showAddMaintenanceDialog.value = false
+}
+
+async function saveEntry(data: MaintenanceFormData): Promise<void> {
+  await storeMaintenance(data)
+  entryFor.value = null
 }
 </script>
 
@@ -408,10 +468,15 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
 
       <MileageDialog :vehicle="editMileage ? vehicle : null" @close="editMileage = false" />
 
+      <SetupChecklist v-if="showSetup" :steps="setup" @action="onSetupAction" @hide="hideSetup" />
+
       <Tabs v-model:value="tab">
         <TabList>
+          <Tab value="plan">
+            Wartungsplan
+          </Tab>
           <Tab value="maintenance">
-            Wartungen
+            Verlauf
           </Tab>
           <Tab value="invoices">
             Rechnungen
@@ -422,55 +487,71 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
         </TabList>
 
         <TabPanels>
+          <!-- Wartungsplan: Intervalle, zuletzt, nächster Termin; «wann zuletzt» fragt jede Zeile selbst -->
+          <TabPanel value="plan">
+            <div class="plan-source">
+              <template v-if="vehicle.customSchedule?.length">
+                <span class="plan-source-text"><i class="pi pi-book" /> Intervalle aus dem Serviceheft</span>
+                <span class="plan-source-actions">
+                  <Button icon="pi pi-pencil" label="Intervalle bearbeiten" text size="small" @click="showServiceBook = true" />
+                  <Button icon="pi pi-trash" label="Zurücksetzen" text size="small" severity="danger" @click="confirmResetSchedule = true" />
+                </span>
+              </template>
+              <template v-else>
+                <span class="plan-source-text">
+                  Termine nach allgemeinen Intervallen. Mit dem Serviceheft stimmen sie für genau dieses Fahrzeug, die Stempel
+                  werden gleich als Wartungen erfasst.
+                </span>
+                <Button label="Serviceheft fotografieren" icon="pi pi-camera" @click="showServiceBook = true" />
+              </template>
+            </div>
+
+            <div class="plan-list">
+              <div v-for="{ schedule: s, item } in planRows" :key="item.key" class="plan-item">
+                <i :class="DUE_STATUS_VIEW[item.status].icon" :style="{ color: DUE_STATUS_VIEW[item.status].color }" class="plan-icon" />
+                <div class="plan-content">
+                  <div class="plan-label">
+                    {{ item.label }}
+                    <span class="plan-interval">{{ intervalText(s) }}</span>
+                  </div>
+                  <div class="plan-caption">
+                    <template v-if="item.lastDoneAt">
+                      Zuletzt: {{ formatDate(item.lastDoneAt) }}<template v-if="item.lastMileage">
+                        bei {{ formatNumber(item.lastMileage) }} km
+                      </template><template v-if="!vehicle.soldAt && (item.nextDueDate || item.nextDueMileage || item.plannedAt)">
+                        · {{ dueDescription(item) }}
+                      </template>
+                    </template>
+                    <template v-else>
+                      {{ dueDescription(item) }}
+                    </template>
+                  </div>
+                </div>
+                <div class="plan-actions">
+                  <Badge v-if="!vehicle.soldAt && item.status !== 'unknown'" :value="DUE_STATUS_VIEW[item.status].label" :severity="DUE_STATUS_VIEW[item.status].severity" />
+                  <!-- Nur Fälliges ist gefüllt; neun volle Knöpfe untereinander wirkten wie neun Pflichten -->
+                  <Button
+                    label="Eintragen"
+                    :aria-label="`${item.label} eintragen`"
+                    icon="pi pi-plus"
+                    size="small"
+                    :outlined="item.status === 'unknown'"
+                    :text="item.status === 'done'"
+                    @click="openEntry(item)"
+                  />
+                </div>
+              </div>
+            </div>
+          </TabPanel>
+
           <TabPanel value="maintenance">
             <div class="tab-header">
-              <Message v-if="!vehicle.customSchedule?.length" severity="warn" class="schedule-hint">
-                <template #icon>
-                  <i class="pi pi-info-circle" />
-                </template>
-                <div class="schedule-hint-body">
-                  <span>
-                    Termine nach allgemeinen Intervallen. Mit dem Serviceheft stimmen sie für genau dieses Fahrzeug.
-                  </span>
-                  <Button label="Serviceheft hinterlegen" icon="pi pi-book" size="small" @click="showServiceBook = true" />
-                </div>
-              </Message>
               <Button
                 icon="pi pi-plus"
                 label="Wartung hinzufügen"
                 severity="primary"
                 @click="showAddMaintenanceDialog = true"
               />
-            </div>
-
-            <div v-if="vehicle.customSchedule?.length" class="custom-schedule-section">
-              <div class="section-title">
-                Fahrzeugspezifischer Wartungsplan
-              </div>
-              <div class="schedule-list">
-                <div v-for="(item, i) in vehicle.customSchedule" :key="i" class="schedule-item">
-                  <i class="pi pi-replay schedule-icon" />
-                  <div class="schedule-content">
-                    <div class="schedule-label">
-                      {{ item.label }}
-                    </div>
-                    <div class="schedule-interval">
-                      {{ item.intervalKm > 0 ? `${formatNumber(item.intervalKm)} km` : '' }}{{ item.intervalKm > 0 && item.intervalMonths > 0 ? ' / ' : '' }}{{ item.intervalMonths > 0 ? `${item.intervalMonths} Monate` : '' }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="schedule-actions">
-                <Button icon="pi pi-pencil" label="Intervalle bearbeiten" text size="small" @click="showServiceBook = true" />
-                <Button
-                  icon="pi pi-trash"
-                  label="Zurücksetzen"
-                  text
-                  size="small"
-                  severity="danger"
-                  @click="confirmResetSchedule = true"
-                />
-              </div>
             </div>
 
             <div class="maintenance-list">
@@ -508,11 +589,8 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
             </div>
             <div v-if="vehicleMaintenances.length === 0" class="empty-state">
               <i class="pi pi-wrench empty-icon" />
-              <p>Noch keine Wartungen erfasst. Ohne sie kennt Wartungsheft keine Termine.</p>
-              <!-- Ein Weg: das Serviceheft hat oben schon seinen Knopf -->
-              <div class="empty-actions">
-                <Button label="Letzte Wartungen nachtragen" icon="pi pi-history" @click="showLastServices = true" />
-              </div>
+              <!-- Ein Weg pro Aufgabe: «wann zuletzt» steht im Wartungsplan, neue Arbeiten über den Knopf oben -->
+              <p>Noch keine Wartungen erfasst. Wann was zuletzt gemacht wurde, trägst du im Wartungsplan ein.</p>
             </div>
           </TabPanel>
 
@@ -547,10 +625,8 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
             </div>
             <div v-if="vehicleInvoices.length === 0" class="empty-state">
               <i class="pi pi-file empty-icon" />
-              <p>Keine Rechnungen. Foto oder PDF der Werkstattrechnung hochladen, die KI füllt das Formular aus.</p>
-              <div class="empty-actions">
-                <Button label="Erste Rechnung erfassen" icon="pi pi-camera" @click="showAddInvoiceDialog = true" />
-              </div>
+              <!-- Ein Knopf pro Aufgabe: «Rechnung hinzufügen» steht oben im Tab -->
+              <p>Keine Rechnungen. Über «Rechnung hinzufügen» Foto oder PDF der Werkstattrechnung hochladen, die KI füllt das Formular aus.</p>
             </div>
           </TabPanel>
 
@@ -875,13 +951,16 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
       @submit="handleAddMaintenance"
     />
 
-    <ServiceBookDialog v-model:visible="showServiceBook" :vehicle="vehicle ?? null" />
-
-    <LastServicesDialog
-      v-model:visible="showLastServices"
-      :vehicle-id="vehicle?.id ?? null"
-      :vehicle-name="vehicle ? `${vehicle.make} ${vehicle.model}` : undefined"
+    <!-- Eintragen an einer Zeile des Wartungsplans -->
+    <MaintenanceFormDialog
+      :visible="!!entryFor"
+      :title="entryFor?.title"
+      :initial-data="entryFor?.initial"
+      @update:visible="v => { if (!v) entryFor = null }"
+      @submit="saveEntry"
     />
+
+    <ServiceBookDialog v-model:visible="showServiceBook" :vehicle="vehicle ?? null" />
   </main>
 </template>
 
@@ -930,16 +1009,6 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
   gap: 0.5rem;
 }
 
-.custom-schedule-section {
-  margin-bottom: 1rem;
-}
-
-.schedule-actions {
-  display: flex;
-  gap: 0.25rem;
-  flex-wrap: wrap;
-}
-
 .sold-note {
   margin: 0.5rem 0;
 }
@@ -973,54 +1042,87 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
   font-size: 0.875rem;
 }
 
-.schedule-hint-body {
+.plan-source {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
 }
 
-.section-title {
+.plan-source-text {
   font-size: 0.875rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
+  color: var(--text-color-secondary);
+  flex: 1 1 18rem;
 }
 
-.schedule-list {
-  border: 1px solid var(--surface-border);
-  border-radius: var(--border-radius);
-}
-
-.schedule-item {
+.plan-source-actions {
   display: flex;
-  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.plan-item {
+  display: grid;
+  grid-template-columns: 1.25rem 1fr auto;
   gap: 0.75rem;
+  align-items: center;
   padding: 0.75rem;
   border-bottom: 1px solid var(--surface-border);
 }
 
-.schedule-item:last-child {
+.plan-item:last-child {
   border-bottom: none;
 }
 
-.schedule-icon {
-  color: var(--primary-color);
-}
-
-.schedule-content {
-  flex: 1;
-}
-
-.schedule-label {
+.plan-label {
   font-weight: 500;
 }
 
-.schedule-interval {
+.plan-interval {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--text-color-secondary);
+  margin-left: 0.35rem;
+  white-space: nowrap;
+}
+
+.plan-caption {
   font-size: 0.875rem;
   color: var(--text-color-secondary);
 }
 
+.plan-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Am Handy: Status und Knopf unter den Text, damit die Beschreibung nicht auf ein Wort pro Zeile schrumpft */
+@media (max-width: 520px) {
+  .plan-item {
+    grid-template-columns: 1.25rem 1fr;
+  }
+
+  .plan-actions {
+    grid-column: 2;
+  }
+
+  /* Intervall in eigener Zeile statt mitten im Text umzubrechen */
+  .plan-interval {
+    display: block;
+    margin-left: 0;
+  }
+
+  /* Vier Tabs in einer Zeile, ohne Scroll-Pfeil (gemessen auf 390px: 310px Platz) */
+  :deep(.p-tab) {
+    padding: 0.75rem 0.45rem;
+    font-size: 0.8rem;
+  }
+}
+
+.plan-list,
 .maintenance-list,
 .invoices-list {
   border: 1px solid var(--surface-border);
@@ -1079,13 +1181,6 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
   text-align: center;
   padding: 2rem 1rem;
   color: var(--text-color-secondary);
-}
-
-.empty-actions {
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
 }
 
 .empty-icon {

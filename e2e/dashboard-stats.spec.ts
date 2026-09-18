@@ -9,7 +9,9 @@ async function createTestVehicle(page: any, name = 'BMW 320d') {
   await page.getByLabel('Kilometerstand').fill('45000')
   await page.getByLabel('Kontrollschild').fill('M-AB 1234')
   await page.getByRole('button', { name: 'Speichern' }).click()
-  await expect(page.locator('.vehicle-card', { hasText: name })).toBeVisible()
+  // Nach dem Speichern führt die App direkt auf die Fahrzeugseite
+  await page.waitForURL(/\/vehicles\/.+/)
+  await expect(page.getByRole('heading', { name })).toBeVisible()
 }
 
 test.describe('Dashboard Stats', () => {
@@ -20,8 +22,6 @@ test.describe('Dashboard Stats', () => {
   test('DB-001: dashboard shows total cost per vehicle', async ({ page }) => {
     await createTestVehicle(page)
     // Navigate to vehicle, add invoice via form
-    await page.locator('.vehicle-card').filter({ hasText: 'BMW 320d' }).click()
-    await page.waitForURL(/\/vehicles\/.+/)
     await page.getByRole('tab', { name: 'Rechnungen' }).click()
     await page.getByRole('button', { name: /rechnung.*hinzufügen/i }).click()
 
@@ -40,8 +40,6 @@ test.describe('Dashboard Stats', () => {
   test('DB-002: dashboard shows invoice count', async ({ page }) => {
     await createTestVehicle(page)
     // Add 2 invoices
-    await page.locator('.vehicle-card').filter({ hasText: 'BMW 320d' }).click()
-    await page.waitForURL(/\/vehicles\/.+/)
     await page.getByRole('tab', { name: 'Rechnungen' }).click()
 
     for (const amount of ['100', '200']) {

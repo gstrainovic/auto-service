@@ -26,6 +26,9 @@ export default defineConfig({
     }),
   ],
   server: {
+    // Fester Port (5173 kollidiert mit anderen Vite-Projekten); strictPort statt stillem Ausweichen auf den nächsten Port
+    port: 6060,
+    strictPort: true,
     proxy: {
       // Proxy für InstantDB Self-Hosted Server (HTTP + WebSocket)
       '/instant-api': {

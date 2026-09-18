@@ -18,7 +18,7 @@ test.describe('Google-Login', () => {
     await expect.poll(() => started.length).toBe(1)
     const url = new URL(started[0]!)
     expect(url.searchParams.get('client_name')).toBe('google-web')
-    expect(url.searchParams.get('redirect_uri')).toMatch(/^http:\/\/localhost:5173\//)
+    expect(url.searchParams.get('redirect_uri')).toMatch(/^http:\/\/localhost:6060\//)
     // Magic Code bleibt als zweiter Weg sichtbar
     await page.goto('/login')
     await expect(page.getByRole('button', { name: 'Code senden' })).toBeVisible()

@@ -15,7 +15,7 @@ export default defineConfig({
   webServer: [
     {
       command: 'VITE_INSTANTDB_MODE=local VITE_AI_PROXY_URL=http://localhost:8787 npm run dev:vite',
-      url: 'http://localhost:5173',
+      url: 'http://localhost:6060',
       reuseExistingServer: !process.env.CI,
     },
     {
@@ -49,7 +49,7 @@ export default defineConfig({
       testMatch: /.*\.spec\.ts/,
       grepInvert: /@soft/,
       use: {
-        baseURL: 'http://localhost:5173',
+        baseURL: 'http://localhost:6060',
         screenshot: 'only-on-failure',
         simulateOffline: false,
       },
@@ -59,7 +59,7 @@ export default defineConfig({
       testMatch: /.*\.spec\.ts/,
       grepInvert: /@soft/,
       use: {
-        baseURL: 'http://localhost:5173',
+        baseURL: 'http://localhost:6060',
         screenshot: 'only-on-failure',
         simulateOffline: true,
       },
@@ -71,7 +71,7 @@ export default defineConfig({
       testMatch: /.*\.spec\.ts/,
       grep: /@soft/,
       use: {
-        baseURL: 'http://localhost:5173',
+        baseURL: 'http://localhost:6060',
         screenshot: 'only-on-failure',
         simulateOffline: false,
       },

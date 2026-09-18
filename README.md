@@ -44,7 +44,7 @@ npm install
 npm run dev    # Startet InstantDB und AI-Proxy mit, falls sie nicht laufen (lokaler Modus)
 ```
 
-Die App läuft auf http://localhost:5173.
+Die App läuft auf http://localhost:6060.
 
 ### AI konfigurieren
 

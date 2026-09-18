@@ -56,6 +56,8 @@ Backend-Datenbank mit Echtzeit-Sync via WebSocket. Ersetzt RxDB.
 ```bash
 cd ~/instant/server && podman-compose -f docker-compose-dev.yml up -d
 ```
+Ohne Docker oder Podman (zweiter PC): Dev-InstantDB auf der Infomaniak-Instanz `wartungsheft-dev` per SSH-Tunnel auf
+`localhost:8888` einblenden, Anleitung in `AGENTS.md`.
 
 ### Server stoppen
 ```bash

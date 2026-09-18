@@ -369,9 +369,9 @@ async function handleAddMaintenance(data: MaintenanceFormData): Promise<void> {
     <div class="header-row">
       <Button icon="pi pi-arrow-left" text to="/vehicles" as="router-link" />
       <div class="spacer" />
-      <Button v-tooltip.bottom="'Bearbeiten'" icon="pi pi-pencil" label="Bearbeiten" text severity="primary" @click="editVehicle = true" />
-      <Button v-if="!vehicle?.soldAt" v-tooltip.bottom="'Verkauft eintragen'" icon="pi pi-tag" label="Verkauft eintragen" text severity="secondary" @click="sellVehicle = true" />
-      <Button v-tooltip.bottom="'Löschen'" icon="pi pi-trash" label="Löschen" text severity="secondary" @click="confirmDeleteVehicle = true" />
+      <Button icon="pi pi-pencil" label="Bearbeiten" text severity="primary" @click="editVehicle = true" />
+      <Button v-if="!vehicle?.soldAt" icon="pi pi-tag" label="Verkauft eintragen" text severity="secondary" @click="sellVehicle = true" />
+      <Button icon="pi pi-trash" label="Löschen" text severity="secondary" @click="confirmDeleteVehicle = true" />
     </div>
 
     <template v-if="vehicle">

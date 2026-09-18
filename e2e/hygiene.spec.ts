@@ -50,4 +50,19 @@ test.describe('Hygiene', () => {
 
     expect(unused).toEqual([])
   })
+
+  test('HY-003: no tooltip repeats the visible button label', async () => {
+    const redundant: string[] = []
+    for (const file of collectFiles('src', /\.vue$/)) {
+      // Attributwerte in Anführungszeichen dürfen ">" enthalten (z. B. "() => …")
+      for (const tag of readFileSync(file, 'utf8').match(/<Button\b(?:[^>"]|"[^"]*")*>/g) ?? []) {
+        const tooltip = tag.match(/v-tooltip(?:\.\w+)*="'([^']*)'"/)?.[1]
+        const label = tag.match(/\slabel="([^"]*)"/)?.[1]
+        if (tooltip && tooltip === label)
+          redundant.push(`${file}: ${label}`)
+      }
+    }
+
+    expect(redundant).toEqual([])
+  })
 })

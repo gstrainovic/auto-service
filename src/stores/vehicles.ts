@@ -48,7 +48,10 @@ export const useVehiclesStore = defineStore('vehicles', () => {
           return
         }
         if (result.data) {
-          vehicles.value = (result.data.vehicles || []) as Vehicle[]
+          // Feste Reihenfolge: InstantDB liefert Cache und Server-Antwort nicht in derselben Ordnung, ohne Sortierung
+          // springen die Fahrzeuge im Dashboard nach dem ersten Rendern um (Deep-Link #fahrzeug-<id> zielt daneben)
+          vehicles.value = ((result.data.vehicles || []) as Vehicle[])
+            .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? '') || a.id.localeCompare(b.id))
           isLoading.value = false
         }
       },

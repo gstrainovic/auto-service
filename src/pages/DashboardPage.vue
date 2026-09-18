@@ -46,10 +46,21 @@ onMounted(async () => {
   await vehiclesStore.load()
   await invoicesStore.load()
   maintenancesStore.load()
-  // Link aus der Erinnerungs-Mail: /dashboard#fahrzeug-<id> springt zum Fahrzeug
+  // Link aus der Erinnerungs-Mail: /dashboard#fahrzeug-<id> springt zum Fahrzeug. Erst wenn Fahrzeuge und Wartungen
+  // da sind: die Fälligkeitsliste oben wächst mit den Wartungen und würde einen früheren Sprung wieder verschieben.
   if (route.hash.startsWith('#fahrzeug-')) {
-    await nextTick()
-    setTimeout(() => document.getElementById(route.hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300)
+    const targetId = route.hash.slice(1)
+    const stop = watch(
+      () => !vehiclesStore.isLoading && !maintenancesStore.isLoading && vehiclesStore.vehicles.length > 0,
+      async (ready) => {
+        if (!ready)
+          return
+        await nextTick()
+        document.getElementById(targetId)?.scrollIntoView({ block: 'start' })
+        stop()
+      },
+      { immediate: true },
+    )
   }
 })
 

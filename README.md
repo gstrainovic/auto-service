@@ -206,6 +206,21 @@ Kontaktadresse für die Jahresrechnung (Businessplan Kapitel 4: erste Kunden zah
 Tar des MinIO-Volumens nach `/opt/backups`, 14 Tage Aufbewahrung, Log in `/opt/backups/backup.log`. Dasselbe Skript
 kürzt das Caddy-Zugriffslog der PWA auf 30 Tage (Datenschutzerklärung), weil Caddy nur nach Grösse rotiert.
 
+Ausser Haus liegt eine Kopie beider Dateien im Swift-Container `wartungsheft-backups` (Infomaniak, Region dc3-a),
+30 Tage per `X-Delete-After`. Das Skript lädt über eine TempURL hoch: auf dem Server liegt in `/opt/backup/swift.env`
+(Modus 600) nur der TempURL-Schlüssel dieses Containers, kein OpenStack-Credential; mit ihm lässt sich kein anderer
+Container und keine Instanz ansprechen. Scheitert der Upload, endet das Skript mit Exit-Code ungleich 0 und schreibt
+`Swift-Upload: failed` ins Log. Vom Laptop aus (Cloud `PCP-CTPZLR8-backup`, Credential `claude-backup` mit allen
+Rollen des Benutzers; das Credential `PCP-CTPZLR8-dc3-a` hat nur `member` und bekommt von Swift 403):
+
+```bash
+openstack --os-cloud PCP-CTPZLR8-backup object list wartungsheft-backups --long
+openstack --os-cloud PCP-CTPZLR8-backup object save wartungsheft-backups instant-YYYYMMDD.dump
+```
+
+Neuer TempURL-Schlüssel: `openstack --os-cloud PCP-CTPZLR8-backup container set --property Temp-URL-Key=<neu>
+wartungsheft-backups`, dann `SWIFT_TEMPURL_KEY` in `/opt/backup/swift.env` ersetzen.
+
 Wiederherstellung (Stack gestoppt bis auf Postgres):
 
 ```bash

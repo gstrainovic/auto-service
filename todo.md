@@ -18,13 +18,6 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 - [ ] Pilot-Betrieb: nach der Testzeit Jahresrechnung per QR-Rechnung stellen (kein Zahlungsanbieter); der Betrieb erfasst selbst
 
 ### Betrieb, nebenbei
-- [ ] **Vom Nutzer, einmalig:** In Horizon (https://api.pub2.infomaniak.cloud/horizon, Benutzer `PCU-CTPZLR8`) anmelden
-      und unter «Identity → Application Credentials» ein Credential `claude-backup` **ohne Rollenauswahl** anlegen, damit
-      es alle Rollen des Benutzers erbt; ID und Secret in `~/.config/openstack/clouds.yaml` als Cloud
-      `PCP-CTPZLR8-backup` ablegen. Grund: das heutige Credential hat nur die Rolle `member`, Swift antwortet damit auf
-      alles mit 403, und aus einem Application-Credential-Token heraus lässt sich kein zweites anlegen
-      («Using method 'application_credential' is not allowed»). Danach übernehme ich: Container
-      `wartungsheft-backups` anlegen, `backup.sh` um den Upload erweitern, Aufbewahrung im Container prüfen
 - [ ] Health-Checks laufen heute nur im täglichen Claude-Lauf (`~/projects/find-jobs/AGENTS.md`, «Tagescheck
       Wartungsheft»). Sobald ein Pilot zahlt, zusätzlich ein Dienst, der unabhängig vom Laptop prüft und meldet
 

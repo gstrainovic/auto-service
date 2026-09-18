@@ -94,7 +94,8 @@ podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;
   Floating IPs und ab 1.12.2026 wegen Guthabenende. Kein systemd-Timer: Goran will Claude als Akteur, nicht Skripte im Hintergrund.
   Ein zweites, nur lesendes Application Credential für einen Server-Cron ist nicht möglich: Keystone verweigert das Anlegen
   von Application Credentials mit einem Application Credential.
-- Backup: täglich 03:00 `/opt/backup/backup.sh` (pg_dump + MinIO-Tar nach `/opt/backups`, 14 Tage). Snapshot
+- Backup: täglich 03:00 `/opt/backup/backup.sh` (pg_dump + MinIO-Tar nach `/opt/backups`, 14 Tage; Kopie per TempURL
+  in den Swift-Container `wartungsheft-backups`, 30 Tage, Laptop-Zugriff über Cloud `PCP-CTPZLR8-backup`). Snapshot
   vor riskanten Änderungen: `openstack --os-cloud PCP-CTPZLR8-dc3-a server image create --name <name> wartungsheft`.
 - Admin-SDK `@instantdb/admin` ist auf **0.22.121** gepinnt (gleiche Version wie `@instantdb/core` und der
   lokale Server-Checkout vom Feb 2026). npm-latest ist 1.x → nur zusammen mit Server + Core upgraden.

@@ -25,6 +25,10 @@ Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbe
 
 - [ ] Fahrzeuggrenze wirklich sperren, sobald ein Zahlungsweg existiert: `vehicleLimit` meldet heute nur, solange
       `VITE_BILLING_ENABLED=true` gesetzt ist; ohne Kaufweg wäre eine Sperre bloss ein Ärgernis
+- [ ] Betrieb bestellt das Jahresabo in der App: Formular fragt Firma, Kontaktperson, Rechnungsadresse (Strasse,
+      PLZ, Ort), Rechnungs-E-Mail und optional Referenz/Kostenstelle ab; Fahrzeugzahl vorbelegt mit den aktiven
+      Fahrzeugen. Verlängert sich jährlich, kündbar bis zum Ablauf ohne Frist; Rechnung 30 Tage vor Ablauf nach dem
+      dann aktuellen Fahrzeugstand. Rechnungsweg (swissqrbill selbst oder AbaNinja, bexio usw.) noch offen
 - [ ] Preise je Plan beim Zahlungsanbieter hinterlegen (Stripe- oder Payrexx-Preis-IDs `privat` 25 CHF im Jahr, `betrieb` 36 CHF pro Fahrzeug und Jahr mit Menge)
 
 ## Sobald über die Schweiz hinaus verkauft wird (DACH oder global)

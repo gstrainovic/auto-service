@@ -38,6 +38,39 @@ export interface UsageInfo {
   limits: Record<LimitKind, number>
   /** Testzeit ohne Abo; null bei aktivem Abo */
   trial?: { active: boolean, daysLeft: number, endsAt: string } | null
+  /** Jahresabo auf Rechnung (Betrieb); null ohne */
+  billing?: BusinessBilling | null
+}
+
+export interface BusinessBilling {
+  method: 'invoice'
+  company: string
+  vehicles: number
+  /** Ende der bezahlten Laufzeit (ISO, exklusiv) */
+  periodEnd: string | null
+  cancelAtPeriodEnd: boolean
+  openInvoice: { number: string, reference: string, amount: number, dueAt: string } | null
+}
+
+export interface BusinessOrder {
+  company: string
+  contact: string
+  street: string
+  zip: string
+  city: string
+  email: string
+  reference?: string
+  vehicles: number
+  acceptTerms: boolean
+}
+
+/** Fehler der Bestellung mit Meldungen pro Feld (400 vom Proxy) */
+export class OrderError extends Error {
+  readonly fields: Partial<Record<keyof BusinessOrder, string>>
+  constructor(message: string, fields: Partial<Record<keyof BusinessOrder, string>> = {}) {
+    super(message)
+    this.fields = fields
+  }
 }
 
 async function proxyFetch(path: string, init: RequestInit = {}): Promise<Response> {
@@ -70,4 +103,30 @@ export async function startCheckout(plan: string): Promise<string> {
   if (!res.ok || !body.url)
     throw new Error(body.error?.message || `Checkout nicht möglich (${res.status})`)
   return body.url
+}
+
+async function billingPost<T>(path: string, payload: unknown = {}): Promise<T> {
+  const res = await proxyFetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const body = await res.json().catch(() => ({})) as T & { error?: { message?: string, fields?: Record<string, string> } }
+  if (!res.ok)
+    throw new OrderError(body.error?.message || `Abo-Aktion nicht möglich (${res.status})`, body.error?.fields ?? {})
+  return body
+}
+
+/** Jahresabo Betrieb auf Rechnung bestellen; die Rechnung kommt per Mail an die Rechnungs-E-Mail */
+export function orderBusinessPlan(order: BusinessOrder): Promise<{ invoice: { number: string, amount: number, dueAt: string }, mailed: boolean }> {
+  return billingPost('/billing/order', order)
+}
+
+/** Kündigung auf Ende der Laufzeit; `voided` zählt stornierte Rechnungen (Kündigung vor Beginn des Jahres) */
+export function cancelBusinessPlan(): Promise<{ billing: BusinessBilling | null, voided: number }> {
+  return billingPost('/billing/cancel')
+}
+
+export function resumeBusinessPlan(): Promise<{ billing: BusinessBilling }> {
+  return billingPost('/billing/resume')
 }

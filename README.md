@@ -326,6 +326,34 @@ docker compose --env-file .env --profile jobs run --rm reminders node /app/remin
 docker compose --env-file .env --profile jobs run --rm reminders node /app/reminders.mjs --only=<email>
 ```
 
+### 8. Jahresabo auf Rechnung (Betriebe)
+
+Betriebe bestellen in den Einstellungen («Jahresabo für Betrieb bestellen») mit Rechnungsadresse und Fahrzeugzahl.
+Der AI-Proxy legt das Abo an (Entität `subscriptions`, `billing: 'invoice'`), erzeugt die QR-Rechnung (pdfkit +
+swissqrbill, ohne MWST) und schickt sie über Resend an die Rechnungs-E-Mail, `info@wartungsheft.ch` in Bcc. Zugang
+sofort, zahlbar in 30 Tagen; das bezahlte Jahr beginnt nach der Testzeit. Kündigen in den Einstellungen bis zum
+Ablauf ohne Frist; eine offene Rechnung für ein noch nicht begonnenes Jahr wird dabei storniert. Voraussetzung:
+`INVOICE_*`, `RESEND_TOKEN` und `AI_PROXY_INTERNAL_TOKEN` in `deploy/.env` (Vorlage `.env.example`).
+
+Täglich läuft der Container `billing` (Profil `jobs`, Skript `deploy/billing.mjs` = Bündel von `scripts/billing.ts`):
+30 Tage vor Ablauf zählt er die aktiven Fahrzeuge und lässt den Proxy die Verlängerungsrechnung schicken
+(`/billing/renew`), danach listet er offene Rechnungen, überfällige markiert. Zahlungseingänge trägst du mit der
+Referenz aus dem Kontoauszug ein:
+
+```bash
+cd /opt/auto-service/deploy
+C="docker compose --env-file .env --profile jobs run --rm billing node /app/billing.mjs"
+$C open                                  # offene Rechnungen
+$C paid RF31WH20260919DSKURD 2026-10-02  # Zahlung eintragen (Referenz oder Rechnungsnummer)
+$C renew --dry-run                       # zeigt fällige Verlängerungen, verschickt nichts
+```
+
+Cron (`/etc/cron.d/wartungsheft-billing`, Nutzer `debian`), Log `/opt/auto-service/deploy/billing.log`:
+
+```
+15 7 * * * debian cd /opt/auto-service/deploy && docker compose --env-file .env --profile jobs run --rm billing >> billing.log 2>&1
+```
+
 ## Authentifizierung (Magic Codes via Resend)
 
 InstantDB bietet passwordless Auth via Magic Codes (6-stelliger Code per E-Mail). Self-hosted InstantDB kennt dafür

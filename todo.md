@@ -8,13 +8,18 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
 ### Vom Nutzer
 - [ ] Mistral: monatliches Ausgabenlimit über das 10-$-Kontingent hinaus (heute 0 $) auf z. B. 20 $ setzen, sobald ein
       Betrieb scannt; sonst stoppt die API bis zum Monatsersten
-- [ ] Rechnungsweg entscheiden: QR-Rechnung selbst erzeugen (swissqrbill) oder AbaNinja, bexio usw.
+- [ ] PostFinance-Geschäftskonto eröffnen (Fr. 5 im Monat, bei Eröffnung bis 30.11.2026 zwei Jahre gratis) und
+      QR-IBAN beantragen; neon, Yuh und Revolut privat verbieten geschäftliche Eingänge. IBAN danach in die `.env`
+      des AI-Proxys auf der Instanz, nicht ins Repo
 
 ### Von Claude
-- [ ] Betrieb bestellt das Jahresabo in der App: Formular fragt Firma, Kontaktperson, Rechnungsadresse (Strasse,
-      PLZ, Ort), Rechnungs-E-Mail und optional Referenz/Kostenstelle ab; Fahrzeugzahl vorbelegt mit den aktiven
-      Fahrzeugen. Zugang sofort, Rechnung zahlbar in 30 Tagen. Verlängert sich jährlich, kündbar bis zum Ablauf ohne
-      Frist; Rechnung 30 Tage vor Ablauf nach dem dann aktuellen Fahrzeugstand
+- [ ] Jahresabo Betrieb live schalten, sobald die IBAN da ist: `deploy/.env` auf der Instanz um `INVOICE_*`,
+      `RESEND_TOKEN` und `AI_PROXY_INTERNAL_TOKEN` ergänzen, Proxy neu bauen, Cron `wartungsheft-billing` anlegen
+      (README «8.»), Testbestellung mit eigener Adresse, PDF gegen den SIX-Validator prüfen, danach stornieren
+- [ ] Tagescheck um `billing.mjs open` ergänzen: überfällige Rechnungen melden, Zahlungseingänge aus dem
+      Kontoauszug mit `paid <Referenz>` eintragen. AbaNinja erst ab etwa 10 zahlenden Betrieben
+- [ ] AGB entwerfen (Abo, Verlängerung, Kündigung, Zahlung, Haftung, Datenverlust) und im Bestelldialog verlinken;
+      heute stehen die Bedingungen nur im Text neben der Zustimmung
 - [ ] Hinweis vor Ende der Testzeit: in der App ab Tag 23 und eine Mail 7 Tage vorher (Erinnerungs-Job
       `scripts/reminders.ts`), mit Link auf die Bestellung
 - [ ] Fahrzeuggrenze wirklich sperren, sobald ein Zahlungsweg existiert: `vehicleLimit` meldet heute nur, solange

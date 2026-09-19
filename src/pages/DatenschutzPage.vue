@@ -59,7 +59,13 @@ import LandingHeader from '../components/LandingHeader.vue'
         </li>
       </ul>
 
-      <h3>3.4 Technische Daten</h3>
+      <h3>3.4 Abo- und Rechnungsdaten (Jahresabo Betrieb)</h3>
+      <ul>
+        <li>Firma, Kontaktperson, Rechnungsadresse, Rechnungs-E-Mail, optionale Referenz</li>
+        <li>Anzahl abgerechneter Fahrzeuge, Rechnungen mit Betrag, Zahlungsreferenz und Zahlungseingang</li>
+      </ul>
+
+      <h3>3.5 Technische Daten</h3>
       <ul>
         <li>IP-Adresse (Serverprotokolle, automatisch gelöscht nach 30 Tagen)</li>
         <li>Browser-Typ und -Version</li>
@@ -90,6 +96,11 @@ import LandingHeader from '../components/LandingHeader.vue'
             <td>Bilder / PDFs</td>
             <td>KI-gestützte Datenextraktion</td>
             <td>Einwilligung (Upload durch Nutzer)</td>
+          </tr>
+          <tr>
+            <td>Abo- und Rechnungsdaten</td>
+            <td>Rechnungsstellung, Zahlungseingang, Verlängerung und Kündigung des Abos</td>
+            <td>Vertragserfüllung, gesetzliche Aufbewahrungspflicht</td>
           </tr>
           <tr>
             <td>IP-Adresse</td>
@@ -148,6 +159,7 @@ import LandingHeader from '../components/LandingHeader.vue'
       <ul>
         <li><strong>Kontodaten:</strong> Bis zur Löschung Ihres Kontos</li>
         <li><strong>Fahrzeug-/Rechnungsdaten:</strong> Bis zur Löschung durch Sie</li>
+        <li><strong>Rechnungen des Abos:</strong> 10 Jahre (Aufbewahrungspflicht, OR Art. 958f)</li>
         <li><strong>Server-Logs:</strong> 30 Tage</li>
         <li><strong>OCR-Cache:</strong> Bis zur Löschung der zugehörigen Rechnung</li>
       </ul>
@@ -170,7 +182,7 @@ import LandingHeader from '../components/LandingHeader.vue'
           </tr>
           <tr>
             <td>Resend (Plus Five Five, Inc.)</td>
-            <td>E-Mail-Versand der Anmelde-Codes; verarbeitet werden nur E-Mail-Adresse und Code, Versand aus Irland (EU), Vertrag mit EU-Standardvertragsklauseln für die Schweiz</td>
+            <td>E-Mail-Versand der Anmelde-Codes, Erinnerungen und Abo-Rechnungen; verarbeitet werden E-Mail-Adresse und Inhalt der Mail (bei Rechnungen Firma, Adresse und Betrag), Versand aus Irland (EU), Vertrag mit EU-Standardvertragsklauseln für die Schweiz</td>
             <td>USA / Irland</td>
           </tr>
           <tr>

@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 deploy/reminders.mjs
+deploy/billing.mjs
 *.local
 
 # Editor directories and files

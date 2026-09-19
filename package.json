@@ -9,6 +9,7 @@
     "dev:vite": "vite",
     "build": "vue-tsc -b && vite build",
     "build:reminders": "esbuild scripts/reminders.ts --bundle --platform=node --target=node24 --format=esm --outfile=deploy/reminders.mjs",
+    "build:billing": "esbuild scripts/billing.ts --bundle --platform=node --target=node24 --format=esm --outfile=deploy/billing.mjs",
     "deploy": "bash scripts/deploy.sh",
     "preview": "vite preview",
     "lint": "eslint .",

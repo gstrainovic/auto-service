@@ -20,6 +20,20 @@ services:
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       STRIPE_PRICE_BASIC: ${STRIPE_PRICE_BASIC:-}
       STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO:-}
+      # Jahresrechnung für Betriebe (QR-Rechnung per Resend); ohne INVOICE_IBAN antworten /billing/order usw. mit 501
+      INVOICE_IBAN: ${INVOICE_IBAN:-}
+      INVOICE_CREDITOR_NAME: ${INVOICE_CREDITOR_NAME:-}
+      INVOICE_TRADE_NAME: ${INVOICE_TRADE_NAME:-}
+      INVOICE_BRAND: ${INVOICE_BRAND:-}
+      INVOICE_STREET: ${INVOICE_STREET:-}
+      INVOICE_ZIP: ${INVOICE_ZIP:-}
+      INVOICE_CITY: ${INVOICE_CITY:-}
+      INVOICE_EMAIL: ${INVOICE_EMAIL:-}
+      INVOICE_WEBSITE: ${INVOICE_WEBSITE:-}
+      INVOICE_FROM: ${INVOICE_FROM:-}
+      RESEND_TOKEN: ${RESEND_TOKEN:-}
+      # Abo-Job (Dienst billing) ruft /billing/renew und /billing/paid mit diesem Geheimnis auf
+      AI_PROXY_INTERNAL_TOKEN: ${AI_PROXY_INTERNAL_TOKEN:-}
     expose:
       - '8787'
     networks:
@@ -39,6 +53,23 @@ services:
       INSTANT_ADMIN_TOKEN: ${INSTANT_ADMIN_TOKEN}
       RESEND_TOKEN: ${RESEND_TOKEN}
     command: node /app/reminders.mjs
+    networks:
+      - instant
+
+  # Abo-Job für Betriebe (scripts/billing.ts gebündelt nach ./billing.mjs): Verlängerungen 30 Tage vor Ablauf,
+  # offene Rechnungen, Zahlung eintragen. Cron ruft täglich `... --profile jobs run --rm billing` (Befehl renew).
+  billing:
+    image: node:24-alpine
+    profiles: [jobs]
+    volumes:
+      - ./billing.mjs:/app/billing.mjs:ro
+    environment:
+      INSTANT_API_URI: ${INSTANT_API_URI}
+      INSTANT_APP_ID: ${INSTANT_APP_ID}
+      INSTANT_ADMIN_TOKEN: ${INSTANT_ADMIN_TOKEN}
+      AI_PROXY_URL: http://ai-proxy:8787
+      AI_PROXY_INTERNAL_TOKEN: ${AI_PROXY_INTERNAL_TOKEN}
+    command: node /app/billing.mjs renew
     networks:
       - instant
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Drawer from 'primevue/drawer'
+import Toast from 'primevue/toast'
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ChatDrawer from './components/ChatDrawer.vue'
@@ -43,6 +44,8 @@ function handleSignOut() {
 </script>
 
 <template>
+  <!-- Ausgabe für useToast() auf allen Seiten -->
+  <Toast />
   <div class="app-layout">
     <template v-if="showAppLayout">
       <header class="app-header">

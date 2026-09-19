@@ -9,13 +9,16 @@ import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
+import BusinessOrderDialog from '../components/BusinessOrderDialog.vue'
 import { userMessage } from '../lib/errors'
 import { db, tx } from '../lib/instantdb'
 import { formatCurrency, formatDate, formatMonth, formatNumber } from '../lib/locale'
-import { fetchUsage, startCheckout } from '../services/ai-access'
+import { cancelBusinessPlan, fetchUsage, resumeBusinessPlan, startCheckout } from '../services/ai-access'
 import { exportDatabase, importDatabase } from '../services/db-export'
+import { activeVehicles } from '../services/vehicle-status'
 import { useRemindersStore } from '../stores/reminders'
 import { HOME_CURRENCIES, useSettingsStore } from '../stores/settings'
+import { useVehiclesStore } from '../stores/vehicles'
 
 type UsageInfo = Awaited<ReturnType<typeof fetchUsage>>
 
@@ -56,6 +59,56 @@ const importInput = ref<HTMLInputElement | null>(null)
 const usage = ref<UsageInfo | null>(null)
 const usageError = ref('')
 const checkoutBusy = ref<string | null>(null)
+
+// Jahresabo Betrieb auf Rechnung: bestellen, Stand, kündigen (ai-proxy invoice-subscription.ts)
+const vehiclesStore = useVehiclesStore()
+const orderOpen = ref(false)
+const businessBusy = ref(false)
+const business = computed(() => usage.value?.billing ?? null)
+const activeVehicleCount = computed(() => activeVehicles(vehiclesStore.vehicles).length)
+const canOrderBusiness = computed(() => !!usage.value && !business.value && usage.value.plan === 'free')
+
+function onOrdered(result: { number: string, mailed: boolean }): void {
+  toast.add({
+    severity: 'success',
+    summary: `Jahresabo bestellt, Rechnung ${result.number}`,
+    detail: result.mailed ? 'Die QR-Rechnung ist per Mail unterwegs.' : `Die Rechnung kommt in Kürze. Fragen an ${CONTACT_EMAIL}.`,
+    life: 6000,
+  })
+  refreshUsage()
+}
+
+async function changeBusinessPlan(action: 'cancel' | 'resume'): Promise<void> {
+  businessBusy.value = true
+  try {
+    if (action === 'cancel') {
+      // Vor Beginn des bezahlten Jahres storniert die Kündigung die Rechnung, die Testzeit läuft weiter
+      const { voided } = await cancelBusinessPlan()
+      toast.add({
+        severity: 'info',
+        summary: 'Abo gekündigt',
+        detail: voided ? 'Die Rechnung ist storniert, du musst nichts bezahlen.' : 'Es läuft bis zum Ende der Laufzeit.',
+        life: 6000,
+      })
+    }
+    else {
+      await resumeBusinessPlan()
+    }
+    await refreshUsage()
+  }
+  catch (e) {
+    toast.add({ severity: 'warn', summary: (e as Error).message, life: 5000 })
+  }
+  finally {
+    businessBusy.value = false
+  }
+}
+
+/** Letzter Tag der bezahlten Laufzeit (periodEnd ist exklusiv) */
+function lastPaidDay(periodEnd: string): string {
+  const [y, m, d] = periodEnd.split('-').map(Number)
+  return formatDate(new Date(Date.UTC(y!, m! - 1, d! - 1)).toISOString().slice(0, 10))
+}
 const currentPlan = computed(() => PLANS[usage.value?.plan ?? 'free'])
 const upgradePlans = computed(() => Object.values(PLANS).filter(p => p.priceChfPerMonth > currentPlan.value.priceChfPerMonth))
 const limitKinds = Object.keys(LIMIT_LABELS) as LimitKind[]
@@ -146,6 +199,7 @@ async function refreshCacheCount(): Promise<void> {
 onMounted(() => {
   refreshCacheCount()
   refreshUsage()
+  vehiclesStore.load()
   reminders.load().catch(err => console.error('[settings] Erinnerungen laden', err))
 })
 
@@ -289,11 +343,54 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
             Zähler gelten für {{ formatMonth(usage.month) }}. KI-Verarbeitung über Mistral (Frankreich, EU) ist im Abo enthalten, kein eigener API-Key nötig.
             Die Schwellen sind Fair Use gegen Missbrauch, kein Sparziel: normaler Gebrauch kommt nie in ihre Nähe.
           </div>
-          <div v-if="!billingEnabled" class="provider-info">
-            Mehr Fahrzeuge oder ein Abo für den Betrieb? Schreib uns an
-            <a :href="`mailto:${CONTACT_EMAIL}`">{{ CONTACT_EMAIL }}</a>, wir richten es ein und stellen eine Jahresrechnung.
+          <div v-if="business" class="business-subscription" data-testid="business-subscription">
+            <div>
+              <strong>Jahresabo Betrieb</strong> · {{ business.company }} · {{ business.vehicles }}
+              {{ business.vehicles === 1 ? 'Fahrzeug' : 'Fahrzeuge' }}
+            </div>
+            <div v-if="business.periodEnd">
+              <template v-if="business.cancelAtPeriodEnd">
+                Gekündigt, läuft bis {{ lastPaidDay(business.periodEnd) }}.
+              </template>
+              <template v-else>
+                Läuft bis {{ lastPaidDay(business.periodEnd) }}, verlängert sich automatisch um ein Jahr.
+              </template>
+            </div>
+            <div v-if="business.openInvoice" class="open-invoice">
+              Rechnung {{ business.openInvoice.number }} über {{ formatCurrency(business.openInvoice.amount) }},
+              zahlbar bis {{ formatDate(business.openInvoice.dueAt) }}. Die QR-Rechnung kam per Mail; fehlt sie, schreib an
+              <a :href="`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(`Rechnung ${business.openInvoice.number}`)}`">{{ CONTACT_EMAIL }}</a>.
+            </div>
+            <Button
+              v-if="business.cancelAtPeriodEnd"
+              label="Kündigung zurücknehmen"
+              size="small"
+              outlined
+              :loading="businessBusy"
+              @click="changeBusinessPlan('resume')"
+            />
+            <Button
+              v-else
+              label="Abo kündigen"
+              size="small"
+              severity="secondary"
+              outlined
+              :loading="businessBusy"
+              @click="changeBusinessPlan('cancel')"
+            />
           </div>
-          <div v-else-if="upgradePlans.length" class="upgrade-list">
+          <div v-else-if="canOrderBusiness" class="business-order">
+            <div>
+              <strong>Für Betriebe:</strong> {{ formatCurrency(BUSINESS_VEHICLE_YEARLY_CHF) }} pro Fahrzeug und Jahr,
+              Rechnung auf die Firma, zahlbar in 30 Tagen.
+            </div>
+            <Button label="Jahresabo für Betrieb bestellen" size="small" @click="orderOpen = true" />
+          </div>
+          <div v-if="!billingEnabled && !business" class="provider-info">
+            Privat-Abo ({{ formatCurrency(PRIVATE_YEARLY_CHF) }} im Jahr)? Schreib uns an
+            <a :href="`mailto:${CONTACT_EMAIL}`">{{ CONTACT_EMAIL }}</a>, du bekommst eine Jahresrechnung.
+          </div>
+          <div v-else-if="billingEnabled && upgradePlans.length" class="upgrade-list">
             <div v-for="plan in upgradePlans" :key="plan.id" class="upgrade-row">
               <div>
                 <strong>{{ planName(plan) }}</strong> · {{ planPrice(plan) }} ·
@@ -315,6 +412,14 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
         <ProgressBar v-else mode="indeterminate" style="height: 0.5rem" />
       </template>
     </Card>
+
+    <BusinessOrderDialog
+      :visible="orderOpen"
+      :active-vehicles="activeVehicleCount"
+      :trial-ends-at="usage?.trial?.active ? usage.trial.endsAt : null"
+      @close="orderOpen = false"
+      @ordered="onOrdered"
+    />
 
     <Card class="settings-card">
       <template #title>
@@ -469,6 +574,24 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
 
 .provider-warning {
   margin-top: 0.5rem;
+}
+
+.business-subscription,
+.business-order {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  border: 1px solid var(--p-surface-border);
+  border-radius: var(--p-border-radius-md, 6px);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.open-invoice {
+  color: var(--p-text-muted-color);
 }
 
 .button-group {

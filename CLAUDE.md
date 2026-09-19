@@ -221,6 +221,12 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
   ersten Aufruf, Subscription mit `status: 'trial'`); danach antworten Scan und Chat mit 402 `trial_expired`, Lesen,
   Erfassen von Hand und Exporte bleiben frei. Preise in `yearlyPriceChf(n, audience)` (privat 25 CHF bis 5 Fahrzeuge, Betrieb
   36 CHF pro Fahrzeug), `PriceTable.vue` mit Umschalter Privat/Betrieb rechnet damit; Fair-Use-Bremse 20 Anfragen pro Minute im Proxy (`rate-limit.ts`).
+- Jahresabo Betrieb auf Rechnung: `BusinessOrderDialog.vue` in den Einstellungen (Prüfung mit `parseOrder` aus
+  `@strainovic/ai-proxy/invoice`, dieselbe wie im Proxy), Proxy `/billing/order|cancel|resume` erzeugt die QR-Rechnung
+  (Regeln in ai-proxy `invoice-subscription.ts`, README «8. Jahresabo auf Rechnung»). Täglicher Job `scripts/billing.ts`
+  zählt Fahrzeuge und ruft `/billing/renew`, `paid <Referenz>` trägt Zahlungen ein; beide internen Endpunkte nur mit
+  `AI_PROXY_INTERNAL_TOKEN`. Absender «Goran Strainovic, Strainovic IT» (Einzelfirma ohne Handelsregister, darum der
+  Name des Inhabers), ohne MWST. Frontend-Code aus dem ai-proxy läuft mit `lib` ES2020: kein `replaceAll`, kein `.at()`.
 - Wortwahl in der App: «Rechnung» (nie «Beleg»), «Kontrollschild» und «Fahrgestellnummer» wie auf dem Schweizer
   Ausweis (nie «Kennzeichen», «FIN»). Formular «Neues Fahrzeug» belegt nichts vor: Baujahr und Kilometerstand 0 heisst
   unbekannt, der Ausweis-Scan füllt leere Felder. Löschen eines Fahrzeugs nur auf der Fahrzeugseite, nicht auf der Karte.
@@ -316,12 +322,13 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Tests folgen **CRUD-Paradigma**: Create → Read → Update → Delete
 - Tests laufen automatisch **zweimal**: online + offline (via Network-Blocking)
 - **Playwright startet Server automatisch** (Vite + InstantDB) — kein manuelles `podman-compose up` nötig
-- `npm run test:e2e` führt beide Projekt-Varianten aus (268 Tests: 134 online + 134 offline; 8 weitere nur via `test:e2e:soft`)
+- `npm run test:e2e` führt beide Projekt-Varianten aus (272 Tests: 136 online + 136 offline; 8 weitere nur via `test:e2e:soft`)
 - Playwright startet drei Server: Vite (`VITE_INSTANTDB_MODE=local`, `VITE_AI_PROXY_URL=http://localhost:8787`),
   InstantDB (podman-compose) und den AI-Proxy (`npm run dev:proxy` im Auth-Bypass, Key aus `.env` explizit per `env`,
   `AI_PROXY_BURST_LIMIT=10000`, weil alle Tests einen Nutzer teilen und die Fair-Use-Bremse sonst 429 liefert)
 - Läuft der Proxy schon (Playwright nimmt den bestehenden Port 8787), muss er selbst mit `AI_PROXY_BURST_LIMIT=10000`
-  gestartet sein, sonst fallen Chat-Tests mit «429 (Too Many Requests)» als Konsolenfehler.
+  und den `INVOICE_*`-Werten aus `playwright.config.ts` gestartet sein, sonst fallen Chat-Tests mit «429 (Too Many
+  Requests)» und die Bestell-Tests mit 501. Der Proxy lädt Code nicht neu: nach Änderungen im ai-proxy beenden.
 
 ### Offline-Testing
 Die `simulateOffline` Fixture blockiert alle Requests zu `localhost:8888` (InstantDB-Server).
@@ -366,8 +373,9 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | EF | Einrichtung Fahrzeug | EF-001 bis EF-006: Checkliste nach dem Anlegen, Wartungsplan fragt «zuletzt», Serviceheft-Knopf, Verlauf, Ausblenden |
 | HK | Herkunft am Datensatz | HK-001 bis HK-004: `source` bei Formular, Rechnung samt Wartungen, Wartungsplan, Dashboard |
 | AE | Anmelde-Einstieg | AE-001 bis AE-003: «Anmelden» im Kopf auf 390px, bekanntes Konto nach Abmelden, «Andere E-Mail» |
+| BO | Bestellung Betrieb | BO-001, BO-002: Jahresabo mit Rechnungsadresse, Fahrzeuge vorbelegt, Storno bei Kündigung in der Testzeit, Feldfehler |
 
-**Gesamt: 134 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
+**Gesamt: 136 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`

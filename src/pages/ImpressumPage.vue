@@ -16,6 +16,7 @@ import LandingHeader from '../components/LandingHeader.vue'
       <p>
         <strong>Goran Strainovic</strong><br>
         Strainovic IT (Einzelfirma)<br>
+        Bahnstrasse 9b<br>
         9323 Steinach<br>
         Schweiz
       </p>

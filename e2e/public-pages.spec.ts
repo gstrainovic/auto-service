@@ -6,6 +6,8 @@ test.describe('Public Pages', () => {
     await expect(page.getByRole('heading', { name: 'Impressum' })).toBeVisible()
     await expect(page.getByText('Goran Strainovic').first()).toBeVisible()
     await expect(page.getByText('Strainovic IT').first()).toBeVisible()
+    // Vollständige Adresse (UWG Art. 3 Abs. 1 lit. s)
+    await expect(page.getByRole('main')).toContainText('Bahnstrasse 9b')
     await expect(page.getByText('9323 Steinach')).toBeVisible()
     await expect(page.getByText('UWG')).toBeVisible()
     // Kopf: Logo führt zur Startseite; Fuss: Rechtliches und Kontakt
@@ -20,6 +22,7 @@ test.describe('Public Pages', () => {
     await expect(page.getByText('Goran Strainovic').first()).toBeVisible()
     // Key sections present
     await expect(page.getByRole('heading', { name: /Verantwortliche Stelle/ })).toBeVisible()
+    await expect(page.getByRole('main')).toContainText('Bahnstrasse 9b')
     await expect(page.getByRole('heading', { name: /KI-gestützte Verarbeitung/ })).toBeVisible()
     await expect(page.getByRole('heading', { name: /Ihre Rechte/ })).toBeVisible()
     await expect(page.getByRole('heading', { name: /Cookies/ })).toBeVisible()

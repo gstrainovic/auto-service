@@ -6,7 +6,7 @@ import LandingFooter from './LandingFooter.vue'
 import LandingHeader from './LandingHeader.vue'
 import PriceTable from './PriceTable.vue'
 
-// Landing Page pro Hypothese (business-plan/09-validierung.md, M3): Problem in einem Satz,
+// Landing Page pro Hypothese (business-plan/09-validierung.md, M2): Problem in einem Satz,
 // drei Nutzen, Preis sichtbar, ein Button in die Testzeit. Fragen gehen per Mail ans Postfach.
 const props = defineProps<{
   segment: LandingSegment

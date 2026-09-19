@@ -1,35 +1,33 @@
 # todo.md
 
-Reihenfolge, nicht Themen. Erst Validierung (business-plan/09-validierung.md), dann Betrieb für den Pilot, dann alles andere. Kein Zahlungsanbieter und keine Werbung vor dem Entscheid.
+Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung für Betriebe), dann messen
+(business-plan/09-validierung.md), dann alles andere. Keine Kaltakquise per E-Mail, keine Umfrage-Mails.
 
-## Jetzt: Validierung (Woche 1 bis 4)
-
-Ausführung: Claude. Beim Nutzer bleibt das einmalige Ja zum Versand eines vorbereiteten E-Mail-Stapels. Keine Telefonate, keine Gespräche.
+## Jetzt: produktiv gehen
 
 ### Vom Nutzer
-- [ ] Mistral: monatliches Ausgabenlimit über das 10-$-Kontingent hinaus (heute 0 $) auf z. B. 20 $ setzen, sobald ein Pilotbetrieb scannt; sonst stoppt die API bis zum Monatsersten
+- [ ] Mistral: monatliches Ausgabenlimit über das 10-$-Kontingent hinaus (heute 0 $) auf z. B. 20 $ setzen, sobald ein
+      Betrieb scannt; sonst stoppt die API bis zum Monatsersten
+- [ ] Rechnungsweg entscheiden: QR-Rechnung selbst erzeugen (swissqrbill) oder AbaNinja, bexio usw.
 
 ### Von Claude
-- [ ] Beobachten (M1) ergänzen: Schweizer KMU-Stimmen (Gewerbeverbände, LinkedIn-Gruppen); Erstfassung steht in `business-plan/beobachtungen.md`
-- [ ] 20 E-Mails nach der Vorlage in Kapitel 9 (M2) für die Betriebe aus `business-plan/betriebe.md` vorbereiten, Link auf https://wartungsheft.ch/betrieb, Nutzer gibt den Stapel mit einem Ja frei, Versand einzeln (höchstens fünf pro Tag); nach 10 Tagen Nachfass-Stapel gleich; Antworten protokollieren
-- [ ] Ein Forumsbeitrag mit echter Frage (Motor-Talk oder r/de), Text vorbereiten, Nutzer gibt frei
-- [ ] Wöchentlich Zahlen ziehen (Caddy-Log, `events`, Postfach, README Abschnitt 6) und in Kapitel 9 notieren
-- [ ] Auswertung gegen die Abbruchkriterien, Ergebnis und Entscheid in Kapitel 9 eintragen
-- [ ] Pilot-Betrieb: nach der Testzeit Jahresrechnung per QR-Rechnung stellen (kein Zahlungsanbieter); der Betrieb erfasst selbst
-
-### Betrieb, nebenbei
-- [ ] Health-Checks laufen heute nur im täglichen Claude-Lauf (`~/projects/find-jobs/AGENTS.md`, «Tagescheck
-      Wartungsheft»). Sobald ein Pilot zahlt, zusätzlich ein Dienst, der unabhängig vom Laptop prüft und meldet
-
-### Preismodell
-
-- [ ] Fahrzeuggrenze wirklich sperren, sobald ein Zahlungsweg existiert: `vehicleLimit` meldet heute nur, solange
-      `VITE_BILLING_ENABLED=true` gesetzt ist; ohne Kaufweg wäre eine Sperre bloss ein Ärgernis
 - [ ] Betrieb bestellt das Jahresabo in der App: Formular fragt Firma, Kontaktperson, Rechnungsadresse (Strasse,
       PLZ, Ort), Rechnungs-E-Mail und optional Referenz/Kostenstelle ab; Fahrzeugzahl vorbelegt mit den aktiven
-      Fahrzeugen. Verlängert sich jährlich, kündbar bis zum Ablauf ohne Frist; Rechnung 30 Tage vor Ablauf nach dem
-      dann aktuellen Fahrzeugstand. Rechnungsweg (swissqrbill selbst oder AbaNinja, bexio usw.) noch offen
-- [ ] Preise je Plan beim Zahlungsanbieter hinterlegen (Stripe- oder Payrexx-Preis-IDs `privat` 25 CHF im Jahr, `betrieb` 36 CHF pro Fahrzeug und Jahr mit Menge)
+      Fahrzeugen. Zugang sofort, Rechnung zahlbar in 30 Tagen. Verlängert sich jährlich, kündbar bis zum Ablauf ohne
+      Frist; Rechnung 30 Tage vor Ablauf nach dem dann aktuellen Fahrzeugstand
+- [ ] Hinweis vor Ende der Testzeit: in der App ab Tag 23 und eine Mail 7 Tage vorher (Erinnerungs-Job
+      `scripts/reminders.ts`), mit Link auf die Bestellung
+- [ ] Fahrzeuggrenze wirklich sperren, sobald ein Zahlungsweg existiert: `vehicleLimit` meldet heute nur, solange
+      `VITE_BILLING_ENABLED=true` gesetzt ist; ohne Kaufweg wäre eine Sperre bloss ein Ärgernis
+- [ ] Health-Checks laufen heute nur im täglichen Claude-Lauf (`~/projects/find-jobs/AGENTS.md`, «Tagescheck
+      Wartungsheft»). Sobald ein Betrieb zahlt, zusätzlich ein Dienst, der unabhängig vom Laptop prüft und meldet
+
+### Messen, nebenbei
+- [ ] Wöchentlich Zahlen ziehen (Caddy-Log, `events`, Anmeldungen, Bestellungen, Postfach, README Abschnitt 6) und in
+      Kapitel 9 notieren; nach drei Monaten Auswertung gegen die Abbruchkriterien
+- [ ] Beobachten (M1) ergänzen: Schweizer KMU-Stimmen (Gewerbeverbände, LinkedIn-Gruppen); Erstfassung steht in
+      `business-plan/beobachtungen.md`
+- [ ] Ein Forumsbeitrag mit echter Frage (Motor-Talk oder r/de), Text vorbereiten, Nutzer gibt frei
 
 ## Sobald über die Schweiz hinaus verkauft wird (DACH oder global)
 
@@ -43,7 +41,6 @@ Heute sind Währung (CHF), Zahlenformat (de-CH, `src/lib/locale.ts`) und Sprache
 
 Bei bestätigter Kleinbetriebs-Hypothese (H1):
 - [ ] Mehrere Nutzer pro Konto (Fahrer wirft Rechnung ein, Inhaber sieht alles)
-- [ ] Preis aus den Antworten festlegen, `src/shared/plans.ts` und Businessplan angleichen
 
 Bei bestätigter Privathalter-Hypothese (H2):
 - [ ] Jahresabo 25 CHF per QR-Rechnung an die angemeldeten Nutzer nach der Testzeit, Kanäle aus Kapitel 5
@@ -52,6 +49,7 @@ Zahlungsanbieter Payrexx (Entscheid und Preise in business-plan/04), erst wenn e
 - [ ] Payrexx-Konto anlegen (Standard, Startup-Rabatt), verifizieren, Payrexx Pay aktivieren, Testmodus, API-Key und Webhook-Signing-Key notieren
 - [ ] ai-proxy: austauschbare Billing-Schnittstelle, Stripe behalten, Payrexx ergänzen (Gateway mit subscriptionState, Webhook X-Webhook-Signature HMAC-SHA256 hex, Status active/overdue/failed/cancelled/in_notice, Kundenportal POST /AuthToken, Kündigen DELETE /Subscription/{id}); Tests gegen dokumentierte Payloads
 - [ ] App auf Payrexx umstellen (PAYREXX_INSTANCE, PAYREXX_API_SECRET, PAYREXX_WEBHOOK_SECRET), Checkout und Kündigung im Testmodus durchspielen
+- [ ] Preise je Plan bei Payrexx hinterlegen (`privat` 25 CHF im Jahr, `betrieb` 36 CHF pro Fahrzeug und Jahr mit Menge)
 - [ ] Datenschutzerklärung: Payrexx (CH) ergänzen
 - [ ] Settings: "Abo verwalten"-Button (`POST /billing/portal`), nach Rückkehr vom Checkout Nutzung neu laden und Toast zeigen
 - [ ] Limit-Meldung im Chat mit Link zu den Einstellungen statt nur Text

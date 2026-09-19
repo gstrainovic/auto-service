@@ -1,6 +1,6 @@
 import { expect, test } from './fixtures/test-fixtures'
 
-// Landing Pages für die Validierung (business-plan/09-validierung.md, M3):
+// Landing Pages für die Validierung (business-plan/09-validierung.md, M2):
 // eine Seite pro Hypothese, Preis sichtbar, ein Button in die Testzeit, Fragen per Mail ans Postfach.
 test.describe('Landing Pages', () => {
   // Abgemeldet und unbekanntes Gerät: so sieht ein neuer Besucher die Seite (siehe auth-entry.spec.ts)

@@ -147,7 +147,8 @@ async function submit(): Promise<void> {
         <Checkbox v-model="form.acceptTerms" input-id="order-terms" binary :invalid="!!errors.acceptTerms" />
         <label for="order-terms">
           Das Abo verlängert sich jährlich um ein Jahr, die Rechnung dafür kommt 30 Tage vor Ablauf nach dem dann
-          aktuellen Fahrzeugstand. Kündigen geht bis zum Ablauf ohne Frist, hier in den Einstellungen.
+          aktuellen Fahrzeugstand. Kündigen geht bis zum Ablauf ohne Frist, hier in den Einstellungen. Es gelten die
+          <a href="/agb" target="_blank" rel="noopener">AGB</a>.
         </label>
       </div>
       <small v-if="errors.acceptTerms" class="error span-2">{{ errors.acceptTerms }}</small>

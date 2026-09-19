@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Ein Fuss für alle öffentlichen Seiten (/, /betrieb, /privathalter, /impressum, /datenschutz, /login):
+// Ein Fuss für alle öffentlichen Seiten (/, /betrieb, /privathalter, /impressum, /datenschutz, /agb, /login):
 // Herkunft und Kontakt, Links auf Zielgruppen und Rechtliches. Kein Logo, das steht im Kopf (sticky).
 const CONTACT_EMAIL = 'info@wartungsheft.ch'
 </script>
@@ -22,6 +22,9 @@ const CONTACT_EMAIL = 'info@wartungsheft.ch'
         </router-link>
         <router-link to="/datenschutz">
           Datenschutz
+        </router-link>
+        <router-link to="/agb">
+          AGB
         </router-link>
       </nav>
     </div>

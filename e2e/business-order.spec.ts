@@ -45,6 +45,10 @@ test.describe('Jahresabo Betrieb auf Rechnung', () => {
     await dialog.getByLabel('E-Mail für die Rechnung').fill('buchhaltung@muster.ch')
     await dialog.getByLabel('Deine Referenz (optional)').fill('KST 4711')
 
+    // AGB aus dem Dialog erreichbar, in neuem Tab, damit das Formular stehen bleibt
+    await expect(dialog.getByRole('link', { name: 'AGB' })).toHaveAttribute('href', '/agb')
+    await expect(dialog.getByRole('link', { name: 'AGB' })).toHaveAttribute('target', '_blank')
+
     // Ohne Zustimmung keine Bestellung
     await dialog.getByRole('button', { name: 'Kostenpflichtig bestellen' }).click()
     await expect(dialog.getByText('Bitte den Bedingungen zustimmen.')).toBeVisible()

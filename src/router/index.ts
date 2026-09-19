@@ -6,6 +6,7 @@ const routes = [
   { path: '/login', component: () => import('../pages/LoginPage.vue'), meta: { public: true } },
   { path: '/impressum', component: () => import('../pages/ImpressumPage.vue'), meta: { public: true } },
   { path: '/datenschutz', component: () => import('../pages/DatenschutzPage.vue'), meta: { public: true } },
+  { path: '/agb', component: () => import('../pages/AgbPage.vue'), meta: { public: true } },
   { path: '/betrieb', component: () => import('../pages/BetriebPage.vue'), meta: { public: true } },
   { path: '/privathalter', component: () => import('../pages/PrivathalterPage.vue'), meta: { public: true } },
   { path: '/dashboard', component: () => import('../pages/DashboardPage.vue') },

@@ -18,8 +18,6 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
       (README «8.»), Testbestellung mit eigener Adresse, PDF gegen den SIX-Validator prüfen, danach stornieren
 - [ ] Tagescheck um `billing.mjs open` ergänzen: überfällige Rechnungen melden, Zahlungseingänge aus dem
       Kontoauszug mit `paid <Referenz>` eintragen. AbaNinja erst ab etwa 10 zahlenden Betrieben
-- [ ] AGB entwerfen (Abo, Verlängerung, Kündigung, Zahlung, Haftung, Datenverlust) und im Bestelldialog verlinken;
-      heute stehen die Bedingungen nur im Text neben der Zustimmung
 - [ ] Hinweis vor Ende der Testzeit: in der App ab Tag 23 und eine Mail 7 Tage vorher (Erinnerungs-Job
       `scripts/reminders.ts`), mit Link auf die Bestellung
 - [ ] Fahrzeuggrenze wirklich sperren, sobald ein Zahlungsweg existiert: `vehicleLimit` meldet heute nur, solange

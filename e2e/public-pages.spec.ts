@@ -44,6 +44,28 @@ test.describe('Public Pages', () => {
     await expect(page.getByRole('heading', { name: 'Impressum' })).toBeVisible()
   })
 
+  test('PP-005: AGB nennen Anbieter, Testzeit, Preise, Verlängerung und Kündigung', async ({ page }) => {
+    await page.goto('/impressum')
+    await page.getByRole('contentinfo').getByRole('link', { name: 'AGB' }).click()
+    await expect(page).toHaveURL(/\/agb$/)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Allgemeine Geschäftsbedingungen')
+    const main = page.getByRole('main')
+    await expect(main).toContainText('Goran Strainovic')
+    await expect(main).toContainText('Bahnstrasse 9b, 9323 Steinach')
+    for (const heading of [/Testzeit/, /Preise/, /Rechnung und Zahlung/, /Laufzeit, Verlängerung und Kündigung/, /Haftung/, /Deine Daten/, /Anwendbares Recht/])
+      await expect(page.getByRole('heading', { name: heading })).toBeVisible()
+    await expect(main).toContainText('verlängert sich automatisch um ein weiteres Jahr')
+    await expect(main).toContainText('bis zum letzten Tag der Laufzeit ohne Frist')
+    await expect(main).toContainText('CHF 36.00 pro Fahrzeug und Jahr')
+    await expect(main).toContainText('CHF 25.00 im Jahr')
+    await expect(page.getByRole('link', { name: 'Datenschutzerklärung' })).toHaveAttribute('href', '/datenschutz')
+
+    // Handy: das lange Wort im Titel darf die Seite nicht verbreitern
+    await page.setViewportSize({ width: 390, height: 844 })
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+    expect(overflow).toBeLessThanOrEqual(0)
+  })
+
   test('PP-004: logged-in user is redirected from / to /dashboard', async ({ page }) => {
     await page.goto('/')
     await expect(page).toHaveURL(/\/dashboard/)

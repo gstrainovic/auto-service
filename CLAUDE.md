@@ -227,6 +227,9 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
   zählt Fahrzeuge und ruft `/billing/renew`, `paid <Referenz>` trägt Zahlungen ein; beide internen Endpunkte nur mit
   `AI_PROXY_INTERNAL_TOKEN`. Absender «Goran Strainovic, Strainovic IT» (Einzelfirma ohne Handelsregister, darum der
   Name des Inhabers), ohne MWST. Frontend-Code aus dem ai-proxy läuft mit `lib` ES2020: kein `replaceAll`, kein `.at()`.
+- AGB unter `/agb` (`AgbPage.vue`, Footer und Bestelldialog verlinken sie) geben die Regeln aus `trial.ts`,
+  `invoice-subscription.ts` und `plans.ts` wieder; wer dort Testzeit, Fristen oder Preise ändert, passt die AGB mit an
+  und kündigt die Änderung den Kunden 30 Tage vorher per Mail an (AGB Ziffer 13).
 - Wortwahl in der App: «Rechnung» (nie «Beleg»), «Kontrollschild» und «Fahrgestellnummer» wie auf dem Schweizer
   Ausweis (nie «Kennzeichen», «FIN»). Formular «Neues Fahrzeug» belegt nichts vor: Baujahr und Kilometerstand 0 heisst
   unbekannt, der Ausweis-Scan füllt leere Felder. Löschen eines Fahrzeugs nur auf der Fahrzeugseite, nicht auf der Karte.
@@ -322,7 +325,7 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Tests folgen **CRUD-Paradigma**: Create → Read → Update → Delete
 - Tests laufen automatisch **zweimal**: online + offline (via Network-Blocking)
 - **Playwright startet Server automatisch** (Vite + InstantDB) — kein manuelles `podman-compose up` nötig
-- `npm run test:e2e` führt beide Projekt-Varianten aus (272 Tests: 136 online + 136 offline; 8 weitere nur via `test:e2e:soft`)
+- `npm run test:e2e` führt beide Projekt-Varianten aus (274 Tests: 137 online + 137 offline; 8 weitere nur via `test:e2e:soft`)
 - Playwright startet drei Server: Vite (`VITE_INSTANTDB_MODE=local`, `VITE_AI_PROXY_URL=http://localhost:8787`),
   InstantDB (podman-compose) und den AI-Proxy (`npm run dev:proxy` im Auth-Bypass, Key aus `.env` explizit per `env`,
   `AI_PROXY_BURST_LIMIT=10000`, weil alle Tests einen Nutzer teilen und die Fair-Use-Bremse sonst 429 liefert)
@@ -363,7 +366,7 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | DB | Dashboard Stats | DB-001: total cost, DB-002: invoice count |
 | IU | Image Upload | IU-001: preview, IU-002: submit with image |
 | IC | Icons | IC-001: all pi-* classes exist in PrimeIcons |
-| PP | Public Pages | PP-001 bis PP-004: Impressum, Datenschutz, Navigation, Redirect |
+| PP | Public Pages | PP-001 bis PP-005: Impressum, Datenschutz, Navigation, Redirect, AGB |
 | HY | Hygiene | HY-001: keine ungenutzten Dependencies, HY-002: keine ungenutzten Komponenten, HY-003: kein Tooltip wiederholt die Knopf-Beschriftung |
 | AP | AI Proxy | AP-001: Chat via Proxy zählt Tokens, AP-002: Monatslimit-Meldung, AP-003: Settings zeigen Abo & Nutzung |
 | DJ | Fälligkeit als Ablauf | DJ-001 bis DJ-007: Wartungsplan nach dem Anlegen, Fälligkeitsliste, «Erledigt eintragen», Mail-Link, Termin, km |
@@ -375,7 +378,7 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | AE | Anmelde-Einstieg | AE-001 bis AE-003: «Anmelden» im Kopf auf 390px, bekanntes Konto nach Abmelden, «Andere E-Mail» |
 | BO | Bestellung Betrieb | BO-001, BO-002: Jahresabo mit Rechnungsadresse, Fahrzeuge vorbelegt, Storno bei Kündigung in der Testzeit, Feldfehler |
 
-**Gesamt: 136 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
+**Gesamt: 137 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`

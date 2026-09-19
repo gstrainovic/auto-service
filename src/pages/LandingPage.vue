@@ -5,17 +5,10 @@ import DemoDueList from '../components/DemoDueList.vue'
 import LandingFooter from '../components/LandingFooter.vue'
 import LandingHeader from '../components/LandingHeader.vue'
 import PriceTable from '../components/PriceTable.vue'
-import { useAuth } from '../composables/useAuth'
+import { useAuthEntry } from '../composables/useAuthEntry'
 
 const router = useRouter()
-const { user } = useAuth()
-
-function goToApp() {
-  if (user.value)
-    router.push('/dashboard')
-  else
-    router.push('/login')
-}
+const { label, go } = useAuthEntry()
 </script>
 
 <template>
@@ -35,11 +28,11 @@ function goToApp() {
             </p>
             <div class="hero-actions">
               <Button
-                :label="user ? 'Zur Übersicht' : '30 Tage gratis testen'"
+                :label="label"
                 icon="pi pi-arrow-right"
                 icon-pos="right"
                 size="large"
-                @click="goToApp"
+                @click="go"
               />
             </div>
           </div>
@@ -238,12 +231,12 @@ function goToApp() {
         <h2>Bereit? 30 Tage gratis, keine Kreditkarte.</h2>
         <p>Anmelden mit E-Mail, kein Passwort. Nach 30 Tagen entscheidest du.</p>
         <Button
-          :label="user ? 'Zur Übersicht' : '30 Tage gratis testen'"
+          :label="label"
           icon="pi pi-arrow-right"
           icon-pos="right"
           size="large"
           severity="contrast"
-          @click="goToApp"
+          @click="go"
         />
       </div>
     </section>

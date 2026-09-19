@@ -1,5 +1,6 @@
 import { readonly, ref } from 'vue'
 import { db, instantConfig } from '../lib/instantdb'
+import { forgetAccount, knownAccountEmail, rememberAccount } from '../lib/known-account'
 
 interface AuthUser {
   id: string
@@ -8,6 +9,8 @@ interface AuthUser {
 
 const user = ref<AuthUser | null>(null)
 const isLoading = ref(true)
+/** Zuletzt auf diesem Gerät angemeldete E-Mail, bleibt nach dem Abmelden (`lib/known-account.ts`) */
+const knownEmail = ref<string | null>(knownAccountEmail())
 
 /** Name des Google-OAuth-Clients im Instant-Dashboard (Auth → Google) */
 export const GOOGLE_CLIENT_NAME = 'google-web'
@@ -20,6 +23,17 @@ const authReady = new Promise<void>((resolve) => {
 
 // E2E-Tests: Auth-Bypass nur im lokalen Modus (kein Magic Code nötig), nie bei cloud/selfhosted
 const isLocal = instantConfig.authBypass
+const LOCAL_USER_ID = 'e2e-test-user'
+// Lokaler Modus: Abmelden merkt sich der Browser, damit sich der abgemeldete Zustand testen lässt
+const LOCAL_SIGNED_OUT = 'auth:localSignedOut'
+
+function setUser(u: AuthUser | null) {
+  user.value = u
+  if (u?.email) {
+    rememberAccount(u.email)
+    knownEmail.value = knownAccountEmail()
+  }
+}
 
 // Einmalig subscriben (Singleton)
 let initialized = false
@@ -29,15 +43,16 @@ function initAuth() {
   initialized = true
 
   if (isLocal) {
-    // Lokaler Modus (E2E-Tests): Sofort als Test-User authentifizieren
-    user.value = { id: 'e2e-test-user', email: 'test@e2e.local' }
+    // Lokaler Modus (E2E-Tests): Sofort als Test-User authentifizieren, ausser nach «Abmelden»
+    if (localStorage.getItem(LOCAL_SIGNED_OUT) !== '1')
+      setUser({ id: LOCAL_USER_ID, email: 'test@e2e.local' })
     isLoading.value = false
     authReadyResolve()
     return
   }
 
   db.subscribeAuth((auth: any) => {
-    user.value = auth.user ?? null
+    setUser(auth.user ?? null)
     isLoading.value = false
     authReadyResolve()
   })
@@ -54,15 +69,33 @@ export function useAuth() {
   initAuth()
 
   async function sendMagicCode(email: string) {
+    if (isLocal)
+      return
     await db.auth.sendMagicCode({ email })
   }
 
   async function signInWithMagicCode(email: string, code: string) {
+    if (isLocal) {
+      localStorage.removeItem(LOCAL_SIGNED_OUT)
+      setUser({ id: LOCAL_USER_ID, email })
+      return
+    }
     await db.auth.signInWithMagicCode({ email, code })
   }
 
   function signOut() {
+    if (isLocal) {
+      localStorage.setItem(LOCAL_SIGNED_OUT, '1')
+      setUser(null)
+      return
+    }
     db.auth.signOut()
+  }
+
+  /** «Andere E-Mail» auf der Login-Seite: das Gerät gilt danach wieder als unbekannt */
+  function forgetKnownAccount() {
+    forgetAccount()
+    knownEmail.value = null
   }
 
   /**
@@ -80,10 +113,12 @@ export function useAuth() {
   return {
     user: readonly(user),
     isLoading: readonly(isLoading),
+    knownEmail: readonly(knownEmail),
     authReady,
     sendMagicCode,
     signInWithMagicCode,
     signOut,
+    forgetKnownAccount,
     googleAuthUrl,
   }
 }

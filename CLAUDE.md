@@ -120,6 +120,15 @@ podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;
 - E2E `google-login.spec.ts` prüft nur den Link auf `/runtime/oauth/start` (Google selbst wird nicht durchlaufen).
 - Apple («Sign in with Apple», 99 USD/Jahr Apple Developer Program) und GitHub bewusst nicht eingebaut.
 
+### Anmelde-Einstieg (kein getrenntes Registrieren)
+- Magic Code und Google legen das Konto beim ersten Anmelden an; `/login` ist eine Seite für neue und bestehende Konten.
+- Nach jeder Anmeldung merkt sich der Browser die E-Mail (`auth:knownEmail`, `src/lib/known-account.ts`), auch nach
+  dem Abmelden. `useAuthEntry` entscheidet für Kopf, Startseite und Hypothesen-Seiten: eingeloggt «Zur Übersicht»,
+  bekanntes Konto nur «Anmelden» (E-Mail vorausgefüllt), sonst Link «Anmelden» plus «30 Tage gratis testen».
+  Nur der Klick in die Testzeit zählt in `events`. «Andere E-Mail» auf `/login` vergisst die Adresse.
+- Lokaler Modus: `auth:localSignedOut = '1'` im localStorage spielt den abgemeldeten Zustand, «Abmelden» setzt es,
+  der Magic Code nimmt jeden Code an. E2E `auth-entry.spec.ts` und `landing-pages.spec.ts` starten so abgemeldet.
+
 ### Auth (Magic Codes via Resend)
 - Kontaktadresse des Produkts ist `info@wartungsheft.ch` (Infomaniak-Postfach, Impressum, Datenschutz, Einstellungen,
   Antwortadresse der Erinnerungen); Claude liest und schreibt dort mit `~/.local/bin/mailbox wartungsheft …`.
@@ -307,7 +316,7 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Tests folgen **CRUD-Paradigma**: Create → Read → Update → Delete
 - Tests laufen automatisch **zweimal**: online + offline (via Network-Blocking)
 - **Playwright startet Server automatisch** (Vite + InstantDB) — kein manuelles `podman-compose up` nötig
-- `npm run test:e2e` führt beide Projekt-Varianten aus (262 Tests: 131 online + 131 offline; 8 weitere nur via `test:e2e:soft`)
+- `npm run test:e2e` führt beide Projekt-Varianten aus (268 Tests: 134 online + 134 offline; 8 weitere nur via `test:e2e:soft`)
 - Playwright startet drei Server: Vite (`VITE_INSTANTDB_MODE=local`, `VITE_AI_PROXY_URL=http://localhost:8787`),
   InstantDB (podman-compose) und den AI-Proxy (`npm run dev:proxy` im Auth-Bypass, Key aus `.env` explizit per `env`,
   `AI_PROXY_BURST_LIMIT=10000`, weil alle Tests einen Nutzer teilen und die Fair-Use-Bremse sonst 429 liefert)
@@ -356,8 +365,9 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | SV | Verkauft oder abgegeben | SV-001, SV-002: raus aus Fälligkeiten, Kosten bleiben, rückgängig |
 | EF | Einrichtung Fahrzeug | EF-001 bis EF-006: Checkliste nach dem Anlegen, Wartungsplan fragt «zuletzt», Serviceheft-Knopf, Verlauf, Ausblenden |
 | HK | Herkunft am Datensatz | HK-001 bis HK-004: `source` bei Formular, Rechnung samt Wartungen, Wartungsplan, Dashboard |
+| AE | Anmelde-Einstieg | AE-001 bis AE-003: «Anmelden» im Kopf auf 390px, bekanntes Konto nach Abmelden, «Andere E-Mail» |
 
-**Gesamt: 131 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
+**Gesamt: 134 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`

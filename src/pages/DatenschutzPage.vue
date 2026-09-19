@@ -212,6 +212,9 @@ import LandingHeader from '../components/LandingHeader.vue'
         Wartungsheft verwendet <strong>keine Tracking-Cookies</strong>.
         Es werden ausschliesslich technisch notwendige Daten im Browser gespeichert
         (localStorage für Einstellungen, IndexedDB für Offline-Daten).
+        Nach der Anmeldung merkt sich der Browser deine E-Mail-Adresse, auch nach dem Abmelden,
+        damit die Anmeldeseite sie vorausfüllt. Sie verlässt dein Gerät dabei nicht.
+        «Andere E-Mail» auf der Anmeldeseite löscht sie.
       </p>
 
       <h2>11. Änderungen</h2>

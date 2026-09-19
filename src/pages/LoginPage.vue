@@ -6,10 +6,11 @@ import { ref } from 'vue'
 import LandingFooter from '../components/LandingFooter.vue'
 import { useAuth } from '../composables/useAuth'
 
-const { sendMagicCode, signInWithMagicCode, googleAuthUrl } = useAuth()
+const { sendMagicCode, signInWithMagicCode, googleAuthUrl, knownEmail, forgetKnownAccount } = useAuth()
 const googleUrl = googleAuthUrl()
 
-const email = ref('')
+// Neue und bestehende Konten nehmen denselben Weg; ein bekanntes Konto ist vorausgefüllt
+const email = ref(knownEmail.value ?? '')
 const code = ref('')
 const sentEmail = ref('')
 const loading = ref(false)
@@ -45,6 +46,12 @@ async function handleVerifyCode() {
   }
 }
 
+// Fremdes oder geteiltes Gerät: Adresse vergessen, danach gilt das Gerät als unbekannt
+function handleForget() {
+  forgetKnownAccount()
+  email.value = ''
+}
+
 function handleBack() {
   sentEmail.value = ''
   code.value = ''
@@ -59,9 +66,17 @@ function handleBack() {
         <i class="pi pi-car" />
         <h1>Wartungsheft</h1>
       </router-link>
-      <p class="login-tagline">
-        30 Tage alles gratis. Kein Passwort — wir schicken dir einen Code.
+      <p v-if="knownEmail" class="login-tagline">
+        Willkommen zurück.
       </p>
+      <template v-else>
+        <p class="login-tagline">
+          Neu hier? 30 Tage alles gratis. Kein Passwort — wir schicken dir einen Code.
+        </p>
+        <p class="login-tagline">
+          Schon Kunde? Gleiche E-Mail, gleiches Konto.
+        </p>
+      </template>
 
       <Message v-if="error" severity="error" :closable="false">
         {{ error }}
@@ -91,6 +106,15 @@ function handleBack() {
           icon="pi pi-send"
           :loading="loading"
           fluid
+        />
+        <Button
+          v-if="knownEmail"
+          type="button"
+          label="Andere E-Mail"
+          text
+          fluid
+          class="login-back"
+          @click="handleForget"
         />
         <div class="login-divider">
           <span>oder</span>

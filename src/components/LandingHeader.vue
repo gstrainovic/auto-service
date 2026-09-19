@@ -1,38 +1,25 @@
 <script setup lang="ts">
 import type { LandingSegment } from '../stores/events'
 import Button from 'primevue/button'
-import { useRouter } from 'vue-router'
-import { useAuth } from '../composables/useAuth'
-import { useEventsStore } from '../stores/events'
+import { useAuthEntry } from '../composables/useAuthEntry'
 
 // Ein Kopf für alle öffentlichen Seiten (/, /betrieb, /privathalter, /impressum, /datenschutz):
-// Logo, Menü mit Ankern auf die Startseite, Knopf in die Testzeit. Auf Handy bleiben Logo und Knopf.
+// Logo, Menü mit Ankern auf die Startseite, «Anmelden» und der Knopf in die Testzeit. Auf Handy bleiben
+// Logo-Symbol, «Anmelden» und Knopf. Kennt der Browser das Konto schon, entfällt der Test-Knopf.
 const props = defineProps<{
   /** Klick auf den Knopf zählt in `events`, wenn die Seite zu einer Hypothese gehört */
   segment?: LandingSegment
 }>()
 
-const router = useRouter()
-const { user } = useAuth()
-const events = useEventsStore()
-
-function goToApp() {
-  if (user.value) {
-    router.push('/dashboard')
-    return
-  }
-  if (props.segment)
-    events.trackCta(props.segment)
-  router.push('/login')
-}
+const { entry, label, go } = useAuthEntry(props.segment)
 </script>
 
 <template>
   <header class="landing-header">
     <div class="landing-header-inner">
-      <router-link to="/" class="landing-logo">
+      <router-link to="/" class="landing-logo" aria-label="Wartungsheft">
         <i class="pi pi-car" />
-        <span>Wartungsheft</span>
+        <span class="landing-logo-text">Wartungsheft</span>
       </router-link>
       <nav class="landing-nav">
         <router-link to="/#features">
@@ -50,10 +37,19 @@ function goToApp() {
         <router-link to="/privathalter">
           Für Privathalter
         </router-link>
+        <router-link
+          v-if="entry !== 'app'"
+          to="/login"
+          class="landing-login"
+          :class="{ 'landing-login-known': entry === 'login' }"
+        >
+          Anmelden
+        </router-link>
         <Button
-          :label="user ? 'Zur Übersicht' : '30 Tage gratis testen'"
+          v-if="entry !== 'login'"
+          :label="label"
           size="small"
-          @click="goToApp"
+          @click="go"
         />
       </nav>
     </div>
@@ -116,8 +112,32 @@ function goToApp() {
   white-space: nowrap;
 }
 
+.landing-nav a.landing-login {
+  color: var(--p-text-color);
+  font-weight: 600;
+}
+
+/* Bekanntes Konto: «Anmelden» ist der einzige Knopf im Kopf */
+.landing-nav a.landing-login-known {
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--p-border-radius-md, 6px);
+  background: var(--p-primary-color);
+  color: var(--p-primary-contrast-color);
+}
+
 @media (max-width: 768px) {
-  .landing-nav a {
+  .landing-nav a:not(.landing-login) {
+    display: none;
+  }
+}
+
+/* Handy: Logo nur als Symbol, damit «Anmelden» und der Test-Knopf in eine Zeile passen */
+@media (max-width: 480px) {
+  .landing-header-inner {
+    padding: 0.75rem 1rem;
+  }
+
+  .landing-logo-text {
     display: none;
   }
 }

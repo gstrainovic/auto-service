@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { LandingSegment } from '../stores/events'
 import Button from 'primevue/button'
-import { useRouter } from 'vue-router'
-import { useEventsStore } from '../stores/events'
+import { useAuthEntry } from '../composables/useAuthEntry'
 import LandingFooter from './LandingFooter.vue'
 import LandingHeader from './LandingHeader.vue'
 import PriceTable from './PriceTable.vue'
@@ -25,14 +24,9 @@ const props = defineProps<{
 
 const CONTACT_EMAIL = 'info@wartungsheft.ch'
 
-const router = useRouter()
-const events = useEventsStore()
-
-// Hauptweg ist die Testzeit: der Klick zählt als Interesse und führt zur Anmeldung
-function startTrial() {
-  events.trackCta(props.segment)
-  router.push('/login')
-}
+// Hauptweg ist die Testzeit: der Klick zählt als Interesse und führt zur Anmeldung.
+// Eingeloggt oder mit bekanntem Konto führt derselbe Knopf in die App oder zum Anmelden, ohne zu zählen.
+const { entry, label, go } = useAuthEntry(props.segment)
 </script>
 
 <template>
@@ -60,7 +54,7 @@ function startTrial() {
         <span>{{ priceNote }}</span>
         <PriceTable :audience="segment === 'betrieb' ? 'betrieb' : 'privat'" fixed :vehicles="vehicles ?? 5" compact class="hypo-price-table" />
         <div class="hypo-actions">
-          <Button :label="cta" size="large" icon="pi pi-arrow-right" icon-pos="right" @click="startTrial" />
+          <Button :label="entry === 'trial' ? cta : label" size="large" icon="pi pi-arrow-right" icon-pos="right" @click="go" />
         </div>
         <p v-if="contactSubject" class="hypo-contact">
           Fragen vorab? Schreib an

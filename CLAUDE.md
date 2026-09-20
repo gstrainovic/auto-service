@@ -377,7 +377,7 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | DB | Dashboard Stats | DB-001: total cost, DB-002: invoice count |
 | IU | Image Upload | IU-001: preview, IU-002: submit with image |
 | IC | Icons | IC-001: all pi-* classes exist in PrimeIcons |
-| PP | Public Pages | PP-001 bis PP-005: Impressum, Datenschutz, Navigation, Redirect, AGB |
+| PP | Public Pages | PP-001 bis PP-008: Impressum, Datenschutz, Navigation, Redirect, AGB, Hilfe, Metadaten, robots/sitemap/llms |
 | HY | Hygiene | HY-001: keine ungenutzten Dependencies, HY-002: keine ungenutzten Komponenten, HY-003: kein Tooltip wiederholt die Knopf-Beschriftung |
 | AP | AI Proxy | AP-001: Chat via Proxy zählt Tokens, AP-002: Monatslimit-Meldung, AP-003: Settings zeigen Abo & Nutzung |
 | DJ | Fälligkeit als Ablauf | DJ-001 bis DJ-007: Wartungsplan nach dem Anlegen, Fälligkeitsliste, «Erledigt eintragen», Mail-Link, Termin, km |
@@ -450,6 +450,18 @@ Baustelle mühsam ist. Der Proxy (`/feedback`, `feedback.ts`) lässt die Aufnahm
 `stt-vergleich.md`: keine Nachkorrektur, keine Zahlen diktieren) und schickt Transkript plus Audio
 über Resend an `info@wartungsheft.ch`, Antwortadresse ist der Kunde. Scheitert die Transkription, geht die
 Aufnahme trotzdem raus. Ohne `RESEND_TOKEN` landet alles im Proxy-Log.
+
+## Hilfe und Auffindbarkeit
+
+`/hilfe` (`HilfePage.vue`, im Fuss verlinkt) erklärt die neun Kernabläufe in je ein paar Sätzen und beantwortet
+die häufigen Fragen; dieselben Fragen stehen als `FAQPage` im Kopf des Dokuments. Keine Bedienvideos: sie
+veralten mit jeder Änderung der Oberfläche. Steht ein Schritt nur in der Hilfe und nicht in der App, ist das
+eine Lücke in der Oberfläche, kein fehlendes Handbuch.
+
+Für Suchmaschinen und KI-Antworten: `index.html` trägt die Beschreibung und `SoftwareApplication` mit beiden
+Preisen (aus `plans.ts` gespiegelt, bei Preisänderungen mitziehen), `public/robots.txt` erlaubt GPTBot,
+ClaudeBot, PerplexityBot und Google-Extended ausdrücklich und nennt die Sitemap, `public/sitemap.xml` führt die
+öffentlichen Seiten, `public/llms.txt` fasst Produkt, Preise, Grenzen und Seiten zusammen.
 
 ## Werbefilme
 

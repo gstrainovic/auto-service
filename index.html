@@ -5,11 +5,57 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Wartungsheft — Werkstattrechnung fotografieren, Service und MFK im Blick</title>
-    <meta name="description" content="Nie wieder Wartung vergessen. Fotografiere deine Werkstattrechnung — die KI extrahiert alle Daten. Wartungsplan, Kostenübersicht und digitales Scheckheft." />
+    <!-- Ein Satz, der «Was ist wartungsheft.ch?» beantwortet — Suchmaschinen und KI-Antworten zitieren diesen Text -->
+    <meta name="description" content="Wartungsheft ist ein digitales Serviceheft für Fahrzeuge aus der Schweiz: Werkstattrechnung fotografieren, die App liest Werkstatt, Datum, Betrag und Arbeiten heraus und führt daraus den Wartungsplan. Privat 25 CHF im Jahr, Betriebe 36 CHF pro Fahrzeug und Jahr, 30 Tage gratis." />
     <meta name="keywords" content="Auto Wartung App, Werkstattrechnung scannen, KI, Fahrzeug Service, digitales Scheckheft, Wartungsplan, MFK" />
     <meta property="og:title" content="Wartungsheft — Werkstattrechnung fotografieren, Service und MFK im Blick" />
     <meta property="og:description" content="Fotografiere deine Werkstattrechnung. Die KI erledigt den Rest. Offline-fähig, datenschutzfreundlich, kostenlos starten." />
     <meta property="og:type" content="website" />
+    <!--
+      Strukturierte Daten: was das Produkt ist, was es kostet, wer es anbietet. Die Preise stehen auch in
+      plans.ts; wer sie dort ändert, ändert sie hier mit.
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Wartungsheft",
+        "url": "https://wartungsheft.ch/",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web, iOS, Android",
+        "description": "Digitales Serviceheft für Fahrzeuge aus der Schweiz: Werkstattrechnung fotografieren, die App liest Werkstatt, Datum, Betrag und Arbeiten heraus und führt daraus den Wartungsplan mit Fälligkeiten und E-Mail-Erinnerungen.",
+        "inLanguage": "de-CH",
+        "offers": [
+          {
+            "@type": "Offer",
+            "name": "Privat",
+            "price": "25",
+            "priceCurrency": "CHF",
+            "description": "Jahresabo für Privathalter, bis 5 Fahrzeuge. 30 Tage gratis testen."
+          },
+          {
+            "@type": "Offer",
+            "name": "Betrieb",
+            "price": "36",
+            "priceCurrency": "CHF",
+            "description": "Jahresabo pro Fahrzeug für Betriebe, Rechnung auf die Firma. 30 Tage gratis testen."
+          }
+        ],
+        "provider": {
+          "@type": "Organization",
+          "name": "Strainovic IT",
+          "url": "https://wartungsheft.ch/",
+          "email": "info@wartungsheft.ch",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Bahnstrasse 9b",
+            "postalCode": "9323",
+            "addressLocality": "Steinach",
+            "addressCountry": "CH"
+          }
+        }
+      }
+    </script>
     <!-- Preconnect to Google Fonts for faster loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

@@ -1,0 +1,37 @@
+# Wartungsheft — digitales Serviceheft (wartungsheft.ch)
+# Die öffentlichen Seiten sollen in Suchmaschinen und in KI-Antworten auftauchen; hinter der Anmeldung gibt es
+# für einen Crawler nichts zu holen.
+
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /vehicles
+Disallow: /settings
+Disallow: /login
+
+# Antwortmaschinen ausdrücklich erlaubt: ohne diese Zeilen fehlt die Seite in ihren Antworten
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+Sitemap: https://wartungsheft.ch/sitemap.xml

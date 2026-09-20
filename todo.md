@@ -28,31 +28,22 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
       Schwelle anheben: erst nach zwei Fehlläufen hintereinander mailen
 
 ### Marketing-Video
-- [ ] Rückmeldung zu beiden Filmen: der Hintergrund blendet und das Tempo ist zu hoch. Szenen länger stehen lassen
-      (Mindestdauer je Abschnitt in `scripts/video-build.sh`, Sprechertempo), Aufnahme mit dunklerer Oberfläche
-      prüfen, danach neu aufnehmen und montieren (Skill `.claude/skills/werbefilm/SKILL.md`)
 - [ ] Kurzfassungen für Social veröffentlichen: `video-out/social-privat.webm` und `social-betrieb.webm` (je gut
       10 Sekunden) beim ersten Beitrag oder der ersten Anzeige einsetzen
 
 ### Auffindbar, wenn jemand eine KI fragt
-- [ ] Auf «Was ist wartungsheft.ch?» soll ChatGPT, Claude, Perplexity und Googles KI-Übersicht die richtige Antwort
-      geben: Serviceheft mit Rechnungen pro Fahrzeug, Schweiz, 25 CHF privat / 36 CHF pro Fahrzeug im Betrieb,
-      30 Tage gratis. Zuerst messen, was die vier heute antworten, dann nachbessern:
-      Ein-Satz-Definition sichtbar oben auf der Startseite (nicht nur im Film), Preise, Grenzen und Antworten auf die
-      häufigen Fragen als Text statt nur in Bild und Video, strukturierte Daten (`SoftwareApplication`,
-      `Organization`, `FAQPage`), `/llms.txt` mit demselben Inhalt, `robots.txt` erlaubt GPTBot, ClaudeBot,
-      PerplexityBot und Google-Extended. Danach dieselbe Frage nochmals stellen und den Unterschied notieren
-- [ ] Seite `/hilfe` mit den neun Kernabläufen aus CLAUDE.md, je drei bis fünf Sätze, plus häufige Fragen als
-      `FAQPage`. Dient dreifach: Antwort im Postfach statt Erklärung von Hand, Text für die KI-Antworten oben und
-      Prüfliste für uns. Keine Bedienvideos: jede Änderung der Oberfläche macht sie falsch, und wer eine Anleitung
-      braucht, zeigt eine Lücke in der Oberfläche — die Antwort gehört dann an die Stelle, nicht ins Handbuch
-- [ ] `robots.txt` und `sitemap.xml` gibt es heute gar nicht (`vite.config.ts` listet `robots.txt` unter
-      `includeAssets`, die Datei fehlt). Beide anlegen, dann die Indexierung anstossen:
-      Google Search Console mit Domain-Property über einen DNS-TXT-Eintrag verifizieren (Infomaniak-API, Token in
-      `~/.config/infomaniak/token`), Sitemap einreichen, die wichtigen Seiten einzeln über die URL-Prüfung zur
-      Indexierung anmelden. Die Indexing API hilft nicht, sie gilt nur für `JobPosting` und `BroadcastEvent`.
-      Dasselbe bei den Bing Webmaster Tools plus IndexNow (Schlüsseldatei im Web-Wurzelverzeichnis, ein Ping pro
-      neuer URL): ChatGPT sucht über den Bing-Index, das zahlt direkt auf den Eintrag oben ein
+
+Text, Metadaten, `robots.txt`, `sitemap.xml` und `llms.txt` stehen (CLAUDE.md «Hilfe und Auffindbarkeit»).
+Was noch fehlt, braucht ein Konto und damit den Nutzer:
+
+- [ ] Google Search Console: Domain-Property über einen DNS-TXT-Eintrag verifizieren (Infomaniak-API, Token in
+      `~/.config/infomaniak/token`), Sitemap einreichen, die wichtigen Seiten über die URL-Prüfung zur Indexierung
+      anmelden. Die Indexing API hilft nicht, sie gilt nur für `JobPosting` und `BroadcastEvent`
+- [ ] Bing Webmaster Tools und IndexNow (Schlüsseldatei im Wurzelverzeichnis, ein Ping pro neuer URL):
+      ChatGPT sucht über den Bing-Index
+- [ ] Messen, ob es wirkt: ChatGPT, Claude, Perplexity und Googles KI-Übersicht nach «Was ist wartungsheft.ch?»
+      fragen und die Antworten notieren. Richtig wäre: Serviceheft mit Rechnungen pro Fahrzeug, Schweiz,
+      25 CHF privat / 36 CHF pro Fahrzeug im Betrieb, 30 Tage gratis
 
 ### Messen, nebenbei
 - [ ] Wöchentlich Zahlen ziehen (Caddy-Log, `events`, Anmeldungen, Bestellungen, Postfach, README Abschnitt 6) und in

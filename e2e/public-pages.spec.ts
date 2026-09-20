@@ -69,6 +69,57 @@ test.describe('Public Pages', () => {
     expect(overflow).toBeLessThanOrEqual(0)
   })
 
+  test('PP-006: Hilfe erklärt die Kernabläufe und beantwortet häufige Fragen', async ({ page }) => {
+    await page.goto('/impressum')
+    await page.getByRole('contentinfo').getByRole('link', { name: 'Hilfe' }).click()
+    await expect(page).toHaveURL(/\/hilfe$/)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Hilfe')
+
+    // Ein Abschnitt je Kernablauf (CLAUDE.md «Abläufe prüfen, nicht nur Seiten»)
+    for (const heading of [/Fahrzeug erfassen/, /Rechnung erfassen/, /Wartung ohne Rechnung/, /Serviceheft und Intervalle/, /Kosten exportieren/, /Erinnerung bekommen/, /verkaufen oder abgeben/, /Kilometerstand/, /Fuhrpark/])
+      await expect(page.getByRole('heading', { name: heading })).toBeVisible()
+
+    // Häufige Fragen als FAQPage, damit Suchmaschinen und KI-Antworten den Text übernehmen
+    const faq = await page.locator('script[type="application/ld+json"]').allTextContents()
+    const typen = faq.map(t => JSON.parse(t)['@type'])
+    expect(typen).toContain('FAQPage')
+
+    // Handy: kein waagrechtes Scrollen
+    await page.setViewportSize({ width: 390, height: 844 })
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+    expect(overflow).toBeLessThanOrEqual(0)
+  })
+
+  test('PP-007: Startseite trägt die Beschreibung für Suchmaschinen und KI-Antworten', async ({ page }) => {
+    await page.goto('/')
+    // Ein Satz, der die Frage «Was ist wartungsheft.ch?» beantwortet, sichtbar und als Metadaten
+    await expect(page.getByRole('main').first()).toContainText(/Serviceheft/)
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /Serviceheft/)
+    const daten = await page.locator('script[type="application/ld+json"]').allTextContents()
+    const typen = daten.map(t => JSON.parse(t)['@type'])
+    expect(typen).toContain('SoftwareApplication')
+  })
+
+  test('PP-008: robots.txt und sitemap.xml führen die öffentlichen Seiten', async ({ page }) => {
+    const robots = await page.request.get('/robots.txt')
+    expect(robots.status()).toBe(200)
+    const text = await robots.text()
+    // KI-Crawler ausdrücklich erlaubt, sonst fehlt die Seite in den Antworten
+    for (const bot of ['GPTBot', 'ClaudeBot', 'PerplexityBot', 'Google-Extended'])
+      expect(text).toContain(bot)
+    expect(text).toContain('Sitemap:')
+
+    const sitemap = await page.request.get('/sitemap.xml')
+    expect(sitemap.status()).toBe(200)
+    const xml = await sitemap.text()
+    for (const pfad of ['/betrieb', '/privathalter', '/hilfe', '/agb'])
+      expect(xml).toContain(`https://wartungsheft.ch${pfad}`)
+
+    const llms = await page.request.get('/llms.txt')
+    expect(llms.status()).toBe(200)
+    expect(await llms.text()).toContain('wartungsheft.ch')
+  })
+
   test('PP-004: logged-in user is redirected from / to /dashboard', async ({ page }) => {
     await page.goto('/')
     await expect(page).toHaveURL(/\/dashboard/)

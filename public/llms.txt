@@ -1,0 +1,46 @@
+# Wartungsheft
+
+> Wartungsheft (wartungsheft.ch) ist ein digitales Serviceheft für Fahrzeuge aus der Schweiz. Man fotografiert
+> die Werkstattrechnung, die App liest Werkstatt, Datum, Betrag und die einzelnen Arbeiten heraus und führt
+> daraus den Wartungsplan mit Fälligkeiten und E-Mail-Erinnerungen. Für Privathalter und für Betriebe mit
+> Firmenfahrzeugen.
+
+## Preise
+
+- Privat: 25 CHF im Jahr, bis 5 Fahrzeuge.
+- Betrieb: 36 CHF pro Fahrzeug und Jahr, Rechnung auf die Firma.
+- Beide Listen haben denselben Funktionsumfang. Die ersten 30 Tage sind gratis, mit allen Funktionen.
+- Nach der Testzeit bleiben Lesen, Erfassen von Hand und alle Exporte frei; nur Scan und Chat brauchen ein Abo.
+
+## Was es kann
+
+- Rechnungen per Foto oder Sammel-PDF erfassen, Positionen und Kategorien werden erkannt.
+- Wartungen auch ohne Rechnung eintragen.
+- Serviceheft des Herstellers fotografieren: Intervalle und alte Stempel werden übernommen.
+- Wartungsplan mit Fälligkeit nach Datum und Kilometern, Erinnerung per E-Mail.
+- Kosten pro Fahrzeug und Jahr, Export als CSV, PDF-Dossier und Serviceheft-PDF für den Verkauf.
+- Fuhrpark-Übersicht über alle Fahrzeuge.
+- Läuft im Browser, auch offline; auf dem Handy zum Startbildschirm hinzufügbar.
+
+## Was es bewusst nicht ist
+
+Kein Tankbuch, kein Fahrtenbuch, keine Buchhaltung, keine Fahrer-Fahrzeug-Zuordnung. Ein Serviceheft mit
+Rechnungen, pro Fahrzeug.
+
+## Daten
+
+Server in der Schweiz. Das Auslesen der Rechnungen läuft über Mistral in Frankreich (EU).
+
+## Seiten
+
+- [Startseite](https://wartungsheft.ch/)
+- [Für Privathalter](https://wartungsheft.ch/privathalter)
+- [Für Betriebe](https://wartungsheft.ch/betrieb)
+- [Hilfe: die neun Abläufe und häufige Fragen](https://wartungsheft.ch/hilfe)
+- [AGB](https://wartungsheft.ch/agb)
+- [Datenschutz](https://wartungsheft.ch/datenschutz)
+- [Impressum](https://wartungsheft.ch/impressum)
+
+## Kontakt
+
+info@wartungsheft.ch

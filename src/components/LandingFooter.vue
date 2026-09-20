@@ -17,6 +17,9 @@ const CONTACT_EMAIL = 'info@wartungsheft.ch'
         <router-link to="/privathalter">
           Privathalter
         </router-link>
+        <router-link to="/hilfe">
+          Hilfe
+        </router-link>
         <router-link to="/impressum">
           Impressum
         </router-link>

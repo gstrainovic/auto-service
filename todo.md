@@ -10,14 +10,21 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
       Betrieb scannt; sonst stoppt die API bis zum Monatsersten
 - [ ] PostFinance-Geschäftskonto eröffnen (Fr. 5 im Monat, bei Eröffnung bis 30.11.2026 zwei Jahre gratis) und
       QR-IBAN beantragen; neon, Yuh und Revolut privat verbieten geschäftliche Eingänge. IBAN danach in die `.env`
-      des AI-Proxys auf der Instanz, nicht ins Repo
+      des AI-Proxys auf der Instanz, nicht ins Repo. Bankwahl und Begründung in `geschaeftskonten-vergleich.md`
+- [ ] Bei der Eröffnung fragen, ob die QR-IBAN («virtuelles Konto») und camt.054 ohne Zusatzvereinbarung
+      freigeschaltet werden und wann die Datei bereitsteht (nachts oder Intraday)
 
 ### Von Claude
 - [ ] Jahresabo Betrieb live schalten, sobald die IBAN da ist: `deploy/.env` auf der Instanz um `INVOICE_*`,
       `RESEND_TOKEN` und `AI_PROXY_INTERNAL_TOKEN` ergänzen, Proxy neu bauen, Cron `wartungsheft-billing` anlegen
       (README «8.»), Testbestellung mit eigener Adresse, PDF gegen den SIX-Validator prüfen, danach stornieren
-- [ ] Tagescheck um `billing.mjs open` ergänzen: überfällige Rechnungen melden, Zahlungseingänge aus dem
-      Kontoauszug mit `paid <Referenz>` eintragen. AbaNinja erst ab etwa 10 zahlenden Betrieben
+- [ ] Echtes camt.054 als Fixture statt `camt054-qrr.xml` (nachgebaut): entweder aus dem E-Banking, sobald das Konto
+      da ist, oder über die Testplattform (isotest.postfinance.ch, virtuelles QR-Konto, QR-Rechnung hochladen und
+      Tagesendverarbeitung simulieren). Die Registrierung dort scheitert bisher: das E-Mail-Feld bleibt rot mit
+      «Bitte eine gültige E-Mail-Adresse zur Registrierung eingeben», auch bei getippter Eingabe und mehreren
+      Adressen. Parser, Zuordnung und Betragsprüfung stehen, das Fixture ist nur die Gegenprobe
+- [ ] Tagescheck um `billing.mjs open` ergänzen: überfällige Rechnungen melden, Zahlungseingänge mit
+      `camt <datei.xml>` aus dem heruntergeladenen camt.054 buchen. AbaNinja erst ab etwa 10 zahlenden Betrieben
 - [ ] Hinweis vor Ende der Testzeit: in der App ab Tag 23 und eine Mail 7 Tage vorher (Erinnerungs-Job
       `scripts/reminders.ts`), mit Link auf die Bestellung
 - [ ] Fahrzeuggrenze wirklich sperren, sobald ein Zahlungsweg existiert: `vehicleLimit` meldet heute nur, solange

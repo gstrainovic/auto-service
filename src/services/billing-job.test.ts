@@ -1,7 +1,8 @@
+import type { CamtCredit } from '@strainovic/ai-proxy/camt'
 import type { Subscription } from '@strainovic/ai-proxy/stores/types'
-import { orderSubscription } from '@strainovic/ai-proxy/invoice-subscription'
+import { markInvoicePaid, orderSubscription } from '@strainovic/ai-proxy/invoice-subscription'
 import { describe, expect, it } from 'vitest'
-import { dueRenewals, findInvoiceOwner, openInvoiceReport } from './billing-job'
+import { dueRenewals, findInvoiceOwner, matchCredits, openInvoiceReport } from './billing-job'
 
 const IBAN = 'CH93 0076 2011 6238 5295 7'
 const address = { company: 'Muster AG', contact: 'Petra Muster', street: 'Hauptstrasse 12', zip: '9000', city: 'St. Gallen', email: 'b@muster.ch' }
@@ -59,5 +60,57 @@ describe('findInvoiceOwner', () => {
   it('unbekannte Referenz wirft mit klarer Meldung', () => {
     const entries = [{ userId: 'u1', sub: ordered('u1', '2026-09-19') }]
     expect(() => findInvoiceOwner(entries, 'RF00NIX')).toThrow(/RF00NIX/)
+  })
+})
+
+describe('matchCredits', () => {
+  const credit = (over: Partial<CamtCredit>): CamtCredit => ({
+    reference: '',
+    referenceType: 'QRR',
+    amount: 72,
+    currency: 'CHF',
+    bookedAt: '2026-10-12',
+    bankRef: 'B-1',
+    debtor: 'Muster AG',
+    ultimateDebtor: '',
+    message: '',
+    charges: 0,
+    ...over,
+  })
+
+  it('ordnet eine Gutschrift der Rechnung und ihrem Nutzer zu', () => {
+    const entries = [{ userId: 'u1', sub: ordered('u1', '2026-09-19') }]
+    const invoice = entries[0]!.sub.invoices![0]!
+    const [match] = matchCredits(entries, [credit({ reference: invoice.reference, amount: invoice.amount })])
+    expect(match).toMatchObject({ userId: 'u1', invoice: { number: invoice.number } })
+    expect(match!.problem).toBeUndefined()
+  })
+
+  it('meldet eine Gutschrift ohne passende Rechnung, statt sie zu buchen', () => {
+    const entries = [{ userId: 'u1', sub: ordered('u1', '2026-09-19') }]
+    const [match] = matchCredits(entries, [credit({ reference: 'RF00NIX' })])
+    expect(match!.userId).toBeUndefined()
+    expect(match!.problem).toMatch(/Rechnung/)
+  })
+
+  it('meldet einen abweichenden Betrag und eine Gutschrift ohne Referenz', () => {
+    const entries = [{ userId: 'u1', sub: ordered('u1', '2026-09-19') }]
+    const invoice = entries[0]!.sub.invoices![0]!
+    const matches = matchCredits(entries, [
+      credit({ reference: invoice.reference, amount: invoice.amount - 10 }),
+      credit({ reference: '', bankRef: 'B-2' }),
+    ])
+    expect(matches[0]!.problem).toMatch(/Betrag/)
+    expect(matches[0]!.userId).toBeUndefined()
+    expect(matches[1]!.problem).toMatch(/Referenz/)
+  })
+
+  it('meldet eine bereits verbuchte Buchung', () => {
+    const sub = ordered('u1', '2026-09-19')
+    const invoice = sub.invoices![0]!
+    const paid = markInvoicePaid(sub, invoice.reference, '2026-10-02', { bankRef: 'B-1' })
+    const [match] = matchCredits([{ userId: 'u1', sub: paid }], [credit({ reference: invoice.reference, amount: invoice.amount })])
+    expect(match!.problem).toMatch(/bereits|bezahlt/)
+    expect(match!.userId).toBeUndefined()
   })
 })

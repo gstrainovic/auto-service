@@ -5,14 +5,17 @@
  *   node billing.mjs renew [--dry-run]    fällige Verlängerungen (30 Tage vor Ablauf) auslösen, danach offene Rechnungen
  *   node billing.mjs open                 offene Rechnungen, überfällige markiert
  *   node billing.mjs paid <Referenz> [JJJJ-MM-TT]   Zahlung eintragen (Referenz oder Rechnungsnummer aus dem Kontoauszug)
+ *   node billing.mjs camt <datei.xml> [--dry-run]  camt.054 aus dem E-Banking einlesen und passende Zahlungen buchen
  *
  * Läuft auf der Instanz als Container (deploy/docker-compose.yml, Dienst `billing`, Profil `jobs`), gebündelt mit
  * `npm run build:billing` nach deploy/billing.mjs. Umgebung: INSTANT_API_URI, INSTANT_APP_ID, INSTANT_ADMIN_TOKEN,
  * AI_PROXY_URL, AI_PROXY_INTERNAL_TOKEN.
  */
 import type { InvoiceEntry } from '../src/services/billing-job'
+import { readFileSync } from 'node:fs'
 import process from 'node:process'
-import { dueRenewals, findInvoiceOwner, openInvoiceReport } from '../src/services/billing-job'
+import { parseCamt054 } from '@strainovic/ai-proxy/camt'
+import { dueRenewals, findInvoiceOwner, matchCredits, openInvoiceReport } from '../src/services/billing-job'
 
 const API = process.env.INSTANT_API_URI ?? ''
 const APP_ID = process.env.INSTANT_APP_ID ?? ''
@@ -96,6 +99,36 @@ async function main(): Promise<void> {
     return
   }
 
+  if (command === 'camt') {
+    const [file] = args
+    if (!file)
+      throw new Error('Aufruf: billing.mjs camt <camt054.xml> [--dry-run]')
+    const credits = parseCamt054(readFileSync(file, 'utf8'))
+    const { entries } = await load(false)
+    const matches = matchCredits(entries, credits)
+    log(`${file}: ${credits.length} Gutschrift(en)`)
+    for (const m of matches) {
+      const who = `${m.credit.debtor || 'unbekannt'} CHF ${m.credit.amount.toFixed(2)} vom ${m.credit.bookedAt}`
+      if (m.problem) {
+        log(`PRÜFEN ${who}: ${m.problem}`)
+        continue
+      }
+      if (dryRun) {
+        log(`[dry-run] ${m.invoice!.number} bezahlt durch ${who}`)
+        continue
+      }
+      await proxy('/billing/paid', m.userId!, {
+        key: m.credit.reference,
+        paidAt: m.credit.bookedAt,
+        amount: m.credit.amount,
+        bankRef: m.credit.bankRef,
+      })
+      log(`${m.invoice!.number} bezahlt durch ${who}`)
+    }
+    printOpen((await load(false)).entries)
+    return
+  }
+
   if (command === 'paid') {
     const [key, paidAt = today] = args
     if (!key)
@@ -107,7 +140,7 @@ async function main(): Promise<void> {
     return
   }
 
-  throw new Error(`Unbekannter Befehl ${command}: renew, open oder paid`)
+  throw new Error(`Unbekannter Befehl ${command}: renew, open, paid oder camt`)
 }
 
 main().catch((err) => {

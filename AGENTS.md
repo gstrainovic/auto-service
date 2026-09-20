@@ -38,3 +38,27 @@ am Code ändert sich nichts.
   WAL-Fehler eines längst toten Prozesses mit, `/health/system` bleibt dann auf `{"wal":"error"}`), dann `up -d`.
 - **Nicht**: die Produktionsinstanz für Entwicklung mitnutzen. 4 GB RAM sind mit dem 2-GB-Heap der Produktion belegt,
   und ein zweiter Stack auf derselben Maschine gefährdet die Kundendaten.
+
+## Bank und Zahlungseingänge: PostFinance
+
+Geschäftskonto ist PostFinance. Auswahl, Marktvergleich und die technische Prüfung stehen in
+`geschaeftskonten-vergleich.md`, die Feldbelegung von camt.054 dort im Abschnitt «camt.054: Felder für den eigenen
+Zahlungsabgleich». Bankdokument als Kopie in `sgkb-cash-management-handbuch.pdf`.
+
+- **Zahlungsabgleich ohne AbaNinja**: Die Jahresrechnungen für Betriebe tragen eine QR- oder SCOR-Referenz aus
+  `invoiceReference` (ai-proxy `src/invoice.ts`). Dieselbe Referenz steht im camt.054 unter
+  `RmtInf/Strd/CdtrRefInf/Ref` und ist der Schlüssel für `markInvoicePaid`. AbaNinja Basic (CHF 21/Mt.) wird dafür
+  nicht gebraucht.
+- **camt.054 einlesen**: Parser in ai-proxy `src/camt.ts` (`parseCamt054`, fast-xml-parser, reine Funktion),
+  Zuordnung in `src/services/billing-job.ts` (`matchCredits`), Aufruf `billing.mjs camt <datei.xml> [--dry-run]`
+  (README «8.»). Iteriert wird über `NtryDtls/TxDtls`, nicht über `Ntry`: ein Tag mit mehreren Zahlungen kommt als
+  eine Sammelbuchung. Das Buchungsdatum steht als `Ntry/BookgDt/Dt` am Eintrag, nicht an der Zahlung.
+  `markInvoicePaid` bucht nur den vollen Betrag und lehnt eine schon verbuchte `AcctSvcrRef` ab; der Endpunkt
+  `/billing/paid` antwortet darauf mit 409, auf eine unbekannte Referenz mit 404.
+- **Testen ohne Konto**: Die PostFinance-Testplattform (isotest.postfinance.ch) ist ohne Kundenbeziehung nutzbar und
+  simuliert die ganze Kette von der QR-Rechnung bis zum camt.054. Neue Parser-Arbeit wird dort belegt, nicht am
+  Produktivkonto. Fixtures: `ai-proxy/src/fixtures/camt054-postfinance-muster.xml` ist die echte Musterdatei von
+  PostFinance (Gutschrift ohne Referenz), `camt054-qrr.xml` ist nachgebaut und wird durch eine Datei der
+  Testplattform ersetzt, sobald eine vorliegt.
+- **EBICS erst bei Menge**: Zu Beginn reicht der manuelle camt.054-Download im E-Banking. PostFinance spricht EBICS
+  3.0 und 2.5; mit 2.5 läuft `node-ebics/node-ebics-client`, was zum Node-Stack passt.

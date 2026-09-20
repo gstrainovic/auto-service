@@ -337,16 +337,23 @@ Ablauf ohne Frist; eine offene Rechnung für ein noch nicht begonnenes Jahr wird
 
 Täglich läuft der Container `billing` (Profil `jobs`, Skript `deploy/billing.mjs` = Bündel von `scripts/billing.ts`):
 30 Tage vor Ablauf zählt er die aktiven Fahrzeuge und lässt den Proxy die Verlängerungsrechnung schicken
-(`/billing/renew`), danach listet er offene Rechnungen, überfällige markiert. Zahlungseingänge trägst du mit der
-Referenz aus dem Kontoauszug ein:
+(`/billing/renew`), danach listet er offene Rechnungen, überfällige markiert. Zahlungseingänge kommen als camt.054
+aus dem E-Banking (PostFinance, Detailavis der Gutschriften) oder einzeln über die Referenz:
 
 ```bash
 cd /opt/auto-service/deploy
 C="docker compose --env-file .env --profile jobs run --rm billing node /app/billing.mjs"
 $C open                                  # offene Rechnungen
-$C paid RF31WH20260919DSKURD 2026-10-02  # Zahlung eintragen (Referenz oder Rechnungsnummer)
+$C camt /app/camt054.xml --dry-run       # camt.054 lesen, Zuordnung zeigen, nichts buchen
+$C camt /app/camt054.xml                 # passende Zahlungen buchen, Rest mit «PRÜFEN» melden
+$C paid RF31WH20260919DSKURD 2026-10-02  # Zahlung von Hand eintragen (Referenz oder Rechnungsnummer)
 $C renew --dry-run                       # zeigt fällige Verlängerungen, verschickt nichts
 ```
+
+`camt` bucht nur, was eindeutig passt: Gutschrift mit bekannter Referenz, Betrag gleich dem Rechnungsbetrag,
+Buchung noch nicht verbucht (`AcctSvcrRef`). Teilzahlung, falscher Betrag, unbekannte oder fehlende Referenz
+erscheinen als `PRÜFEN` und bleiben offen. Der Parser liegt im AI-Proxy (`src/camt.ts`), die Zuordnung in
+`src/services/billing-job.ts` (`matchCredits`).
 
 Cron (`/etc/cron.d/wartungsheft-billing`, Nutzer `debian`), Log `/opt/auto-service/deploy/billing.log`:
 

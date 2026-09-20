@@ -46,6 +46,13 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
       `FAQPage`. Dient dreifach: Antwort im Postfach statt Erklärung von Hand, Text für die KI-Antworten oben und
       Prüfliste für uns. Keine Bedienvideos: jede Änderung der Oberfläche macht sie falsch, und wer eine Anleitung
       braucht, zeigt eine Lücke in der Oberfläche — die Antwort gehört dann an die Stelle, nicht ins Handbuch
+- [ ] `robots.txt` und `sitemap.xml` gibt es heute gar nicht (`vite.config.ts` listet `robots.txt` unter
+      `includeAssets`, die Datei fehlt). Beide anlegen, dann die Indexierung anstossen:
+      Google Search Console mit Domain-Property über einen DNS-TXT-Eintrag verifizieren (Infomaniak-API, Token in
+      `~/.config/infomaniak/token`), Sitemap einreichen, die wichtigen Seiten einzeln über die URL-Prüfung zur
+      Indexierung anmelden. Die Indexing API hilft nicht, sie gilt nur für `JobPosting` und `BroadcastEvent`.
+      Dasselbe bei den Bing Webmaster Tools plus IndexNow (Schlüsseldatei im Web-Wurzelverzeichnis, ein Ping pro
+      neuer URL): ChatGPT sucht über den Bing-Index, das zahlt direkt auf den Eintrag oben ein
 
 ### Messen, nebenbei
 - [ ] Wöchentlich Zahlen ziehen (Caddy-Log, `events`, Anmeldungen, Bestellungen, Postfach, README Abschnitt 6) und in

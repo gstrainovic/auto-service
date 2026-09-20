@@ -45,4 +45,19 @@ test.describe('Landing Pages', () => {
     await expect(page.getByRole('banner').getByRole('button', { name: '30 Tage gratis testen' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'info@wartungsheft.ch' })).toBeVisible()
   })
+
+  test('LP-004: der Film steht auf Startseite und Angebotsseiten, stumm und erst auf Klick', async ({ page }) => {
+    await page.goto('/')
+    const film = page.getByTestId('landing-video')
+    await expect(film).toBeVisible()
+    const video = film.locator('video')
+    await expect(video).toHaveAttribute('src', '/film-privat.webm')
+    expect(await video.evaluate((v: HTMLVideoElement) => v.muted)).toBe(true)
+    // Kein Autoplay: erst der Knopf startet
+    await expect(film.getByRole('button', { name: 'Film abspielen' })).toBeVisible()
+    expect(await video.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true)
+
+    await page.goto('/betrieb')
+    await expect(page.getByTestId('landing-video').locator('video')).toHaveAttribute('src', '/film-betrieb.webm')
+  })
 })

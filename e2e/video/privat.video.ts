@@ -4,13 +4,17 @@
  * Jede Szene ist ein eigener Clip, damit der Schnitt sie einzeln kürzen und umstellen kann.
  */
 import { clearInstantDB, expect, mockInvoiceScan, test, waitForInstantDB } from '../fixtures/test-fixtures'
-import { beat, daysAgo, seed, showPointer, slowClick } from './szenen'
+import { beat, clipSpeichern, daysAgo, seed, showPointer, slowClick } from './szenen'
 
 const GOLF = { make: 'VW', model: 'Golf 7', year: 2016, mileage: 118_400, licensePlate: 'SG 248 901' }
 
 test.describe('Werbeclips Privathalter', () => {
   test.beforeEach(async ({ page }) => {
     await clearInstantDB(page)
+  })
+
+  test.afterEach(async ({ page }, testInfo) => {
+    await clipSpeichern(page, testInfo)
   })
 
   test('Szene 2: Rechnung fotografieren, Felder füllen sich', async ({ page }) => {

@@ -3,8 +3,35 @@
  * vor, Playwright zeichnet sie auf. Alle Daten sind erfunden, damit nie Kundendaten im Video landen.
  * Die Drehbücher stehen in `video-scripts/privat-video-script.md` und `video-scripts/betrieb-video-script.md`.
  */
-import type { Page } from '@playwright/test'
+import type { Page, TestInfo } from '@playwright/test'
+import { mkdir } from 'node:fs/promises'
+import process from 'node:process'
 import { waitForInstantDB } from '../fixtures/test-fixtures'
+
+/** Zielordner der fertigen Clips; `scripts/video-clips.sh` wandelt sie von dort aus um */
+export const CLIP_DIR = `${process.cwd()}/video-out`
+
+/**
+ * Speichert die Aufnahme unter dem Namen der Szene statt unter Playwrights Ordner-Hash. Gehört in ein
+ * `test.afterEach`, dort wartet `saveAs` auf das Ende der Aufnahme.
+ */
+export async function clipSpeichern(page: Page, testInfo: TestInfo): Promise<void> {
+  const video = page.video()
+  if (!video)
+    return
+  const slug = testInfo.title
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase()
+  await mkdir(CLIP_DIR, { recursive: true })
+  // Erst die Seite schliessen: solange sie offen ist, wartet saveAs auf das Ende der Aufnahme und läuft in den Timeout
+  await page.close()
+  await video.saveAs(`${CLIP_DIR}/${slug}.webm`)
+}
 
 /** Ruhig genug, dass ein Zuschauer folgen kann; im Schnitt lässt sich immer noch kürzen */
 export const BEAT = 900

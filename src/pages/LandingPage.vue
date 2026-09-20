@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import DemoDueList from '../components/DemoDueList.vue'
 import LandingFooter from '../components/LandingFooter.vue'
 import LandingHeader from '../components/LandingHeader.vue'
+import LandingVideo from '../components/LandingVideo.vue'
 import PriceTable from '../components/PriceTable.vue'
 import { useAuthEntry } from '../composables/useAuthEntry'
 
@@ -54,6 +55,8 @@ const { label, go } = useAuthEntry()
         </div>
       </div>
     </section>
+
+    <LandingVideo />
 
     <!-- Problem -->
     <section class="section section-alt">

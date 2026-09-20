@@ -384,6 +384,7 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | HK | Herkunft am Datensatz | HK-001 bis HK-004: `source` bei Formular, Rechnung samt Wartungen, Wartungsplan, Dashboard |
 | AE | Anmelde-Einstieg | AE-001 bis AE-003: «Anmelden» im Kopf auf 390px, bekanntes Konto nach Abmelden, «Andere E-Mail» |
 | BO | Bestellung Abo | BO-001 bis BO-004: Betrieb mit Rechnungsadresse, Feldfehler, Privat ohne Firma, Preis ab sechs Fahrzeugen |
+| LP | Landing Pages | LP-001 bis LP-004: Betrieb, Privathalter, Startseite, Film |
 | TN | Testzeit-Hinweis | TN-001 bis TN-003: Hinweis in der letzten Woche, vorher still, ohne Kaufweg gar nicht |
 
 **Gesamt: 142 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
@@ -423,9 +424,13 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 
 ## Werbefilme
 
-Drehbücher in `video-scripts/`, Eröffnungsszenen als SVG mit CSS-Animation in `video-scripts/szenen/*.html`,
-App-Aufnahmen als Playwright-Szenen in `e2e/video/*.video.ts` (Projekt `video`,
-`npm run video`, Handyformat 390 px, erfundene Daten). `scripts/video-clips.sh` sammelt die Clips nach `video-out/`.
+Auf `/`, `/privathalter` und `/betrieb` läuft ein stummer Kurzfilm (`LandingVideo.vue`, startet erst auf Klick;
+fehlt die Datei, bleibt der Abschnitt weg). Die Filme `public/film-privat.webm` und `film-betrieb.webm` baut
+`scripts/video-build.sh` aus den Clips; Reihenfolge und Längen stehen dort.
+Drehbücher in `video-scripts/`, Eröffnungsszenen und Titelkarten als SVG mit CSS-Animation in
+`video-scripts/szenen/*.html` (hell wie die App), App-Aufnahmen als Playwright-Szenen in `e2e/video/*.video.ts` (Projekt `video`,
+`npm run video`, Handyformat 390 px, erfundene Daten; jede Szene speichert sich über `clipSpeichern` selbst nach
+`video-out/`, dafür schliesst sie die Seite, sonst läuft `video.saveAs` in den Timeout).
 Ändert sich die Oberfläche, wird neu aufgenommen statt neu gefilmt. Aussenszenen, Stimme und Musik ohne Kosten:
 `video-scripts/ki-video.md`; mit Budget `video-scripts/ki-werkzeuge.md`. In der Werbung nur behaupten, was der Film zeigt oder
 was in `plans.ts`, `trial.ts` und den AGB steht.

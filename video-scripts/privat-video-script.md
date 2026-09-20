@@ -43,6 +43,16 @@ Nicht behaupten: Zeitersparnis in Stunden, Wiederverkaufswert in Franken, Kunden
 - Keine fremden Markenlogos im Bild (Fahrzeughersteller, Werkstattketten).
 - Ein Hinweis «KI-generierte Bilder und Stimme» im Abspann oder in der Videobeschreibung.
 
+## Fertigen Film bauen
+
+```bash
+npm run video              # alle Clips (App, Zeichnungen, Titelkarten)
+scripts/video-build.sh     # montiert public/film-privat.webm und film-betrieb.webm
+```
+
+Reihenfolge und Länge je Abschnitt stehen in `scripts/video-build.sh`. Die Landing Pages binden die Dateien über
+`LandingVideo.vue` ein, stumm und erst auf Klick.
+
 ## Aufnahme der App-Szenen
 
 ```bash

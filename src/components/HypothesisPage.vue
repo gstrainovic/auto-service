@@ -4,6 +4,7 @@ import Button from 'primevue/button'
 import { useAuthEntry } from '../composables/useAuthEntry'
 import LandingFooter from './LandingFooter.vue'
 import LandingHeader from './LandingHeader.vue'
+import LandingVideo from './LandingVideo.vue'
 import PriceTable from './PriceTable.vue'
 
 // Landing Page pro Hypothese (business-plan/09-validierung.md, M2): Problem in einem Satz,
@@ -48,6 +49,12 @@ const { entry, label, go } = useAuthEntry(props.segment)
           <p>{{ b.text }}</p>
         </div>
       </section>
+
+      <LandingVideo
+        :file="segment === 'betrieb' ? 'film-betrieb.webm' : 'film-privat.webm'"
+        :title="segment === 'betrieb' ? 'Der Fuhrpark in einer halben Minute' : 'In einer halben Minute gesehen'"
+        :subtitle="segment === 'betrieb' ? 'Vom Foto der Werkstattrechnung bis zu den Kosten pro Fahrzeug.' : 'Vom Foto der Werkstattrechnung bis zum Serviceheft für den Verkauf.'"
+      />
 
       <section class="hypo-price">
         <strong>{{ price }}</strong>

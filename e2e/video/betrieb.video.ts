@@ -3,7 +3,7 @@
  * Aufnahme: `npm run video -- e2e/video/betrieb.video.ts`, Ergebnis unter test-results/…/video.webm.
  */
 import { clearInstantDB, expect, mockInvoiceScan, test } from '../fixtures/test-fixtures'
-import { beat, daysAgo, seed, showPointer, slowClick } from './szenen'
+import { beat, clipSpeichern, daysAgo, seed, showPointer, slowClick } from './szenen'
 
 const FLEET = [
   { make: 'Fiat', model: 'Ducato', year: 2019, mileage: 184_300, licensePlate: 'SG 41 220' },
@@ -15,6 +15,10 @@ const FLEET = [
 test.describe('Werbeclips Betrieb', () => {
   test.beforeEach(async ({ page }) => {
     await clearInstantDB(page)
+  })
+
+  test.afterEach(async ({ page }, testInfo) => {
+    await clipSpeichern(page, testInfo)
   })
 
   test('Szene 2: Fuhrpark auf einen Blick, was ist fällig', async ({ page }) => {

@@ -17,9 +17,9 @@ const props = withDefaults(defineProps<{
   subtitle: 'Vom Foto der Werkstattrechnung bis zum Serviceheft für den Verkauf.',
 })
 
-// Auf dem Desktop das Querformat: hochkant füllt dort den halben Bildschirm und wirkt fremd
+// Auf dem Desktop die eigene Aufnahme im Desktop-Layout, am Handy die hochkant aufgenommene
 const quer = ref(false)
-const src = computed(() => (quer.value ? `/${props.file.replace(/\.webm$/, '-quer.webm')}` : `/${props.file}`))
+const src = computed(() => (quer.value ? `/${props.file.replace(/\.webm$/, '-desktop.webm')}` : `/${props.file}`))
 const poster = computed(() => src.value.replace(/\.webm$/, '-poster.jpg'))
 const vorhanden = ref(false)
 const laeuft = ref(false)

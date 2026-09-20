@@ -27,10 +27,12 @@ export async function clipSpeichern(page: Page, testInfo: TestInfo): Promise<voi
     .replace(/[^a-z0-9]+/gi, '-')
     .replace(/^-|-$/g, '')
     .toLowerCase()
+  // Der Desktop-Lauf legt eigene Dateien an, sonst überschreiben sich die beiden Formate
+  const suffix = testInfo.project.name === 'video-desktop' ? '-desktop' : ''
   await mkdir(CLIP_DIR, { recursive: true })
   // Erst die Seite schliessen: solange sie offen ist, wartet saveAs auf das Ende der Aufnahme und läuft in den Timeout
   await page.close()
-  await video.saveAs(`${CLIP_DIR}/${slug}.webm`)
+  await video.saveAs(`${CLIP_DIR}/${slug}${suffix}.webm`)
 }
 
 /** Ruhig genug, dass ein Zuschauer folgen kann; im Schnitt lässt sich immer noch kürzen */

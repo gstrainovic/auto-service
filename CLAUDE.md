@@ -425,8 +425,10 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 ## Werbefilme
 
 Auf `/`, `/privathalter` und `/betrieb` läuft ein Kurzfilm (`LandingVideo.vue`: startet erst auf Klick, dann mit
-Ton; ab 760 px die Querformat-Fassung `film-*-quer.webm`, darunter hochkant, dazu je ein Poster-Bild; fehlt die
-Datei, bleibt der Abschnitt weg). Die Filme `public/film-privat.webm` und `film-betrieb.webm` baut
+Ton; ab 760 px `film-*-desktop.webm`, darunter die hochkant aufgenommene Fassung, dazu je ein Poster-Bild; fehlt
+die Datei, bleibt der Abschnitt weg). Beide Fassungen sind **eigene Aufnahmen**: Playwright spielt die Szenen
+einmal im Handy-Layout (Projekt `video`) und einmal im Desktop-Layout (`video-desktop`), `npm run video` nimmt
+beide auf. Die Clips des Desktop-Laufs tragen `-desktop` im Namen. Die Filme `public/film-privat.webm` und `film-betrieb.webm` baut
 `scripts/video-build.sh` aus den Clips: Reihenfolge, Mindestlängen und Sprechertexte stehen dort, der Sprecher
 kommt aus Piper (Stimme `de_DE-thorsten-high`), die Untertitel aus demselben Text (kein Whisper nötig). Ein
 Abschnitt kann einen eigenen Untertitel tragen, wo die Schrift anders lauten muss als die Aussprache: espeak

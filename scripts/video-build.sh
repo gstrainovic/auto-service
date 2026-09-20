@@ -115,7 +115,7 @@ bauen() {
     if [ "$SPRECHER" = 1 ] && [ -n "$text" ] && [[ "$name" != titel-* ]]; then
       local srt="$tmp/$i.srt"
       srt_schreiben "$srt" "$untertitel" "$dauer"
-      filter="$filter,subtitles='$srt':force_style='FontName=DejaVu Sans,FontSize=11,PrimaryColour=&H00FFFFFF,BackColour=&HA0000000,BorderStyle=4,Outline=0,Shadow=0,Alignment=2,MarginV=60'"
+      filter="$filter,subtitles='$srt':force_style='FontName=DejaVu Sans,FontSize=${UT_GROESSE:-11},PrimaryColour=&H00FFFFFF,BackColour=&HA0000000,BorderStyle=4,Outline=0,Shadow=0,Alignment=2,MarginV=60'"
     fi
     filter="$filter,fade=in:0:8,fade=out:st=$(echo "$dauer - 0.4" | bc -l):d=0.4"
 
@@ -138,24 +138,24 @@ bauen() {
   echo "$ziel ($(du -h "$ziel" | cut -f1), $(dauer_von "$ziel" | cut -d. -f1) s)"
 }
 
-# Querformat für den Desktop: dasselbe Video mittig, der Rand wird aus dem eigenen Bild unscharf gefüllt.
-# Hochkant bleibt fürs Handy, wo es hingehört.
-quer() {
-  local quelle="$1" ziel="$2"
-  ffmpeg -loglevel error -y -i "$quelle" -filter_complex \
-    "[0:v]scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,gblur=sigma=28,eq=brightness=0.06[bg];\
-     [0:v]scale=-1:720[fg];[bg][fg]overlay=(W-w)/2:0" \
-    -c:v libvpx-vp9 -crf 34 -b:v 0 -row-mt 1 -c:a copy "$ziel"
-  echo "$ziel ($(du -h "$ziel" | cut -f1))"
-}
-
 bauen "$OUT/film-privat.webm" "${PRIVAT[@]}"
 bauen "$OUT/film-betrieb.webm" "${BETRIEB[@]}"
+# Dieselben Abschnitte aus den Desktop-Aufnahmen: Clipname plus -desktop
+desktop_liste() {
+  local -n quelle=$1
+  local -n ziel=$2
+  ziel=()
+  local teil
+  for teil in "${quelle[@]}"; do
+    ziel+=("${teil/|/-desktop|}")
+  done
+}
+
+BREITE_DESKTOP=1280
+HOEHE_DESKTOP=720
+
 bauen "$CLIPS/social-privat.webm" "${SOCIAL_PRIVAT[@]}"
 bauen "$CLIPS/social-betrieb.webm" "${SOCIAL_BETRIEB[@]}"
-
-quer "$OUT/film-privat.webm" "$OUT/film-privat-quer.webm"
-quer "$OUT/film-betrieb.webm" "$OUT/film-betrieb-quer.webm"
 
 # Standbild als Poster, sonst zeigt der Player vor dem Start eine schwarze Fläche
 poster() {
@@ -163,6 +163,14 @@ poster() {
   echo "${1%.webm}-poster.jpg"
 }
 
-for film in "$OUT/film-privat.webm" "$OUT/film-betrieb.webm" "$OUT/film-privat-quer.webm" "$OUT/film-betrieb-quer.webm"; do
+desktop_liste PRIVAT PRIVAT_DESKTOP
+desktop_liste BETRIEB BETRIEB_DESKTOP
+BREITE=$BREITE_DESKTOP
+HOEHE=$HOEHE_DESKTOP
+UT_GROESSE=17
+bauen "$OUT/film-privat-desktop.webm" "${PRIVAT_DESKTOP[@]}"
+bauen "$OUT/film-betrieb-desktop.webm" "${BETRIEB_DESKTOP[@]}"
+
+for film in "$OUT/film-privat.webm" "$OUT/film-betrieb.webm" "$OUT/film-privat-desktop.webm" "$OUT/film-betrieb-desktop.webm"; do
   poster "$film" 12
 done

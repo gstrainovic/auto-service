@@ -91,6 +91,19 @@ export default defineConfig({
       },
     },
     {
+      // Dieselben Szenen im Desktop-Layout: eigene Aufnahme statt Hochformat mit gefülltem Rand
+      name: 'video-desktop',
+      testMatch: /.*\.video\.ts/,
+      use: {
+        baseURL: 'http://localhost:6060',
+        viewport: { width: 1280, height: 720 },
+        deviceScaleFactor: 1.5,
+        launchOptions: { args: ['--force-device-scale-factor=1.5'] },
+        video: { mode: 'on', size: { width: 1920, height: 1080 } },
+        simulateOffline: false,
+      },
+    },
+    {
       // Weiche KI-Tests (Formulierung statt Endzustand): nur auf Anfrage via npm run test:e2e:soft
       name: 'ai-soft',
       testMatch: /.*\.spec\.ts/,

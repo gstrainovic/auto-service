@@ -47,14 +47,14 @@ test.describe('Landing Pages', () => {
   })
 
   test('LP-004: der Film steht auf Startseite und Angebotsseiten, stumm und erst auf Klick', async ({ page }) => {
-    // Breiter Bildschirm: Querformat, damit das Hochformat nicht die halbe Seite füllt
+    // Breiter Bildschirm: die im Desktop-Layout aufgenommene Fassung
     await page.setViewportSize({ width: 1280, height: 900 })
     await page.goto('/')
     const film = page.getByTestId('landing-video')
     await expect(film).toBeVisible()
     const video = film.locator('video')
-    await expect(video).toHaveAttribute('src', '/film-privat-quer.webm')
-    await expect(video).toHaveAttribute('poster', '/film-privat-quer-poster.jpg')
+    await expect(video).toHaveAttribute('src', '/film-privat-desktop.webm')
+    await expect(video).toHaveAttribute('poster', '/film-privat-desktop-poster.jpg')
 
     // Handy: hochkant
     await page.setViewportSize({ width: 390, height: 844 })
@@ -67,6 +67,6 @@ test.describe('Landing Pages', () => {
     await page.goto('/betrieb')
     await expect(page.getByTestId('landing-video').locator('video')).toHaveAttribute('src', '/film-betrieb.webm')
     await page.setViewportSize({ width: 1280, height: 900 })
-    await expect(page.getByTestId('landing-video').locator('video')).toHaveAttribute('src', '/film-betrieb-quer.webm')
+    await expect(page.getByTestId('landing-video').locator('video')).toHaveAttribute('src', '/film-betrieb-desktop.webm')
   })
 })

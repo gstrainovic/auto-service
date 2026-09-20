@@ -60,10 +60,10 @@ npm run video -- e2e/video/privat.video.ts   # spielt die Szenen, zeichnet sie a
 scripts/video-clips.sh                        # sammelt sie nach video-out/ und wandelt sie um
 ```
 
-Aufgenommen wird im Handyformat 390 × 844 bei dreifacher Auflösung (1170 × 2532). Jede Szene ist ein eigener
-Clip. Die Daten sind erfunden und werden bei jeder Aufnahme neu angelegt, also nie Kundendaten im Bild.
+Aufgenommen wird zweimal: im Handyformat 390 × 844 (Video 1170 × 2532) und im Desktop-Layout 1280 × 720 (Video
+1920 × 1080). Jede Szene ist ein eigener Clip, die Desktop-Clips tragen `-desktop` im Namen. Die Daten sind erfunden und werden bei jeder Aufnahme neu angelegt, also nie Kundendaten im Bild.
 
-Für 16:9 den Clip im Schnitt auf eine Fläche legen (unscharfer Hintergrund oder Gerätemockup), nicht beschneiden.
+Die Seite zeigt ab 760 px die Desktop-Fassung, darunter die hochkant aufgenommene.
 
 ## KI-Werkzeuge
 

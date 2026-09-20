@@ -17,18 +17,20 @@
     --warn: #ef4444;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 390px; height: 844px; overflow: hidden; background: var(--bg); }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; background: var(--bg); }
   body { display: grid; place-items: center; font-family: 'Segoe UI', system-ui, sans-serif; }
 
-  .stage { position: relative; width: 390px; height: 844px; }
+  .stage { position: relative; width: 100vw; height: 100vh; }
   .title {
-    position: absolute; top: 96px; left: 0; right: 0; text-align: center; padding: 0 26px;
+    position: absolute; top: 12vh; left: 0; right: 0; text-align: center; padding: 0 26px;
     color: var(--ink); font-size: 26px; font-weight: 600; line-height: 1.35;
     opacity: 0; animation: fade-in 700ms ease-out 300ms forwards;
   }
   .title small { display: block; margin-top: 10px; font-size: 17px; font-weight: 400; color: #6b7280; opacity: 0; animation: fade-in 700ms ease-out 1600ms forwards; }
 
-  .fleet { position: absolute; top: 330px; left: 0; right: 0; display: grid; gap: 18px; justify-items: center; }
+  /* Im Breitbild passen die vier Fahrzeuge nebeneinander schlecht; sie bleiben untereinander, nur kleiner */
+  .fleet { position: absolute; top: 44%; left: 0; right: 0; display: grid; gap: min(18px, 2vh); justify-items: center; }
+  .fleet svg { width: min(300px, 46vw); height: auto; }
   /* Die pulsierende Markierung darf über den viewBox-Rand hinaus wachsen */
   .van { overflow: visible; opacity: 0; transform: translateX(-30px); animation: roll-in 700ms cubic-bezier(.2,.8,.3,1) forwards; }
   .van:nth-child(1) { animation-delay: 900ms; }
@@ -38,6 +40,12 @@
 
   .badge { opacity: 0; animation: fade-in 400ms ease-out 2400ms forwards; }
   .pulse { transform-origin: center; animation: pulse 1400ms ease-in-out 2400ms infinite; }
+
+  /* Breitbild: zwei Reihen à zwei Fahrzeuge, sonst reicht die Höhe nicht */
+  @media (min-aspect-ratio: 1/1) {
+    .fleet { top: 38%; grid-template-columns: 1fr 1fr; gap: 1.5vh 2vw; }
+    .fleet svg { width: min(300px, 30vw); }
+  }
 
   @keyframes fade-in { to { opacity: 1; } }
   @keyframes roll-in { to { opacity: 1; transform: translateX(0); } }

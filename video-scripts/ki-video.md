@@ -19,8 +19,8 @@ Stand: 20.09.2026. Lizenzen ändern sich, vor dem nächsten Dreh nachprüfen.
 
 ### 1. App-Aufnahmen: schon gelöst
 
-`npm run video` spielt die echte App ab und zeichnet auf (`e2e/video/*.video.ts`), `scripts/video-clips.sh`
-sammelt die Clips. Kostet nichts, ist beliebig wiederholbar und zeigt die Software, wie sie wirklich aussieht.
+`npm run video` spielt die echte App ab und zeichnet sie auf (`e2e/video/*.video.ts`), einmal im Handy-Layout und
+einmal im Desktop-Layout. Kostet nichts, ist beliebig wiederholbar und zeigt die Software, wie sie wirklich aussieht.
 Das ist der grösste Teil beider Filme.
 
 ### 2. Aussenszenen: gezeichnet statt gefilmt

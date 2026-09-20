@@ -18,19 +18,20 @@
     --warn: #f59e0b;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 390px; height: 844px; overflow: hidden; background: var(--bg); }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; background: var(--bg); }
   body { display: grid; place-items: center; font-family: 'Segoe UI', system-ui, sans-serif; }
 
-  .stage { position: relative; width: 390px; height: 844px; }
+  .stage { position: relative; width: 100vw; height: 100vh; }
 
   .title {
-    position: absolute; top: 96px; left: 0; right: 0; text-align: center;
+    position: absolute; top: 12vh; left: 0; right: 0; text-align: center;
     color: var(--ink); font-size: 26px; font-weight: 600; line-height: 1.35; padding: 0 28px;
     opacity: 0; animation: fade-in 700ms ease-out 400ms forwards;
   }
   .title small { display: block; margin-top: 10px; font-size: 17px; font-weight: 400; color: #6b7280; opacity: 0; animation: fade-in 700ms ease-out 1700ms forwards; }
 
-  svg { position: absolute; left: 50%; top: 372px; transform: translateX(-50%); }
+  /* Höhe statt fester Grösse: die Szene wird einmal hochkant und einmal im Breitbild aufgenommen */
+  svg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -46%); height: min(300px, 36vh); width: auto; }
 
   /* Kiste wird gezeichnet */
   .draw { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round;

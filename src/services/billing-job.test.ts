@@ -8,7 +8,7 @@ const IBAN = 'CH93 0076 2011 6238 5295 7'
 const address = { company: 'Muster AG', contact: 'Petra Muster', street: 'Hauptstrasse 12', zip: '9000', city: 'St. Gallen', email: 'b@muster.ch' }
 
 function ordered(userId: string, today: string, vehicles = 2): Subscription {
-  const result = orderSubscription({ existing: null, order: { ...address, vehicles }, userId, today, iban: IBAN })
+  const result = orderSubscription({ existing: null, order: { ...address, vehicles, audience: 'betrieb' }, userId, today, iban: IBAN })
   if ('error' in result)
     throw new Error(result.error)
   return result.sub

@@ -28,6 +28,9 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
       Schwelle anheben: erst nach zwei Fehlläufen hintereinander mailen
 
 ### Marketing-Video
+- [ ] Rückmeldung zu beiden Filmen: der Hintergrund blendet und das Tempo ist zu hoch. Szenen länger stehen lassen
+      (Mindestdauer je Abschnitt in `scripts/video-build.sh`, Sprechertempo), Aufnahme mit dunklerer Oberfläche
+      prüfen, danach neu aufnehmen und montieren (Skill `.claude/skills/werbefilm/SKILL.md`)
 - [ ] Kurzfassungen für Social veröffentlichen: `video-out/social-privat.webm` und `social-betrieb.webm` (je gut
       10 Sekunden) beim ersten Beitrag oder der ersten Anzeige einsetzen
 

@@ -62,6 +62,9 @@ export default defineConfig({
         baseURL: 'http://localhost:6060',
         screenshot: 'only-on-failure',
         simulateOffline: false,
+        // Mikrofon ohne Nachfrage und mit Testton: für den Rückmeldungs-Dialog (feedback.spec.ts)
+        permissions: ['microphone'],
+        launchOptions: { args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] },
       },
     },
     {

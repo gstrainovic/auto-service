@@ -68,13 +68,24 @@ import LandingHeader from '../components/LandingHeader.vue'
         </li>
       </ul>
 
-      <h3>3.5 Abo- und Rechnungsdaten (Jahresabo Betrieb)</h3>
+      <h3>3.5 Rückmeldungen aus der App</h3>
+      <p>
+        Wenn Sie über «Fehler melden oder Wunsch» schreiben oder eine Sprachnachricht aufnehmen, geht der Text
+        beziehungsweise die Aufnahme zusammen mit Ihrer E-Mail-Adresse, der Seite, auf der Sie waren, und dem
+        Zeitpunkt an unser Postfach. Sprachnachrichten lassen wir von Mistral (Frankreich, EU) automatisch
+        verschriftlichen, damit wir lesen statt abhören; die Aufnahme selbst liegt danach nur in unserem Postfach
+        und wird nicht weiterverarbeitet. Sie entscheiden bei jeder Rückmeldung neu, ob Sie sprechen oder
+        schreiben. Wir bewahren Rückmeldungen so lange auf, wie wir sie für die Verbesserung der App brauchen,
+        längstens zwei Jahre.
+      </p>
+
+      <h3>3.6 Abo- und Rechnungsdaten (Jahresabo Betrieb)</h3>
       <ul>
         <li>Firma, Kontaktperson, Rechnungsadresse, Rechnungs-E-Mail, optionale Referenz</li>
         <li>Anzahl abgerechneter Fahrzeuge, Rechnungen mit Betrag, Zahlungsreferenz und Zahlungseingang</li>
       </ul>
 
-      <h3>3.6 Technische Daten</h3>
+      <h3>3.7 Technische Daten</h3>
       <ul>
         <li>IP-Adresse (Serverprotokolle, automatisch gelöscht nach 30 Tagen)</li>
         <li>Browser-Typ und -Version</li>

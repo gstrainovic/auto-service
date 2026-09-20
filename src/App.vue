@@ -5,6 +5,7 @@ import Toast from 'primevue/toast'
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ChatDrawer from './components/ChatDrawer.vue'
+import FeedbackDialog from './components/FeedbackDialog.vue'
 import { useAuth } from './composables/useAuth'
 import { useOfflineScanQueue } from './composables/useOfflineScanQueue'
 
@@ -12,6 +13,7 @@ const router = useRouter()
 const route = useRoute()
 const drawer = ref(false)
 const chatOpen = ref(false)
+const feedbackOpen = ref(false)
 const { user, isLoading, signOut } = useAuth()
 // Offline fotografierte Belege: Scan nachholen, sobald wieder Verbindung besteht
 const scanQueue = useOfflineScanQueue()
@@ -35,6 +37,11 @@ watch(user, (u) => {
 function openChat() {
   drawer.value = false
   chatOpen.value = true
+}
+
+function openFeedback() {
+  drawer.value = false
+  feedbackOpen.value = true
 }
 
 function handleSignOut() {
@@ -79,6 +86,10 @@ function handleSignOut() {
             <i class="pi pi-cog" />
             <span>Einstellungen</span>
           </RouterLink>
+          <a class="nav-item" href="#" data-testid="open-feedback" @click.prevent="openFeedback">
+            <i class="pi pi-megaphone" />
+            <span>Fehler melden oder Wunsch</span>
+          </a>
           <hr class="nav-divider">
           <a class="nav-item nav-signout" href="#" @click.prevent="handleSignOut">
             <i class="pi pi-sign-out" />
@@ -92,6 +103,7 @@ function handleSignOut() {
       </main>
 
       <ChatDrawer v-model="chatOpen" />
+      <FeedbackDialog :visible="feedbackOpen" @close="feedbackOpen = false" />
     </template>
 
     <router-view v-else />

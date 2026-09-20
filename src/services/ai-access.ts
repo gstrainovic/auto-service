@@ -138,3 +138,22 @@ export function cancelBusinessPlan(): Promise<{ billing: BusinessBilling | null,
 export function resumeBusinessPlan(): Promise<{ billing: BusinessBilling }> {
   return billingPost('/billing/resume')
 }
+
+/**
+ * Rückmeldung an den Betreiber: Text, Sprachnachricht oder beides. Der Proxy transkribiert die Aufnahme und
+ * schickt beides per Mail; `transcript` kommt zurück, damit die App zeigen kann, was verstanden wurde.
+ */
+export async function sendFeedback(input: { text?: string, audio?: Blob | null, page?: string }): Promise<{ transcript: string | null }> {
+  const form = new FormData()
+  if (input.text)
+    form.append('text', input.text)
+  if (input.page)
+    form.append('page', input.page)
+  if (input.audio)
+    form.append('audio', input.audio, `nachricht.${input.audio.type.includes('mp4') ? 'mp4' : 'webm'}`)
+  const res = await proxyFetch('/feedback', { method: 'POST', body: form })
+  const json = await res.json().catch(() => ({})) as any
+  if (!res.ok)
+    throw new Error(json?.error?.message ?? `Rückmeldung nicht gesendet (${res.status})`)
+  return { transcript: json.transcript ?? null }
+}

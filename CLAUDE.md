@@ -422,6 +422,15 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 - `v-tooltip` Direktive muss in `main.ts` registriert werden: `app.directive('tooltip', Tooltip)`
 - Labels mit `*` brechen `getByLabel` — Labels ohne `*` oder Regex verwenden
 
+## Rückmeldungen aus der App
+
+Menüpunkt «Fehler melden oder Wunsch» (`FeedbackDialog.vue`): Sprachnachricht (MediaRecorder), Textfeld und die
+Adresse zum Kopieren — drei Wege, weil `mailto` auf dem Rechner oft kein Mailprogramm findet und Tippen auf der
+Baustelle mühsam ist. Der Proxy (`/feedback`, `feedback.ts`) lässt die Aufnahme von Mistral transkribieren
+(`voxtral-mini-latest` an `/v1/audio/transcriptions`, rund 0.003 $ pro Minute) und schickt Transkript plus Audio
+über Resend an `info@wartungsheft.ch`, Antwortadresse ist der Kunde. Scheitert die Transkription, geht die
+Aufnahme trotzdem raus. Ohne `RESEND_TOKEN` landet alles im Proxy-Log.
+
 ## Werbefilme
 
 Die Filme auf den Landing Pages entstehen im Repo: `npm run video` nimmt die Szenen auf (Handy- und

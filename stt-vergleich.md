@@ -108,12 +108,46 @@ Für ein Diktat in ein Formularfeld wäre das vertretbar und gratis. Für Rückm
 weiteren Empfänger in die Datenschutzerklärung, hat keinen Vertrag mit ihm, und beim Nachhören fehlt die
 Aufnahme. Deshalb läuft die Sprachnachricht im Rückmeldungs-Dialog über den eigenen Proxy.
 
+## Ganzes Formular aus einer Ansage füllen
+
+Gesprochen: «Rechnung von der Garage Hubmann in Rorschach vom vierzehnten September zwanzig sechsundzwanzig,
+Betrag 486.50, Kilometerstand 118'400, Ölwechsel mit Ölfilter für 189 und Bremsbeläge vorne für 297.50»
+(19 Sekunden). Bewertet wurden fünf Felder: Werkstatt, Datum, Betrag, Kilometerstand, Zahl der Positionen.
+Drei Durchläufe je Weg, `temperature: 0`.
+
+| Weg | Felder richtig | Zeit | Tokens | Fehler |
+|---|---|---|---|---|
+| **A** Audio direkt an `voxtral-small-latest` | **4,0 von 5** (dreimal gleich) | 1,7 s | 558 | «Garage Hugmann», und «Bremsbeläge» wurde zu «Bremsscheiben» |
+| **B** `voxtral-mini` transkribiert, `mistral-small` ordnet zu | **5,0 von 5** (dreimal gleich) | 2,1 s | 264 | keiner |
+
+Der zweistufige Weg gewinnt, und zwar deutlich: alle Felder richtig, halb so viele Tokens, dafür 0,4 Sekunden
+langsamer. Der Grund zeigt sich im Zwischenschritt — bei dieser zusammenhängend gesprochenen Ansage war das
+Transkript fast fehlerfrei («Garage Hubmann», «486,50», «118.400»), während das Audio-Modell den Eigennamen
+verhörte und eine Position umbenannte. **Zusammenhängende Sätze erkennt `voxtral-mini` gut; Stichworte nicht.**
+
+Wichtig: Es ist derselbe Weg, den die App beim Foto einer Rechnung schon geht (OCR, dann Auswertung). Eine
+Ansage wäre nur eine weitere Quelle für `parseInvoice`.
+
+## Empfehlung je Anwendungsfall
+
+Punkte von 1 bis 5, aus den Messungen oben. «Kosten» sind Rechenkosten pro Nutzung, gerundet.
+
+| Fall | Empfohlener Weg | Eignung | Kosten | Warum |
+|---|---|---|---|---|
+| **1. Langer Text: Kontakt und Rückmeldung** | Aufnahme behalten **und** `voxtral-mini` transkribieren | **5** | ~0.0015 $ je 30 s | Wortfehler stören nicht, der Sinn kommt an; die Aufnahme bleibt zum Nachhören. Läuft bereits im Rückmeldungs-Dialog |
+| **2. KI-Chat** | Diktat über `voxtral-mini`, Text in die Eingabezeile, Nutzer prüft vor dem Senden | **4** | ~0.0015 $ je 30 s | Der Chat verzeiht Hörfehler, weil der Nutzer den Text vor dem Absenden sieht. Audio direkt ins Chat-Modell zu geben wäre möglich (`voxtral-small` kann `audio` + `function_calling`), schreibt aber unkontrolliert um |
+| **3. Kurze Formularfelder** (Beschreibung, Notiz) | Diktat über `voxtral-mini`, Text ins Feld, Nutzer korrigiert | **3** | ~0.0005 $ je 10 s | Einzelne Fachwörter trifft es schlecht («Sahnriemen»), im Satz besser. Für Kennzeichen, Beträge und Daten **nicht** anbieten |
+| **4. Ganzes Formular aus einer Ansage** | `voxtral-mini` transkribieren, dann `mistral-small` in Felder zerlegen (Weg B) | **5** | ~0.001 $ je 20 s plus ~0.0001 $ Auswertung | 5 von 5 Feldern über drei Läufe, halb so viele Tokens wie der direkte Weg. Wie beim Foto: Felder vorbelegen, Nutzer bestätigt |
+
+Nicht empfohlen: Audio direkt an `voxtral-small` (Fall 4: 4 von 5, verhört Eigennamen), Nachkorrektur eines
+Transkripts durch ein Textmodell (verschlechtert lange Sätze), Web Speech API für alles, was belegbar sein muss.
+
 ## Was daraus folgt
 
-- **Diktat und Rückmeldung:** `voxtral-mini-latest` am Transkriptions-Endpunkt, ohne Nachkorrektur.
-- **Kennzeichen, Beträge, Daten:** nicht diktieren, tippen.
-- **Verstehen statt Mitschreiben** (etwa «trag den Ölwechsel bei 120 000 ein»): `voxtral-small-latest` als
-  Audio-Chat — aber dann als Werkzeugaufruf, nicht als Transkript.
+- **Ein Weg für alles:** `voxtral-mini-latest` transkribiert; wo Struktur gebraucht wird, zerlegt `mistral-small`
+  den Text. Kein zweites Modell nötig, kein Anbieterwechsel.
+- **Kennzeichen, Beträge, Daten:** einzeln nicht diktieren, tippen. In einem ganzen Satz gesprochen erkennt sie
+  die Kette dagegen zuverlässig.
 - Vor jeder Umstellung neu messen und **zuerst `GET /v1/models` lesen**: Die Fähigkeiten dort sagen, welches
   Modell an welchen Endpunkt gehört. `voxtral-mini-latest` zeigte im Test dasselbe Verhalten wie
   `voxtral-mini-2602`.

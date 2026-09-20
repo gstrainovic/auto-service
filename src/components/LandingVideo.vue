@@ -33,8 +33,14 @@ onMounted(async () => {
   }
 })
 
+/**
+ * Start über den eigenen Knopf: weil der Klick vom Menschen kommt, erlauben die Browser den Ton. Stumm ist nur
+ * der Zustand davor, damit die Seite beim Laden nicht von selbst spricht.
+ */
 function abspielen(): void {
   laeuft.value = true
+  if (video.value)
+    video.value.muted = false
   video.value?.play().catch(() => {
     laeuft.value = false
   })
@@ -65,8 +71,7 @@ function abspielen(): void {
         </button>
       </div>
       <p class="video-note">
-        Gut eine halbe Minute, mit Untertiteln. Startet stumm, Ton lässt sich im Player einschalten.
-        Gezeigt wird die App mit erfundenen Beispieldaten.
+        Gut eine halbe Minute, mit Ton und Untertiteln. Gezeigt wird die App mit erfundenen Beispieldaten.
       </p>
     </div>
   </section>

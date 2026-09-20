@@ -26,8 +26,10 @@ else
   echo "piper oder Stimme fehlt: Film wird stumm gebaut" >&2
 fi
 
-# Abschnitte: <Clip>|<Start in s>|<Mindestdauer in s>|<Sprechertext>
-# Der Text wird gesprochen; bei Clips ausser den Titelkarten steht er zusätzlich als Untertitel im Bild.
+# Abschnitte: <Clip>|<Start in s>|<Mindestdauer in s>|<Sprechertext>|<Untertitel, optional>
+# Der vierte Teil wird gesprochen, der fünfte steht im Bild; fehlt er, wird der Sprechertext angezeigt.
+# Getrennt sind sie, wo die Schrift anders lauten muss als die Aussprache: espeak spricht «Serviceheft» als
+# «Servi-keeft», «Serwis-Heft» trifft es. Prüfen mit: espeak-ng -v de -q -x "Wort"
 # Die Dauer wächst automatisch, wenn der Sprecher länger braucht.
 PRIVAT=(
   "szene-privat-zettelwirtschaft-in-der-schachtel|1.2|4.0|Wann war nochmal der letzte Ölwechsel? Irgendwo in der Schachtel."
@@ -36,14 +38,14 @@ PRIVAT=(
   "titel-2-wartungsheft-rechnet-mit|0.6|3.0|Wartungsheft rechnet mit."
   "szene-3-faelligkeit-auf-dem-dashboard-und-erledigt-eintragen|1.5|6.0|Was fällig ist, meldet sich von selbst. Erledigtes trägst du mit einem Klick ein."
   "titel-3-lueckenloses-serviceheft|0.6|3.0|Und beim Verkauf?"
-  "szene-4-kosten-und-pdf-dossier-fuer-den-verkauf|4.0|5.5|Kosten pro Jahr, und das lückenlose Serviceheft als PDF."
+  "szene-4-kosten-und-pdf-dossier-fuer-den-verkauf|4.0|5.5|Kosten pro Jahr, und das lückenlose Serwis-Heft als PDF.|Kosten pro Jahr, und das lückenlose Serviceheft als PDF."
   "titel-4-preis-privat|0.6|3.6|Fünfundzwanzig Franken im Jahr, für bis zu fünf Fahrzeuge."
   "titel-6-abspann|0.6|3.6|Dreissig Tage gratis testen, auf wartungsheft punkt c h."
 )
 
 BETRIEB=(
   "szene-betrieb-welcher-bus-ist-ueberfaellig|1.2|4.0|Welcher Bus ist beim Service überfällig?"
-  "szene-2-fuhrpark-auf-einen-blick-was-ist-faellig|1.5|5.5|Ein Blick aufs Dashboard: was ansteht, für jedes Fahrzeug."
+  "szene-2-fuhrpark-auf-einen-blick-was-ist-faellig|1.5|5.5|Ein Blick auf die Übersicht: was ansteht, für jedes Fahrzeug."
   "titel-1-rechnung-fotografieren|0.6|3.0|Der Fahrer fotografiert die Werkstattrechnung."
   "szene-3-rechnung-vom-fahrer-ein-foto-genuegt|6.0|6.5|Erfasst ist sie damit auch. Werkstatt, Betrag, Kilometerstand und Arbeiten."
   "titel-3-lueckenloses-serviceheft|0.6|3.0|Am Jahresende?"
@@ -90,7 +92,8 @@ bauen() {
 
   local i=0
   for teil in "${teile[@]}"; do
-    IFS='|' read -r name start minimum text <<< "$teil"
+    IFS='|' read -r name start minimum text untertitel <<< "$teil"
+    [ -n "${untertitel:-}" ] || untertitel="$text"
     local quelle="$CLIPS/$name.webm"
     if [ ! -f "$quelle" ]; then
       echo "fehlt: $quelle (zuerst npm run video)" >&2
@@ -111,7 +114,7 @@ bauen() {
     # Titelkarten tragen ihren Text schon im Bild; alles andere bekommt Untertitel
     if [ "$SPRECHER" = 1 ] && [ -n "$text" ] && [[ "$name" != titel-* ]]; then
       local srt="$tmp/$i.srt"
-      srt_schreiben "$srt" "$text" "$dauer"
+      srt_schreiben "$srt" "$untertitel" "$dauer"
       filter="$filter,subtitles='$srt':force_style='FontName=DejaVu Sans,FontSize=11,PrimaryColour=&H00FFFFFF,BackColour=&HA0000000,BorderStyle=4,Outline=0,Shadow=0,Alignment=2,MarginV=60'"
     fi
     filter="$filter,fade=in:0:8,fade=out:st=$(echo "$dauer - 0.4" | bc -l):d=0.4"

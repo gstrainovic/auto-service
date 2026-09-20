@@ -162,7 +162,29 @@ Beide publizieren vollständige EBICS-Verbindungsparameter samt Auftragsarten, S
 Keine Kandidatin ausser PostFinance äussert sich öffentlich zum Konto ohne HR-Eintrag. Ebenso offen ist, ob die Bank EBICS für eine kleine Einzelfirma freischaltet (keine publiziert eine Mindestgrösse) und ob die EBICS-Einrichtung gratis ist (keine Gebühr publiziert, aber auch nicht ausdrücklich ausgeschlossen). Das klärt nur eine Anfrage, z. B. im Feld «Bemerkungen» des Antragsformulars oder telefonisch:
 
 - SGKB: Online-Eröffnung, Frage im Eröffnungsprozess oder per Kontaktformular, technische Fragen an iso20022@sgkb.ch
-- PostFinance: Konto ohne HR-Eintrag ist bestätigt. Offen bleibt nur, ob die QR-IBAN («virtuelles Konto») und camt.054 ohne Zusatzvereinbarung freigeschaltet werden
+- PostFinance: geklärt, siehe «QR-IBAN und camt.054 bei PostFinance»
+
+## QR-IBAN und camt.054 bei PostFinance
+
+Geprüft an der Preisliste Geschäftskunden (475_16_de.pdf, gültig ab 01.07.2026) und den Angaben von
+Software-Anbietern, die den Antrag begleiten:
+
+| Punkt | Stand |
+|---|---|
+| QR-IBAN («virtuelles Konto QR-Rechnung») | Nur mit Geschäftskonto; per Formular «Anmeldung/Mutation virtuelles Konto QR-Rechnung» bestellt, mehrere pro Konto möglich. Keine Gebühr in der Preisliste |
+| camt.054 (Gut-/Lastschrift) | «ISO 20022 Elektronische Konto Avisierung»: **kostenlos**. Bestellt mit dem Formular «Anmeldung/Mutation elektronische Kontodokumente» |
+| camt.054 Detailavisierung fürs virtuelle Konto | halbtäglich bis monatlich **kostenlos**; stündlich oder drei feste Zeitpunkte am Tag CHF 0.08 pro Zahlung |
+| camt.053, MT940, PDF-Auszüge | kostenlos |
+| EBICS (inkl. App) und MFTPF | kostenlos |
+| Zahlungseingänge im E-Banking | im Transaktionskontingent kostenlos, danach CHF 0.12 bzw. 0.08 pro Transaktion |
+
+Zwei Kosten, die nur Bargeld am Postschalter betreffen — für Betriebe, die per E-Banking zahlen, irrelevant:
+Einzahlungen belasten den Empfänger mit CHF 1.20 bis 3.95 je nach Betrag, und fehlende oder falsch platzierte
+Angaben zum Zahlungspflichtigen kosten **CHF 0.80 pro Beleg** Nacherfassung. Genau davor warnt der QR-Validator,
+wenn Strasse und Hausnummer nicht getrennt im Zahlteil stehen (in `invoice-pdf.ts` erledigt).
+
+**Damit ist die Kette bezahlbar:** QR-IBAN gratis, camt.054 gratis, Abholung gratis. Beide Formulare gehören in
+den Eröffnungsantrag, sonst fehlt nachher die QR-IBAN.
 
 ## Eigene Software für QR-Zahlungseingänge
 

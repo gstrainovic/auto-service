@@ -138,7 +138,31 @@ bauen() {
   echo "$ziel ($(du -h "$ziel" | cut -f1), $(dauer_von "$ziel" | cut -d. -f1) s)"
 }
 
+# Querformat für den Desktop: dasselbe Video mittig, der Rand wird aus dem eigenen Bild unscharf gefüllt.
+# Hochkant bleibt fürs Handy, wo es hingehört.
+quer() {
+  local quelle="$1" ziel="$2"
+  ffmpeg -loglevel error -y -i "$quelle" -filter_complex \
+    "[0:v]scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,gblur=sigma=28,eq=brightness=0.06[bg];\
+     [0:v]scale=-1:720[fg];[bg][fg]overlay=(W-w)/2:0" \
+    -c:v libvpx-vp9 -crf 34 -b:v 0 -row-mt 1 -c:a copy "$ziel"
+  echo "$ziel ($(du -h "$ziel" | cut -f1))"
+}
+
 bauen "$OUT/film-privat.webm" "${PRIVAT[@]}"
 bauen "$OUT/film-betrieb.webm" "${BETRIEB[@]}"
 bauen "$CLIPS/social-privat.webm" "${SOCIAL_PRIVAT[@]}"
 bauen "$CLIPS/social-betrieb.webm" "${SOCIAL_BETRIEB[@]}"
+
+quer "$OUT/film-privat.webm" "$OUT/film-privat-quer.webm"
+quer "$OUT/film-betrieb.webm" "$OUT/film-betrieb-quer.webm"
+
+# Standbild als Poster, sonst zeigt der Player vor dem Start eine schwarze Fläche
+poster() {
+  ffmpeg -loglevel error -y -ss "${2:-12}" -i "$1" -frames:v 1 -q:v 4 "${1%.webm}-poster.jpg"
+  echo "${1%.webm}-poster.jpg"
+}
+
+for film in "$OUT/film-privat.webm" "$OUT/film-betrieb.webm" "$OUT/film-privat-quer.webm" "$OUT/film-betrieb-quer.webm"; do
+  poster "$film" 12
+done

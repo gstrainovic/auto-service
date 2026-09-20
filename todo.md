@@ -31,6 +31,13 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
 - [ ] Kurzfassungen für Social veröffentlichen: `video-out/social-privat.webm` und `social-betrieb.webm` (je gut
       10 Sekunden) beim ersten Beitrag oder der ersten Anzeige einsetzen
 
+### Diktieren statt tippen
+- [ ] Diktat-Knopf für Freitextfelder: Chat-Eingabe, Beschreibung in Wartung und Rechnung, Rückmeldung. Bausteine
+      stehen: Aufnahme wie in `FeedbackDialog.vue` (MediaRecorder), Transkription wie in ai-proxy `/feedback`
+      (Voxtral `voxtral-mini-latest`, rund 0.003 $ pro Minute). Nötig ist ein eigener Endpunkt `/me/transcribe`
+      (Audio rein, Text raus) plus ein Composable und ein Knopf, damit jedes Feld denselben Weg nutzt. Nicht für
+      Zahlen- und Datumsfelder, dort ist Diktat fehleranfällig
+
 ### Messen, nebenbei
 - [ ] Wöchentlich Zahlen ziehen (Caddy-Log, `events`, Anmeldungen, Bestellungen, Postfach, README Abschnitt 6) und in
       Kapitel 9 notieren; nach drei Monaten Auswertung gegen die Abbruchkriterien

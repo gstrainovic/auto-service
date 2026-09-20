@@ -55,10 +55,19 @@ Zahlungsabgleich». Bankdokument als Kopie in `sgkb-cash-management-handbuch.pdf
   eine Sammelbuchung. Das Buchungsdatum steht als `Ntry/BookgDt/Dt` am Eintrag, nicht an der Zahlung.
   `markInvoicePaid` bucht nur den vollen Betrag und lehnt eine schon verbuchte `AcctSvcrRef` ab; der Endpunkt
   `/billing/paid` antwortet darauf mit 409, auf eine unbekannte Referenz mit 404.
-- **Testen ohne Konto**: Die PostFinance-Testplattform (isotest.postfinance.ch) ist ohne Kundenbeziehung nutzbar und
-  simuliert die ganze Kette von der QR-Rechnung bis zum camt.054. Neue Parser-Arbeit wird dort belegt, nicht am
-  Produktivkonto. Fixtures: `ai-proxy/src/fixtures/camt054-postfinance-muster.xml` ist die echte Musterdatei von
-  PostFinance (Gutschrift ohne Referenz), `camt054-qrr.xml` ist nachgebaut und wird durch eine Datei der
-  Testplattform ersetzt, sobald eine vorliegt.
+- **Eine QR-Einzahlung hat keinen `Dbtr`**: Der Zahler steht dann nur unter `RltdPties/UltmtDbtr`, der Parser fällt
+  darauf zurück. `AddtlRmtInf` kommt mehrfach, PostFinance stellt eigene Statusmeldungen (`?REJECT?0`, `?ERROR?000`)
+  vor die Mitteilung des Zahlers; Zeilen mit `?` fallen weg. Gebühren (`Chrgs`) mindern den Betrag nicht.
+- **Testen ohne Konto**: Die PostFinance-Testplattform (isotest.postfinance.ch, Benutzer `gst`, Passwort im
+  Passwortmanager, Mails an `info@strainovic-it.ch`, lesbar mit `mailbox strainovic`) simuliert die ganze Kette.
+  Eingerichtet sind Produktangebot 2 (ISO 2019, camt V08), Konto `CH2909000000250094239` in CHF mit festem Saldo und
+  das virtuelle Konto QRR `CH7730000001250094239`; Avisierung: camt.054 getrennt je virtuellem Konto, Sammelbuchung,
+  SCOR eingeschlossen. Ablauf: QR-Rechnung mit `renderInvoicePdf` auf die QR-IBAN erzeugen, unter «QR-Rechnung →
+  QR-Rechnung verarbeiten» hochladen, **Kredit erzeugen** (Kreditorverarbeitung = Zahlungseingang), ZIP
+  herunterladen. Neue Parser-Arbeit wird dort belegt, nicht am Produktivkonto.
+- **Fixtures** (`ai-proxy/src/fixtures/`): `camt054-testplattform-qrr.xml` ist die Antwort der Testplattform auf eine
+  echte Wartungsheft-Rechnung und die Messlatte. `camt054-postfinance-muster.xml` ist die Musterdatei von PostFinance
+  (Gutschrift ohne Referenz). `camt054-qrr.xml` ist nachgebaut und deckt ab, was die Testplattform pro Lauf nicht
+  liefert: mehrere `TxDtls` in einer Sammelbuchung, SCOR-Referenz und eine Belastung.
 - **EBICS erst bei Menge**: Zu Beginn reicht der manuelle camt.054-Download im E-Banking. PostFinance spricht EBICS
   3.0 und 2.5; mit 2.5 läuft `node-ebics/node-ebics-client`, was zum Node-Stack passt.

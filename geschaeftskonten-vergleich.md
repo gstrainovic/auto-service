@@ -193,7 +193,7 @@ Möglich, aber nicht sinnvoll. EBICS verlangt XML-Signaturen mit Kanonisierung (
 
 ### Vorgehen
 
-1. Der Parser steht (`ai-proxy/src/camt.ts`, `matchCredits`, Betragsprüfung in `markInvoicePaid`), geprüft gegen die Musterdatei von PostFinance und eine nachgebaute Datei mit QRR- und SCOR-Referenz. Offen: auf der Testplattform registrieren, virtuelles QR-Konto anlegen, eine echte Rechnung aus `invoice-pdf.ts` validieren lassen, Zahlung und Tagesendverarbeitung simulieren und das dort erzeugte camt.054 als Fixture einsetzen.
+1. Erledigt: Der Parser (`ai-proxy/src/camt.ts`, `matchCredits`, Betragsprüfung in `markInvoicePaid`) ist auf der Testplattform gegen eine echte Bankdatei geprüft. Eine Jahresrechnung aus `invoice-pdf.ts` auf das virtuelle Konto QRR ging durch Validierung (0 Fehler) und Kreditorverarbeitung, das camt.054 liegt als Fixture im Repo und bucht die Rechnung bezahlt. Der Ablauf steht in `AGENTS.md`.
 2. Nach der Kontoeröffnung: camt.054 einmal pro Woche von Hand im E-Banking herunterladen und mit dem fertigen Skript auswerten. Braucht keinen EBICS-Vertrag.
 3. Wenn die Menge wächst: EBICS-Vertrag abschliessen. Bei PostFinance zusätzlich den Node-Client in Version 2.5, sonst den PHP-Client als kleinen Dienst oder den sequel-de-Fork, sobald er ausgereift ist.
 

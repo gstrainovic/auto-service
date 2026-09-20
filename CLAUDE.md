@@ -426,7 +426,9 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 
 Auf `/`, `/privathalter` und `/betrieb` läuft ein stummer Kurzfilm (`LandingVideo.vue`, startet erst auf Klick;
 fehlt die Datei, bleibt der Abschnitt weg). Die Filme `public/film-privat.webm` und `film-betrieb.webm` baut
-`scripts/video-build.sh` aus den Clips; Reihenfolge und Längen stehen dort.
+`scripts/video-build.sh` aus den Clips: Reihenfolge, Mindestlängen und Sprechertexte stehen dort, der Sprecher
+kommt aus Piper (Stimme `de_DE-thorsten-high`), die Untertitel aus demselben Text (kein Whisper nötig). Ohne
+Piper entsteht der Film stumm. Dasselbe Skript baut die Kurzfassungen `video-out/social-*.webm`.
 Drehbücher in `video-scripts/`, Eröffnungsszenen und Titelkarten als SVG mit CSS-Animation in
 `video-scripts/szenen/*.html` (hell wie die App), App-Aufnahmen als Playwright-Szenen in `e2e/video/*.video.ts` (Projekt `video`,
 `npm run video`, Handyformat 390 px, erfundene Daten; jede Szene speichert sich über `clipSpeichern` selbst nach

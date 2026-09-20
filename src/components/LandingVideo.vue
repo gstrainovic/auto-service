@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * Kurzfilm auf den Landing Pages. Läuft stumm und erst auf Klick, damit die Seite nicht von selbst lärmt und
- * das Handy kein Datenvolumen verbraucht. Die Filme entstehen aus `npm run video` und `scripts/video-build.sh`
+ * Kurzfilm auf den Landing Pages. Startet stumm und erst auf Klick, damit die Seite nicht von selbst lärmt und
+ * das Handy kein Datenvolumen verbraucht; der Ton (Sprecher) lässt sich über die Bedienleiste einschalten. Die Filme entstehen aus `npm run video` und `scripts/video-build.sh`
  * (Drehbücher in `video-scripts/`); fehlt die Datei, zeigt die Seite den Abschnitt gar nicht.
  */
 import { onMounted, ref } from 'vue'
@@ -65,7 +65,8 @@ function abspielen(): void {
         </button>
       </div>
       <p class="video-note">
-        Ohne Ton, 30 Sekunden. Gezeigt wird die App mit erfundenen Beispieldaten.
+        Gut eine halbe Minute, mit Untertiteln. Startet stumm, Ton lässt sich im Player einschalten.
+        Gezeigt wird die App mit erfundenen Beispieldaten.
       </p>
     </div>
   </section>

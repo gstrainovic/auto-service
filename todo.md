@@ -33,8 +33,8 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
       einsetzen (`video-scripts/ki-werkzeuge.md`: Veo 3.1, ElevenLabs). Drehbücher: `video-scripts/privat-video-script.md` und
       `video-scripts/betrieb-video-script.md`; App-Aufnahmen kommen aus `npm run video` (Playwright), damit sich
       der Film nach jeder UI-Änderung neu aufnehmen lässt
-- [ ] Sprecher und Untertitel ergänzen (Piper mit der Stimme Thorsten, Whisper für die SRT), danach die
-      15-Sekunden-Schnitte für Social und bezahlte Werbung aus denselben Clips montieren
+- [ ] Kurzfassungen für Social veröffentlichen: `video-out/social-privat.webm` und `social-betrieb.webm` (je gut
+      10 Sekunden) beim ersten Beitrag oder der ersten Anzeige einsetzen
 
 ### Messen, nebenbei
 - [ ] Wöchentlich Zahlen ziehen (Caddy-Log, `events`, Anmeldungen, Bestellungen, Postfach, README Abschnitt 6) und in

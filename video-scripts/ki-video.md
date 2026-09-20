@@ -48,24 +48,26 @@ Falls doch einmal ein fotorealistisches Bild gebraucht wird:
 3. **Geliehene GPU**, falls Wan lokal laufen soll: eine Stunde auf RunPod oder Thunder Compute kostet weniger als
    einen Franken. Streng genommen nicht mehr gratis, aber billiger als jedes Abo.
 
-### 3. Stimme: lokal und frei
+### 3. Stimme: lokal und frei, schon eingebaut
 
-**Piper TTS** (MIT-Lizenz) mit der deutschen Stimme **Thorsten** (Datensatz CC0) läuft auf der CPU, etwa zehnmal
-schneller als Echtzeit, ohne Konto und ohne Netz:
+**Piper TTS** (MIT-Lizenz) mit der deutschen Stimme **Thorsten** (Datensatz CC0) läuft auf der CPU, ohne Konto und
+ohne Netz. `scripts/video-build.sh` ruft es selbst auf: die Sprechertexte stehen dort je Abschnitt, die Länge des
+Abschnitts wächst automatisch mit der Sprechdauer.
 
 ```bash
-# Modell einmalig holen (de_DE-thorsten-high), dann je Satz eine WAV-Datei
-echo "Rechnung fotografieren. Erfasst ist sie damit auch." \
-  | piper --model de_DE-thorsten-high.onnx --output_file sprecher-szene-3.wav
+pipx install piper-tts
+# Stimme nach ~/.local/share/piper-voices/ (rund 110 MB):
+#   huggingface.co/rhasspy/piper-voices  →  de/de_DE/thorsten/high/de_DE-thorsten-high.onnx (+ .json)
 ```
 
-Qualität: gut verständlich, etwas nüchterner als ElevenLabs. Für einen Film über Werkstattrechnungen passt das.
-Wenn die Stimme später doch zu hölzern wirkt, kostet ElevenLabs Starter 6 USD für einen Monat.
+Fehlt piper oder die Stimme, baut das Skript den Film stumm und ohne Untertitel; die Titelkarten tragen die
+Aussagen dann allein. Qualität: gut verständlich, nüchterner als ElevenLabs — für einen Film über
+Werkstattrechnungen passend. Andere Stimme: `PIPER_VOICE=/pfad/stimme.onnx scripts/video-build.sh`.
 
-### 4. Untertitel: Whisper lokal
+### 4. Untertitel: aus dem Sprechertext, nicht aus Whisper
 
-`whisper.cpp` oder `faster-whisper` (beide MIT) schreiben aus der Sprecherspur eine SRT-Datei. Die legst du im
-Schnittprogramm als Textspur an und brennst sie ein — Social läuft stumm, ohne Untertitel ist der Film wertlos.
+Der Text steht ohnehin im Skript, also braucht es keine Spracherkennung: `video-build.sh` schreibt pro Abschnitt
+eine SRT-Datei und brennt sie mit libass ein. Das ist exakt statt geraten und spart den Whisper-Schritt.
 
 ### 5. Musik: weglassen oder CC0
 

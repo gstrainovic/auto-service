@@ -38,6 +38,8 @@ export interface UsageInfo {
   limits: Record<LimitKind, number>
   /** Testzeit ohne Abo; null bei aktivem Abo */
   trial?: { active: boolean, daysLeft: number, endsAt: string } | null
+  /** Der Proxy nimmt Bestellungen an (IBAN und Versand konfiguriert); sonst zeigt die App keinen Kaufweg */
+  ordering?: boolean
   /** Jahresabo auf Rechnung (Betrieb); null ohne */
   billing?: BusinessBilling | null
 }

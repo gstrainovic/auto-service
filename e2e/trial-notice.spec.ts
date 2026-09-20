@@ -32,4 +32,22 @@ test.describe('Hinweis vor Ende der Testzeit', () => {
     await expect(page.getByRole('heading', { name: 'Übersicht' })).toBeVisible()
     await expect(page.getByTestId('trial-hint')).toHaveCount(0)
   })
+
+  test('TN-003: ohne Kaufweg im Proxy weder Hinweis noch Bestellknopf', async ({ page }) => {
+    await seedTrial(page, 25)
+    // Der lokale Proxy hat eine Test-IBAN; ohne sie meldet er `ordering: false`
+    await page.route('**/me/usage', async (route) => {
+      const res = await route.fetch()
+      const body = await res.json()
+      await route.fulfill({ json: { ...body, ordering: false } })
+    })
+    await page.goto('/dashboard')
+    await expect(page.getByRole('heading', { name: 'Übersicht' })).toBeVisible()
+    await expect(page.getByTestId('trial-hint')).toHaveCount(0)
+
+    await page.goto('/settings')
+    const card = page.locator('.settings-card', { hasText: 'Abo & Nutzung' })
+    await expect(card).toContainText('Testzeit')
+    await expect(card.getByRole('button', { name: 'Jahresabo bestellen' })).toHaveCount(0)
+  })
 })

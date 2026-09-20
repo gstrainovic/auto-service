@@ -224,6 +224,8 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
   ersten Aufruf, Subscription mit `status: 'trial'`); danach antworten Scan und Chat mit 402 `trial_expired`, Lesen,
   Erfassen von Hand und Exporte bleiben frei. Preise in `yearlyPriceChf(n, audience)` (privat 25 CHF bis 5 Fahrzeuge, Betrieb
   36 CHF pro Fahrzeug), `PriceTable.vue` mit Umschalter Privat/Betrieb rechnet damit; Fair-Use-Bremse 20 Anfragen pro Minute im Proxy (`rate-limit.ts`).
+- Kaufweg nur mit Rechnungsstellung: `/me/usage` meldet `ordering` (der Proxy hat IBAN und Versand). Ohne das zeigt
+  die App weder den Bestellknopf noch den Testzeit-Hinweis, sonst führte beides ins Leere.
 - Jahresabo auf Rechnung, privat und für Betriebe: `OrderDialog.vue` in den Einstellungen mit Umschalter Privat/Betrieb
   (privat ohne Firmenfeld, `Order.audience` steuert Pflichtfelder, Preis, Plan und die Texte auf Rechnung und Mail;
   die Zielgruppe steht am Abo und gilt bei jeder Verlängerung; Prüfung mit `parseOrder` aus
@@ -330,7 +332,7 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Tests folgen **CRUD-Paradigma**: Create → Read → Update → Delete
 - Tests laufen automatisch **zweimal**: online + offline (via Network-Blocking)
 - **Playwright startet Server automatisch** (Vite + InstantDB) — kein manuelles `podman-compose up` nötig
-- `npm run test:e2e` führt beide Projekt-Varianten aus (282 Tests: 141 online + 141 offline; 8 weitere nur via `test:e2e:soft`)
+- `npm run test:e2e` führt beide Projekt-Varianten aus (284 Tests: 142 online + 142 offline; 8 weitere nur via `test:e2e:soft`)
 - Playwright startet drei Server: Vite (`VITE_INSTANTDB_MODE=local`, `VITE_AI_PROXY_URL=http://localhost:8787`),
   InstantDB (podman-compose) und den AI-Proxy (`npm run dev:proxy` im Auth-Bypass, Key aus `.env` explizit per `env`,
   `AI_PROXY_BURST_LIMIT=10000`, weil alle Tests einen Nutzer teilen und die Fair-Use-Bremse sonst 429 liefert)
@@ -382,9 +384,9 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | HK | Herkunft am Datensatz | HK-001 bis HK-004: `source` bei Formular, Rechnung samt Wartungen, Wartungsplan, Dashboard |
 | AE | Anmelde-Einstieg | AE-001 bis AE-003: «Anmelden» im Kopf auf 390px, bekanntes Konto nach Abmelden, «Andere E-Mail» |
 | BO | Bestellung Abo | BO-001 bis BO-004: Betrieb mit Rechnungsadresse, Feldfehler, Privat ohne Firma, Preis ab sechs Fahrzeugen |
-| TN | Testzeit-Hinweis | TN-001, TN-002: Hinweis in der letzten Woche, vorher still |
+| TN | Testzeit-Hinweis | TN-001 bis TN-003: Hinweis in der letzten Woche, vorher still, ohne Kaufweg gar nicht |
 
-**Gesamt: 141 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
+**Gesamt: 142 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`

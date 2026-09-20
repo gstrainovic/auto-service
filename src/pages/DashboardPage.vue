@@ -47,7 +47,8 @@ const maintenancesStore = useMaintenancesStore()
 const trialHint = ref<string | null>(null)
 onMounted(async () => {
   fetchUsage()
-    .then((usage) => { trialHint.value = trialNotice(usage.trial) })
+    // Ohne Kaufweg kein Hinweis: er führte auf eine Seite, auf der nichts zu bestellen ist
+    .then((usage) => { trialHint.value = usage.ordering ? trialNotice(usage.trial) : null })
     .catch(() => { trialHint.value = null })
   await vehiclesStore.load()
   await invoicesStore.load()

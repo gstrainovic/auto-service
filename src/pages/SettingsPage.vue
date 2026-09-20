@@ -66,7 +66,8 @@ const orderOpen = ref(false)
 const businessBusy = ref(false)
 const business = computed(() => usage.value?.billing ?? null)
 const activeVehicleCount = computed(() => activeVehicles(vehiclesStore.vehicles).length)
-const canOrderBusiness = computed(() => !!usage.value && !business.value && usage.value.plan === 'free')
+// Bestellen nur, wenn der Proxy Rechnungen ausstellen kann: ohne IBAN wäre der Knopf eine Sackgasse
+const canOrderBusiness = computed(() => !!usage.value?.ordering && !business.value && usage.value.plan === 'free')
 
 function onOrdered(result: { number: string, mailed: boolean }): void {
   toast.add({

@@ -32,6 +32,9 @@ services:
       INVOICE_WEBSITE: ${INVOICE_WEBSITE:-}
       INVOICE_FROM: ${INVOICE_FROM:-}
       RESEND_TOKEN: ${RESEND_TOKEN:-}
+      # Rückmeldungen aus der App; ohne FEEDBACK_TO (oder INVOICE_EMAIL) antwortet /feedback mit 501
+      FEEDBACK_TO: ${FEEDBACK_TO:-}
+      FEEDBACK_FROM: ${FEEDBACK_FROM:-}
       # Abo-Job (Dienst billing) ruft /billing/renew und /billing/paid mit diesem Geheimnis auf
       AI_PROXY_INTERNAL_TOKEN: ${AI_PROXY_INTERNAL_TOKEN:-}
     expose:

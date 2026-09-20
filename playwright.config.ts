@@ -76,6 +76,19 @@ export default defineConfig({
       dependencies: ['online'],
     },
     {
+      // Aufnahme der Werbe-Clips (video-scripts/, `npm run video`): kein Test, sondern gespielte Szenen im
+      // Handyformat mit Videomitschnitt. Läuft nie in online/offline, weil die Dateien auf .video.ts enden.
+      name: 'video',
+      testMatch: /.*\.video\.ts/,
+      use: {
+        baseURL: 'http://localhost:6060',
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 3,
+        video: { mode: 'on', size: { width: 1170, height: 2532 } },
+        simulateOffline: false,
+      },
+    },
+    {
       // Weiche KI-Tests (Formulierung statt Endzustand): nur auf Anfrage via npm run test:e2e:soft
       name: 'ai-soft',
       testMatch: /.*\.spec\.ts/,

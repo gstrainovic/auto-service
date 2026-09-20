@@ -15,6 +15,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test:e2e": "playwright test --project=online --project=offline",
+    "video": "playwright test --project=video",
     "test:e2e:soft": "playwright test --project=ai-soft",
     "test:e2e:ui": "playwright test --ui",
     "test:unit": "vitest run",

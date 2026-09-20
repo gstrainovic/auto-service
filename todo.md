@@ -27,6 +27,14 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
 - [ ] Fällt der Health-Workflow durch, ohne dass etwas kaputt ist (Wartungsfenster, kurzer Netzaussetzer), die
       Schwelle anheben: erst nach zwei Fehlläufen hintereinander mailen
 
+### Marketing-Video
+- [ ] Aussenszenen mit Veo 3.1 erzeugen (Prompts in `video-scripts/ki-werkzeuge.md`), Sprecher über ElevenLabs,
+      Schnitt in Shotcut. Drehbücher: `video-scripts/privat-video-script.md` und
+      `video-scripts/betrieb-video-script.md`; App-Aufnahmen kommen aus `npm run video` (Playwright), damit sich
+      der Film nach jeder UI-Änderung neu aufnehmen lässt
+- [ ] Fertige Filme auf die Startseite, `/privathalter` und `/betrieb` einbauen (ohne Autoplay-Ton), dazu die
+      15-Sekunden-Schnitte für Social und bezahlte Werbung
+
 ### Messen, nebenbei
 - [ ] Wöchentlich Zahlen ziehen (Caddy-Log, `events`, Anmeldungen, Bestellungen, Postfach, README Abschnitt 6) und in
       Kapitel 9 notieren; nach drei Monaten Auswertung gegen die Abbruchkriterien

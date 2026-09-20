@@ -51,3 +51,6 @@ installer.sh
 # Businessplan liegt im privaten Repo ~/projects/business (Symlink), nie ins öffentliche Repo
 business-plan
 business-plan/
+
+# Aufgenommene Werbeclips (npm run video)
+video-out/

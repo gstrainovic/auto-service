@@ -62,6 +62,8 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const cameraInput = ref<HTMLInputElement | null>(null)
 const isDragging = ref(false)
 const maximized = ref(false)
+// Maximieren lohnt erst, wenn der Chat nicht schon den ganzen Bildschirm füllt
+const breiterBildschirm = ref(false)
 const mediaViewerOpen = ref(false)
 const mediaViewerImageSrc = ref('')
 const mediaViewerPdfBase64 = ref('')
@@ -71,6 +73,11 @@ const pdfDataByMsgId = new Map<string, string>()
 
 // Chat-Verlauf aus InstantDB laden
 onMounted(async () => {
+  const breit = window.matchMedia('(min-width: 760px)')
+  breiterBildschirm.value = breit.matches
+  breit.addEventListener('change', (e) => {
+    breiterBildschirm.value = e.matches
+  })
   try {
     const result = await db.queryOnce({ chatmessages: {} })
     const docs = (result.data.chatmessages || [])
@@ -629,7 +636,9 @@ async function clearChat() {
           class="chat-camera-btn"
           @click="pickCamera"
         />
+        <!-- Auf dem Handy füllt der Chat den Bildschirm ohnehin; der Knopf nähme nur Platz in der Eingabezeile -->
         <Button
+          v-if="breiterBildschirm"
           v-tooltip.top="'Chat maximieren'"
           :icon="maximized ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
           text

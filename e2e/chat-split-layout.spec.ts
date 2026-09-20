@@ -79,4 +79,16 @@ test.describe('Chat Split Layout', () => {
     await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
     await expect(page.getByText('Audi Q5')).not.toBeVisible({ timeout: 5_000 })
   })
+
+  test('SL-002: auf dem Handy gibt es kein Maximieren, der Chat füllt den Bildschirm schon', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/dashboard')
+    await page.locator('.chat-fab').click()
+    await expect(page.locator('.chat-input')).toBeVisible()
+    await expect(page.locator('.chat-maximize-btn')).toBeHidden()
+
+    // Auf dem Rechner bleibt er, dort ist der Chat nur eine Spalte
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await expect(page.locator('.chat-maximize-btn')).toBeVisible()
+  })
 })

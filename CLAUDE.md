@@ -424,25 +424,9 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 
 ## Werbefilme
 
-Auf `/`, `/privathalter` und `/betrieb` läuft ein Kurzfilm (`LandingVideo.vue`: startet erst auf Klick, dann mit
-Ton; ab 760 px `film-*-desktop.webm`, darunter die hochkant aufgenommene Fassung, dazu je ein Poster-Bild; fehlt
-die Datei, bleibt der Abschnitt weg). Beide Fassungen sind **eigene Aufnahmen**: Playwright spielt die Szenen
-einmal im Handy-Layout (Projekt `video`) und einmal im Desktop-Layout (`video-desktop`), `npm run video` nimmt
-beide auf. Die Clips des Desktop-Laufs tragen `-desktop` im Namen. Die Filme `public/film-privat.webm` und `film-betrieb.webm` baut
-`scripts/video-build.sh` aus den Clips: Reihenfolge, Mindestlängen und Sprechertexte stehen dort (Abschnitte überblenden mit `BLENDE`, zu kurze Clips
-füllt das Skript mit dem letzten Bild auf), der Sprecher
-kommt aus Piper (Stimme `de_DE-thorsten-high`), die Untertitel aus demselben Text (kein Whisper nötig). Ein
-Abschnitt kann einen eigenen Untertitel tragen, wo die Schrift anders lauten muss als die Aussprache: espeak
-spricht «Serviceheft» als «Servi-keeft», im Sprechertext steht deshalb «Serwis-Heft». Aussprache prüfen mit
-`espeak-ng -v de -q -x "Wort"`. Ohne
-Piper entsteht der Film stumm. Dasselbe Skript baut die Kurzfassungen `video-out/social-*.webm`.
-Drehbücher in `video-scripts/`, Eröffnungsszenen und Titelkarten als SVG mit CSS-Animation in
-`video-scripts/szenen/*.html` (hell wie die App), App-Aufnahmen als Playwright-Szenen in `e2e/video/*.video.ts` (Projekt `video`,
-`npm run video`, Handyformat 390 px, erfundene Daten; jede Szene speichert sich über `clipSpeichern` selbst nach
-`video-out/`, dafür schliesst sie die Seite, sonst läuft `video.saveAs` in den Timeout).
-Ändert sich die Oberfläche, wird neu aufgenommen statt neu gefilmt. Aussenszenen, Stimme und Musik ohne Kosten:
-`video-scripts/ki-video.md`; mit Budget `video-scripts/ki-werkzeuge.md`. In der Werbung nur behaupten, was der Film zeigt oder
-was in `plans.ts`, `trial.ts` und den AGB steht.
+Die Filme auf den Landing Pages entstehen im Repo: `npm run video` nimmt die Szenen auf (Handy- und
+Desktop-Layout), `scripts/video-build.sh` montiert sie samt Sprecher und Untertiteln nach `public/`.
+Ablauf, Drehbücher, Wortwahl und Fallstricke: Skill `.claude/skills/werbefilm/SKILL.md`.
 
 ## Abläufe prüfen, nicht nur Seiten
 

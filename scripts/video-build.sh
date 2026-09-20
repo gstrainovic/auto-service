@@ -44,7 +44,7 @@ PRIVAT=(
 )
 
 BETRIEB=(
-  "szene-betrieb-welcher-bus-ist-ueberfaellig|1.2|4.0|Welcher Bus ist beim Service überfällig?"
+  "szene-betrieb-welcher-lieferwagen-ist-ueberfaellig|1.2|4.0|Welcher Lieferwagen ist beim Service überfällig?"
   "szene-2-fuhrpark-auf-einen-blick-was-ist-faellig|1.5|5.5|Ein Blick auf die Übersicht: was ansteht, für jedes Fahrzeug."
   "titel-1-rechnung-fotografieren|0.6|3.0|Der Fahrer fotografiert die Werkstattrechnung."
   "szene-3-rechnung-vom-fahrer-ein-foto-genuegt|6.0|6.5|Erfasst ist sie damit auch. Werkstatt, Betrag, Kilometerstand und Arbeiten."
@@ -62,7 +62,7 @@ SOCIAL_PRIVAT=(
 )
 
 SOCIAL_BETRIEB=(
-  "szene-betrieb-welcher-bus-ist-ueberfaellig|1.2|3.0|Welcher Bus ist überfällig?"
+  "szene-betrieb-welcher-lieferwagen-ist-ueberfaellig|1.2|3.0|Welcher Lieferwagen ist überfällig?"
   "szene-2-fuhrpark-auf-einen-blick-was-ist-faellig|2.0|5.0|Ein Blick, und du weisst es."
   "titel-5-preis-betrieb|0.6|3.5|Sechsunddreissig Franken pro Fahrzeug und Jahr."
 )

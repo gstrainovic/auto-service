@@ -26,7 +26,7 @@ function szeneUrl(datei: string, query = ''): string {
 
 const SZENEN = [
   { name: 'Szene privat: Zettelwirtschaft in der Schachtel', datei: 'privat-problem.html' },
-  { name: 'Szene Betrieb: welcher Bus ist ueberfaellig', datei: 'betrieb-problem.html' },
+  { name: 'Szene Betrieb: welcher Lieferwagen ist ueberfaellig', datei: 'betrieb-problem.html' },
 ]
 
 /** Titelkarten; der Dateiname im Schnitt ergibt sich aus dem Testnamen */

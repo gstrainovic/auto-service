@@ -8,13 +8,20 @@ Die App-Aufnahmen entstehen mit `e2e/video/betrieb.video.ts`. Ändert sich die O
 
 ## Szenenplan
 
-| Nr. | Zeit | Bild | Quelle | Text (Untertitel und Sprecher) |
+Derselbe Bogen wie im Privatfilm: eine Frage am Anfang, dieselbe Szene am Ende mit der Antwort. Die Aussagen
+laufen als Untertitel über der App, zwischen den Abschnitten liegt eine Überblendung von 0,45 s.
+
+| Nr. | Zeit | Bild | Quelle | Sprecher und Untertitel |
 |---|---|---|---|---|
-| 1 | 0–5 s | Vier Transporter, einer meldet sich rot | gezeichnet, `szenen/betrieb-problem.html` | «Welcher Lieferwagen ist beim Service überfällig?» |
-| 2 | 5–18 s | Dashboard mit Fälligkeiten über alle Fahrzeuge, Fuhrparkliste | App, Szene 2 | «Ein Blick aufs Dashboard: was ansteht, für jedes Fahrzeug.» |
-| 3 | 18–32 s | Rechnung wird fotografiert, Felder und Positionen füllen sich | App, Szene 3 | «Der Fahrer fotografiert die Werkstattrechnung. Erfasst ist sie damit auch.» |
-| 4 | 32–45 s | Kosten pro Fahrzeug und Jahr, CSV für die Buchhaltung | App, Szene 4 | «Am Jahresende: Kosten pro Fahrzeug, als Datei für die Buchhaltung.» |
-| 5 | 45–55 s | Bestelldialog mit Rechnungsadresse, Preis | App, Szene 5 | «36 Franken pro Fahrzeug und Jahr, Rechnung auf die Firma. 30 Tage gratis testen.» |
+| 1 | 0–6 s | Vier gleiche Lieferwagen, kein Status | gezeichnet, `szenen/betrieb-problem.html` | «Montagmorgen im Betrieb. Welcher Lieferwagen muss zum Service?» |
+| 2 | 6–12 s | Übersicht mit Fälligkeiten über alle Fahrzeuge | App, Szene 2 | «Ein Blick auf die Übersicht: was ansteht, für jedes Fahrzeug.» |
+| 3 | 12–19 s | Rechnung fotografieren, Felder füllen sich | App, Szene 3 | «Der Fahrer fotografiert die Werkstattrechnung. Erfasst ist sie damit auch.» |
+| 4 | 19–25 s | Kosten pro Fahrzeug und Jahr, CSV | App, Szene 4 | «Am Jahresende: Kosten pro Fahrzeug, als Datei für die Buchhaltung.» |
+| 5 | 25–29 s | Dieselben Lieferwagen, jetzt mit Status, einer rot | gezeichnet, `?antwort=1` | «Und die Frage vom Montagmorgen beantwortet sich selbst.» |
+| 6 | 29–33 s | Abspann | gezeichnet, `szenen/titel.html` | «36 Franken pro Fahrzeug und Jahr. 30 Tage gratis testen.» |
+
+Die Szenen der App führen dieselben vier Fahrzeuge und dieselben Wartungen; sonst meldet das Dashboard in einer
+Szene «nichts fällig» und widerspricht der Rahmenhandlung.
 
 ## Kurzfassung 15 Sekunden (Ads)
 
@@ -32,6 +39,13 @@ und Jahr. 30 Tage gratis.»
 
 Nicht behaupten: eingesparte Werkstattkosten, Ausfallzeiten, Zahl der Kunden. Auch nichts über Fahrerzuordnung,
 Tankbuch oder Buchhaltung — das kann die App bewusst nicht (`business-plan/03-produkt.md`, «Abgrenzung»).
+
+## Wortwahl im Film
+
+- «Lieferwagen», nicht «Bus»: in der Schweiz ist ein Bus das Postauto.
+- Der Sprecher duzt, wie die App.
+- Aussprache prüfen mit `espeak-ng -v de -q -x "Wort"`; «Serviceheft» wird im Sprechertext «Serwis-Heft»
+  geschrieben.
 
 ## Bild und Ton
 

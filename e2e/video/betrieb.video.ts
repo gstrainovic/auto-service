@@ -72,6 +72,13 @@ test.describe('Werbeclips Betrieb', () => {
   test('Szene 4: Kosten pro Fahrzeug und Jahr, Export für die Buchhaltung', async ({ page }) => {
     await seed(page, {
       vehicles: FLEET,
+      // dieselben Wartungen wie in Szene 2: sonst meldet das Dashboard «nichts fällig» und widerspricht dem Film
+      maintenances: [
+        { vehicleIndex: 0, type: 'oelwechsel', description: 'Motoröl und Filter', doneAt: daysAgo(430), mileageAtService: 170_000 },
+        { vehicleIndex: 1, type: 'oelwechsel', description: 'Motoröl und Filter', doneAt: daysAgo(90), mileageAtService: 92_000 },
+        { vehicleIndex: 2, type: 'bremsen', description: 'Bremsscheiben hinten', doneAt: daysAgo(500), mileageAtService: 220_000 },
+        { vehicleIndex: 3, type: 'inspektion', description: 'Service nach Plan', doneAt: daysAgo(60), mileageAtService: 58_000 },
+      ],
       invoices: [
         { vehicleIndex: 0, workshopName: 'Nutzfahrzeuge Brunner AG', date: daysAgo(20), totalAmount: 1287.4, mileageAtService: 184_300, items: [{ description: 'Service 180 000 km', category: 'inspektion', amount: 740 }, { description: 'Bremsbeläge hinten', category: 'bremsen', amount: 547.4 }] },
         { vehicleIndex: 1, workshopName: 'Garage Hubmann, Rorschach', date: daysAgo(70), totalAmount: 468.9, mileageAtService: 94_100, items: [{ description: 'Ölservice', category: 'oelwechsel', amount: 468.9 }] },

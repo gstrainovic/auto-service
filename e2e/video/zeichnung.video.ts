@@ -28,7 +28,8 @@ const SZENEN: { name: string, datei: string, query?: string }[] = [
   { name: 'Szene privat: Kaeufer fragt nach dem Serviceheft', datei: 'privat-kaeufer.html' },
   { name: 'Szene privat: Kaeufer bekommt die Antwort', datei: 'privat-kaeufer.html', query: '?antwort=1' },
   { name: 'Szene privat: Zettelwirtschaft in der Schachtel', datei: 'privat-problem.html' },
-  { name: 'Szene Betrieb: welcher Lieferwagen ist ueberfaellig', datei: 'betrieb-problem.html' },
+  { name: 'Szene Betrieb: Montagmorgen welcher muss zum Service', datei: 'betrieb-problem.html' },
+  { name: 'Szene Betrieb: auf einen Blick beantwortet', datei: 'betrieb-problem.html', query: '?antwort=1' },
 ]
 
 /** Titelkarten; der Dateiname im Schnitt ergibt sich aus dem Testnamen */

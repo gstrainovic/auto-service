@@ -44,14 +44,12 @@ PRIVAT=(
 )
 
 BETRIEB=(
-  "szene-betrieb-welcher-lieferwagen-ist-ueberfaellig|1.2|4.0|Welcher Lieferwagen ist beim Service überfällig?"
-  "szene-2-fuhrpark-auf-einen-blick-was-ist-faellig|1.5|5.5|Ein Blick auf die Übersicht: was ansteht, für jedes Fahrzeug."
-  "titel-1-rechnung-fotografieren|0.6|3.0|Der Fahrer fotografiert die Werkstattrechnung."
-  "szene-3-rechnung-vom-fahrer-ein-foto-genuegt|6.0|6.5|Erfasst ist sie damit auch. Werkstatt, Betrag, Kilometerstand und Arbeiten."
-  "titel-3-lueckenloses-serviceheft|0.6|3.0|Am Jahresende?"
-  "szene-4-kosten-pro-fahrzeug-und-jahr-export-fuer-die-buchhaltung|2.0|5.5|Kosten pro Fahrzeug, als Datei für die Buchhaltung."
-  "titel-5-preis-betrieb|0.6|3.6|Sechsunddreissig Franken pro Fahrzeug und Jahr, Rechnung auf die Firma."
-  "titel-6-abspann|0.6|3.6|Dreissig Tage gratis testen, auf wartungsheft punkt c h."
+  "szene-betrieb-montagmorgen-welcher-muss-zum-service|0.8|5.5|Montagmorgen im Betrieb. Welcher Lieferwagen muss zum Service?|Montagmorgen im Betrieb. Welcher Lieferwagen muss zum Service?"
+  "szene-2-fuhrpark-auf-einen-blick-was-ist-faellig|1.5|6.0|Ein Blick auf die Übersicht: was ansteht, für jedes Fahrzeug."
+  "szene-3-rechnung-vom-fahrer-ein-foto-genuegt|6.0|6.5|Der Fahrer fotografiert die Werkstattrechnung. Erfasst ist sie damit auch."
+  "szene-4-kosten-pro-fahrzeug-und-jahr-export-fuer-die-buchhaltung|2.0|5.5|Am Jahresende: Kosten pro Fahrzeug, als Datei für die Buchhaltung."
+  "szene-betrieb-auf-einen-blick-beantwortet|0.8|4.5|Und die Frage vom Montagmorgen beantwortet sich selbst."
+  "titel-6-abspann|0.6|4.5|Sechsunddreissig Franken pro Fahrzeug und Jahr. Dreissig Tage gratis testen, auf wartungsheft punkt c h."
 )
 
 # Kurzfassungen für Social: Problem, Beweis, Angebot
@@ -62,8 +60,8 @@ SOCIAL_PRIVAT=(
 )
 
 SOCIAL_BETRIEB=(
-  "szene-betrieb-welcher-lieferwagen-ist-ueberfaellig|1.2|3.0|Welcher Lieferwagen ist überfällig?"
-  "szene-2-fuhrpark-auf-einen-blick-was-ist-faellig|2.0|5.0|Ein Blick, und du weisst es."
+  "szene-betrieb-montagmorgen-welcher-muss-zum-service|0.8|3.5|Welcher Lieferwagen muss zum Service?"
+  "szene-2-fuhrpark-auf-einen-blick-was-ist-faellig|2.0|5.0|Ein Blick auf die Übersicht, und du weisst es."
   "titel-5-preis-betrieb|0.6|3.5|Sechsunddreissig Franken pro Fahrzeug und Jahr."
 )
 

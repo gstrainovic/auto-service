@@ -42,6 +42,10 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
       häufigen Fragen als Text statt nur in Bild und Video, strukturierte Daten (`SoftwareApplication`,
       `Organization`, `FAQPage`), `/llms.txt` mit demselben Inhalt, `robots.txt` erlaubt GPTBot, ClaudeBot,
       PerplexityBot und Google-Extended. Danach dieselbe Frage nochmals stellen und den Unterschied notieren
+- [ ] Seite `/hilfe` mit den neun Kernabläufen aus CLAUDE.md, je drei bis fünf Sätze, plus häufige Fragen als
+      `FAQPage`. Dient dreifach: Antwort im Postfach statt Erklärung von Hand, Text für die KI-Antworten oben und
+      Prüfliste für uns. Keine Bedienvideos: jede Änderung der Oberfläche macht sie falsch, und wer eine Anleitung
+      braucht, zeigt eine Lücke in der Oberfläche — die Antwort gehört dann an die Stelle, nicht ins Handbuch
 
 ### Messen, nebenbei
 - [ ] Wöchentlich Zahlen ziehen (Caddy-Log, `events`, Anmeldungen, Bestellungen, Postfach, README Abschnitt 6) und in

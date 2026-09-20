@@ -9,14 +9,22 @@ Oberfläche, wird nur neu aufgenommen und geschnitten; die Sprechertexte bleiben
 
 ## Szenenplan
 
-| Nr. | Zeit | Bild | Quelle | Text (Untertitel und Sprecher) |
+Rahmenhandlung statt Funktionsliste: dieselbe Szene am Anfang und am Ende, einmal ohne und einmal mit Antwort.
+Der Zuschauer ist der Held, Wartungsheft ist das Werkzeug dazwischen. Die Aussagen stehen als Untertitel über
+der App, nicht mehr als Vollbild-Karten — die hielten den Film an.
+
+| Nr. | Zeit | Bild | Quelle | Sprecher und Untertitel |
 |---|---|---|---|---|
-| 1 | 0–5 s | Zettel quellen aus einer Schachtel, Fragezeichen | gezeichnet, `szenen/privat-problem.html` | «Wann war nochmal der letzte Ölwechsel?» |
-| 2 | 5–20 s | Handy fotografiert eine Werkstattrechnung, Felder füllen sich von selbst, Positionen erscheinen | App, Szene 2 | «Rechnung fotografieren. Werkstatt, Datum, Betrag, Kilometerstand und die Arbeiten stehen drin — ohne Tippen.» |
-| 3 | 20–35 s | Dashboard mit Fälligkeitsliste, «Erledigt eintragen» | App, Szene 3 | «Wartungsheft rechnet, was wann fällig ist. Du bekommst eine Mail, bevor es zu spät ist.» |
-| 4 | 35–48 s | Tab «Kosten», Jahreszahlen, PDF-Dossier | App, Szene 4 | «Beim Verkauf zählt ein lückenloses Serviceheft. Ein Klick, und es liegt als PDF bereit.» |
-| 5 | 48–58 s | Einstellungen mit Abo und Testzeit, Preis als Texteinblendung | App, Szene 5 | «25 Franken im Jahr für bis zu fünf Fahrzeuge. Keine Werbung. Daten in der Schweiz.» |
-| 6 | 58–70 s | Startseite mit Knopf «30 Tage gratis testen» | KI-Clip oder App | «30 Tage gratis testen, ohne Kreditkarte. wartungsheft.ch» |
+| 1 | 0–4 s | Käufer am Auto, Sprechblase, Fragezeichen beim Verkäufer | gezeichnet, `szenen/privat-kaeufer.html` | «Haben Sie das Serviceheft?» |
+| 2 | 4–8 s | Zettel quellen aus der Schachtel | gezeichnet, `szenen/privat-problem.html` | «Und du suchst.» |
+| 3 | 8–18 s | Foto der Rechnung, Felder und Positionen füllen sich | App, Szene 2 | «Ab heute nicht mehr: Rechnung fotografieren genügt. Werkstatt, Datum, Betrag und Arbeiten stehen drin.» |
+| 4 | 18–24 s | Fälligkeitsliste, «Erledigt eintragen» | App, Szene 3 | «Dein Auto meldet sich selbst, bevor etwas fällig ist.» |
+| 5 | 24–29 s | Kosten pro Jahr, PDF-Dossier | App, Szene 4 | «Und beim Verkauf liegt alles auf dem Tisch: das lückenlose Serviceheft als PDF.» |
+| 6 | 29–33 s | Dieselbe Szene wie 1, Haken statt Fragezeichen | gezeichnet, `szenen/privat-kaeufer.html?antwort=1` | «Alles da.» |
+| 7 | 33–37 s | Abspann | gezeichnet, `szenen/titel.html` | «25 Franken im Jahr. 30 Tage gratis testen, auf wartungsheft.ch» |
+
+Zwischen den Abschnitten liegt eine Überblendung von 0,45 s (`BLENDE` in `scripts/video-build.sh`), keine harten
+Schnitte.
 
 ## Kurzfassung 15 Sekunden (Ads)
 

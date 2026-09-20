@@ -429,7 +429,8 @@ Ton; ab 760 px `film-*-desktop.webm`, darunter die hochkant aufgenommene Fassung
 die Datei, bleibt der Abschnitt weg). Beide Fassungen sind **eigene Aufnahmen**: Playwright spielt die Szenen
 einmal im Handy-Layout (Projekt `video`) und einmal im Desktop-Layout (`video-desktop`), `npm run video` nimmt
 beide auf. Die Clips des Desktop-Laufs tragen `-desktop` im Namen. Die Filme `public/film-privat.webm` und `film-betrieb.webm` baut
-`scripts/video-build.sh` aus den Clips: Reihenfolge, Mindestlängen und Sprechertexte stehen dort, der Sprecher
+`scripts/video-build.sh` aus den Clips: Reihenfolge, Mindestlängen und Sprechertexte stehen dort (Abschnitte überblenden mit `BLENDE`, zu kurze Clips
+füllt das Skript mit dem letzten Bild auf), der Sprecher
 kommt aus Piper (Stimme `de_DE-thorsten-high`), die Untertitel aus demselben Text (kein Whisper nötig). Ein
 Abschnitt kann einen eigenen Untertitel tragen, wo die Schrift anders lauten muss als die Aussprache: espeak
 spricht «Serviceheft» als «Servi-keeft», im Sprechertext steht deshalb «Serwis-Heft». Aussprache prüfen mit

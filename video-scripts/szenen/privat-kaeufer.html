@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Szene privat: Der Käufer fragt</title>
+<!--
+  Rahmen des Privatfilms: am Anfang fragt der Kaufinteressent nach dem Serviceheft und der Verkäufer hat keine
+  Antwort, am Ende dieselbe Szene mit Antwort. Welche Fassung, entscheidet ?antwort=1 in der Adresse.
+  Aufnahme über e2e/video/zeichnung.video.ts.
+-->
+<style>
+  :root {
+    --ink: #1f2329;
+    --muted: #6b7280;
+    --bg: #ffffff;
+    --car: #eef1f5;
+    --car-line: #b6bcc5;
+    --ok: #10b981;
+    --warn: #f59e0b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; background: var(--bg); }
+  body { display: grid; place-items: center; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+  .stage { position: relative; width: 100vw; height: 100vh; }
+
+  .title {
+    position: absolute; top: 12vh; left: 0; right: 0; text-align: center; padding: 0 28px;
+    color: var(--ink); font-size: 26px; font-weight: 600; line-height: 1.35;
+    opacity: 0; animation: fade-in 600ms ease-out 2200ms forwards;
+  }
+
+  svg { position: absolute; left: 50%; top: 52%; transform: translate(-50%, -44%); height: min(320px, 40vh); width: auto; }
+
+  .person { opacity: 0; animation: fade-in 500ms ease-out 200ms forwards; }
+  .person.zweite { animation-delay: 500ms; }
+  .blase { opacity: 0; transform-origin: 20% 100%; animation: pop 600ms cubic-bezier(.2,.8,.3,1) 1100ms forwards; }
+  .blase-text { font-size: 19px; font-weight: 600; fill: var(--ink); font-family: 'Segoe UI', system-ui, sans-serif; }
+  .zeichen { opacity: 0; animation: pop 600ms cubic-bezier(.2,.8,.3,1) 1900ms forwards; }
+
+  @keyframes fade-in { to { opacity: 1; } }
+  @keyframes pop {
+    0% { opacity: 0; transform: translateY(10px) scale(.85); }
+    100% { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <p class="title" id="titel"></p>
+
+    <svg width="420" height="330" viewBox="0 0 420 330" aria-hidden="true">
+      <!-- Sprechblase des Käufers -->
+      <g class="blase">
+        <path d="M96 18h250a14 14 0 0 1 14 14v58a14 14 0 0 1-14 14H150l-26 24 4-24h-32a14 14 0 0 1-14-14V32a14 14 0 0 1 14-14z"
+              fill="#f3f4f6"/>
+        <text class="blase-text" id="blase" x="221" y="58" text-anchor="middle"></text>
+        <text class="blase-text" id="blase2" x="221" y="82" text-anchor="middle"></text>
+      </g>
+
+      <!-- Auto von der Seite -->
+      <path d="M64 268h292v-34c0-10-8-18-18-18h-28l-30-34a22 22 0 0 0-17-8h-84a22 22 0 0 0-17 8l-30 34H82c-10 0-18 8-18 18z"
+            fill="var(--car)"/>
+      <path d="M168 182l-22 34h68v-34zM244 182l28 34h-44v-34z" fill="#d7dde5"/>
+      <circle cx="126" cy="268" r="20" fill="#3f444c"/><circle cx="126" cy="268" r="8" fill="#9aa3ad"/>
+      <circle cx="296" cy="268" r="20" fill="#3f444c"/><circle cx="296" cy="268" r="8" fill="#9aa3ad"/>
+      <path d="M40 292h340" stroke="#d3d8de" stroke-width="5" stroke-linecap="round"/>
+
+      <!-- Käufer links, Verkäufer rechts: nur angedeutet, keine Gesichter -->
+      <g class="person">
+        <circle cx="34" cy="196" r="15" fill="#c3ccd6"/>
+        <path d="M18 288v-56a16 16 0 0 1 32 0v56z" fill="#c3ccd6"/>
+      </g>
+      <g class="person zweite">
+        <circle cx="388" cy="196" r="15" fill="#aab3bd"/>
+        <path d="M372 288v-56a16 16 0 0 1 32 0v56z" fill="#aab3bd"/>
+      </g>
+
+      <!-- Fragezeichen oder Haken über dem Verkäufer -->
+      <g class="zeichen" id="zeichen"></g>
+    </svg>
+  </div>
+</body>
+</html>
+<script>
+  const antwort = new URLSearchParams(location.search).has('antwort')
+  document.getElementById('blase').textContent = antwort ? 'Alles da.' : 'Haben Sie das'
+  document.getElementById('blase2').textContent = antwort ? '' : 'Serviceheft?'
+  document.getElementById('titel').textContent = antwort
+    ? 'Lückenlos belegt, in zehn Sekunden gezeigt.'
+    : 'Der Moment, in dem es zählt.'
+  document.getElementById('zeichen').innerHTML = antwort
+    ? '<circle cx="388" cy="150" r="20" fill="#10b981" opacity=".16"/><path d="M378 150l7 8 13-15" stroke="#10b981" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+    : '<circle cx="388" cy="150" r="20" fill="#f59e0b" opacity=".16"/><text x="388" y="159" text-anchor="middle" font-size="28" font-weight="700" fill="#f59e0b" font-family="Segoe UI, system-ui, sans-serif">?</text>'
+</script>

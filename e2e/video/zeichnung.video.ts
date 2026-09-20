@@ -24,7 +24,9 @@ function szeneUrl(datei: string, query = ''): string {
   return pathToFileURL(`${process.cwd()}/video-scripts/szenen/${datei}`).href + query
 }
 
-const SZENEN = [
+const SZENEN: { name: string, datei: string, query?: string }[] = [
+  { name: 'Szene privat: Kaeufer fragt nach dem Serviceheft', datei: 'privat-kaeufer.html' },
+  { name: 'Szene privat: Kaeufer bekommt die Antwort', datei: 'privat-kaeufer.html', query: '?antwort=1' },
   { name: 'Szene privat: Zettelwirtschaft in der Schachtel', datei: 'privat-problem.html' },
   { name: 'Szene Betrieb: welcher Lieferwagen ist ueberfaellig', datei: 'betrieb-problem.html' },
 ]
@@ -41,7 +43,7 @@ const TITEL = [
 
 for (const szene of SZENEN) {
   test(szene.name, async ({ page }) => {
-    await page.goto(szeneUrl(szene.datei))
+    await page.goto(szeneUrl(szene.datei, szene.query))
     await expect(page.locator('.title')).toBeVisible()
     await page.waitForTimeout(LAUFZEIT)
   })

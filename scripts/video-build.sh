@@ -17,6 +17,8 @@ OUT=public
 STIMME="${PIPER_VOICE:-$HOME/.local/share/piper-voices/de_DE-thorsten-high.onnx}"
 BREITE=585
 HOEHE=1266
+# Länge der Überblendung zwischen zwei Abschnitten
+BLENDE=0.45
 mkdir -p "$OUT"
 
 if command -v piper >/dev/null && [ -f "$STIMME" ]; then
@@ -32,15 +34,13 @@ fi
 # «Servi-keeft», «Serwis-Heft» trifft es. Prüfen mit: espeak-ng -v de -q -x "Wort"
 # Die Dauer wächst automatisch, wenn der Sprecher länger braucht.
 PRIVAT=(
-  "szene-privat-zettelwirtschaft-in-der-schachtel|1.2|4.0|Wann war nochmal der letzte Ölwechsel? Irgendwo in der Schachtel."
-  "titel-1-rechnung-fotografieren|0.6|3.0|Mit Wartungsheft fotografierst du die Werkstattrechnung."
-  "szene-2-rechnung-fotografieren-felder-fuellen-sich|6.0|7.0|Werkstatt, Datum, Betrag, Kilometerstand und die Arbeiten stehen drin. Ohne Tippen."
-  "titel-2-wartungsheft-rechnet-mit|0.6|3.0|Wartungsheft rechnet mit."
-  "szene-3-faelligkeit-auf-dem-dashboard-und-erledigt-eintragen|1.5|6.0|Was fällig ist, meldet sich von selbst. Erledigtes trägst du mit einem Klick ein."
-  "titel-3-lueckenloses-serviceheft|0.6|3.0|Und beim Verkauf?"
-  "szene-4-kosten-und-pdf-dossier-fuer-den-verkauf|4.0|5.5|Kosten pro Jahr, und das lückenlose Serwis-Heft als PDF.|Kosten pro Jahr, und das lückenlose Serviceheft als PDF."
-  "titel-4-preis-privat|0.6|3.6|Fünfundzwanzig Franken im Jahr, für bis zu fünf Fahrzeuge."
-  "titel-6-abspann|0.6|3.6|Dreissig Tage gratis testen, auf wartungsheft punkt c h."
+  "szene-privat-kaeufer-fragt-nach-dem-serviceheft|0.8|4.0|Haben Sie das Serviceheft?|«Haben Sie das Serviceheft?»"
+  "szene-privat-zettelwirtschaft-in-der-schachtel|1.4|3.5|Und du suchst."
+  "szene-2-rechnung-fotografieren-felder-fuellen-sich|6.0|7.0|Ab heute nicht mehr: Rechnung fotografieren genügt. Werkstatt, Datum, Betrag und Arbeiten stehen drin."
+  "szene-3-faelligkeit-auf-dem-dashboard-und-erledigt-eintragen|1.5|6.0|Dein Auto meldet sich selbst, bevor etwas fällig ist."
+  "szene-4-kosten-und-pdf-dossier-fuer-den-verkauf|4.0|5.5|Und beim Verkauf liegt alles auf dem Tisch: das lückenlose Serwis-Heft als PDF.|Und beim Verkauf liegt alles auf dem Tisch: das lückenlose Serviceheft als PDF."
+  "szene-privat-kaeufer-bekommt-die-antwort|0.8|4.0|Alles da.|«Alles da.»"
+  "titel-6-abspann|0.6|4.2|Fünfundzwanzig Franken im Jahr. Dreissig Tage gratis testen, auf wartungsheft punkt c h."
 )
 
 BETRIEB=(
@@ -107,17 +107,30 @@ bauen() {
       echo "$text" | piper --model "$STIMME" --output_file "$stimme" >/dev/null 2>&1
       local gesprochen; gesprochen=$(dauer_von "$stimme")
       # etwas Luft am Ende, damit der Schnitt nicht auf dem letzten Laut sitzt
-      dauer=$(echo "if ($gesprochen + 0.8 > $minimum) $gesprochen + 0.8 else $minimum" | bc -l)
+      dauer=$(printf '%.3f' "$(echo "if ($gesprochen + 0.8 > $minimum) $gesprochen + 0.8 else $minimum" | bc -l)")
     fi
 
+    # Im Desktop-Layout laufen dieselben Szenen kürzer ab. Passt der Ausschnitt nicht in den Clip, rückt der
+    # Start nach vorn; reicht der Clip trotzdem nicht, friert das letzte Bild ein statt abzuschneiden.
+    local vorhanden; vorhanden=$(dauer_von "$quelle")
+    local spielraum; spielraum=$(echo "$vorhanden - $dauer" | bc -l)
+    if [ "$(echo "$start > $spielraum" | bc -l)" = 1 ]; then
+      start=$(printf '%.3f' "$(echo "if ($spielraum > 0) $spielraum else 0" | bc -l)")
+    fi
+    local fehlt; fehlt=$(printf '%.3f' "$(echo "$dauer - ($vorhanden - $start)" | bc -l)")
+
     local filter="scale=$BREITE:$HOEHE,fps=30"
+    if [ "$(echo "$fehlt > 0.05" | bc -l)" = 1 ]; then
+      filter="$filter,tpad=stop_mode=clone:stop_duration=$fehlt"
+    fi
     # Titelkarten tragen ihren Text schon im Bild; alles andere bekommt Untertitel
     if [ "$SPRECHER" = 1 ] && [ -n "$text" ] && [[ "$name" != titel-* ]]; then
       local srt="$tmp/$i.srt"
       srt_schreiben "$srt" "$untertitel" "$dauer"
       filter="$filter,subtitles='$srt':force_style='FontName=DejaVu Sans,FontSize=${UT_GROESSE:-11},PrimaryColour=&H00FFFFFF,BackColour=&HA0000000,BorderStyle=4,Outline=0,Shadow=0,Alignment=2,MarginV=60'"
     fi
-    filter="$filter,fade=in:0:8,fade=out:st=$(echo "$dauer - 0.4" | bc -l):d=0.4"
+    # Ein- und Ausblenden übernimmt der Crossfade; nur der Filmanfang blendet selbst auf
+    [ "$i" = 0 ] && filter="$filter,fade=in:0:10"
 
     local stueck; stueck=$(printf '%s/%03d.webm' "$tmp" "$i")
     if [ -n "$stimme" ]; then
@@ -133,7 +146,27 @@ bauen() {
     i=$((i + 1))
   done
 
-  ffmpeg -loglevel error -y -f concat -safe 0 -i "$liste" -c copy "$ziel"
+  # Alle Stücke in einem Durchgang überblenden: Bild mit xfade, Ton mit acrossfade
+  local eingaben=() vgraph="" agraph="" offset=0 n=0 vorher_v="[0:v]" vorher_a="[0:a]" stueck k
+  for stueck in "$tmp"/[0-9][0-9][0-9].webm; do
+    eingaben+=(-i "$stueck")
+    n=$((n + 1))
+  done
+  offset=$(dauer_von "$tmp/000.webm")
+  k=1
+  while [ "$k" -lt "$n" ]; do
+    local ziel_v="[v$k]" ziel_a="[a$k]"
+    if [ "$k" = $((n - 1)) ]; then ziel_v="[vout]"; ziel_a="[aout]"; fi
+    vgraph="$vgraph$vorher_v[$k:v]xfade=transition=fade:duration=$BLENDE:offset=$(printf '%.3f' "$(echo "$offset - $BLENDE" | bc -l)")$ziel_v;"
+    agraph="$agraph$vorher_a[$k:a]acrossfade=d=$BLENDE:c1=tri:c2=tri$ziel_a;"
+    offset=$(printf '%.3f' "$(echo "$offset + $(dauer_von "$(printf '%s/%03d.webm' "$tmp" "$k")") - $BLENDE" | bc -l)")
+    vorher_v="$ziel_v"
+    vorher_a="$ziel_a"
+    k=$((k + 1))
+  done
+  ffmpeg -loglevel error -y "${eingaben[@]}" \
+    -filter_complex "${vgraph}${agraph}" -map "[vout]" -map "[aout]" \
+    -c:v libvpx-vp9 -crf 34 -b:v 0 -row-mt 1 -c:a libopus -b:a 64k "$ziel"
   rm -rf "$tmp"
   echo "$ziel ($(du -h "$ziel" | cut -f1), $(dauer_von "$ziel" | cut -d. -f1) s)"
 }

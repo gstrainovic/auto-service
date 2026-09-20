@@ -28,8 +28,9 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
       Schwelle anheben: erst nach zwei Fehlläufen hintereinander mailen
 
 ### Marketing-Video
-- [ ] Aussenszenen mit Veo 3.1 erzeugen (Prompts in `video-scripts/ki-werkzeuge.md`), Sprecher über ElevenLabs,
-      Schnitt in Shotcut. Drehbücher: `video-scripts/privat-video-script.md` und
+- [ ] Zuerst der Weg ohne Kosten (`video-scripts/ki-video.md`): Aussenszenen selbst filmen oder von Pexels,
+      Stimme mit Piper (Thorsten), Untertitel mit Whisper, Schnitt in Shotcut. Erst wenn etwas fehlt, Geld
+      einsetzen (`video-scripts/ki-werkzeuge.md`: Veo 3.1, ElevenLabs). Drehbücher: `video-scripts/privat-video-script.md` und
       `video-scripts/betrieb-video-script.md`; App-Aufnahmen kommen aus `npm run video` (Playwright), damit sich
       der Film nach jeder UI-Änderung neu aufnehmen lässt
 - [ ] Fertige Filme auf die Startseite, `/privathalter` und `/betrieb` einbauen (ohne Autoplay-Ton), dazu die

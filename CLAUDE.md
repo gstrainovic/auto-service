@@ -425,8 +425,8 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 
 Drehbücher in `video-scripts/`, App-Aufnahmen als Playwright-Szenen in `e2e/video/*.video.ts` (Projekt `video`,
 `npm run video`, Handyformat 390 px, erfundene Daten). `scripts/video-clips.sh` sammelt die Clips nach `video-out/`.
-Ändert sich die Oberfläche, wird neu aufgenommen statt neu gefilmt. Aussenszenen, Stimme und Musik: Dienste,
-Kosten und Rechtliches in `video-scripts/ki-werkzeuge.md`. In der Werbung nur behaupten, was der Film zeigt oder
+Ändert sich die Oberfläche, wird neu aufgenommen statt neu gefilmt. Aussenszenen, Stimme und Musik ohne Kosten:
+`video-scripts/ki-video.md`; mit Budget `video-scripts/ki-werkzeuge.md`. In der Werbung nur behaupten, was der Film zeigt oder
 was in `plans.ts`, `trial.ts` und den AGB steht.
 
 ## Abläufe prüfen, nicht nur Seiten

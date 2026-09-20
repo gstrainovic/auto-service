@@ -57,5 +57,5 @@ Für 16:9 den Clip im Schnitt auf eine Fläche legen (unscharfer Hintergrund ode
 
 ## KI-Werkzeuge
 
-Siehe `video-scripts/ki-werkzeuge.md` für Dienste, Kosten und Rechtliches zu Bild, Stimme und Musik, samt den
-fertigen Prompts für die Szenen 1 und 6.
+Gratis zuerst: `video-scripts/ki-video.md` (selbst filmen, Pexels, Wan 2.2, Piper-Stimme, Whisper-Untertitel).
+Mit Budget: `video-scripts/ki-werkzeuge.md`, dort stehen auch die Prompts für die Szenen 1 und 6.

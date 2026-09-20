@@ -52,4 +52,4 @@ Szene 5 zeigt den Bestelldialog nur, wenn der lokale AI-Proxy die Rechnungsstell
 
 ## KI-Werkzeuge
 
-Siehe `video-scripts/ki-werkzeuge.md`, dort stehen Dienste, Kosten, Rechtliches und die Prompts für Szene 1.
+Gratis zuerst: `video-scripts/ki-video.md`. Mit Budget und den Prompts für Szene 1: `video-scripts/ki-werkzeuge.md`.

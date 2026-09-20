@@ -387,6 +387,11 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
               <strong>Betrieb:</strong> {{ formatCurrency(BUSINESS_VEHICLE_YEARLY_CHF) }} pro Fahrzeug und Jahr,
               Rechnung auf die Firma. Beides zahlbar in 30 Tagen.
             </div>
+            <!-- Frühes Bestellen darf nichts kosten, sonst wartet jeder bis zum letzten Testtag -->
+            <div v-if="usage?.trial?.active" class="order-hint">
+              Bestellst du jetzt, beginnt das bezahlte Jahr erst am {{ formatDate(usage.trial.endsAt) }} — du
+              verschenkst also keinen Tag der Testzeit.
+            </div>
             <Button label="Jahresabo bestellen" size="small" @click="orderOpen = true" />
           </div>
           <div v-else-if="billingEnabled && upgradePlans.length" class="upgrade-list">
@@ -576,6 +581,12 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
 }
 
 .business-subscription,
+.order-hint {
+  font-size: 0.85rem;
+  color: var(--p-text-muted-color);
+  line-height: 1.5;
+}
+
 .business-order {
   display: flex;
   flex-direction: column;

@@ -8,8 +8,6 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
 ### Vom Nutzer
 - [ ] Mistral: monatliches Ausgabenlimit über das 10-$-Kontingent hinaus (heute 0 $) auf z. B. 20 $ setzen, sobald ein
       Betrieb scannt; sonst stoppt die API bis zum Monatsersten
-- [ ] Secret für den Health-Workflow setzen: `gh secret set RESEND_TOKEN --repo gstrainovic/auto-service`
-      (Wert aus `/opt/instant/.env` auf der Instanz), sonst meldet der Ausfall nur im GitHub-Lauf
 - [ ] PostFinance-Geschäftskonto eröffnen (Fr. 5 im Monat, bei Eröffnung bis 30.11.2026 zwei Jahre gratis) und
       QR-IBAN beantragen; neon, Yuh und Revolut privat verbieten geschäftliche Eingänge. IBAN danach in die `.env`
       des AI-Proxys auf der Instanz, nicht ins Repo. Bankwahl und Begründung in `geschaeftskonten-vergleich.md`
@@ -28,11 +26,6 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
       Schwelle anheben: erst nach zwei Fehlläufen hintereinander mailen
 
 ### Marketing-Video
-- [ ] Zuerst der Weg ohne Kosten (`video-scripts/ki-video.md`): Aussenszenen selbst filmen oder von Pexels,
-      Stimme mit Piper (Thorsten), Untertitel mit Whisper, Schnitt in Shotcut. Erst wenn etwas fehlt, Geld
-      einsetzen (`video-scripts/ki-werkzeuge.md`: Veo 3.1, ElevenLabs). Drehbücher: `video-scripts/privat-video-script.md` und
-      `video-scripts/betrieb-video-script.md`; App-Aufnahmen kommen aus `npm run video` (Playwright), damit sich
-      der Film nach jeder UI-Änderung neu aufnehmen lässt
 - [ ] Kurzfassungen für Social veröffentlichen: `video-out/social-privat.webm` und `social-betrieb.webm` (je gut
       10 Sekunden) beim ersten Beitrag oder der ersten Anzeige einsetzen
 

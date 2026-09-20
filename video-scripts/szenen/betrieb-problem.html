@@ -9,11 +9,12 @@
   Aufnahme über e2e/video/zeichnung.video.ts.
 -->
 <style>
+  /* Dunkle Palette wie die App (src/styles/design-tokens.css); die Lieferwagen bleiben hell, sonst verschwinden sie */
   :root {
-    --ink: #1f2329;
-    --bg: #ffffff;
-    --van: #eef1f5;
-    --van-line: #9aa0a6;
+    --ink: #f3f4f6;
+    --bg: #111827;
+    --van: #d7dce3;
+    --van-line: #6b7280;
     --ok: #10b981;
     --warn: #ef4444;
   }
@@ -27,7 +28,7 @@
     color: var(--ink); font-size: 26px; font-weight: 600; line-height: 1.35;
     opacity: 0; animation: fade-in 700ms ease-out 300ms forwards;
   }
-  .title small { display: block; margin-top: 10px; font-size: 17px; font-weight: 400; color: #6b7280; opacity: 0; animation: fade-in 700ms ease-out 1600ms forwards; }
+  .title small { display: block; margin-top: 10px; font-size: 17px; font-weight: 400; color: #9ca3af; opacity: 0; animation: fade-in 700ms ease-out 1600ms forwards; }
 
   /* Im Breitbild passen die vier Fahrzeuge nebeneinander schlecht; sie bleiben untereinander, nur kleiner */
   .fleet { position: absolute; top: 44%; left: 0; right: 0; display: grid; gap: min(18px, 2vh); justify-items: center; }

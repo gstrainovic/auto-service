@@ -12,9 +12,12 @@ import { pathToFileURL } from 'node:url'
 import { expect, test } from '../fixtures/test-fixtures'
 import { clipSpeichern } from './szenen'
 
-/** Die Animationen laufen etwa 4 Sekunden; der Rest ist Standbild für den Schnitt */
-const LAUFZEIT = 6500
-const TITELZEIT = 4500
+/**
+ * Die Animationen laufen etwa 4 Sekunden; der Rest ist Standbild für den Schnitt. Lieber zu lang als zu kurz:
+ * fehlt dem Schnitt Material, rückt er den Start nach vorn und der Seitenaufbau läuft im Bild mit.
+ */
+const LAUFZEIT = 10_000
+const TITELZEIT = 8000
 
 test.afterEach(async ({ page }, testInfo) => {
   await clipSpeichern(page, testInfo)

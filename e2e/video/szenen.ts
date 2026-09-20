@@ -35,8 +35,11 @@ export async function clipSpeichern(page: Page, testInfo: TestInfo): Promise<voi
   await video.saveAs(`${CLIP_DIR}/${slug}${suffix}.webm`)
 }
 
-/** Ruhig genug, dass ein Zuschauer folgen kann; im Schnitt lässt sich immer noch kürzen */
-export const BEAT = 900
+/**
+ * Ruhig genug, dass ein Zuschauer folgen kann; im Schnitt lässt sich immer noch kürzen. Zuschauer meldeten,
+ * das Tempo sei zu hoch — deshalb lieber zu langsam aufnehmen als zu schnell.
+ */
+export const BEAT = 1200
 
 export async function beat(page: Page, factor = 1): Promise<void> {
   await page.waitForTimeout(BEAT * factor)

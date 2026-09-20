@@ -19,6 +19,11 @@ BREITE=585
 HOEHE=1266
 # Länge der Überblendung zwischen zwei Abschnitten
 BLENDE=0.45
+# Sprechtempo: 1.0 ist Piper-Standard, höhere Werte sprechen langsamer. Zuschauer meldeten, sie kämen beim
+# Lesen der Untertitel nicht mit.
+TEMPO="${PIPER_TEMPO:-1.12}"
+# Luft nach dem letzten Laut, bevor der Schnitt kommt
+NACHLAUF=1.4
 mkdir -p "$OUT"
 
 if command -v piper >/dev/null && [ -f "$STIMME" ]; then
@@ -34,22 +39,22 @@ fi
 # «Servi-keeft», «Serwis-Heft» trifft es. Prüfen mit: espeak-ng -v de -q -x "Wort"
 # Die Dauer wächst automatisch, wenn der Sprecher länger braucht.
 PRIVAT=(
-  "szene-privat-kaeufer-fragt-nach-dem-serviceheft|0.8|5.5|Du willst dein Auto verkaufen. Der Käufer fragt: Gibt es ein Serwis-Heft?|Du verkaufst dein Auto. Der Käufer fragt: «Gibt es ein Serviceheft?»"
-  "szene-privat-zettelwirtschaft-in-der-schachtel|1.4|3.5|Und du suchst."
-  "szene-2-rechnung-fotografieren-felder-fuellen-sich|6.0|7.0|Ab heute nicht mehr: Rechnung fotografieren genügt. Werkstatt, Datum, Betrag und Arbeiten stehen drin."
-  "szene-3-faelligkeit-auf-dem-dashboard-und-erledigt-eintragen|1.5|6.0|Wartungsheft meldet sich, bevor die nächste Arbeit fällig ist."
-  "szene-4-kosten-und-pdf-dossier-fuer-den-verkauf|4.0|5.5|Und beim Verkauf liegt alles auf dem Tisch: das vollständige Serwis-Heft als PDF.|Und beim Verkauf liegt alles auf dem Tisch: das vollständige Serviceheft als PDF."
-  "szene-privat-kaeufer-bekommt-die-antwort|0.8|4.2|Alles da.|«Alles da.»"
-  "titel-6-abspann|0.6|4.2|Fünfundzwanzig Franken im Jahr. Dreissig Tage gratis testen, auf wartungsheft punkt c h."
+  "szene-privat-kaeufer-fragt-nach-dem-serviceheft|0.8|7.0|Du willst dein Auto verkaufen. Der Käufer fragt: Gibt es ein Serwis-Heft?|Du verkaufst dein Auto. Der Käufer fragt: «Gibt es ein Serviceheft?»"
+  "szene-privat-zettelwirtschaft-in-der-schachtel|1.4|5.0|Und du suchst."
+  "szene-2-rechnung-fotografieren-felder-fuellen-sich|6.0|8.5|Ab heute nicht mehr: Rechnung fotografieren genügt. Werkstatt, Datum, Betrag und Arbeiten stehen drin."
+  "szene-3-faelligkeit-auf-dem-dashboard-und-erledigt-eintragen|1.5|7.5|Wartungsheft meldet sich, bevor die nächste Arbeit fällig ist."
+  "szene-4-kosten-und-pdf-dossier-fuer-den-verkauf|4.0|7.0|Und beim Verkauf liegt alles auf dem Tisch: das vollständige Serwis-Heft als PDF.|Und beim Verkauf liegt alles auf dem Tisch: das vollständige Serviceheft als PDF."
+  "szene-privat-kaeufer-bekommt-die-antwort|0.8|5.5|Alles da.|«Alles da.»"
+  "titel-6-abspann|0.6|5.5|Fünfundzwanzig Franken im Jahr. Dreissig Tage gratis testen, auf wartungsheft punkt c h."
 )
 
 BETRIEB=(
-  "szene-betrieb-montagmorgen-welcher-muss-zum-service|0.8|5.5|Montagmorgen im Betrieb. Welcher Lieferwagen muss zum Service?|Montagmorgen im Betrieb. Welcher Lieferwagen muss zum Service?"
-  "szene-2-fuhrpark-auf-einen-blick-was-ist-faellig|1.5|6.0|Ein Blick auf die Übersicht: was ansteht, für jedes Fahrzeug."
-  "szene-3-rechnung-vom-fahrer-ein-foto-genuegt|6.0|6.5|Der Fahrer fotografiert die Werkstattrechnung. Erfasst ist sie damit auch."
-  "szene-4-kosten-pro-fahrzeug-und-jahr-export-fuer-die-buchhaltung|2.0|5.5|Am Jahresende: Kosten pro Fahrzeug, als Datei für die Buchhaltung."
-  "szene-betrieb-auf-einen-blick-beantwortet|0.8|4.5|Und die Frage vom Montagmorgen beantwortet sich selbst."
-  "titel-6-abspann|0.6|4.5|Sechsunddreissig Franken pro Fahrzeug und Jahr. Dreissig Tage gratis testen, auf wartungsheft punkt c h."
+  "szene-betrieb-montagmorgen-welcher-muss-zum-service|0.8|7.0|Montagmorgen im Betrieb. Welcher Lieferwagen muss zum Service?|Montagmorgen im Betrieb. Welcher Lieferwagen muss zum Service?"
+  "szene-2-fuhrpark-auf-einen-blick-was-ist-faellig|1.5|7.5|Ein Blick auf die Übersicht: was ansteht, für jedes Fahrzeug."
+  "szene-3-rechnung-vom-fahrer-ein-foto-genuegt|6.0|8.0|Der Fahrer fotografiert die Werkstattrechnung. Erfasst ist sie damit auch."
+  "szene-4-kosten-pro-fahrzeug-und-jahr-export-fuer-die-buchhaltung|2.0|7.0|Am Jahresende: Kosten pro Fahrzeug, als Datei für die Buchhaltung."
+  "szene-betrieb-auf-einen-blick-beantwortet|0.8|5.5|Und die Frage vom Montagmorgen beantwortet sich selbst."
+  "titel-6-abspann|0.6|5.5|Sechsunddreissig Franken pro Fahrzeug und Jahr. Dreissig Tage gratis testen, auf wartungsheft punkt c h."
 )
 
 # Kurzfassungen für Social: Problem, Beweis, Angebot
@@ -102,10 +107,10 @@ bauen() {
     local stimme=""
     if [ "$SPRECHER" = 1 ] && [ -n "$text" ]; then
       stimme="$tmp/$i.wav"
-      echo "$text" | piper --model "$STIMME" --output_file "$stimme" >/dev/null 2>&1
+      echo "$text" | piper --model "$STIMME" --length-scale "$TEMPO" --output_file "$stimme" >/dev/null 2>&1
       local gesprochen; gesprochen=$(dauer_von "$stimme")
-      # etwas Luft am Ende, damit der Schnitt nicht auf dem letzten Laut sitzt
-      dauer=$(printf '%.3f' "$(echo "if ($gesprochen + 0.8 > $minimum) $gesprochen + 0.8 else $minimum" | bc -l)")
+      # Luft am Ende, damit der Schnitt nicht auf dem letzten Laut sitzt und das Bild nachwirken kann
+      dauer=$(printf '%.3f' "$(echo "if ($gesprochen + $NACHLAUF > $minimum) $gesprochen + $NACHLAUF else $minimum" | bc -l)")
     fi
 
     # Im Desktop-Layout laufen dieselben Szenen kürzer ab. Passt der Ausschnitt nicht in den Clip, rückt der

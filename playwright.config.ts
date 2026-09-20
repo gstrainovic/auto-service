@@ -86,6 +86,8 @@ export default defineConfig({
       use: {
         baseURL: 'http://localhost:6060',
         viewport: { width: 390, height: 844 },
+        // Die App folgt prefers-color-scheme; hell blendete im Film und brach mit den Landing Pages
+        colorScheme: 'dark',
         // Der Videorekorder nimmt Gerätepixel: erst mit --force-device-scale-factor wird die Aufnahme scharf
         deviceScaleFactor: 3,
         launchOptions: { args: ['--force-device-scale-factor=3'] },
@@ -100,6 +102,7 @@ export default defineConfig({
       use: {
         baseURL: 'http://localhost:6060',
         viewport: { width: 1280, height: 720 },
+        colorScheme: 'dark',
         deviceScaleFactor: 1.5,
         launchOptions: { args: ['--force-device-scale-factor=1.5'] },
         video: { mode: 'on', size: { width: 1920, height: 1080 } },

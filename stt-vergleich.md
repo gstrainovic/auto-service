@@ -9,6 +9,31 @@ gesprochen. Synthetische Sprache ist gleichmässig und damit fair im Vergleich d
 Aussprache mancher Fachwörter schlecht — ein Teil der Fehler geht darauf zurück, nicht auf das Erkennungsmodell.
 Für eine belastbare Zahl müsste man dieselben Sätze selbst einsprechen.
 
+## Zuerst die API fragen, nicht die Webseite
+
+`GET /v1/models` liefert zu jedem Modell die Fähigkeiten. Damit ist die Zuordnung zu den Endpunkten eindeutig,
+ohne Namen zu raten:
+
+```bash
+curl -s https://api.mistral.ai/v1/models -H "Authorization: Bearer $MISTRAL_API_KEY" \
+  | jq -r '.data[] | select(.id|test("voxtral")) | "\(.id)\t\(.capabilities | to_entries | map(select(.value)) | map(.key) | join(", "))"'
+```
+
+| Modell | Fähigkeiten | Endpunkt |
+|---|---|---|
+| `voxtral-mini-latest`, `voxtral-mini-2602` | `audio_transcription` | `/v1/audio/transcriptions` |
+| `voxtral-mini-realtime-*`, `voxtral-mini-transcribe-realtime-2602` | `audio_transcription_realtime` | nur Realtime-Kanal |
+| `voxtral-small-latest`, `voxtral-small-2507` | `completion_chat`, `function_calling`, `audio` | `/v1/chat/completions` |
+| `voxtral-mini-tts-*` | `audio_speech`, `function_calling`, `fine_tuning` | Sprachausgabe |
+
+Die Produktnamen der Dokumentation sind keine Modell-IDs: «Voxtral Mini Transcribe 2» heisst in der API
+`voxtral-mini-2602`, ein Aufruf mit `voxtral-mini-transcribe-2602` läuft in «Invalid model».
+
+Bemerkenswert ist `voxtral-small-latest`: **Audio und Werkzeugaufrufe zusammen**. Damit liesse sich eine
+Sprachnachricht direkt in einen Tool-Aufruf überführen («Ölwechsel bei 129'600 eintragen»), ohne Umweg über ein
+Transkript — der interessantere Weg als Diktat ins Textfeld, aber mit dem unten beschriebenen Sprachwechsel als
+offener Frage.
+
 ## Was bei Mistral wirklich geht
 
 | Weg | Modell | Ergebnis |
@@ -89,8 +114,9 @@ Aufnahme. Deshalb läuft die Sprachnachricht im Rückmeldungs-Dialog über den e
 - **Kennzeichen, Beträge, Daten:** nicht diktieren, tippen.
 - **Verstehen statt Mitschreiben** (etwa «trag den Ölwechsel bei 120 000 ein»): `voxtral-small-latest` als
   Audio-Chat — aber dann als Werkzeugaufruf, nicht als Transkript.
-- Vor jeder Umstellung neu messen: Die Modellnamen ändern sich, `voxtral-mini-latest` zeigte im Test dasselbe
-  Verhalten wie `voxtral-mini-2602`.
+- Vor jeder Umstellung neu messen und **zuerst `GET /v1/models` lesen**: Die Fähigkeiten dort sagen, welches
+  Modell an welchen Endpunkt gehört. `voxtral-mini-latest` zeigte im Test dasselbe Verhalten wie
+  `voxtral-mini-2602`.
 
 ## Verfahren
 

@@ -145,6 +145,10 @@ podman exec server_postgres_1 psql -U instant -d instant -c "SELECT * FROM apps;
 - Erweiterbar: Google/Apple/GitHub OAuth eingebaut, Passkeys via Custom Auth
 
 ## AI Provider: nur Mistral
+
+Welches Modell an welchen Endpunkt gehört, sagt `GET /v1/models`: das Feld `capabilities` unterscheidet
+`completion_chat`, `audio_transcription`, `audio_transcription_realtime` und `audio_speech`. Produktnamen aus der
+Dokumentation sind keine Modell-IDs.
 Seit 2026-09-05 ist Mistral der einzige Provider (Vercel AI SDK v6, `@ai-sdk/mistral`).
 - Chat/Vision-Modell: `mistral-small-latest` (`DEFAULT_MODEL` in `ai.ts`, in Settings überschreibbar)
 - OCR: `mistral-ocr-latest` per direktem Fetch auf `/v1/ocr`

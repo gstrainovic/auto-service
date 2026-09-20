@@ -76,38 +76,33 @@ function chf(value: number): string {
             <th class="num">
               pro Jahr
             </th>
-            <th class="num">
+            <th class="num month">
               pro Monat
             </th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>30 Tage testen</td>
-            <td class="num">
-              gratis
-            </td>
-            <td class="num muted">
-              alle Funktionen
-            </td>
-          </tr>
           <tr v-for="n in ROWS" :key="n" :class="{ current: n === count }">
-            <td>{{ n }}</td>
+            <td>{{ n }} {{ n === 1 ? 'Fahrzeug' : 'Fahrzeuge' }}</td>
             <td class="num">
               {{ chf(yearlyPriceChf(n, 'betrieb')) }}
             </td>
-            <td class="num">
+            <td class="num month">
               {{ chf(yearlyPriceChf(n, 'betrieb') / 12) }}
             </td>
           </tr>
           <tr>
-            <td>mehr als {{ MAX }}</td>
+            <td>mehr als {{ MAX }} Fahrzeuge</td>
             <td class="num" colspan="2">
               auf Anfrage
             </td>
           </tr>
         </tbody>
       </table>
+      <!-- Die Testzeit gehört nicht in die Preisspalte: sie ist keine Fahrzeugzahl -->
+      <p class="price-trial">
+        Die ersten 30 Tage sind gratis, mit allen Funktionen.
+      </p>
 
       <div class="price-calc">
         <label for="price-vehicles">Wie viele Fahrzeuge hat dein Betrieb?</label>
@@ -191,11 +186,18 @@ function chf(value: number): string {
   text-align: left;
 }
 
+/* Kopfzeile lesbar statt dekorativ: Grossbuchstaben in 0.8rem las niemand */
 .price-grid th {
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+  border-bottom-width: 2px;
+}
+
+.price-trial {
+  margin: 0.6rem 0 0;
   color: var(--p-text-muted-color);
+  font-size: 0.9rem;
 }
 
 .price-grid tr:last-child td {
@@ -210,6 +212,19 @@ function chf(value: number): string {
 
 .price-grid .muted {
   color: var(--p-text-muted-color);
+}
+
+/* Auf dem Handy passen drei Spalten nicht: die Monatsspalte fällt weg, der Rechner darunter nennt sie weiter */
+@media (max-width: 480px) {
+  .price-grid .month {
+    display: none;
+  }
+
+  .price-grid th,
+  .price-grid td {
+    padding: 0.6rem 0.5rem;
+    white-space: nowrap;
+  }
 }
 
 .price-grid tr.current td {

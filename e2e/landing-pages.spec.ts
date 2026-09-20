@@ -18,8 +18,12 @@ test.describe('Landing Pages', () => {
     await expect(page.getByTestId('price-betrieb')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Privat' })).toHaveCount(0)
     const table = page.getByRole('table', { name: 'Preisliste' })
-    await expect(table.getByRole('row').filter({ hasText: /^10\s*CHF/ })).toContainText('CHF 360.00')
-    await expect(table.getByRole('row').filter({ hasText: /^3\s*CHF/ })).toContainText('CHF 108.00')
+    // Die erste Spalte nennt die Einheit, eine nackte 3 sagt dem Leser nichts
+    await expect(table.getByRole('row').filter({ hasText: '10 Fahrzeuge' })).toContainText('CHF 360.00')
+    await expect(table.getByRole('row').filter({ hasText: '3 Fahrzeuge' })).toContainText('CHF 108.00')
+    await expect(table.getByRole('row').filter({ hasText: '1 Fahrzeug' }).first()).toContainText('CHF 36.00')
+    // Die Testzeit ist keine Fahrzeugzahl und steht darum nicht in der Tabelle
+    await expect(table).not.toContainText('30 Tage')
     // Regler startet bei fünf Fahrzeugen: 5 × 36 = 180
     await expect(page.getByTestId('price-result')).toContainText('CHF 180.00 im Jahr')
     // Hauptknopf beim Preis, im Kopf derselbe Knopf neben «Anmelden»
@@ -32,6 +36,18 @@ test.describe('Landing Pages', () => {
     await expect(contact.first()).toHaveAttribute('href', /^mailto:info@wartungsheft\.ch\?subject=/)
     await expect(page.getByText('Team-Adresse')).toBeVisible()
     await expect(page.getByRole('link', { name: 'Impressum' })).toBeVisible()
+  })
+
+  test('LP-005: Preisliste passt auf 390px, ohne abgeschnittene Spalte', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/betrieb')
+    const table = page.getByRole('table', { name: 'Preisliste' })
+    await expect(table).toBeVisible()
+    // Auf dem Handy bleibt die Jahresspalte, die Monatsspalte steht im Rechner darunter
+    await expect(table.getByRole('columnheader', { name: 'pro Jahr' })).toBeVisible()
+    await expect(table.getByRole('columnheader', { name: 'pro Monat' })).toBeHidden()
+    const ueberbreite = await table.evaluate(el => el.scrollWidth - el.clientWidth)
+    expect(ueberbreite).toBeLessThanOrEqual(1)
   })
 
   test('LP-002: Privathalter zeigt Jahrespreis und Test-Button', async ({ page }) => {

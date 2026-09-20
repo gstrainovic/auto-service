@@ -31,6 +31,15 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
 - [ ] Kurzfassungen für Social veröffentlichen: `video-out/social-privat.webm` und `social-betrieb.webm` (je gut
       10 Sekunden) beim ersten Beitrag oder der ersten Anzeige einsetzen
 
+### Auffindbar, wenn jemand eine KI fragt
+- [ ] Auf «Was ist wartungsheft.ch?» soll ChatGPT, Claude, Perplexity und Googles KI-Übersicht die richtige Antwort
+      geben: Serviceheft mit Rechnungen pro Fahrzeug, Schweiz, 25 CHF privat / 36 CHF pro Fahrzeug im Betrieb,
+      30 Tage gratis. Zuerst messen, was die vier heute antworten, dann nachbessern:
+      Ein-Satz-Definition sichtbar oben auf der Startseite (nicht nur im Film), Preise, Grenzen und Antworten auf die
+      häufigen Fragen als Text statt nur in Bild und Video, strukturierte Daten (`SoftwareApplication`,
+      `Organization`, `FAQPage`), `/llms.txt` mit demselben Inhalt, `robots.txt` erlaubt GPTBot, ClaudeBot,
+      PerplexityBot und Google-Extended. Danach dieselbe Frage nochmals stellen und den Unterschied notieren
+
 ### Messen, nebenbei
 - [ ] Wöchentlich Zahlen ziehen (Caddy-Log, `events`, Anmeldungen, Bestellungen, Postfach, README Abschnitt 6) und in
       Kapitel 9 notieren; nach drei Monaten Auswertung gegen die Abbruchkriterien

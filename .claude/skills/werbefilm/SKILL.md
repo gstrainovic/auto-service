@@ -86,9 +86,11 @@ Bekannte Fälle: «Serviceheft» → im Sprechertext «Serwis-Heft». «lückenl
   läuft der Aufruf in den Test-Timeout.
 - **Ohne `--force-device-scale-factor` füllt die Aufnahme nur einen Bruchteil des Rahmens.** Steht in
   `playwright.config.ts` bei beiden Video-Projekten.
-- **Im Desktop-Layout laufen dieselben Szenen kürzer ab.** Passt ein Ausschnitt nicht mehr in den Clip, rückt
-  `video-build.sh` den Start vor und friert das letzte Bild ein. Wirkt ein Abschnitt eingefroren: Szene in
-  `e2e/video/*.video.ts` verlängern.
+- **Zu kurze Clips zeigen den Seitenaufbau.** Passt ein Ausschnitt nicht in den Clip, rückt `video-build.sh` den
+  Start vor — bis auf null, und dann läuft das Laden der Seite im Bild, was wie ein doppelter Refresh aussieht.
+  Danach friert das letzte Bild ein. Beides heisst: Szene in `e2e/video/*.video.ts` verlängern. Faustregel:
+  Clip mindestens zwei Sekunden länger als `Start + Mindestdauer` der Abschnittsliste. Längen prüfen mit
+  `ffprobe -v error -show_entries format=duration -of csv=p=0 video-out/<clip>.webm`.
 - **`bc` schreibt Werte unter eins als `.58`**, ffmpeg versteht das nicht. Alle Zahlen laufen durch `printf '%.3f'`.
 - **Die Szenen einer Geschichte müssen dieselben Daten zeigen.** Sonst meldet das Dashboard in einer Szene
   «nichts fällig», während der Film von einem überfälligen Fahrzeug erzählt.

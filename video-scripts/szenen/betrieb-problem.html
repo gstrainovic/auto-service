@@ -31,7 +31,7 @@
 
   /* Im Breitbild passen die vier Fahrzeuge nebeneinander schlecht; sie bleiben untereinander, nur kleiner */
   .fleet { position: absolute; top: 44%; left: 0; right: 0; display: grid; gap: min(18px, 2vh); justify-items: center; }
-  .fleet svg { width: min(300px, 46vw); height: auto; }
+  .fleet svg { width: min(264px, 42vw); height: auto; }
   /* Die pulsierende Markierung darf über den viewBox-Rand hinaus wachsen */
   .van { overflow: visible; opacity: 0; transform: translateX(-30px); animation: roll-in 700ms cubic-bezier(.2,.8,.3,1) forwards; }
   .van:nth-child(1) { animation-delay: 900ms; }
@@ -48,7 +48,7 @@
   /* Breitbild: zwei Reihen à zwei Fahrzeuge, sonst reicht die Höhe nicht */
   @media (min-aspect-ratio: 1/1) {
     .fleet { top: 38%; grid-template-columns: 1fr 1fr; gap: 1.5vh 2vw; }
-    .fleet svg { width: min(300px, 30vw); }
+    .fleet svg { width: min(264px, 27vw); }
   }
 
   @keyframes fade-in { to { opacity: 1; } }
@@ -62,49 +62,49 @@
 
     <div class="fleet">
       <!-- Vorlage eines Transporters; der dritte trägt die rote Meldung -->
-      <svg class="van" width="300" height="100" viewBox="0 0 300 100" aria-hidden="true">
+      <svg class="van" width="264" height="100" viewBox="20 0 264 100" aria-hidden="true">
         <!-- Kastenwagen von der Seite: Laderaum links, Kabine mit schräger Scheibe rechts -->
-        <path d="M18 26h214l26 26h22a8 8 0 0 1 8 8v16H18z" fill="var(--van)"/>
-        <path d="M232 26l26 26" stroke="var(--van-line)" stroke-width="3" stroke-linecap="round"/>
-        <path d="M236 32l18 18h-18z" fill="#c3ccd6"/>
-        <rect x="34" y="36" width="60" height="20" rx="3" fill="#d7dde5"/>
-        <circle cx="84" cy="76" r="13" fill="#3f444c"/><circle cx="84" cy="76" r="5" fill="#9aa3ad"/>
-        <circle cx="246" cy="76" r="13" fill="#3f444c"/><circle cx="246" cy="76" r="5" fill="#9aa3ad"/>
-        <path d="M10 90h280" stroke="#d3d8de" stroke-width="4" stroke-linecap="round"/>
-        <circle class="status" cx="280" cy="16" r="7" fill="var(--ok)"/>
+        <path d="M40 16h132l30 30h30a10 10 0 0 1 10 10v22H40z" fill="var(--van)"/>
+        <path d="M172 16l30 30" stroke="var(--van-line)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M176 22l22 22h-22z" fill="#c3ccd6"/>
+        <rect x="56" y="28" width="44" height="22" rx="3" fill="#d7dde5"/>
+        <circle cx="90" cy="78" r="14" fill="#3f444c"/><circle cx="90" cy="78" r="5" fill="#9aa3ad"/>
+        <circle cx="196" cy="78" r="14" fill="#3f444c"/><circle cx="196" cy="78" r="5" fill="#9aa3ad"/>
+        <path d="M30 92h222" stroke="#d3d8de" stroke-width="4" stroke-linecap="round"/>
+        <circle class="status" cx="246" cy="14" r="7" fill="var(--ok)"/>
       </svg>
-      <svg class="van" width="300" height="100" viewBox="0 0 300 100" aria-hidden="true">
+      <svg class="van" width="264" height="100" viewBox="20 0 264 100" aria-hidden="true">
         <!-- Kastenwagen von der Seite: Laderaum links, Kabine mit schräger Scheibe rechts -->
-        <path d="M18 26h214l26 26h22a8 8 0 0 1 8 8v16H18z" fill="var(--van)"/>
-        <path d="M232 26l26 26" stroke="var(--van-line)" stroke-width="3" stroke-linecap="round"/>
-        <path d="M236 32l18 18h-18z" fill="#c3ccd6"/>
-        <rect x="34" y="36" width="60" height="20" rx="3" fill="#d7dde5"/>
-        <circle cx="84" cy="76" r="13" fill="#3f444c"/><circle cx="84" cy="76" r="5" fill="#9aa3ad"/>
-        <circle cx="246" cy="76" r="13" fill="#3f444c"/><circle cx="246" cy="76" r="5" fill="#9aa3ad"/>
-        <path d="M10 90h280" stroke="#d3d8de" stroke-width="4" stroke-linecap="round"/>
-        <circle class="status" cx="280" cy="16" r="7" fill="var(--ok)"/>
+        <path d="M40 16h132l30 30h30a10 10 0 0 1 10 10v22H40z" fill="var(--van)"/>
+        <path d="M172 16l30 30" stroke="var(--van-line)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M176 22l22 22h-22z" fill="#c3ccd6"/>
+        <rect x="56" y="28" width="44" height="22" rx="3" fill="#d7dde5"/>
+        <circle cx="90" cy="78" r="14" fill="#3f444c"/><circle cx="90" cy="78" r="5" fill="#9aa3ad"/>
+        <circle cx="196" cy="78" r="14" fill="#3f444c"/><circle cx="196" cy="78" r="5" fill="#9aa3ad"/>
+        <path d="M30 92h222" stroke="#d3d8de" stroke-width="4" stroke-linecap="round"/>
+        <circle class="status" cx="246" cy="14" r="7" fill="var(--ok)"/>
       </svg>
-      <svg class="van" width="300" height="100" viewBox="0 0 300 100" aria-hidden="true">
+      <svg class="van" width="264" height="100" viewBox="20 0 264 100" aria-hidden="true">
         <!-- Kastenwagen von der Seite: Laderaum links, Kabine mit schräger Scheibe rechts -->
-        <path d="M18 26h214l26 26h22a8 8 0 0 1 8 8v16H18z" fill="var(--van)"/>
-        <path d="M232 26l26 26" stroke="var(--van-line)" stroke-width="3" stroke-linecap="round"/>
-        <path d="M236 32l18 18h-18z" fill="#c3ccd6"/>
-        <rect x="34" y="36" width="60" height="20" rx="3" fill="#d7dde5"/>
-        <circle cx="84" cy="76" r="13" fill="#3f444c"/><circle cx="84" cy="76" r="5" fill="#9aa3ad"/>
-        <circle cx="246" cy="76" r="13" fill="#3f444c"/><circle cx="246" cy="76" r="5" fill="#9aa3ad"/>
-        <path d="M10 90h280" stroke="#d3d8de" stroke-width="4" stroke-linecap="round"/>
-        <g class="badge status"><circle class="pulse" cx="280" cy="16" r="8" fill="var(--warn)"/></g>
+        <path d="M40 16h132l30 30h30a10 10 0 0 1 10 10v22H40z" fill="var(--van)"/>
+        <path d="M172 16l30 30" stroke="var(--van-line)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M176 22l22 22h-22z" fill="#c3ccd6"/>
+        <rect x="56" y="28" width="44" height="22" rx="3" fill="#d7dde5"/>
+        <circle cx="90" cy="78" r="14" fill="#3f444c"/><circle cx="90" cy="78" r="5" fill="#9aa3ad"/>
+        <circle cx="196" cy="78" r="14" fill="#3f444c"/><circle cx="196" cy="78" r="5" fill="#9aa3ad"/>
+        <path d="M30 92h222" stroke="#d3d8de" stroke-width="4" stroke-linecap="round"/>
+        <g class="badge status"><circle class="pulse" cx="246" cy="14" r="8" fill="var(--warn)"/></g>
       </svg>
-      <svg class="van" width="300" height="100" viewBox="0 0 300 100" aria-hidden="true">
+      <svg class="van" width="264" height="100" viewBox="20 0 264 100" aria-hidden="true">
         <!-- Kastenwagen von der Seite: Laderaum links, Kabine mit schräger Scheibe rechts -->
-        <path d="M18 26h214l26 26h22a8 8 0 0 1 8 8v16H18z" fill="var(--van)"/>
-        <path d="M232 26l26 26" stroke="var(--van-line)" stroke-width="3" stroke-linecap="round"/>
-        <path d="M236 32l18 18h-18z" fill="#c3ccd6"/>
-        <rect x="34" y="36" width="60" height="20" rx="3" fill="#d7dde5"/>
-        <circle cx="84" cy="76" r="13" fill="#3f444c"/><circle cx="84" cy="76" r="5" fill="#9aa3ad"/>
-        <circle cx="246" cy="76" r="13" fill="#3f444c"/><circle cx="246" cy="76" r="5" fill="#9aa3ad"/>
-        <path d="M10 90h280" stroke="#d3d8de" stroke-width="4" stroke-linecap="round"/>
-        <circle class="status" cx="280" cy="16" r="7" fill="var(--ok)"/>
+        <path d="M40 16h132l30 30h30a10 10 0 0 1 10 10v22H40z" fill="var(--van)"/>
+        <path d="M172 16l30 30" stroke="var(--van-line)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M176 22l22 22h-22z" fill="#c3ccd6"/>
+        <rect x="56" y="28" width="44" height="22" rx="3" fill="#d7dde5"/>
+        <circle cx="90" cy="78" r="14" fill="#3f444c"/><circle cx="90" cy="78" r="5" fill="#9aa3ad"/>
+        <circle cx="196" cy="78" r="14" fill="#3f444c"/><circle cx="196" cy="78" r="5" fill="#9aa3ad"/>
+        <path d="M30 92h222" stroke="#d3d8de" stroke-width="4" stroke-linecap="round"/>
+        <circle class="status" cx="246" cy="14" r="7" fill="var(--ok)"/>
       </svg>
     </div>
   </div>

@@ -88,8 +88,11 @@ test.describe('Werbeclips Betrieb', () => {
     })
     await page.goto('/dashboard')
     await showPointer(page)
-    await beat(page)
-    await page.mouse.wheel(0, 900)
+    await beat(page, 2)
+    // langsam zur Fuhrpark-Tabelle: der Ausschnitt im Film beginnt erst nach dem Seitenaufbau
+    await page.mouse.wheel(0, 450)
+    await beat(page, 2)
+    await page.mouse.wheel(0, 450)
     await beat(page, 3)
 
     const csv = page.getByRole('button', { name: /CSV/ }).first()
@@ -97,6 +100,7 @@ test.describe('Werbeclips Betrieb', () => {
       await csv.hover()
       await beat(page, 2)
     }
+    await beat(page, 2)
   })
 
   test('Szene 5: Bestellung mit Rechnung auf die Firma', async ({ page }) => {

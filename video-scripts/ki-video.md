@@ -23,18 +23,29 @@ Stand: 20.09.2026. Lizenzen ändern sich, vor dem nächsten Dreh nachprüfen.
 sammelt die Clips. Kostet nichts, ist beliebig wiederholbar und zeigt die Software, wie sie wirklich aussieht.
 Das ist der grösste Teil beider Filme.
 
-### 2. Aussenszenen: erst Stock, dann KI
+### 2. Aussenszenen: gezeichnet statt gefilmt
 
-Reihenfolge nach Aufwand:
+Die Eröffnungsszenen sind **als SVG gezeichnet und mit CSS animiert**, in `video-scripts/szenen/`:
+`privat-problem.html` (Zettel quellen aus der Schachtel, Fragezeichen) und `betrieb-problem.html` (vier
+Transporter, einer meldet sich rot). Aufgenommen werden sie wie die App-Clips:
 
-1. **Selbst filmen.** Schuhschachtel mit Quittungen, Blick in den Motorraum, Handy vor dem Auto — dafür braucht es
-   nur dein Handy und zehn Minuten. Echte Bilder schlagen generierte, und es kostet null.
-2. **Stock-Footage.** [Pexels](https://www.pexels.com/de-de/videos/) und [Pixabay](https://pixabay.com/de/videos/)
+```bash
+npm run video -- e2e/video/zeichnung.video.ts
+scripts/video-clips.sh
+```
+
+Das kostet nichts, wirft keine Lizenzfrage auf, passt farblich zur App und ist nach einer Textänderung in
+Sekunden neu aufgenommen. Weitere Szenen: HTML-Datei danebenlegen und in `e2e/video/zeichnung.video.ts`
+eintragen.
+
+Falls doch einmal ein fotorealistisches Bild gebraucht wird:
+
+1. **Stock-Footage.** [Pexels](https://www.pexels.com/de-de/videos/) und [Pixabay](https://pixabay.com/de/videos/)
    geben ihre Clips unter eigener Lizenz frei: kommerzielle Nutzung erlaubt, keine Namensnennung nötig, kein
    Wasserzeichen. Suchbegriffe: «car repair receipt», «delivery vans yard», «mechanic workshop».
-3. **Wan 2.2 über einen Hugging-Face-Space.** Gratis, Apache-2.0-Modell, Wartezeit je nach Andrang. Brauchbar für
+2. **Wan 2.2 über einen Hugging-Face-Space.** Gratis, Apache-2.0-Modell, Wartezeit je nach Andrang. Brauchbar für
    die ein, zwei Bilder, die weder gefilmt noch gefunden werden können.
-4. **Geliehene GPU**, falls Wan lokal laufen soll: eine Stunde auf RunPod oder Thunder Compute kostet weniger als
+3. **Geliehene GPU**, falls Wan lokal laufen soll: eine Stunde auf RunPod oder Thunder Compute kostet weniger als
    einen Franken. Streng genommen nicht mehr gratis, aber billiger als jedes Abo.
 
 ### 3. Stimme: lokal und frei
@@ -72,7 +83,7 @@ Beide gratis, quelloffen, auf Fedora installierbar, nehmen die WebM-Dateien aus 
 | Posten | Kosten |
 |---|---|
 | App-Aufnahmen (Playwright) | 0 |
-| Aussenszenen (selbst gefilmt oder Pexels) | 0 |
+| Gezeichnete Szenen (SVG im Repo) | 0 |
 | Wan 2.2 über Hugging Face, falls nötig | 0, dafür Wartezeit |
 | Sprecher (Piper, Stimme Thorsten) | 0 |
 | Untertitel (Whisper) | 0 |

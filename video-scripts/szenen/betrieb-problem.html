@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Szene 1 Betrieb: Welcher Bus ist fällig?</title>
+<!--
+  Gezeichnete Eröffnungsszene für den Betriebsfilm. Vier Transporter, einer meldet sich.
+  Aufnahme über e2e/video/zeichnung.video.ts.
+-->
+<style>
+  :root {
+    --ink: #e7e7ea;
+    --bg: #17181c;
+    --van: #f4f1ea;
+    --van-line: #9aa0a6;
+    --ok: #10b981;
+    --warn: #ef4444;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 390px; height: 844px; overflow: hidden; background: var(--bg); }
+  body { display: grid; place-items: center; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+  .stage { position: relative; width: 390px; height: 844px; }
+  .title {
+    position: absolute; top: 96px; left: 0; right: 0; text-align: center; padding: 0 26px;
+    color: var(--ink); font-size: 26px; font-weight: 600; line-height: 1.35;
+    opacity: 0; animation: fade-in 700ms ease-out 300ms forwards;
+  }
+  .title small { display: block; margin-top: 10px; font-size: 17px; font-weight: 400; color: #a1a1aa; opacity: 0; animation: fade-in 700ms ease-out 1600ms forwards; }
+
+  .fleet { position: absolute; top: 330px; left: 0; right: 0; display: grid; gap: 18px; justify-items: center; }
+  /* Die pulsierende Markierung darf über den viewBox-Rand hinaus wachsen */
+  .van { overflow: visible; opacity: 0; transform: translateX(-30px); animation: roll-in 700ms cubic-bezier(.2,.8,.3,1) forwards; }
+  .van:nth-child(1) { animation-delay: 900ms; }
+  .van:nth-child(2) { animation-delay: 1150ms; }
+  .van:nth-child(3) { animation-delay: 1400ms; }
+  .van:nth-child(4) { animation-delay: 1650ms; }
+
+  .badge { opacity: 0; animation: fade-in 400ms ease-out 2400ms forwards; }
+  .pulse { transform-origin: center; animation: pulse 1400ms ease-in-out 2400ms infinite; }
+
+  @keyframes fade-in { to { opacity: 1; } }
+  @keyframes roll-in { to { opacity: 1; transform: translateX(0); } }
+  @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.12); opacity: .75; } }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <p class="title">
+      Welcher Bus ist<br>beim Service überfällig?
+      <small>Vier Fahrzeuge, vier Ordner.</small>
+    </p>
+
+    <div class="fleet">
+      <!-- Vorlage eines Transporters; der dritte trägt die rote Meldung -->
+      <svg class="van" width="300" height="100" viewBox="0 0 300 100" aria-hidden="true">
+        <!-- Kastenwagen von der Seite: Laderaum links, Kabine mit schräger Scheibe rechts -->
+        <path d="M18 26h214l26 26h22a8 8 0 0 1 8 8v16H18z" fill="var(--van)"/>
+        <path d="M232 26l26 26" stroke="var(--van-line)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M236 32l18 18h-18z" fill="#cfd6dd"/>
+        <rect x="34" y="36" width="60" height="20" rx="3" fill="#e4e7ec"/>
+        <circle cx="84" cy="76" r="13" fill="#2b2e33"/><circle cx="84" cy="76" r="5" fill="#6b7280"/>
+        <circle cx="246" cy="76" r="13" fill="#2b2e33"/><circle cx="246" cy="76" r="5" fill="#6b7280"/>
+        <path d="M10 90h280" stroke="#2b2e33" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="280" cy="16" r="7" fill="var(--ok)"/>
+      </svg>
+      <svg class="van" width="300" height="100" viewBox="0 0 300 100" aria-hidden="true">
+        <!-- Kastenwagen von der Seite: Laderaum links, Kabine mit schräger Scheibe rechts -->
+        <path d="M18 26h214l26 26h22a8 8 0 0 1 8 8v16H18z" fill="var(--van)"/>
+        <path d="M232 26l26 26" stroke="var(--van-line)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M236 32l18 18h-18z" fill="#cfd6dd"/>
+        <rect x="34" y="36" width="60" height="20" rx="3" fill="#e4e7ec"/>
+        <circle cx="84" cy="76" r="13" fill="#2b2e33"/><circle cx="84" cy="76" r="5" fill="#6b7280"/>
+        <circle cx="246" cy="76" r="13" fill="#2b2e33"/><circle cx="246" cy="76" r="5" fill="#6b7280"/>
+        <path d="M10 90h280" stroke="#2b2e33" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="280" cy="16" r="7" fill="var(--ok)"/>
+      </svg>
+      <svg class="van" width="300" height="100" viewBox="0 0 300 100" aria-hidden="true">
+        <!-- Kastenwagen von der Seite: Laderaum links, Kabine mit schräger Scheibe rechts -->
+        <path d="M18 26h214l26 26h22a8 8 0 0 1 8 8v16H18z" fill="var(--van)"/>
+        <path d="M232 26l26 26" stroke="var(--van-line)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M236 32l18 18h-18z" fill="#cfd6dd"/>
+        <rect x="34" y="36" width="60" height="20" rx="3" fill="#e4e7ec"/>
+        <circle cx="84" cy="76" r="13" fill="#2b2e33"/><circle cx="84" cy="76" r="5" fill="#6b7280"/>
+        <circle cx="246" cy="76" r="13" fill="#2b2e33"/><circle cx="246" cy="76" r="5" fill="#6b7280"/>
+        <path d="M10 90h280" stroke="#2b2e33" stroke-width="4" stroke-linecap="round"/>
+        <g class="badge"><circle class="pulse" cx="280" cy="16" r="8" fill="var(--warn)"/></g>
+      </svg>
+      <svg class="van" width="300" height="100" viewBox="0 0 300 100" aria-hidden="true">
+        <!-- Kastenwagen von der Seite: Laderaum links, Kabine mit schräger Scheibe rechts -->
+        <path d="M18 26h214l26 26h22a8 8 0 0 1 8 8v16H18z" fill="var(--van)"/>
+        <path d="M232 26l26 26" stroke="var(--van-line)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M236 32l18 18h-18z" fill="#cfd6dd"/>
+        <rect x="34" y="36" width="60" height="20" rx="3" fill="#e4e7ec"/>
+        <circle cx="84" cy="76" r="13" fill="#2b2e33"/><circle cx="84" cy="76" r="5" fill="#6b7280"/>
+        <circle cx="246" cy="76" r="13" fill="#2b2e33"/><circle cx="246" cy="76" r="5" fill="#6b7280"/>
+        <path d="M10 90h280" stroke="#2b2e33" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="280" cy="16" r="7" fill="var(--ok)"/>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

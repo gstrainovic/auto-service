@@ -10,7 +10,7 @@ Die App-Aufnahmen entstehen mit `e2e/video/betrieb.video.ts`. Ändert sich die O
 
 | Nr. | Zeit | Bild | Quelle | Text (Untertitel und Sprecher) |
 |---|---|---|---|---|
-| 1 | 0–5 s | Vier Transporter auf dem Firmenhof, Chef mit Ordner unterm Arm | KI-Clip | «Welcher Bus ist beim Service überfällig?» |
+| 1 | 0–5 s | Vier Transporter, einer meldet sich rot | gezeichnet, `szenen/betrieb-problem.html` | «Welcher Bus ist beim Service überfällig?» |
 | 2 | 5–18 s | Dashboard mit Fälligkeiten über alle Fahrzeuge, Fuhrparkliste | App, Szene 2 | «Ein Blick aufs Dashboard: was ansteht, für jedes Fahrzeug.» |
 | 3 | 18–32 s | Rechnung wird fotografiert, Felder und Positionen füllen sich | App, Szene 3 | «Der Fahrer fotografiert die Werkstattrechnung. Erfasst ist sie damit auch.» |
 | 4 | 32–45 s | Kosten pro Fahrzeug und Jahr, CSV für die Buchhaltung | App, Szene 4 | «Am Jahresende: Kosten pro Fahrzeug, als Datei für die Buchhaltung.» |

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Szene 1 privat: Zettelwirtschaft</title>
+<!--
+  Gezeichnete Eröffnungsszene statt Filmaufnahme. Wird von e2e/video/zeichnung.video.ts geladen und
+  aufgezeichnet (390 x 844, dreifach). Reines SVG mit CSS-Animation: keine fremden Bilder, keine Lizenzfrage,
+  nach einer Textänderung in Sekunden neu aufgenommen.
+-->
+<style>
+  :root {
+    --ink: #e7e7ea;
+    --paper: #f4f1ea;
+    --paper-line: #c9c2b4;
+    --bg: #17181c;
+    --accent: #10b981;
+    --warn: #f59e0b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 390px; height: 844px; overflow: hidden; background: var(--bg); }
+  body { display: grid; place-items: center; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+  .stage { position: relative; width: 390px; height: 844px; }
+
+  .title {
+    position: absolute; top: 96px; left: 0; right: 0; text-align: center;
+    color: var(--ink); font-size: 26px; font-weight: 600; line-height: 1.35; padding: 0 28px;
+    opacity: 0; animation: fade-in 700ms ease-out 400ms forwards;
+  }
+  .title small { display: block; margin-top: 10px; font-size: 17px; font-weight: 400; color: #a1a1aa; opacity: 0; animation: fade-in 700ms ease-out 1700ms forwards; }
+
+  svg { position: absolute; left: 50%; top: 372px; transform: translateX(-50%); }
+
+  /* Kiste wird gezeichnet */
+  .draw { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round;
+          stroke-dasharray: 900; stroke-dashoffset: 900; animation: draw 1400ms ease-out 200ms forwards; }
+  .draw.delay { animation-delay: 700ms; }
+
+  /* Zettel quellen heraus */
+  .slip { opacity: 0; transform-origin: 50% 100%; animation: pop 900ms cubic-bezier(.2,.8,.3,1) forwards; }
+  .slip:nth-of-type(1) { animation-delay: 1500ms; }
+  .slip:nth-of-type(2) { animation-delay: 1750ms; }
+  .slip:nth-of-type(3) { animation-delay: 2000ms; }
+  .slip:nth-of-type(4) { animation-delay: 2250ms; }
+  .slip:nth-of-type(5) { animation-delay: 2500ms; }
+
+  .qmark { opacity: 0; animation: bob 2400ms ease-in-out 2900ms infinite, fade-in 500ms ease-out 2900ms forwards; }
+
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes fade-in { to { opacity: 1; } }
+  @keyframes pop {
+    0% { opacity: 0; transform: translateY(18px) rotate(0deg) scale(.7); }
+    60% { opacity: 1; }
+    100% { opacity: 1; transform: translateY(-6px) rotate(var(--tilt, 0deg)) scale(1); }
+  }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <p class="title">
+      Wann war nochmal<br>der letzte Ölwechsel?
+      <small>Irgendwo in der Schachtel …</small>
+    </p>
+
+    <svg width="330" height="300" viewBox="0 0 330 300" aria-hidden="true">
+      <!-- Zettel: erst hinter der Kiste, dann quellen sie heraus -->
+      <g class="slip" style="--tilt:-9deg">
+        <rect x="70" y="86" width="62" height="80" rx="4" fill="var(--paper)"/>
+        <path d="M80 104h42M80 118h42M80 132h28" stroke="var(--paper-line)" stroke-width="4" stroke-linecap="round"/>
+      </g>
+      <g class="slip" style="--tilt:7deg">
+        <rect x="136" y="70" width="58" height="86" rx="4" fill="var(--paper)"/>
+        <path d="M146 88h38M146 102h38M146 116h24" stroke="var(--paper-line)" stroke-width="4" stroke-linecap="round"/>
+      </g>
+      <g class="slip" style="--tilt:-4deg">
+        <rect x="198" y="92" width="60" height="76" rx="4" fill="var(--paper)"/>
+        <path d="M208 110h40M208 124h40M208 138h22" stroke="var(--paper-line)" stroke-width="4" stroke-linecap="round"/>
+      </g>
+      <g class="slip" style="--tilt:14deg">
+        <rect x="104" y="60" width="52" height="70" rx="4" fill="var(--paper)" opacity=".92"/>
+      </g>
+      <g class="slip" style="--tilt:-14deg">
+        <rect x="180" y="58" width="50" height="68" rx="4" fill="var(--paper)" opacity=".92"/>
+      </g>
+
+      <!-- Schachtel: Vorderseite deckt die Zettel ab, darum nach ihnen gezeichnet und gefüllt -->
+      <path d="M44 168h242l-26 108H70z" fill="var(--bg)"/>
+      <path class="draw" d="M44 168h242l-26 108H70z"/>
+      <path class="draw delay" d="M44 168l22-34h198l22 34"/>
+
+      <!-- Fragezeichen -->
+      <g class="qmark">
+        <circle cx="286" cy="66" r="30" fill="var(--warn)" opacity=".14"/>
+        <text x="286" y="80" text-anchor="middle" font-size="46" font-weight="700" fill="var(--warn)"
+              font-family="'Segoe UI', system-ui, sans-serif">?</text>
+      </g>
+    </svg>
+  </div>
+</body>
+</html>

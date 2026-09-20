@@ -11,7 +11,7 @@ Oberfläche, wird nur neu aufgenommen und geschnitten; die Sprechertexte bleiben
 
 | Nr. | Zeit | Bild | Quelle | Text (Untertitel und Sprecher) |
 |---|---|---|---|---|
-| 1 | 0–5 s | Volle Schuhschachtel mit Quittungen, Hand wühlt darin | KI-Clip | «Wann war nochmal der letzte Ölwechsel?» |
+| 1 | 0–5 s | Zettel quellen aus einer Schachtel, Fragezeichen | gezeichnet, `szenen/privat-problem.html` | «Wann war nochmal der letzte Ölwechsel?» |
 | 2 | 5–20 s | Handy fotografiert eine Werkstattrechnung, Felder füllen sich von selbst, Positionen erscheinen | App, Szene 2 | «Rechnung fotografieren. Werkstatt, Datum, Betrag, Kilometerstand und die Arbeiten stehen drin — ohne Tippen.» |
 | 3 | 20–35 s | Dashboard mit Fälligkeitsliste, «Erledigt eintragen» | App, Szene 3 | «Wartungsheft rechnet, was wann fällig ist. Du bekommst eine Mail, bevor es zu spät ist.» |
 | 4 | 35–48 s | Tab «Kosten», Jahreszahlen, PDF-Dossier | App, Szene 4 | «Beim Verkauf zählt ein lückenloses Serviceheft. Ein Klick, und es liegt als PDF bereit.» |

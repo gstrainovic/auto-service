@@ -83,7 +83,9 @@ export default defineConfig({
       use: {
         baseURL: 'http://localhost:6060',
         viewport: { width: 390, height: 844 },
+        // Der Videorekorder nimmt Gerätepixel: erst mit --force-device-scale-factor wird die Aufnahme scharf
         deviceScaleFactor: 3,
+        launchOptions: { args: ['--force-device-scale-factor=3'] },
         video: { mode: 'on', size: { width: 1170, height: 2532 } },
         simulateOffline: false,
       },

@@ -157,3 +157,14 @@ export async function sendFeedback(input: { text?: string, audio?: Blob | null, 
     throw new Error(json?.error?.message ?? `Rückmeldung nicht gesendet (${res.status})`)
   return { transcript: json.transcript ?? null }
 }
+
+/** Diktat: Aufnahme an den Proxy, erkannter Text zurück (`/me/transcribe`) */
+export async function transcribeAudio(audio: Blob): Promise<{ text: string }> {
+  const form = new FormData()
+  form.append('audio', audio, `diktat.${audio.type.includes('mp4') ? 'mp4' : 'webm'}`)
+  const res = await proxyFetch('/me/transcribe', { method: 'POST', body: form })
+  const json = await res.json().catch(() => ({})) as any
+  if (!res.ok)
+    throw new Error(json?.error?.message ?? `Diktat nicht erkannt (${res.status})`)
+  return { text: String(json.text ?? '') }
+}

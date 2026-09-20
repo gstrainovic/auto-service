@@ -79,6 +79,13 @@ test.describe('Chat Split Layout', () => {
     await page.locator('[data-pc-name="dialog"]').getByRole('button', { name: 'Löschen' }).click()
     await expect(page.getByText('Audi Q5')).not.toBeVisible({ timeout: 5_000 })
   })
+})
+
+// Ohne Schlüssel prüfbar: hier antwortet keine KI
+test.describe('Chat Maximieren', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
 
   test('SL-002: auf dem Handy gibt es kein Maximieren, der Chat füllt den Bildschirm schon', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })

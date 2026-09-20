@@ -12,6 +12,7 @@ import { useFormValidation } from '../composables/useFormValidation'
 import { LOCALE } from '../lib/locale'
 import { MAINTENANCE_CATEGORIES } from '../services/ai'
 import { categoryLabel } from '../services/report'
+import DictateButton from './DictateButton.vue'
 
 interface Props {
   initialData?: Partial<MaintenanceFormData>
@@ -137,6 +138,8 @@ function handleCancel() {
         />
         <label for="maintenance-description">Beschreibung</label>
       </FloatLabel>
+      <!-- Ganze Sätze diktieren geht gut, einzelne Fachwörter schlecht (stt-vergleich.md) -->
+      <DictateButton label="Beschreibung diktieren" @text="t => formData.description = [formData.description, t].filter(Boolean).join(' ')" />
     </div>
 
     <div class="form-actions">

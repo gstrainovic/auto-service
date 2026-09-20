@@ -9,15 +9,19 @@ import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import SelectButton from 'primevue/selectbutton'
 import Textarea from 'primevue/textarea'
+import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 import { z } from 'zod'
 import { useFormValidation } from '../composables/useFormValidation'
 import { useInvoiceScan } from '../composables/useInvoiceScan'
+import { userMessage } from '../lib/errors'
 import { DEFAULT_CURRENCY, formatCurrency, formatDate, LOCALE } from '../lib/locale'
-import { MAINTENANCE_CATEGORIES } from '../services/ai'
+import { MAINTENANCE_CATEGORIES, parseInvoiceFromSpeech } from '../services/ai'
+import { getAiAccess } from '../services/ai-access'
 import { itemsExceedTotal } from '../services/invoice-items'
-import { fillEmptyFields } from '../services/invoice-scan'
+import { fillEmptyFields, scannedToFormFields } from '../services/invoice-scan'
 import { categoryLabel } from '../services/report'
+import DictateButton from './DictateButton.vue'
 
 interface Props {
   initialData?: Partial<InvoiceFormData>
@@ -38,6 +42,7 @@ const emit = defineEmits<{
 }>()
 
 const scan = useInvoiceScan()
+const toast = useToast()
 const { imagePreview, imageBase64, pdfName } = scan
 const isScanning = computed(() => scan.status.value === 'scanning')
 // Hat der Nutzer die Währung selbst umgestellt, überschreibt der Scan sie nicht
@@ -96,6 +101,31 @@ async function onFileChange(event: Event) {
   }
 }
 
+/**
+ * Gesprochene Rechnung: das Diktat kommt als Text zurück und geht durch dieselbe Auswertung wie ein Foto.
+ * Gefüllt werden nur leere Felder, der Nutzer prüft alles vor dem Speichern.
+ */
+const ansageLaeuft = ref(false)
+async function ansageUebernehmen(gesprochen: string): Promise<void> {
+  ansageLaeuft.value = true
+  try {
+    const access = await getAiAccess()
+    const parsed = await parseInvoiceFromSpeech(gesprochen, access)
+    // Dieselbe Aufbereitung wie beim Foto: Kategorien korrigieren, Positionen prüfen, nur leere Felder füllen
+    formData.value = fillEmptyFields(formData.value, scannedToFormFields(parsed), { currencyTouched: currencyTouched.value })
+  }
+  catch (e) {
+    ansageFehler(userMessage(e))
+  }
+  finally {
+    ansageLaeuft.value = false
+  }
+}
+
+function ansageFehler(meldung: string): void {
+  toast.add({ severity: 'warn', summary: 'Ansage', detail: meldung, life: 5000 })
+}
+
 const vehicleOptions = computed(() => (props.vehicles ?? []).map(v => ({ label: `${v.make} ${v.model}${v.licensePlate ? ` · ${v.licensePlate}` : ''}`, value: v.id })))
 
 function saveBatch() {
@@ -151,6 +181,17 @@ function handleCancel() {
             @change="onFileChange"
           >
         </label>
+        <!-- Kein Beleg zur Hand: die Rechnung in einem Satz ansagen, der Rest läuft wie beim Foto -->
+        <div class="ansage">
+          <DictateButton label="Rechnung ansagen" size="small" @text="ansageUebernehmen" @fehler="ansageFehler" />
+          <small class="field-hint">
+            Oder ansagen: «Garage Hubmann, 14. September, 486.50, 118'400 Kilometer, Ölwechsel und Bremsbeläge vorne.»
+          </small>
+        </div>
+        <div v-if="ansageLaeuft" class="scan-status" role="status">
+          <i class="pi pi-spin pi-spinner" />
+          Ansage wird ausgewertet …
+        </div>
         <small v-if="!batch && !imagePreview && !pdfName && !isScanning && !scan.message.value" class="field-hint">
           Mehrere Fotos oder ein PDF mit mehreren Rechnungen werden einzeln erfasst.
         </small>
@@ -394,6 +435,13 @@ function handleCancel() {
 .field > label {
   font-size: 0.8rem;
   color: var(--p-text-muted-color);
+}
+
+.ansage {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-top: 0.4rem;
 }
 
 .field-hint {

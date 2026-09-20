@@ -389,6 +389,8 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | AE | Anmelde-Einstieg | AE-001 bis AE-003: «Anmelden» im Kopf auf 390px, bekanntes Konto nach Abmelden, «Andere E-Mail» |
 | BO | Bestellung Abo | BO-001 bis BO-004: Betrieb mit Rechnungsadresse, Feldfehler, Privat ohne Firma, Preis ab sechs Fahrzeugen |
 | LP | Landing Pages | LP-001 bis LP-004: Betrieb, Privathalter, Startseite, Film |
+| DI | Diktieren | DI-001 bis DI-003: Chat-Eingabe, Beschreibung im Wartungsformular, ganze Rechnung ansagen |
+| FB | Rückmeldung | FB-001 bis FB-003: Text senden, Adresse kopieren, Sprachnachricht |
 | TN | Testzeit-Hinweis | TN-001 bis TN-003: Hinweis in der letzten Woche, vorher still, ohne Kaufweg gar nicht |
 
 **Gesamt: 142 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
@@ -425,6 +427,19 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 - InputNumber: Label nur mit `input-id` verknüpft, nicht mit `id`
 - `v-tooltip` Direktive muss in `main.ts` registriert werden: `app.directive('tooltip', Tooltip)`
 - Labels mit `*` brechen `getByLabel` — Labels ohne `*` oder Regex verwenden
+
+## Diktieren statt tippen
+
+Ein Baustein für alle Stellen: `useDictation.ts` (Aufnahme) und `DictateButton.vue` (Mikrofon-Knopf, verschwindet
+ohne Mikrofon). Der Proxy erkennt den Text unter `/me/transcribe` (`voxtral-mini-latest`, höchstens drei Minuten).
+Eingebaut in der Chat-Eingabe (Text landet in der Zeile, abgeschickt wird von Hand), in der Beschreibung des
+Wartungsformulars und als «Rechnung ansagen» im Rechnungsformular: dort geht das Diktat durch
+`parseInvoiceFromSpeech` — dieselbe zweite Stufe wie beim Foto — und füllt über `scannedToFormFields` und
+`fillEmptyFields` nur die leeren Felder.
+
+Nicht für Kennzeichen, Beträge und Daten als Einzelfeld: dort verhört sich die Erkennung. In einem ganzen Satz
+gesprochen trifft sie dieselben Angaben zuverlässig. Messwerte und Empfehlung je Anwendungsfall stehen in
+`stt-vergleich.md`.
 
 ## Rückmeldungen aus der App
 

@@ -79,15 +79,16 @@ test.describe('Chat Upload Enhancements', () => {
     // Am Desktop bleibt der Büroklammer-Knopf weg, die Drop-Zone reicht
     await expect(page.locator('[data-pc-name="drawer"] .pi-paperclip')).toBeHidden()
 
-    // Am Handy gibt es kein Ziehen: Drop-Zone weg, Büroklammer sichtbar
-    await page.setViewportSize({ width: 390, height: 780 })
-    await expect(dropHint).toBeHidden()
-    await expect(page.locator('[data-pc-name="drawer"] .pi-paperclip')).toBeVisible()
-
-    // Maximize button should exist
+    // Maximieren gibt es nur am Desktop
     const maximizeBtn = page.locator('[data-pc-name="drawer"] .chat-maximize-btn')
     await expect(maximizeBtn).toBeVisible()
     await expect(maximizeBtn.locator('.pi-window-maximize')).toBeVisible()
+
+    // Am Handy gibt es kein Ziehen: Drop-Zone weg, Büroklammer sichtbar, Maximieren weg
+    await page.setViewportSize({ width: 390, height: 780 })
+    await expect(dropHint).toBeHidden()
+    await expect(page.locator('[data-pc-name="drawer"] .pi-paperclip')).toBeVisible()
+    await expect(maximizeBtn).toBeHidden()
   })
 
   test('CU-006: maximize toggle expands and collapses drawer', async ({ page }) => {

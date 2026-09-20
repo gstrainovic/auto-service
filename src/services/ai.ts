@@ -338,6 +338,19 @@ export async function parseInvoice(
   return parseWithOcrPipeline(imageBase64, access, invoiceSchema, INVOICE_PROMPT, modelId)
 }
 
+/**
+ * Rechnung aus gesprochenem Text: dieselbe zweite Stufe wie beim Foto, nur kommt der Text aus dem Diktat statt
+ * aus der OCR. Im Test traf dieser Weg alle fünf Felder, während das Audio-Modell direkt den Werkstattnamen
+ * verhörte (`stt-vergleich.md`).
+ */
+export async function parseInvoiceFromSpeech(
+  gesprochen: string,
+  access: AiAccess,
+  modelId?: string,
+): Promise<ParsedInvoice> {
+  return parseOcrText(`Diktat einer Werkstattrechnung:\n${gesprochen}`, access, invoiceSchema, INVOICE_PROMPT, modelId)
+}
+
 const invoicePageSchema = invoiceSchema.extend({
   kind: z.enum(['rechnung', 'fortsetzung', 'andere']).describe(
     'rechnung: Seite mit eigenem Rechnungskopf (Werkstatt, Rechnungsnummer oder Datum). fortsetzung: setzt die Rechnung der vorherigen Seite fort (Übertrag, Seite 2, Abrechnungsdetails derselben Werkstatt). andere: keine Rechnung (AGB, leere Seite, Werbung).',

@@ -20,6 +20,7 @@ import { hashImage } from '../services/ai'
 import { getAiAccess } from '../services/ai-access'
 import { sendChatMessage, welcomeMessage } from '../services/chat'
 import { useVehiclesStore } from '../stores/vehicles'
+import DictateButton from './DictateButton.vue'
 import MediaViewer from './MediaViewer.vue'
 import ToolResultCard from './ToolResultCard.vue'
 
@@ -64,6 +65,15 @@ const isDragging = ref(false)
 const maximized = ref(false)
 // Maximieren lohnt erst, wenn der Chat nicht schon den ganzen Bildschirm füllt
 const breiterBildschirm = ref(false)
+
+/** Diktiertes hängt an, statt Getipptes zu überschreiben */
+function diktatUebernehmen(text: string): void {
+  input.value = input.value ? `${input.value.trim()} ${text}` : text
+}
+
+function diktatFehler(meldung: string): void {
+  toast.add({ severity: 'warn', summary: 'Diktat', detail: meldung, life: 5000 })
+}
 const mediaViewerOpen = ref(false)
 const mediaViewerImageSrc = ref('')
 const mediaViewerPdfBase64 = ref('')
@@ -647,6 +657,8 @@ async function clearChat() {
           class="chat-maximize-btn"
           @click="maximized = !maximized"
         />
+        <!-- Diktat: der erkannte Text landet in der Zeile, abgeschickt wird weiterhin von Hand -->
+        <DictateButton label="Nachricht diktieren" @text="diktatUebernehmen" @fehler="diktatFehler" />
         <Textarea
           v-model="input"
           class="chat-input"

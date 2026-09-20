@@ -49,24 +49,32 @@ import LandingHeader from '../components/LandingHeader.vue'
         <li>Kontrollschild (Kennzeichen) und Fahrgestellnummer (VIN)</li>
       </ul>
 
-      <h3>3.3 Rechnungs- und Wartungsdaten</h3>
+      <h3>3.3 Zählung auf den Angebotsseiten</h3>
+      <p>
+        Auf den öffentlichen Seiten zählen wir, wie oft der Knopf «30 Tage gratis testen» gedrückt wird, und von
+        welcher der beiden Angebotsseiten aus. Gespeichert werden nur der Name des Ereignisses, die Seite und der
+        Zeitpunkt — keine IP-Adresse, kein Cookie, kein Bezug zu einer Person. Wir setzen kein Analyse-Werkzeug
+        und keine Werbe-Trackingdienste ein.
+      </p>
+
+      <h3>3.4 Rechnungs- und Wartungsdaten</h3>
       <ul>
         <li>Werkstattname, Datum, Betrag</li>
         <li>Einzelpositionen (Arbeiten und Teile)</li>
         <li>Hochgeladene Bilder und PDFs von Rechnungen</li>
         <li>
           Über welchen Weg ein Eintrag entstand (Chat, Formular, Serviceheft …), um die App dort zu verbessern, wo sie
-          genutzt wird. Klicks und Bewegungen in der App zeichnen wir nicht auf.
+          genutzt wird. Klicks und Bewegungen innerhalb der App zeichnen wir nicht auf.
         </li>
       </ul>
 
-      <h3>3.4 Abo- und Rechnungsdaten (Jahresabo Betrieb)</h3>
+      <h3>3.5 Abo- und Rechnungsdaten (Jahresabo Betrieb)</h3>
       <ul>
         <li>Firma, Kontaktperson, Rechnungsadresse, Rechnungs-E-Mail, optionale Referenz</li>
         <li>Anzahl abgerechneter Fahrzeuge, Rechnungen mit Betrag, Zahlungsreferenz und Zahlungseingang</li>
       </ul>
 
-      <h3>3.5 Technische Daten</h3>
+      <h3>3.6 Technische Daten</h3>
       <ul>
         <li>IP-Adresse (Serverprotokolle, automatisch gelöscht nach 30 Tagen)</li>
         <li>Browser-Typ und -Version</li>

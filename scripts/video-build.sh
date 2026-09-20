@@ -34,12 +34,12 @@ fi
 # «Servi-keeft», «Serwis-Heft» trifft es. Prüfen mit: espeak-ng -v de -q -x "Wort"
 # Die Dauer wächst automatisch, wenn der Sprecher länger braucht.
 PRIVAT=(
-  "szene-privat-kaeufer-fragt-nach-dem-serviceheft|0.8|4.0|Haben Sie das Serviceheft?|«Haben Sie das Serviceheft?»"
+  "szene-privat-kaeufer-fragt-nach-dem-serviceheft|0.8|5.5|Du willst dein Auto verkaufen. Der Käufer fragt: Gibt es ein Serwis-Heft?|Du verkaufst dein Auto. Der Käufer fragt: «Gibt es ein Serviceheft?»"
   "szene-privat-zettelwirtschaft-in-der-schachtel|1.4|3.5|Und du suchst."
   "szene-2-rechnung-fotografieren-felder-fuellen-sich|6.0|7.0|Ab heute nicht mehr: Rechnung fotografieren genügt. Werkstatt, Datum, Betrag und Arbeiten stehen drin."
-  "szene-3-faelligkeit-auf-dem-dashboard-und-erledigt-eintragen|1.5|6.0|Dein Auto meldet sich selbst, bevor etwas fällig ist."
-  "szene-4-kosten-und-pdf-dossier-fuer-den-verkauf|4.0|5.5|Und beim Verkauf liegt alles auf dem Tisch: das lückenlose Serwis-Heft als PDF.|Und beim Verkauf liegt alles auf dem Tisch: das lückenlose Serviceheft als PDF."
-  "szene-privat-kaeufer-bekommt-die-antwort|0.8|4.0|Alles da.|«Alles da.»"
+  "szene-3-faelligkeit-auf-dem-dashboard-und-erledigt-eintragen|1.5|6.0|Wartungsheft meldet sich, bevor die nächste Arbeit fällig ist."
+  "szene-4-kosten-und-pdf-dossier-fuer-den-verkauf|4.0|5.5|Und beim Verkauf liegt alles auf dem Tisch: das vollständige Serwis-Heft als PDF.|Und beim Verkauf liegt alles auf dem Tisch: das vollständige Serviceheft als PDF."
+  "szene-privat-kaeufer-bekommt-die-antwort|0.8|4.2|Alles da.|«Alles da.»"
   "titel-6-abspann|0.6|4.2|Fünfundzwanzig Franken im Jahr. Dreissig Tage gratis testen, auf wartungsheft punkt c h."
 )
 

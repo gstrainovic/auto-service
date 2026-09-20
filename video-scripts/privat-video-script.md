@@ -15,11 +15,11 @@ der App, nicht mehr als Vollbild-Karten — die hielten den Film an.
 
 | Nr. | Zeit | Bild | Quelle | Sprecher und Untertitel |
 |---|---|---|---|---|
-| 1 | 0–4 s | Käufer am Auto, Sprechblase, Fragezeichen beim Verkäufer | gezeichnet, `szenen/privat-kaeufer.html` | «Haben Sie das Serviceheft?» |
+| 1 | 0–6 s | Käufer am Auto, Sprechblase, Fragezeichen beim Verkäufer | gezeichnet, `szenen/privat-kaeufer.html` | «Du willst dein Auto verkaufen. Der Käufer fragt: Gibt es ein Serviceheft?» |
 | 2 | 4–8 s | Zettel quellen aus der Schachtel | gezeichnet, `szenen/privat-problem.html` | «Und du suchst.» |
 | 3 | 8–18 s | Foto der Rechnung, Felder und Positionen füllen sich | App, Szene 2 | «Ab heute nicht mehr: Rechnung fotografieren genügt. Werkstatt, Datum, Betrag und Arbeiten stehen drin.» |
-| 4 | 18–24 s | Fälligkeitsliste, «Erledigt eintragen» | App, Szene 3 | «Dein Auto meldet sich selbst, bevor etwas fällig ist.» |
-| 5 | 24–29 s | Kosten pro Jahr, PDF-Dossier | App, Szene 4 | «Und beim Verkauf liegt alles auf dem Tisch: das lückenlose Serviceheft als PDF.» |
+| 4 | 18–24 s | Fälligkeitsliste, «Erledigt eintragen» | App, Szene 3 | «Wartungsheft meldet sich, bevor die nächste Arbeit fällig ist.» |
+| 5 | 24–29 s | Kosten pro Jahr, PDF-Dossier | App, Szene 4 | «Und beim Verkauf liegt alles auf dem Tisch: das vollständige Serviceheft als PDF.» |
 | 6 | 29–33 s | Dieselbe Szene wie 1, Haken statt Fragezeichen | gezeichnet, `szenen/privat-kaeufer.html?antwort=1` | «Alles da.» |
 | 7 | 33–37 s | Abspann | gezeichnet, `szenen/titel.html` | «25 Franken im Jahr. 30 Tage gratis testen, auf wartungsheft.ch» |
 
@@ -42,6 +42,14 @@ Nur das behaupten, was der Film zeigt oder was im Produkt steht:
 - Daten liegen in der Schweiz (Infomaniak), die KI-Verarbeitung läuft bei Mistral in Frankreich.
 
 Nicht behaupten: Zeitersparnis in Stunden, Wiederverkaufswert in Franken, Kundenstimmen. Dafür gibt es keine Belege.
+
+## Wortwahl im Film
+
+- Der Sprecher duzt, wie die App. Figuren im Bild siezen nicht und duzen nicht: die Sprechblase heisst «Gibt es
+  ein Serviceheft?», damit kein Bruch entsteht.
+- Was sich meldet, ist Wartungsheft, nicht das Auto.
+- Aussprache prüfen mit `espeak-ng -v de -q -x "Wort"`. Bekannt: «Serviceheft» klingt falsch, im Sprechertext
+  steht «Serwis-Heft»; «lückenlos» klingt bei dieser Stimme flach, deshalb «vollständig».
 
 ## Bild und Ton
 

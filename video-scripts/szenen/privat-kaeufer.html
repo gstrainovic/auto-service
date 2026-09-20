@@ -84,11 +84,12 @@
 </html>
 <script>
   const antwort = new URLSearchParams(location.search).has('antwort')
-  document.getElementById('blase').textContent = antwort ? 'Alles da.' : 'Haben Sie das'
+  // Die Blase kommt ohne Sie und ohne Du aus: die Marke duzt, ein fremder Käufer würde siezen
+  document.getElementById('blase').textContent = antwort ? 'Alles da.' : 'Gibt es ein'
   document.getElementById('blase2').textContent = antwort ? '' : 'Serviceheft?'
   document.getElementById('titel').textContent = antwort
-    ? 'Lückenlos belegt, in zehn Sekunden gezeigt.'
-    : 'Der Moment, in dem es zählt.'
+    ? 'Alles belegt, in zehn Sekunden gezeigt.'
+    : 'Du verkaufst dein Auto.'
   document.getElementById('zeichen').innerHTML = antwort
     ? '<circle cx="388" cy="150" r="20" fill="#10b981" opacity=".16"/><path d="M378 150l7 8 13-15" stroke="#10b981" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
     : '<circle cx="388" cy="150" r="20" fill="#f59e0b" opacity=".16"/><text x="388" y="159" text-anchor="middle" font-size="28" font-weight="700" fill="#f59e0b" font-family="Segoe UI, system-ui, sans-serif">?</text>'

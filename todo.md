@@ -18,10 +18,6 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
 - [ ] Jahresabo Betrieb live schalten, sobald die IBAN da ist: `deploy/.env` auf der Instanz um `INVOICE_*`,
       `RESEND_TOKEN` und `AI_PROXY_INTERNAL_TOKEN` ergänzen, Proxy neu bauen, Cron `wartungsheft-billing` anlegen
       (README «8.»), Testbestellung mit eigener Adresse, PDF gegen den SIX-Validator prüfen, danach stornieren
-- [ ] Hausnummer im QR-Zahlteil: die Testplattform meldet als Hinweis, dass in
-      `/QRCH/UltmtDbtr/BldgNbOrAdrLine2` Strasse und Hausnummer getrennt gehören; fehlt die Nummer, erfasst die Post
-      Einzahlungen am Schalter kostenpflichtig nach. Betrifft Rechnungssteller und Zahler, beide führen die Nummer
-      heute in `street`. Erst prüfen, ob eine Einzahlung am Schalter überhaupt vorkommt
 - [ ] Tagescheck um `billing.mjs open` ergänzen: überfällige Rechnungen melden, Zahlungseingänge mit
       `camt <datei.xml>` aus dem heruntergeladenen camt.054 buchen. AbaNinja erst ab etwa 10 zahlenden Betrieben
 - [ ] Hinweis vor Ende der Testzeit: in der App ab Tag 23 und eine Mail 7 Tage vorher (Erinnerungs-Job

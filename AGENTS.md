@@ -55,6 +55,10 @@ Zahlungsabgleich». Bankdokument als Kopie in `sgkb-cash-management-handbuch.pdf
   eine Sammelbuchung. Das Buchungsdatum steht als `Ntry/BookgDt/Dt` am Eintrag, nicht an der Zahlung.
   `markInvoicePaid` bucht nur den vollen Betrag und lehnt eine schon verbuchte `AcctSvcrRef` ab; der Endpunkt
   `/billing/paid` antwortet darauf mit 409, auf eine unbekannte Referenz mit 404.
+- **Strasse und Hausnummer getrennt im QR-Zahlteil**: `splitStreet` (ai-proxy `src/invoice.ts`) zerlegt die eine
+  Adresszeile aus Bestellung und Absender in `address` und `buildingNumber` (`qrBillData` in `invoice-pdf.ts`).
+  Ohne Trennung erfasst die Post Einzahlungen am Schalter kostenpflichtig nach. Postfachzeilen bleiben ganz, die
+  Zahl dahinter ist die Fachnummer.
 - **Eine QR-Einzahlung hat keinen `Dbtr`**: Der Zahler steht dann nur unter `RltdPties/UltmtDbtr`, der Parser fällt
   darauf zurück. `AddtlRmtInf` kommt mehrfach, PostFinance stellt eigene Statusmeldungen (`?REJECT?0`, `?ERROR?000`)
   vor die Mitteilung des Zahlers; Zeilen mit `?` fallen weg. Gebühren (`Chrgs`) mindern den Betrag nicht.

@@ -178,10 +178,25 @@ Software-Anbietern, die den Antrag begleiten:
 | EBICS (inkl. App) und MFTPF | kostenlos |
 | Zahlungseingänge im E-Banking | im Transaktionskontingent kostenlos, danach CHF 0.12 bzw. 0.08 pro Transaktion |
 
-Zwei Kosten, die nur Bargeld am Postschalter betreffen — für Betriebe, die per E-Banking zahlen, irrelevant:
-Einzahlungen belasten den Empfänger mit CHF 1.20 bis 3.95 je nach Betrag, und fehlende oder falsch platzierte
-Angaben zum Zahlungspflichtigen kosten **CHF 0.80 pro Beleg** Nacherfassung. Genau davor warnt der QR-Validator,
-wenn Strasse und Hausnummer nicht getrennt im Zahlteil stehen (in `invoice-pdf.ts` erledigt).
+Zwei Kosten betreffen nur Bargeld am Postschalter: Einzahlungen belasten den **Empfänger** mit CHF 1.20 bis 3.95
+je nach Betrag, und fehlende oder falsch platzierte Angaben zum Zahlungspflichtigen kosten **CHF 0.80 pro Beleg**
+Nacherfassung. Genau davor warnt der QR-Validator, wenn Strasse und Hausnummer nicht getrennt im Zahlteil stehen
+(in `invoice-pdf.ts` erledigt).
+
+### Schaltergebühren vermeiden
+
+Sperren lässt sich das nicht: Jede QR-Rechnung ist am Schalter einzahlbar, und die Preisliste kennt keine Option
+«keine Bareinzahlungen». Was bleibt, ist Lenkung und Gelassenheit:
+
+- **Rechnung und Mail bitten um E-Banking** («am einfachsten im E-Banking oder mit der Banking-App»,
+  `invoice-pdf.ts` und `invoice-mail.ts`). Wer die Rechnung ohnehin digital bekommt, zahlt selten bar.
+- **Adresse vollständig im Zahlteil**, sonst kommen zur Schaltergebühr noch CHF 0.80 Nacherfassung.
+- **Grössenordnung**: Bei einer Jahresrechnung über CHF 108 wären es CHF 2.35, also gut zwei Prozent — und nur,
+  wenn jemand tatsächlich bar einzahlt. Betriebe zahlen per E-Banking, Privatkunden fast immer auch.
+- **Kartenzahlung ist teurer, nicht billiger**: Stripe oder Payrexx kosten rund 2.9 Prozent plus 30 Rappen, bei
+  CHF 108 also etwa CHF 3.45. Ein Kartenweg lohnt sich wegen Bequemlichkeit, nicht wegen der Gebühr.
+- **Weiterverrechnen** wäre möglich, lohnt sich aber nicht: Eine «Schaltergebühr» in den AGB kostet mehr
+  Erklärung, als sie einbringt, und trifft ausgerechnet die Kunden ohne E-Banking.
 
 **Damit ist die Kette bezahlbar:** QR-IBAN gratis, camt.054 gratis, Abholung gratis. Beide Formulare gehören in
 den Eröffnungsantrag, sonst fehlt nachher die QR-IBAN.

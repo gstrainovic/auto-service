@@ -1,6 +1,7 @@
 /**
- * Täglicher Erinnerungs-Job: liest Nutzer, Fahrzeuge, Wartungen und Einstellungen über die Admin-API von InstantDB,
- * baut pro Nutzer eine E-Mail mit fälligen und überfälligen Arbeiten (src/services/reminders.ts) und sendet sie
+ * Täglicher Erinnerungs-Job: liest Nutzer, Fahrzeuge, Wartungen, Abos und Einstellungen über die Admin-API von
+ * InstantDB, baut pro Nutzer eine E-Mail mit fälligen und überfälligen Arbeiten (src/services/reminders.ts) sowie
+ * sieben Tage vor Ende der Testzeit einen Anstoss zum Abo (src/services/trial-reminder.ts) und sendet beides
  * über Resend. Gesendete Erinnerungen werden im Dokument `settings` des Nutzers vermerkt (lastReminderKey/At), damit
  * dieselbe Erinnerung erst nach 30 Tagen wiederkommt.
  *
@@ -10,7 +11,9 @@
  */
 import { randomUUID } from 'node:crypto'
 import process from 'node:process'
+import { TRIAL_DAYS } from '@strainovic/ai-proxy/trial'
 import { buildReminders, shouldSend } from '../src/services/reminders'
+import { buildTrialReminders } from '../src/services/trial-reminder'
 
 const API = process.env.INSTANT_API_URI ?? ''
 const APP_ID = process.env.INSTANT_APP_ID ?? ''
@@ -57,8 +60,8 @@ async function main(): Promise<void> {
     throw new Error('RESEND_TOKEN fehlt')
 
   const now = new Date()
-  const { $users = [], vehicles = [], maintenances = [], settings = [] } = await admin('query', {
-    query: { $users: {}, vehicles: {}, maintenances: {}, settings: {} },
+  const { $users = [], vehicles = [], maintenances = [], settings = [], subscriptions = [] } = await admin('query', {
+    query: { $users: {}, vehicles: {}, maintenances: {}, settings: {}, subscriptions: {} },
   })
   log(`${$users.length} Nutzer, ${vehicles.length} Fahrzeuge, ${maintenances.length} Wartungen, ${settings.length} Einstellungen`)
 
@@ -91,6 +94,30 @@ async function main(): Promise<void> {
     log(`${r.email}: ${r.subject}`)
   }
   log(`${sent} Erinnerung(en) gesendet, ${reminders.length - sent} übersprungen`)
+
+  // Anstoss vor Ende der Testzeit: eine Mail pro Testzeit, sieben Tage vor Schluss
+  const trialMails = buildTrialReminders({ users: $users, subscriptions, settings, now, trialDays: TRIAL_DAYS })
+    .filter(r => !only || r.email === only)
+  let trialSent = 0
+  for (const r of trialMails) {
+    if (dryRun) {
+      log(`[dry-run] ${r.email}: ${r.subject}\n${r.text}\n`)
+      continue
+    }
+    await sendMail(r.email, r.subject, r.text)
+    const setting = byUser.get(r.userId)
+    const id = setting?.id ?? randomUUID()
+    await admin('transact', {
+      steps: [['update', 'settings', id, {
+        creatorId: r.userId,
+        lastTrialNoticeKey: r.key,
+        updatedAt: now.toISOString(),
+      }]],
+    })
+    trialSent++
+    log(`${r.email}: ${r.subject}`)
+  }
+  log(`${trialSent} Testzeit-Hinweis(e) gesendet`)
 }
 
 main().catch((err) => {

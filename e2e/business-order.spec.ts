@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test'
 import { clearInstantDB, expect, test, waitForInstantDB } from './fixtures/test-fixtures'
 
-// Jahresabo auf Rechnung für Betriebe: Bestellung in den Einstellungen mit Rechnungsadresse, Fahrzeugzahl
-// vorbelegt mit den aktiven Fahrzeugen, QR-Rechnung zahlbar in 30 Tagen, kündbar bis zum Ablauf.
+// Jahresabo auf Rechnung, privat oder für einen Betrieb: Bestellung in den Einstellungen mit Rechnungsadresse,
+// Fahrzeugzahl vorbelegt mit den aktiven Fahrzeugen, QR-Rechnung zahlbar in 30 Tagen, kündbar bis zum Ablauf.
 // Der lokale Proxy läuft mit Test-IBAN und ohne RESEND_TOKEN: die Rechnung wird nur protokolliert.
 
 async function seedVehicles(page: Page) {
@@ -19,7 +19,7 @@ async function seedVehicles(page: Page) {
   })
 }
 
-test.describe('Jahresabo Betrieb auf Rechnung', () => {
+test.describe('Jahresabo auf Rechnung', () => {
   test.beforeEach(async ({ page }) => {
     await clearInstantDB(page)
   })
@@ -28,9 +28,10 @@ test.describe('Jahresabo Betrieb auf Rechnung', () => {
     await seedVehicles(page)
     await page.goto('/settings')
     const card = page.locator('.settings-card', { hasText: 'Abo & Nutzung' })
-    await card.getByRole('button', { name: 'Jahresabo für Betrieb bestellen' }).click()
+    await card.getByRole('button', { name: 'Jahresabo bestellen' }).click()
 
     const dialog = page.getByTestId('business-order-dialog')
+    await dialog.getByRole('button', { name: 'Betrieb' }).click()
     // Zwei aktive Fahrzeuge, das verkaufte zählt nicht
     await expect(dialog.getByLabel('Anzahl Fahrzeuge')).toHaveValue('2')
     await expect(dialog.getByTestId('order-price')).toContainText('CHF 72.00 im Jahr')
@@ -63,21 +64,22 @@ test.describe('Jahresabo Betrieb auf Rechnung', () => {
     await expect(status).toContainText('3 Fahrzeuge')
     await expect(status).toContainText(/Rechnung WH-\d{8}-[0-9A-Z]{6} über CHF 108\.00, zahlbar bis \d{2}\.\d{2}\.\d{4}/)
     await expect(status).toContainText('verlängert sich automatisch')
-    await expect(card.getByRole('button', { name: 'Jahresabo für Betrieb bestellen' })).toHaveCount(0)
+    await expect(card.getByRole('button', { name: 'Jahresabo bestellen' })).toHaveCount(0)
 
     // Bestellt während der Testzeit: das bezahlte Jahr hat noch nicht begonnen, Kündigung storniert die Rechnung
     // (Kündigung auf Ende einer laufenden Laufzeit prüfen die Unit-Tests im ai-proxy)
     await status.getByRole('button', { name: 'Abo kündigen' }).click()
     await expect(page.getByText('Die Rechnung ist storniert, du musst nichts bezahlen.')).toBeVisible()
     await expect(status).toHaveCount(0)
-    await expect(card.getByRole('button', { name: 'Jahresabo für Betrieb bestellen' })).toBeVisible()
+    await expect(card.getByRole('button', { name: 'Jahresabo bestellen' })).toBeVisible()
   })
 
   test('BO-002: fehlerhafte Angaben zeigt das Formular am Feld', async ({ page }) => {
     await seedVehicles(page)
     await page.goto('/settings')
-    await page.getByRole('button', { name: 'Jahresabo für Betrieb bestellen' }).click()
+    await page.getByRole('button', { name: 'Jahresabo bestellen' }).click()
     const dialog = page.getByTestId('business-order-dialog')
+    await dialog.getByRole('button', { name: 'Betrieb' }).click()
     await dialog.getByLabel('Firma').fill('Muster AG')
     await dialog.getByLabel('Kontaktperson').fill('Petra Muster')
     await dialog.getByLabel('Strasse und Nummer').fill('Hauptstrasse 12')
@@ -88,5 +90,41 @@ test.describe('Jahresabo Betrieb auf Rechnung', () => {
     await dialog.getByRole('button', { name: 'Kostenpflichtig bestellen' }).click()
     await expect(dialog.getByText('PLZ mit vier Ziffern angeben.')).toBeVisible()
     await expect(dialog).toBeVisible()
+  })
+
+  test('BO-003: Privatkunde bestellt ohne Firma, 25 CHF im Jahr', async ({ page }) => {
+    await seedVehicles(page)
+    await page.goto('/settings')
+    const card = page.locator('.settings-card', { hasText: 'Abo & Nutzung' })
+    await card.getByRole('button', { name: 'Jahresabo bestellen' }).click()
+
+    const dialog = page.getByTestId('business-order-dialog')
+    // Privat ist voreingestellt: kein Firmenfeld, ein Preis fürs Konto
+    await expect(dialog.getByLabel('Firma')).toHaveCount(0)
+    await expect(dialog.getByTestId('order-price')).toContainText('CHF 25.00 im Jahr')
+
+    await dialog.getByLabel('Name').fill('Anna Beispiel')
+    await dialog.getByLabel('Strasse und Nummer').fill('Dorfstrasse 4')
+    await dialog.getByLabel('PLZ').fill('9000')
+    await dialog.getByLabel('Ort').fill('St. Gallen')
+    await dialog.getByLabel('E-Mail für die Rechnung').fill('anna@beispiel.ch')
+    await dialog.getByLabel(/verlängert sich jährlich/).check()
+    await dialog.getByRole('button', { name: 'Kostenpflichtig bestellen' }).click()
+    await expect(dialog).not.toBeVisible()
+
+    const status = card.getByTestId('business-subscription')
+    await expect(status).toContainText('Jahresabo Privat')
+    await expect(status).toContainText('Anna Beispiel')
+    await expect(status).toContainText(/über CHF 25\.00/)
+  })
+
+  test('BO-004: privat über fünf Fahrzeuge rechnet pro Fahrzeug ab', async ({ page }) => {
+    await seedVehicles(page)
+    await page.goto('/settings')
+    await page.getByRole('button', { name: 'Jahresabo bestellen' }).click()
+    const dialog = page.getByTestId('business-order-dialog')
+    await dialog.getByLabel('Anzahl Fahrzeuge').fill('6')
+    await expect(dialog.getByTestId('order-price')).toContainText('CHF 216.00 im Jahr')
+    await expect(dialog.getByText(/Über 5 Fahrzeuge gilt der Preis pro Fahrzeug/)).toBeVisible()
   })
 })

@@ -69,7 +69,7 @@ const CONTACT_EMAIL = 'info@wartungsheft.ch'
       <ul>
         <li>
           <strong>Privat:</strong> {{ formatCurrency(PRIVATE_YEARLY_CHF) }} im Jahr für bis zu
-          {{ PRIVATE_MAX_VEHICLES }} Fahrzeuge.
+          {{ PRIVATE_MAX_VEHICLES }} Fahrzeuge. Ab dem sechsten Fahrzeug gilt auch privat der Preis pro Fahrzeug.
         </li>
         <li>
           <strong>Betrieb:</strong> {{ formatCurrency(BUSINESS_VEHICLE_YEARLY_CHF) }} pro Fahrzeug und Jahr,

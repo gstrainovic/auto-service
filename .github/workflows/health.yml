@@ -1,0 +1,70 @@
+# Health-Check unabhängig vom Laptop: prüft alle 15 Minuten die drei Dienste von aussen und mailt bei einem
+# Ausfall über Resend an info@wartungsheft.ch. Der tägliche Claude-Lauf bleibt für Zahlen und Kosten zuständig.
+#
+# Nötig: Repository-Secret RESEND_TOKEN (derselbe Token wie auf der Instanz, Sending access genügt).
+# Grenze: GitHub schaltet geplante Läufe nach 60 Tagen ohne Aktivität im Repository ab.
+name: Health
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dienste prüfen
+        id: check
+        run: |
+          set +e
+          fails=""
+          check() {
+            local name="$1" url="$2" expect="$3"
+            body=$(curl -fsS --max-time 20 "$url" 2>&1)
+            if [ $? -ne 0 ]; then
+              fails="${fails}${name}: nicht erreichbar ($url)\n${body}\n\n"
+              return
+            fi
+            case "$body" in
+              *"$expect"*) ;;
+              *) fails="${fails}${name}: Antwort ohne '${expect}' ($url)\n${body}\n\n" ;;
+            esac
+          }
+          check "Website" "https://wartungsheft.ch/" "<title"
+          check "AI-Proxy" "https://ai.wartungsheft.ch/health" '"ok":true'
+          check "InstantDB" "https://api.wartungsheft.ch/health/system" '"wal":"ok"'
+          if [ -n "$fails" ]; then
+            printf "%b" "$fails"
+            {
+              echo 'report<<EOF'
+              printf "%b" "$fails"
+              echo EOF
+            } >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "alle Dienste ok"
+
+      - name: Ausfall melden
+        if: failure()
+        env:
+          RESEND_TOKEN: ${{ secrets.RESEND_TOKEN }}
+          REPORT: ${{ steps.check.outputs.report }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$RESEND_TOKEN" ]; then
+            echo "RESEND_TOKEN fehlt, keine Mail" >&2
+            exit 0
+          fi
+          text="${REPORT:-Der Health-Check ist fehlgeschlagen, Einzelheiten im Lauf.}
+
+          Lauf: $RUN_URL"
+          jq -n --arg text "$text" '{
+            from: "Wartungsheft <erinnerung@wartungsheft.ch>",
+            to: ["info@wartungsheft.ch"],
+            subject: "Wartungsheft: Health-Check fehlgeschlagen",
+            text: $text
+          }' | curl -fsS -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data @-

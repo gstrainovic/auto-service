@@ -41,6 +41,8 @@ export interface ReminderSetting {
   emailReminders?: boolean
   lastReminderAt?: string
   lastReminderKey?: string
+  /** Merker der Mail vor Ende der Testzeit (trial-reminder.ts), eine pro Testzeit */
+  lastTrialNoticeKey?: string
 }
 
 export interface DueEntry {

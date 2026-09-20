@@ -9,7 +9,7 @@ import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
-import BusinessOrderDialog from '../components/BusinessOrderDialog.vue'
+import OrderDialog from '../components/OrderDialog.vue'
 import { userMessage } from '../lib/errors'
 import { db, tx } from '../lib/instantdb'
 import { formatCurrency, formatDate, formatMonth, formatNumber } from '../lib/locale'
@@ -60,7 +60,7 @@ const usage = ref<UsageInfo | null>(null)
 const usageError = ref('')
 const checkoutBusy = ref<string | null>(null)
 
-// Jahresabo Betrieb auf Rechnung: bestellen, Stand, kündigen (ai-proxy invoice-subscription.ts)
+// Jahresabo auf Rechnung (privat oder Betrieb): bestellen, Stand, kündigen (ai-proxy invoice-subscription.ts)
 const vehiclesStore = useVehiclesStore()
 const orderOpen = ref(false)
 const businessBusy = ref(false)
@@ -345,7 +345,8 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
           </div>
           <div v-if="business" class="business-subscription" data-testid="business-subscription">
             <div>
-              <strong>Jahresabo Betrieb</strong> · {{ business.company }} · {{ business.vehicles }}
+              <strong>Jahresabo {{ business.audience === 'privat' ? 'Privat' : 'Betrieb' }}</strong> ·
+              {{ business.company || business.contact }} · {{ business.vehicles }}
               {{ business.vehicles === 1 ? 'Fahrzeug' : 'Fahrzeuge' }}
             </div>
             <div v-if="business.periodEnd">
@@ -381,14 +382,11 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
           </div>
           <div v-else-if="canOrderBusiness" class="business-order">
             <div>
-              <strong>Für Betriebe:</strong> {{ formatCurrency(BUSINESS_VEHICLE_YEARLY_CHF) }} pro Fahrzeug und Jahr,
-              Rechnung auf die Firma, zahlbar in 30 Tagen.
+              <strong>Privat:</strong> {{ formatCurrency(PRIVATE_YEARLY_CHF) }} im Jahr bis {{ PRIVATE_MAX_VEHICLES }} Fahrzeuge.
+              <strong>Betrieb:</strong> {{ formatCurrency(BUSINESS_VEHICLE_YEARLY_CHF) }} pro Fahrzeug und Jahr,
+              Rechnung auf die Firma. Beides zahlbar in 30 Tagen.
             </div>
-            <Button label="Jahresabo für Betrieb bestellen" size="small" @click="orderOpen = true" />
-          </div>
-          <div v-if="!billingEnabled && !business" class="provider-info">
-            Privat-Abo ({{ formatCurrency(PRIVATE_YEARLY_CHF) }} im Jahr)? Schreib uns an
-            <a :href="`mailto:${CONTACT_EMAIL}`">{{ CONTACT_EMAIL }}</a>, du bekommst eine Jahresrechnung.
+            <Button label="Jahresabo bestellen" size="small" @click="orderOpen = true" />
           </div>
           <div v-else-if="billingEnabled && upgradePlans.length" class="upgrade-list">
             <div v-for="plan in upgradePlans" :key="plan.id" class="upgrade-row">
@@ -413,7 +411,7 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
       </template>
     </Card>
 
-    <BusinessOrderDialog
+    <OrderDialog
       :visible="orderOpen"
       :active-vehicles="activeVehicleCount"
       :trial-ends-at="usage?.trial?.active ? usage.trial.endsAt : null"

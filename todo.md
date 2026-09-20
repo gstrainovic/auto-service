@@ -8,6 +8,8 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
 ### Vom Nutzer
 - [ ] Mistral: monatliches Ausgabenlimit über das 10-$-Kontingent hinaus (heute 0 $) auf z. B. 20 $ setzen, sobald ein
       Betrieb scannt; sonst stoppt die API bis zum Monatsersten
+- [ ] Secret für den Health-Workflow setzen: `gh secret set RESEND_TOKEN --repo gstrainovic/auto-service`
+      (Wert aus `/opt/instant/.env` auf der Instanz), sonst meldet der Ausfall nur im GitHub-Lauf
 - [ ] PostFinance-Geschäftskonto eröffnen (Fr. 5 im Monat, bei Eröffnung bis 30.11.2026 zwei Jahre gratis) und
       QR-IBAN beantragen; neon, Yuh und Revolut privat verbieten geschäftliche Eingänge. IBAN danach in die `.env`
       des AI-Proxys auf der Instanz, nicht ins Repo. Bankwahl und Begründung in `geschaeftskonten-vergleich.md`
@@ -20,12 +22,10 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
       (README «8.»), Testbestellung mit eigener Adresse, PDF gegen den SIX-Validator prüfen, danach stornieren
 - [ ] Tagescheck um `billing.mjs open` ergänzen: überfällige Rechnungen melden, Zahlungseingänge mit
       `camt <datei.xml>` aus dem heruntergeladenen camt.054 buchen. AbaNinja erst ab etwa 10 zahlenden Betrieben
-- [ ] Hinweis vor Ende der Testzeit: in der App ab Tag 23 und eine Mail 7 Tage vorher (Erinnerungs-Job
-      `scripts/reminders.ts`), mit Link auf die Bestellung
 - [ ] Fahrzeuggrenze wirklich sperren, sobald ein Zahlungsweg existiert: `vehicleLimit` meldet heute nur, solange
       `VITE_BILLING_ENABLED=true` gesetzt ist; ohne Kaufweg wäre eine Sperre bloss ein Ärgernis
-- [ ] Health-Checks laufen heute nur im täglichen Claude-Lauf (`~/projects/find-jobs/AGENTS.md`, «Tagescheck
-      Wartungsheft»). Sobald ein Betrieb zahlt, zusätzlich ein Dienst, der unabhängig vom Laptop prüft und meldet
+- [ ] Fällt der Health-Workflow durch, ohne dass etwas kaputt ist (Wartungsfenster, kurzer Netzaussetzer), die
+      Schwelle anheben: erst nach zwei Fehlläufen hintereinander mailen
 
 ### Messen, nebenbei
 - [ ] Wöchentlich Zahlen ziehen (Caddy-Log, `events`, Anmeldungen, Bestellungen, Postfach, README Abschnitt 6) und in

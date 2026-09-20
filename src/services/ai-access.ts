@@ -44,7 +44,10 @@ export interface UsageInfo {
 
 export interface BusinessBilling {
   method: 'invoice'
+  audience: 'privat' | 'betrieb'
+  /** Firma; bei Privatkunden leer, dann steht der Name in `contact` */
   company: string
+  contact: string
   vehicles: number
   /** Ende der bezahlten Laufzeit (ISO, exklusiv) */
   periodEnd: string | null
@@ -53,6 +56,9 @@ export interface BusinessBilling {
 }
 
 export interface BusinessOrder {
+  /** Preisliste: privat 25 CHF bis 5 Fahrzeuge, betrieb 36 CHF pro Fahrzeug */
+  audience: 'privat' | 'betrieb'
+  /** Firma; bei Privatkunden leer */
   company: string
   contact: string
   street: string

@@ -21,6 +21,7 @@ import ServiceBookDialog from '../components/ServiceBookDialog.vue'
 import StatCard from '../components/StatCard.vue'
 import { db } from '../lib/instantdb'
 import { formatCurrency, formatDate, formatNumber, normalizeCurrency } from '../lib/locale'
+import { fetchUsage } from '../services/ai-access'
 import { resolveRates } from '../services/fx'
 import { formToInvoiceInput } from '../services/invoice-form'
 import { saveInvoice } from '../services/invoice-save'
@@ -28,6 +29,7 @@ import { saveMaintenances } from '../services/maintenance-save'
 import { doneFormInitial, DUE_STATUS_VIEW, dueDescription, dueForVehicle, fleetDueList, vehicleDueStatus } from '../services/maintenance-schedule'
 import { buildFleetReport, fleetReportFilename } from '../services/pdf-report'
 import { fleetCostsByVehicleYear, invoicesToCsvRows } from '../services/report'
+import { trialNotice } from '../services/trial-reminder'
 import { activeVehicles } from '../services/vehicle-status'
 import { invoiceYears, yearExportFilename, yearExportFiles } from '../services/year-export'
 import { createZip } from '../services/zip'
@@ -41,7 +43,12 @@ const route = useRoute()
 const vehiclesStore = useVehiclesStore()
 const invoicesStore = useInvoicesStore()
 const maintenancesStore = useMaintenancesStore()
+// Hinweis auf das Abo in der letzten Woche der Testzeit; ohne erreichbaren Proxy bleibt er einfach weg
+const trialHint = ref<string | null>(null)
 onMounted(async () => {
+  fetchUsage()
+    .then((usage) => { trialHint.value = trialNotice(usage.trial) })
+    .catch(() => { trialHint.value = null })
   await vehiclesStore.load()
   await invoicesStore.load()
   maintenancesStore.load()
@@ -296,6 +303,13 @@ const totalInvoiceCount = computed(() =>
         @click="startReceipt"
       />
     </div>
+
+    <Message v-if="trialHint" severity="warn" :closable="false" class="trial-hint" data-testid="trial-hint">
+      <div class="trial-hint-body">
+        <span>{{ trialHint }}</span>
+        <Button label="Jahresabo bestellen" size="small" @click="router.push('/settings')" />
+      </div>
+    </Message>
 
     <div v-if="vehiclesStore.vehicles.length === 0" class="empty-state">
       <i class="pi pi-car empty-icon" />
@@ -760,6 +774,18 @@ const totalInvoiceCount = computed(() =>
   flex-shrink: 0;
   white-space: nowrap;
   font-size: 0.75rem;
+}
+
+.trial-hint {
+  margin-bottom: 1rem;
+}
+
+.trial-hint-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .schedule-hint {

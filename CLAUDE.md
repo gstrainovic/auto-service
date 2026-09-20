@@ -217,11 +217,16 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
   keine Serverabfrage voraussetzen; `db.queryOnce` scheitert offline.
 - Jahresabschluss: `src/services/year-export.ts` baut CSV und Belegbilder eines Jahres, `src/services/zip.ts` packt sie
   ungepackt in ein ZIP (keine Abhängigkeit, Bilder sind schon komprimiert).
-- Abo und Testzeit: kein Gratis-Plan. Ohne Abo läuft eine Testzeit von 30 Tagen mit allem (ai-proxy `trial.ts`, Beginn beim
+- Abo und Testzeit: kein Gratis-Plan. In der letzten Woche der Testzeit steht auf dem Dashboard ein Hinweis
+  (`trialNotice`), sieben Tage vor Schluss geht eine Mail raus (`buildTrialReminders`, beide
+  `src/services/trial-reminder.ts`, Versand im Job `scripts/reminders.ts`, ein Merker `lastTrialNoticeKey` je Testzeit).
+  Ohne Abo läuft eine Testzeit von 30 Tagen mit allem (ai-proxy `trial.ts`, Beginn beim
   ersten Aufruf, Subscription mit `status: 'trial'`); danach antworten Scan und Chat mit 402 `trial_expired`, Lesen,
   Erfassen von Hand und Exporte bleiben frei. Preise in `yearlyPriceChf(n, audience)` (privat 25 CHF bis 5 Fahrzeuge, Betrieb
   36 CHF pro Fahrzeug), `PriceTable.vue` mit Umschalter Privat/Betrieb rechnet damit; Fair-Use-Bremse 20 Anfragen pro Minute im Proxy (`rate-limit.ts`).
-- Jahresabo Betrieb auf Rechnung: `BusinessOrderDialog.vue` in den Einstellungen (Prüfung mit `parseOrder` aus
+- Jahresabo auf Rechnung, privat und für Betriebe: `OrderDialog.vue` in den Einstellungen mit Umschalter Privat/Betrieb
+  (privat ohne Firmenfeld, `Order.audience` steuert Pflichtfelder, Preis, Plan und die Texte auf Rechnung und Mail;
+  die Zielgruppe steht am Abo und gilt bei jeder Verlängerung; Prüfung mit `parseOrder` aus
   `@strainovic/ai-proxy/invoice`, dieselbe wie im Proxy), Proxy `/billing/order|cancel|resume` erzeugt die QR-Rechnung
   (Regeln in ai-proxy `invoice-subscription.ts`, README «8. Jahresabo auf Rechnung»). Täglicher Job `scripts/billing.ts`
   zählt Fahrzeuge und ruft `/billing/renew`, `paid <Referenz>` trägt Zahlungen ein; beide internen Endpunkte nur mit
@@ -325,7 +330,7 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Tests folgen **CRUD-Paradigma**: Create → Read → Update → Delete
 - Tests laufen automatisch **zweimal**: online + offline (via Network-Blocking)
 - **Playwright startet Server automatisch** (Vite + InstantDB) — kein manuelles `podman-compose up` nötig
-- `npm run test:e2e` führt beide Projekt-Varianten aus (274 Tests: 137 online + 137 offline; 8 weitere nur via `test:e2e:soft`)
+- `npm run test:e2e` führt beide Projekt-Varianten aus (282 Tests: 141 online + 141 offline; 8 weitere nur via `test:e2e:soft`)
 - Playwright startet drei Server: Vite (`VITE_INSTANTDB_MODE=local`, `VITE_AI_PROXY_URL=http://localhost:8787`),
   InstantDB (podman-compose) und den AI-Proxy (`npm run dev:proxy` im Auth-Bypass, Key aus `.env` explizit per `env`,
   `AI_PROXY_BURST_LIMIT=10000`, weil alle Tests einen Nutzer teilen und die Fair-Use-Bremse sonst 429 liefert)
@@ -376,9 +381,10 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 | EF | Einrichtung Fahrzeug | EF-001 bis EF-006: Checkliste nach dem Anlegen, Wartungsplan fragt «zuletzt», Serviceheft-Knopf, Verlauf, Ausblenden |
 | HK | Herkunft am Datensatz | HK-001 bis HK-004: `source` bei Formular, Rechnung samt Wartungen, Wartungsplan, Dashboard |
 | AE | Anmelde-Einstieg | AE-001 bis AE-003: «Anmelden» im Kopf auf 390px, bekanntes Konto nach Abmelden, «Andere E-Mail» |
-| BO | Bestellung Betrieb | BO-001, BO-002: Jahresabo mit Rechnungsadresse, Fahrzeuge vorbelegt, Storno bei Kündigung in der Testzeit, Feldfehler |
+| BO | Bestellung Abo | BO-001 bis BO-004: Betrieb mit Rechnungsadresse, Feldfehler, Privat ohne Firma, Preis ab sechs Fahrzeugen |
+| TN | Testzeit-Hinweis | TN-001, TN-002: Hinweis in der letzten Woche, vorher still |
 
-**Gesamt: 137 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
+**Gesamt: 141 Tests pro Projekt** (+8 `@soft`) — `npm run test:e2e --list` zeigt alle
 
 ### Test-Konventionen
 - Tests importieren von `./fixtures/test-fixtures` statt `@playwright/test`

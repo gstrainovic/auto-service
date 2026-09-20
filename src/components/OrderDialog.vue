@@ -1,17 +1,20 @@
 <script setup lang="ts">
 /**
- * Jahresabo für Betriebe auf Rechnung bestellen: Rechnungsadresse, Fahrzeugzahl (vorbelegt mit den aktiven
- * Fahrzeugen), Zustimmung zu Verlängerung und Kündigung. Der AI-Proxy legt das Abo an und schickt die
- * QR-Rechnung per Mail (ai-proxy `invoice-subscription.ts`).
+ * Jahresabo auf Rechnung bestellen, privat oder für einen Betrieb: Rechnungsadresse, Fahrzeugzahl (vorbelegt mit
+ * den aktiven Fahrzeugen), Zustimmung zu Verlängerung und Kündigung. Der AI-Proxy legt das Abo an und schickt die
+ * QR-Rechnung per Mail (ai-proxy `invoice-subscription.ts`). Privat zahlt einen Preis fürs Konto, Betriebe pro
+ * Fahrzeug und bekommen die Rechnung auf die Firma.
  */
+import type { Audience } from '@strainovic/ai-proxy/plans'
 import type { BusinessOrder } from '../services/ai-access'
 import { parseOrder } from '@strainovic/ai-proxy/invoice'
-import { BUSINESS_VEHICLE_YEARLY_CHF, yearlyPriceChf } from '@strainovic/ai-proxy/plans'
+import { BUSINESS_VEHICLE_YEARLY_CHF, PRIVATE_MAX_VEHICLES, PRIVATE_YEARLY_CHF, yearlyPriceChf } from '@strainovic/ai-proxy/plans'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
+import SelectButton from 'primevue/selectbutton'
 import { computed, reactive, ref, watch } from 'vue'
 import { formatCurrency, formatDate } from '../lib/locale'
 import { orderBusinessPlan, OrderError } from '../services/ai-access'
@@ -24,6 +27,13 @@ const props = defineProps<{
   trialEndsAt?: string | null
 }>()
 const emit = defineEmits<{ close: [], ordered: [result: { number: string, mailed: boolean }] }>()
+
+const AUDIENCES = [
+  { label: 'Privat', value: 'privat' as Audience },
+  { label: 'Betrieb', value: 'betrieb' as Audience },
+]
+const audience = ref<Audience>('privat')
+const isBusiness = computed(() => audience.value === 'betrieb')
 
 const form = reactive({
   company: '',
@@ -50,13 +60,15 @@ watch(() => props.visible, (open) => {
 }, { immediate: true })
 
 const vehicleCount = computed(() => Math.max(1, Math.floor(Number(form.vehicles) || 1)))
-const price = computed(() => yearlyPriceChf(vehicleCount.value, 'betrieb'))
+const price = computed(() => yearlyPriceChf(vehicleCount.value, audience.value))
+// Privat gilt der Kontopreis nur bis zur Fahrzeuggrenze, darüber zählt jedes Fahrzeug
+const overPrivateLimit = computed(() => !isBusiness.value && vehicleCount.value > PRIVATE_MAX_VEHICLES)
 
 async function submit(): Promise<void> {
   errors.value = {}
   generalError.value = ''
   // Dieselbe Prüfung wie im Proxy, damit Fehler ohne Umweg über den Server am Feld stehen
-  const parsed = parseOrder({ ...form, vehicles: vehicleCount.value })
+  const parsed = parseOrder({ ...form, audience: audience.value, vehicles: vehicleCount.value })
   if (!parsed.ok) {
     errors.value = parsed.errors
     return
@@ -83,14 +95,29 @@ async function submit(): Promise<void> {
   <Dialog
     :visible="visible"
     modal
-    header="Jahresabo für Betrieb"
+    header="Jahresabo bestellen"
     data-testid="business-order-dialog"
     :style="{ width: 'min(560px, 96vw)' }"
     @update:visible="emit('close')"
   >
+    <SelectButton
+      v-model="audience"
+      :options="AUDIENCES"
+      option-label="label"
+      option-value="value"
+      :allow-empty="false"
+      class="audience-switch"
+      aria-label="Privat oder Betrieb"
+    />
+
     <p class="intro">
-      {{ formatCurrency(BUSINESS_VEHICLE_YEARLY_CHF) }} pro Fahrzeug und Jahr, Rechnung auf die Firma. Du kannst sofort weiterarbeiten,
-      die QR-Rechnung kommt per Mail und ist in 30 Tagen zahlbar.
+      <template v-if="isBusiness">
+        {{ formatCurrency(BUSINESS_VEHICLE_YEARLY_CHF) }} pro Fahrzeug und Jahr, Rechnung auf die Firma.
+      </template>
+      <template v-else>
+        {{ formatCurrency(PRIVATE_YEARLY_CHF) }} im Jahr für bis zu {{ PRIVATE_MAX_VEHICLES }} Fahrzeuge.
+      </template>
+      Du kannst sofort weiterarbeiten, die QR-Rechnung kommt per Mail und ist in 30 Tagen zahlbar.
       <template v-if="trialEndsAt">
         Das bezahlte Jahr beginnt nach deiner Testzeit am {{ formatDate(trialEndsAt) }}.
       </template>
@@ -101,13 +128,13 @@ async function submit(): Promise<void> {
     </Message>
 
     <form class="fields" @submit.prevent="submit">
-      <div class="field span-2">
+      <div v-if="isBusiness" class="field span-2">
         <label for="order-company">Firma</label>
         <InputText id="order-company" v-model="form.company" autocomplete="organization" :invalid="!!errors.company" fluid />
         <small v-if="errors.company" class="error">{{ errors.company }}</small>
       </div>
       <div class="field span-2">
-        <label for="order-contact">Kontaktperson</label>
+        <label for="order-contact">{{ isBusiness ? 'Kontaktperson' : 'Name' }}</label>
         <InputText id="order-contact" v-model="form.contact" autocomplete="name" :invalid="!!errors.contact" fluid />
         <small v-if="errors.contact" class="error">{{ errors.contact }}</small>
       </div>
@@ -131,7 +158,7 @@ async function submit(): Promise<void> {
         <InputText id="order-email" v-model="form.email" type="email" autocomplete="email" :invalid="!!errors.email" fluid />
         <small v-if="errors.email" class="error">{{ errors.email }}</small>
       </div>
-      <div class="field">
+      <div v-if="isBusiness" class="field">
         <label for="order-reference">Deine Referenz (optional)</label>
         <InputText id="order-reference" v-model="form.reference" placeholder="z. B. Kostenstelle" fluid />
       </div>
@@ -143,6 +170,9 @@ async function submit(): Promise<void> {
       <p class="price span-2" data-testid="order-price">
         {{ formatCurrency(price) }} im Jahr
       </p>
+      <small v-if="overPrivateLimit" class="hint span-2">
+        Über {{ PRIVATE_MAX_VEHICLES }} Fahrzeuge gilt der Preis pro Fahrzeug, {{ formatCurrency(BUSINESS_VEHICLE_YEARLY_CHF) }} im Jahr.
+      </small>
       <div class="terms span-2">
         <Checkbox v-model="form.acceptTerms" input-id="order-terms" binary :invalid="!!errors.acceptTerms" />
         <label for="order-terms">
@@ -163,6 +193,15 @@ async function submit(): Promise<void> {
 </template>
 
 <style scoped>
+.audience-switch {
+  margin-bottom: 1rem;
+}
+
+.hint {
+  color: var(--p-text-muted-color);
+  font-size: 0.8rem;
+}
+
 .intro {
   margin: 0 0 1rem;
   font-size: 0.9rem;

@@ -93,8 +93,8 @@ test.describe('AI Proxy (Abo-Modus)', () => {
     await expect(card).toContainText(/Chat.*unter 1 % genutzt/s)
     await expect(card).toContainText('Fair Use')
     await expect(page.locator('input[type="password"]')).toHaveCount(0)
-    // Ohne Zahlungsanbieter kein Checkout-Button, sondern Kontakt für die Jahresrechnung
+    // Ohne Zahlungsanbieter kein Checkout-Button, sondern die Bestellung der Jahresrechnung
     await expect(card.getByRole('button', { name: /wechseln/ })).toHaveCount(0)
-    await expect(card.getByRole('link', { name: /@/ })).toBeVisible()
+    await expect(card.getByRole('button', { name: 'Jahresabo bestellen' })).toBeVisible()
   })
 })

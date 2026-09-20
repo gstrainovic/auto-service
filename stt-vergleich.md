@@ -20,6 +20,17 @@ Für eine belastbare Zahl müsste man dieselben Sätze selbst einsprechen.
 | `/v1/chat/completions` mit `input_audio` | `voxtral-small-latest` | 70,1 % Wortfehler — **kein Transkriptionsfehler**, das Modell formuliert um |
 | WebSocket, Realtime | `voxtral-mini-realtime-*`, `voxtral-mini-transcribe-realtime-2602` | nur im Realtime-Kanal, am Batch-Endpunkt abgelehnt |
 
+«Invalid model» liegt nicht am Aufruf. Am Transkriptions-Endpunkt wurden sieben Namen durchprobiert, nur
+`voxtral-mini-latest` und `voxtral-mini-2602` werden angenommen; `voxtral-mini-transcribe-2602`,
+`-transcribe-latest`, `voxtral-small-2507` und `voxtral-small-latest` werden abgelehnt. Im Audio-Chat wurden
+beide dokumentierten Formen von `input_audio` getestet (Objekt mit `data`/`format` und reiner Base64-String) —
+`voxtral-mini-*` wird in beiden Formen abgelehnt, nur `voxtral-small-latest` antwortet. Die Aufteilung ist also
+fest: **mini schreibt mit, small versteht.**
+
+Beim Wiederholungslauf antwortete `voxtral-small-latest` auf denselben deutschen Satz **auf Englisch** und
+inhaltlich verdreht: «Zahnriemen mit Wasserpumpe ersetzt» wurde zu «The water pump replaced the fan belt.» Damit
+ist es für Diktat und Rückmeldung endgültig raus.
+
 Die zwei Wege sind also **nicht austauschbar**: Der Transkriptions-Endpunkt gibt wieder, was gesagt wurde. Das
 Audio-Chat-Modell versteht und formuliert neu — «Bremsbeläge und Bremsscheiben vorne gewechselt» wird zu «Vordere
 Bremsbeläge und Bremsscheiben gewechselt». Für ein Diktat unbrauchbar, für «trag das als Wartung ein» genau

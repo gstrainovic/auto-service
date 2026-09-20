@@ -427,7 +427,8 @@ Dies testet die Offline-First-Fähigkeit: Daten werden in IndexedDB gespeichert 
 Menüpunkt «Fehler melden oder Wunsch» (`FeedbackDialog.vue`): Sprachnachricht (MediaRecorder), Textfeld und die
 Adresse zum Kopieren — drei Wege, weil `mailto` auf dem Rechner oft kein Mailprogramm findet und Tippen auf der
 Baustelle mühsam ist. Der Proxy (`/feedback`, `feedback.ts`) lässt die Aufnahme von Mistral transkribieren
-(`voxtral-mini-latest` an `/v1/audio/transcriptions`, rund 0.003 $ pro Minute) und schickt Transkript plus Audio
+(`voxtral-mini-latest` an `/v1/audio/transcriptions`, rund 0.003 $ pro Minute; Messwerte und Grenzen in
+`stt-vergleich.md`: keine Nachkorrektur, keine Zahlen diktieren) und schickt Transkript plus Audio
 über Resend an `info@wartungsheft.ch`, Antwortadresse ist der Kunde. Scheitert die Transkription, geht die
 Aufnahme trotzdem raus. Ohne `RESEND_TOKEN` landet alles im Proxy-Log.
 

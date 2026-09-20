@@ -36,7 +36,7 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
       stehen: Aufnahme wie in `FeedbackDialog.vue` (MediaRecorder), Transkription wie in ai-proxy `/feedback`
       (Voxtral `voxtral-mini-latest`, rund 0.003 $ pro Minute). Nötig ist ein eigener Endpunkt `/me/transcribe`
       (Audio rein, Text raus) plus ein Composable und ein Knopf, damit jedes Feld denselben Weg nutzt. Nicht für
-      Zahlen- und Datumsfelder, dort ist Diktat fehleranfällig
+      Kennzeichen, Beträge und Daten: dort verhaut die Erkennung die Zahlen (`stt-vergleich.md`)
 
 ### Messen, nebenbei
 - [ ] Wöchentlich Zahlen ziehen (Caddy-Log, `events`, Anmeldungen, Bestellungen, Postfach, README Abschnitt 6) und in

@@ -58,7 +58,7 @@ function chf(value: number): string {
         <span>{{ chf(PRIVATE_YEARLY_CHF / 12) }} im Monat, bis {{ PRIVATE_MAX_VEHICLES }} Fahrzeuge</span>
       </div>
       <p class="price-intro">
-        Ein Preis für dein Auto, das Motorrad und den Wohnwagen zusammen. 30 Tage gratis testen, mit allem;
+        Ein Preis für dein Auto, das Motorrad und den Wohnwagen zusammen. 30 Tage gratis testen, mit allen Funktionen;
         danach brauchen nur KI-Scan und Chat das Abo. Mehr als {{ PRIVATE_MAX_VEHICLES }} Fahrzeuge? Dann gilt die Betriebsliste.
       </p>
     </div>

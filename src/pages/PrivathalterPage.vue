@@ -16,7 +16,7 @@ const benefits = [
     problem="Belege in der Schublade und im Handschuhfach, der Service vergessen, und beim Verkauf fehlt die Hälfte der Historie."
     :benefits="benefits"
     price="25 CHF im Jahr, bis 5 Fahrzeuge"
-    price-note="30 Tage gratis mit allem, danach entscheidest du. Anmelden mit E-Mail, kein Passwort, keine Kreditkarte."
+    price-note="30 Tage gratis mit allen Funktionen, danach entscheidest du. Anmelden mit E-Mail, kein Passwort, keine Kreditkarte."
     cta="30 Tage gratis testen"
   />
 </template>

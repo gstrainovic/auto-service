@@ -220,7 +220,7 @@ Quelle: docs.mistral.ai/capabilities/OCR/basic_ocr/
 - Abo und Testzeit: kein Gratis-Plan. In der letzten Woche der Testzeit steht auf dem Dashboard ein Hinweis
   (`trialNotice`), sieben Tage vor Schluss geht eine Mail raus (`buildTrialReminders`, beide
   `src/services/trial-reminder.ts`, Versand im Job `scripts/reminders.ts`, ein Merker `lastTrialNoticeKey` je Testzeit).
-  Ohne Abo läuft eine Testzeit von 30 Tagen mit allem (ai-proxy `trial.ts`, Beginn beim
+  Ohne Abo läuft eine Testzeit von 30 Tagen mit allen Funktionen und dem Kontingent des Privatplans (ai-proxy `trial.ts`, Beginn beim
   ersten Aufruf, Subscription mit `status: 'trial'`); danach antworten Scan und Chat mit 402 `trial_expired`, Lesen,
   Erfassen von Hand und Exporte bleiben frei. Preise in `yearlyPriceChf(n, audience)` (privat 25 CHF bis 5 Fahrzeuge, Betrieb
   36 CHF pro Fahrzeug), `PriceTable.vue` mit Umschalter Privat/Betrieb rechnet damit; Fair-Use-Bremse 20 Anfragen pro Minute im Proxy (`rate-limit.ts`).

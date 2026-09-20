@@ -124,7 +124,7 @@ const trialNote = computed(() => {
   if (!trial)
     return ''
   if (trial.active)
-    return `Testzeit: noch ${trial.daysLeft} ${trial.daysLeft === 1 ? 'Tag' : 'Tage'} mit allem, bis ${formatDate(trial.endsAt)}. Danach kostet Wartungsheft ${formatCurrency(PRIVATE_YEARLY_CHF)} im Jahr (privat, bis ${PRIVATE_MAX_VEHICLES} Fahrzeuge) oder ${formatCurrency(BUSINESS_VEHICLE_YEARLY_CHF)} pro Fahrzeug und Jahr (Betrieb).`
+    return `Testzeit: noch ${trial.daysLeft} ${trial.daysLeft === 1 ? 'Tag' : 'Tage'} mit allen Funktionen, bis ${formatDate(trial.endsAt)}. Danach kostet Wartungsheft ${formatCurrency(PRIVATE_YEARLY_CHF)} im Jahr (privat, bis ${PRIVATE_MAX_VEHICLES} Fahrzeuge) oder ${formatCurrency(BUSINESS_VEHICLE_YEARLY_CHF)} pro Fahrzeug und Jahr (Betrieb).`
   return `Testzeit vorbei: KI-Scan und Chat brauchen ein Abo (privat ${formatCurrency(PRIVATE_YEARLY_CHF)} im Jahr bis ${PRIVATE_MAX_VEHICLES} Fahrzeuge, Betrieb ${formatCurrency(BUSINESS_VEHICLE_YEARLY_CHF)} pro Fahrzeug und Jahr). Lesen, Erfassen von Hand und Exporte gehen weiter.`
 })
 

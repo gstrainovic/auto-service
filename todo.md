@@ -1,7 +1,8 @@
 # todo.md
 
 Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung für Betriebe), dann messen
-(business-plan/09-validierung.md), dann alles andere. Keine Kaltakquise per E-Mail, keine Umfrage-Mails.
+(business-plan/09-validierung.md), dann alles andere. Keine Kaltakquise per E-Mail, keine Umfrage-Mails, keine
+Forenbeiträge; niemand wird angeschrieben.
 
 ## Jetzt: produktiv gehen
 
@@ -36,10 +37,10 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
 ### Auffindbar, wenn jemand eine KI fragt
 
 Text, Metadaten, `robots.txt`, `sitemap.xml` und `llms.txt` stehen (CLAUDE.md «Hilfe und Auffindbarkeit»).
-Was noch fehlt, braucht ein Konto und damit den Nutzer:
+Google über die Search Console, Bing über IndexNow (`npm run indexnow`), search.ch per Add-URL.
 
-- [ ] Bing Webmaster Tools: Konto anlegen, Site aus der Google Search Console importieren (verifiziert ohne
-      DNS-Eintrag), Sitemap prüfen. IndexNow läuft schon (`npm run indexnow`)
+- [ ] Einträge in Verzeichnissen und Launch-Plattformen (`business-plan/verzeichnisse.md`): Nutzer meldet sich je
+      Plattform an, Claude füllt das Formular aus den fertigen Texten und sendet nach Freigabe ab
 - [ ] Messen, ob es wirkt: ChatGPT, Claude, Perplexity und Googles KI-Übersicht nach «Was ist wartungsheft.ch?»
       fragen und die Antworten notieren. Richtig wäre: Serviceheft mit Rechnungen pro Fahrzeug, Schweiz,
       25 CHF privat / 36 CHF pro Fahrzeug im Betrieb, 30 Tage gratis
@@ -49,7 +50,6 @@ Was noch fehlt, braucht ein Konto und damit den Nutzer:
       Kapitel 9 notieren; nach drei Monaten Auswertung gegen die Abbruchkriterien
 - [ ] Beobachten (M1) ergänzen: Schweizer KMU-Stimmen (Gewerbeverbände, LinkedIn-Gruppen); Erstfassung steht in
       `business-plan/beobachtungen.md`
-- [ ] Ein Forumsbeitrag mit echter Frage (Motor-Talk oder r/de), Text vorbereiten, Nutzer gibt frei
 
 ## Sobald über die Schweiz hinaus verkauft wird (DACH oder global)
 

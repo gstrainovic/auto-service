@@ -30,6 +30,11 @@ Forenbeiträge; niemand wird angeschrieben.
 - [ ] Fällt der Health-Workflow durch, ohne dass etwas kaputt ist (Wartungsfenster, kurzer Netzaussetzer), die
       Schwelle anheben: erst nach zwei Fehlläufen hintereinander mailen
 
+### Kleininserat im TCS-Magazin «Touring» (ab 25.09.2026)
+- [ ] Claude: Route `/tcs` bauen (Besuch in `events` zählen, weiter auf `/privathalter`), deployen
+- [ ] Nutzer: Kleininserat «Marktplatz» deutsche Ausgabe buchen, CHF 77, Anzeigenschluss 07.10.2026 für die Ausgabe
+      vom 29.10.; Text, Preise und Kontakt in `business-plan/05-go-to-market.md` «Versuch: Kleininserat im TCS-Magazin»
+
 ### Marketing-Video
 - [ ] Kurzfassungen für Social veröffentlichen: `video-out/social-privat.webm` und `social-betrieb.webm` (je gut
       10 Sekunden) beim ersten Beitrag oder der ersten Anzeige einsetzen

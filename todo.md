@@ -9,31 +9,24 @@ Forenbeiträge; niemand wird angeschrieben.
 ### Vom Nutzer
 - [ ] Mistral: monatliches Ausgabenlimit über das 10-$-Kontingent hinaus (heute 0 $) auf z. B. 20 $ setzen, sobald ein
       Betrieb scannt; sonst stoppt die API bis zum Monatsersten
-- [ ] Auslöser für die nächsten zwei Punkte ist die erste Anmeldung (Mail «Wartungsheft: neue Anmeldung» an
+- [ ] Auslöser für den nächsten Punkt ist die erste Anmeldung (Mail «Wartungsheft: neue Anmeldung» an
       info@wartungsheft.ch, täglich 07:00 UTC)
-- [ ] PostFinance-Geschäftskonto eröffnen (Fr. 5 im Monat, bei Eröffnung bis 30.11.2026 zwei Jahre gratis) und
-      QR-IBAN beantragen; neon, Yuh und Revolut privat verbieten geschäftliche Eingänge. IBAN danach in die `.env`
-      des AI-Proxys auf der Instanz, nicht ins Repo. Bankwahl und Begründung in `../business/geschaeftskonten-vergleich.md`
-- [ ] Bei der Eröffnung zwei Formulare mitbestellen: «Anmeldung/Mutation virtuelles Konto QR-Rechnung» (QR-IBAN)
-      und «Anmeldung/Mutation elektronische Kontodokumente» (camt.054). Beides ist gratis, solange die
-      Detailavisierung halbtäglich oder täglich läuft; stündlich kostet CHF 0.08 pro Zahlung
-      (`../business/geschaeftskonten-vergleich.md`, «QR-IBAN und camt.054 bei PostFinance»)
+- [ ] Geschäftskonto mit QR-IBAN und camt.054 eröffnen: `../business/geschaeftskonten-vergleich.md`. IBAN danach in
+      die `.env` des AI-Proxys auf der Instanz, nicht ins Repo
 
 ### Von Claude
 - [ ] Jahresabo Betrieb live schalten, sobald die IBAN da ist: `deploy/.env` auf der Instanz um `INVOICE_*`,
       `RESEND_TOKEN` und `AI_PROXY_INTERNAL_TOKEN` ergänzen, Proxy neu bauen, Cron `wartungsheft-billing` anlegen
       (README «8.»), Testbestellung mit eigener Adresse, PDF gegen den SIX-Validator prüfen, danach stornieren
 - [ ] Tagescheck um `billing.mjs open` ergänzen: überfällige Rechnungen melden, Zahlungseingänge mit
-      `camt <datei.xml>` aus dem heruntergeladenen camt.054 buchen. AbaNinja erst ab etwa 10 zahlenden Betrieben
+      `camt <datei.xml>` aus dem heruntergeladenen camt.054 buchen
 - [ ] Fahrzeuggrenze wirklich sperren, sobald ein Zahlungsweg existiert: `vehicleLimit` meldet heute nur, solange
       `VITE_BILLING_ENABLED=true` gesetzt ist; ohne Kaufweg wäre eine Sperre bloss ein Ärgernis
 - [ ] Fällt der Health-Workflow durch, ohne dass etwas kaputt ist (Wartungsfenster, kurzer Netzaussetzer), die
       Schwelle anheben: erst nach zwei Fehlläufen hintereinander mailen
 
-### Kleininserat im TCS-Magazin «Touring» (ab 25.09.2026)
-- [ ] Claude: Route `/tcs` bauen (Besuch in `events` zählen, weiter auf `/privathalter`), deployen
-- [ ] Nutzer: Kleininserat «Marktplatz» deutsche Ausgabe buchen, CHF 77, Anzeigenschluss 07.10.2026 für die Ausgabe
-      vom 29.10.; Text, Preise und Kontakt in `business-plan/05-go-to-market.md` «Versuch: Kleininserat im TCS-Magazin»
+### Ab 25.09.2026
+- [ ] Kleininserat mit `/tcs`: `business-plan/05-go-to-market.md` «Versuch: Kleininserat im TCS-Magazin»
 
 ### Marketing-Video
 - [ ] Kurzfassungen für Social veröffentlichen: `video-out/social-privat.webm` und `social-betrieb.webm` (je gut

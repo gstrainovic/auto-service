@@ -26,6 +26,10 @@ git -C ../ai-proxy pull --ff-only
 ```
 
 Scheitert ein Pull (lokale Änderungen, abweichende Historie), nicht selbst auflösen, sondern melden und nachfragen.
+
+`todo.md` ist öffentlich, `../business` privat: Punkte mit geschäftlichem Inhalt (Preise, Anbieter, Kanäle, Texte,
+Termine, Konditionen) stehen in `todo.md` nur als eine Zeile mit Verweis auf die Stelle in `../business`
+(bzw. `business-plan/`), die Einzelheiten nur dort.
 Bringt der Pull in `../ai-proxy` neue Abhängigkeiten, danach dort und hier `npm install`.
 
 ## Commands

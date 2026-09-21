@@ -10,11 +10,11 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
       Betrieb scannt; sonst stoppt die API bis zum Monatsersten
 - [ ] PostFinance-Geschäftskonto eröffnen (Fr. 5 im Monat, bei Eröffnung bis 30.11.2026 zwei Jahre gratis) und
       QR-IBAN beantragen; neon, Yuh und Revolut privat verbieten geschäftliche Eingänge. IBAN danach in die `.env`
-      des AI-Proxys auf der Instanz, nicht ins Repo. Bankwahl und Begründung in `geschaeftskonten-vergleich.md`
+      des AI-Proxys auf der Instanz, nicht ins Repo. Bankwahl und Begründung in `../business/geschaeftskonten-vergleich.md`
 - [ ] Bei der Eröffnung zwei Formulare mitbestellen: «Anmeldung/Mutation virtuelles Konto QR-Rechnung» (QR-IBAN)
       und «Anmeldung/Mutation elektronische Kontodokumente» (camt.054). Beides ist gratis, solange die
       Detailavisierung halbtäglich oder täglich läuft; stündlich kostet CHF 0.08 pro Zahlung
-      (`geschaeftskonten-vergleich.md`, «QR-IBAN und camt.054 bei PostFinance»)
+      (`../business/geschaeftskonten-vergleich.md`, «QR-IBAN und camt.054 bei PostFinance»)
 
 ### Von Claude
 - [ ] Jahresabo Betrieb live schalten, sobald die IBAN da ist: `deploy/.env` auf der Instanz um `INVOICE_*`,

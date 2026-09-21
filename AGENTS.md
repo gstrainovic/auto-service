@@ -304,8 +304,8 @@ Grenzen, Rate-Limits und Datenschutz von Mistral: Skill `mistral-limits`.
 ## Bank und Zahlungseingänge: PostFinance
 
 Geschäftskonto ist PostFinance. Auswahl, Marktvergleich und die technische Prüfung stehen in
-`geschaeftskonten-vergleich.md`, die Feldbelegung von camt.054 dort im Abschnitt «camt.054: Felder für den eigenen
-Zahlungsabgleich». Bankdokument als Kopie in `sgkb-cash-management-handbuch.pdf`.
+`../business/geschaeftskonten-vergleich.md`, die Feldbelegung von camt.054 dort im Abschnitt «camt.054: Felder für den
+eigenen Zahlungsabgleich». Bankdokument als Kopie in `../business/sgkb-cash-management-handbuch.pdf`.
 
 - **Zahlungsabgleich ohne AbaNinja**: Die Jahresrechnungen für Betriebe tragen eine QR- oder SCOR-Referenz aus
   `invoiceReference` (ai-proxy `src/invoice.ts`). Dieselbe Referenz steht im camt.054 unter

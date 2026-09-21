@@ -28,6 +28,9 @@ Forenbeiträge; niemand wird angeschrieben.
 ### Ab 25.09.2026
 - [ ] Kleininserat mit `/tcs`: `business-plan/05-go-to-market.md` «Versuch: Kleininserat im TCS-Magazin»
 
+### Google Play
+- [ ] App in Google Play: `business-plan/05-go-to-market.md` «Kanal: Google Play»
+
 ### Marketing-Video
 - [ ] Kurzfassungen für Social veröffentlichen: `video-out/social-privat.webm` und `social-betrieb.webm` (je gut
       10 Sekunden) beim ersten Beitrag oder der ersten Anzeige einsetzen

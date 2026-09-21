@@ -2,6 +2,20 @@
 
 Projektregeln und Architektur stehen in `CLAUDE.md`. Hier steht, was den Betrieb der Entwicklungsumgebung betrifft.
 
+## Zu Beginn jeder Sitzung: Repos aktualisieren
+
+Bevor irgendeine Arbeit beginnt, zuerst dieses Repo und danach die beiden Hilfs-Repos pullen. Gearbeitet wird auf
+zwei Rechnern (Windows und Fedora), ein veralteter Stand führt sonst zu Konflikten oder zu Arbeit an überholtem Code:
+
+```bash
+git pull --ff-only
+git -C ../business pull --ff-only
+git -C ../ai-proxy pull --ff-only
+```
+
+Scheitert ein Pull (lokale Änderungen, abweichende Historie), nicht selbst auflösen, sondern melden und nachfragen.
+Bringt der Pull in `../ai-proxy` neue Abhängigkeiten, danach dort und hier `npm install`.
+
 ## Entwickeln ohne Docker: Dev-InstantDB auf Infomaniak per SSH-Tunnel
 
 Alles im Repo spricht InstantDB nur über `localhost:8888` an (`instant-config.ts`, Vite-Proxy `/instant-api`, `scripts/dev.sh`,

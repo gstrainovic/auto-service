@@ -221,6 +221,8 @@ Grenzen, Rate-Limits und Datenschutz von Mistral: Skill `mistral-limits`.
   gegen Wiederholung, 30 Tage), Server-Job `scripts/reminders.ts` (Admin-API + Resend, gebündelt nach
   `deploy/reminders.mjs`, Cron auf der Instanz, README «7. E-Mail-Erinnerungen»), Nutzer-Schalter im Store
   `src/stores/reminders.ts` (Entität `settings`, ein Dokument pro `creatorId`, fehlt = eingeschaltet).
+  Derselbe Job meldet neue Anmeldungen an `info@wartungsheft.ch` (`src/services/signup-notice.ts`, Merker
+  `settings.signupNoticeAt`).
 - Löschen kaskadiert: Fahrzeug über `vehiclesStore.removeWithRelated` (Rechnungen und Wartungen mit), Rechnung löscht
   ihre Wartungen über `invoiceId`; Wartungen aus `add_invoice` tragen die `invoiceId`.
 - Kostentabelle: `total` ist der Rechnungsbetrag (brutto), Positionen sind oft netto; die Differenz erscheint als Kategorie

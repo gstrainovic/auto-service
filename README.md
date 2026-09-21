@@ -320,7 +320,10 @@ Täglich um 07:00 UTC (`/etc/cron.d/wartungsheft-reminders`, Nutzer `debian`) l�
   (`Wartungsheft <erinnerung@wartungsheft.ch>`, Antwortadresse `info@wartungsheft.ch`, das Infomaniak-Postfach;
   Token `RESEND_TOKEN` in `deploy/.env`),
 - merkt sich in `settings` (`lastReminderKey`, `lastReminderAt`), was gesendet wurde: unveränderte Erinnerungen
-  frühestens nach 30 Tagen erneut, neue oder andere Arbeiten sofort.
+  frühestens nach 30 Tagen erneut, neue oder andere Arbeiten sofort,
+- meldet neue Anmeldungen gebündelt in einer Mail an `info@wartungsheft.ch` (`SIGNUP_NOTICE_TO`,
+  `src/services/signup-notice.ts`); `$users` hat kein Erstelldatum, gemeldet ist, wer `settings.signupNoticeAt` trägt.
+  Mit `--only` entfällt die Meldung.
 
 Abschalten pro Nutzer in den Einstellungen («Erinnerungen»), Feld `settings.emailReminders = false`.
 Log: `/opt/auto-service/deploy/reminders.log`. Manuell:

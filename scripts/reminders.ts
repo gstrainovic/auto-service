@@ -2,7 +2,7 @@
  * Täglicher Erinnerungs-Job: liest Nutzer, Fahrzeuge, Wartungen, Abos und Einstellungen über die Admin-API von
  * InstantDB, baut pro Nutzer eine E-Mail mit fälligen und überfälligen Arbeiten (src/services/reminders.ts) sowie
  * sieben Tage vor Ende der Testzeit einen Anstoss zum Abo (src/services/trial-reminder.ts) und sendet beides
- * über Resend. Gesendete Erinnerungen werden im Dokument `settings` des Nutzers vermerkt (lastReminderKey/At), damit
+ * über Resend. Neue Anmeldungen meldet er gebündelt an SIGNUP_NOTICE_TO (src/services/signup-notice.ts). Gesendete Erinnerungen werden im Dokument `settings` des Nutzers vermerkt (lastReminderKey/At), damit
  * dieselbe Erinnerung erst nach 30 Tagen wiederkommt.
  *
  * Läuft auf der Instanz als Container (deploy/docker-compose.yml, Dienst `reminders`, Profil `jobs`), gebündelt mit
@@ -13,6 +13,7 @@ import { randomUUID } from 'node:crypto'
 import process from 'node:process'
 import { TRIAL_DAYS } from '@strainovic/ai-proxy/trial'
 import { buildReminders, shouldSend } from '../src/services/reminders'
+import { buildSignupNotice } from '../src/services/signup-notice'
 import { buildTrialReminders } from '../src/services/trial-reminder'
 
 const API = process.env.INSTANT_API_URI ?? ''
@@ -22,6 +23,8 @@ const RESEND_TOKEN = process.env.RESEND_TOKEN ?? ''
 const FROM = process.env.REMINDER_FROM ?? 'Wartungsheft <erinnerung@wartungsheft.ch>'
 /** Antworten landen im Postfach info@wartungsheft.ch (Infomaniak), nicht bei Resend */
 const REPLY_TO = process.env.REMINDER_REPLY_TO ?? 'info@wartungsheft.ch'
+/** Empfänger der Meldung über neue Anmeldungen (der Betreiber) */
+const SIGNUP_NOTICE_TO = process.env.SIGNUP_NOTICE_TO ?? 'info@wartungsheft.ch'
 
 const dryRun = process.argv.includes('--dry-run')
 const only = process.argv.find(a => a.startsWith('--only='))?.slice('--only='.length)
@@ -82,6 +85,8 @@ async function main(): Promise<void> {
     }
     await sendMail(r.email, r.subject, r.text)
     const id = setting?.id ?? randomUUID()
+    // neu angelegtes Dokument merken, sonst legen die späteren Schritte ein zweites an
+    byUser.set(r.userId, { ...setting, id, creatorId: r.userId })
     await admin('transact', {
       steps: [['update', 'settings', id, {
         creatorId: r.userId,
@@ -107,6 +112,7 @@ async function main(): Promise<void> {
     await sendMail(r.email, r.subject, r.text)
     const setting = byUser.get(r.userId)
     const id = setting?.id ?? randomUUID()
+    byUser.set(r.userId, { ...setting, id, creatorId: r.userId })
     await admin('transact', {
       steps: [['update', 'settings', id, {
         creatorId: r.userId,
@@ -118,6 +124,26 @@ async function main(): Promise<void> {
     log(`${r.email}: ${r.subject}`)
   }
   log(`${trialSent} Testzeit-Hinweis(e) gesendet`)
+
+  // Meldung an den Betreiber: wer sich seit dem letzten Lauf angemeldet hat
+  const notice = only ? null : buildSignupNotice({ users: $users, settings, now })
+  if (!notice) {
+    log('keine neuen Anmeldungen')
+  }
+  else if (dryRun) {
+    log(`[dry-run] ${SIGNUP_NOTICE_TO}: ${notice.subject}\n${notice.text}\n`)
+  }
+  else {
+    await sendMail(SIGNUP_NOTICE_TO, notice.subject, notice.text)
+    await admin('transact', {
+      steps: notice.userIds.map(userId => ['update', 'settings', byUser.get(userId)?.id ?? randomUUID(), {
+        creatorId: userId,
+        signupNoticeAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+      }]),
+    })
+    log(`${SIGNUP_NOTICE_TO}: ${notice.subject}`)
+  }
 }
 
 main().catch((err) => {

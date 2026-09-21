@@ -43,6 +43,8 @@ export interface ReminderSetting {
   lastReminderKey?: string
   /** Merker der Mail vor Ende der Testzeit (trial-reminder.ts), eine pro Testzeit */
   lastTrialNoticeKey?: string
+  /** Zeitpunkt, zu dem die Anmeldung an den Betreiber gemeldet wurde (signup-notice.ts) */
+  signupNoticeAt?: string
 }
 
 export interface DueEntry {

@@ -8,6 +8,7 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
 ### Vom Nutzer
 - [ ] Mistral: monatliches Ausgabenlimit über das 10-$-Kontingent hinaus (heute 0 $) auf z. B. 20 $ setzen, sobald ein
       Betrieb scannt; sonst stoppt die API bis zum Monatsersten
+- [ ] Auslöser für die nächsten zwei Punkte ist die erste Anmeldung (Mail aus dem Punkt unter «Von Claude»)
 - [ ] PostFinance-Geschäftskonto eröffnen (Fr. 5 im Monat, bei Eröffnung bis 30.11.2026 zwei Jahre gratis) und
       QR-IBAN beantragen; neon, Yuh und Revolut privat verbieten geschäftliche Eingänge. IBAN danach in die `.env`
       des AI-Proxys auf der Instanz, nicht ins Repo. Bankwahl und Begründung in `../business/geschaeftskonten-vergleich.md`
@@ -17,6 +18,8 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
       (`../business/geschaeftskonten-vergleich.md`, «QR-IBAN und camt.054 bei PostFinance»)
 
 ### Von Claude
+- [ ] Mail an info@wartungsheft.ch bei jeder neuen Anmeldung (heute gibt es keine Benachrichtigung): täglicher Job
+      wie `scripts/reminders.ts` über Admin-API und Resend, neue `$users` seit dem letzten Lauf, E-Mail und Zeitpunkt
 - [ ] Jahresabo Betrieb live schalten, sobald die IBAN da ist: `deploy/.env` auf der Instanz um `INVOICE_*`,
       `RESEND_TOKEN` und `AI_PROXY_INTERNAL_TOKEN` ergänzen, Proxy neu bauen, Cron `wartungsheft-billing` anlegen
       (README «8.»), Testbestellung mit eigener Adresse, PDF gegen den SIX-Validator prüfen, danach stornieren
@@ -36,9 +39,6 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
 Text, Metadaten, `robots.txt`, `sitemap.xml` und `llms.txt` stehen (CLAUDE.md «Hilfe und Auffindbarkeit»).
 Was noch fehlt, braucht ein Konto und damit den Nutzer:
 
-- [ ] Google Search Console: Domain-Property über einen DNS-TXT-Eintrag verifizieren (Infomaniak-API, Token in
-      `~/.config/infomaniak/token`), Sitemap einreichen, die wichtigen Seiten über die URL-Prüfung zur Indexierung
-      anmelden. Die Indexing API hilft nicht, sie gilt nur für `JobPosting` und `BroadcastEvent`
 - [ ] Bing Webmaster Tools und IndexNow (Schlüsseldatei im Wurzelverzeichnis, ein Ping pro neuer URL):
       ChatGPT sucht über den Bing-Index
 - [ ] Messen, ob es wirkt: ChatGPT, Claude, Perplexity und Googles KI-Übersicht nach «Was ist wartungsheft.ch?»

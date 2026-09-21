@@ -40,6 +40,10 @@ Für Suchmaschinen und KI-Antworten: `index.html` trägt die Beschreibung und `S
 Preisen (aus `plans.ts` gespiegelt, bei Preisänderungen mitziehen), `public/robots.txt` erlaubt GPTBot,
 ClaudeBot, PerplexityBot und Google-Extended ausdrücklich und nennt die Sitemap, `public/sitemap.xml` führt die
 öffentlichen Seiten, `public/llms.txt` fasst Produkt, Preise, Grenzen und Seiten zusammen.
+AGB, Datenschutz und Impressum gehören in keinen Index (sie ziehen Abmahnanwälte an): nicht in Sitemap und
+`llms.txt`, Caddy schickt dort `X-Robots-Tag: noindex, nofollow`.
+Google Search Console: Domain-Property `wartungsheft.ch`, verifiziert per TXT-Eintrag im Infomaniak-Manager
+(DNS-Zone). Neue Seiten dort über die URL-Prüfung zur Indexierung anmelden.
 
 ## Werbefilme
 

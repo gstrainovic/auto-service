@@ -39,7 +39,8 @@ Aus der früheren CLAUDE.md hierher verschoben (21.09.2026), Wortlaut unverände
 ### Produktion (Infomaniak Public Cloud, wartungsheft.ch)
 - Anleitung: `README.md` → "Produktion". Instanz `wartungsheft` (OpenStack-Projekt PCP-CTPZLR8, Region dc3-a,
   Debian 13, 2 vCPU/4 GB), Zugriff `ssh debian@195.15.207.47` mit dem lokalen Key, OpenStack-CLI über
-  `~/.config/openstack/clouds.yaml` (Application Credential), DNS-API-Token in `~/.config/infomaniak/token`.
+  `~/.config/openstack/clouds.yaml` (Application Credential). Der Infomaniak-Token in `~/.config/infomaniak/token` hat keine DNS-Rechte
+  (`dns:read`/`domain` fehlen); DNS-Einträge im Infomaniak-Manager unter Domain → DNS-Zone setzen.
 - InstantDB-Stack in `/opt/instant` (offizieller VPS-Guide + `docker-compose.override.yml`: 2-GB-Heap, Neustart,
   MinIO von quay.io, Caddy importiert `/opt/auto-service/deploy/Caddyfile` und bedient `/opt/auto-service/deploy/dist`).
   AI-Proxy in `/opt/auto-service/deploy` im Netz `instant_default`. Produktions-App-ID steht in `.env.production`.

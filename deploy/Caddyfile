@@ -13,6 +13,9 @@
 	}
 	@assets path /assets/*
 	header @assets Cache-Control "public, max-age=31536000, immutable"
+	# Rechtsseiten nicht in Suchmaschinen: niemand sucht sie, und indexiert ziehen sie Abmahnanwälte an
+	@legal path /agb /datenschutz /impressum
+	header @legal X-Robots-Tag "noindex, nofollow"
 	# Besucherzahlen für die Validierung (business-plan/09, M3), kein Analytics-Dienst, keine Cookies.
 	# 30 Tage Aufbewahrung wie in der Datenschutzerklärung: rotierte Dateien löscht Caddy (roll_keep_for),
 	# die aktive Datei kürzt /opt/backup/backup.sh täglich, weil Caddy nur nach Grösse rotiert.

@@ -112,8 +112,11 @@ test.describe('Public Pages', () => {
     const sitemap = await page.request.get('/sitemap.xml')
     expect(sitemap.status()).toBe(200)
     const xml = await sitemap.text()
-    for (const pfad of ['/betrieb', '/privathalter', '/hilfe', '/agb'])
+    for (const pfad of ['/betrieb', '/privathalter', '/hilfe'])
       expect(xml).toContain(`https://wartungsheft.ch${pfad}`)
+    // Rechtsseiten gehören nicht in den Suchindex (Caddy setzt dort X-Robots-Tag: noindex)
+    for (const pfad of ['/agb', '/datenschutz', '/impressum'])
+      expect(xml).not.toContain(`https://wartungsheft.ch${pfad}`)
 
     const llms = await page.request.get('/llms.txt')
     expect(llms.status()).toBe(200)

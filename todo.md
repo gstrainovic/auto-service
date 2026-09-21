@@ -27,6 +27,8 @@ Forenbeiträge; niemand wird angeschrieben.
       `camt <datei.xml>` aus dem heruntergeladenen camt.054 buchen. AbaNinja erst ab etwa 10 zahlenden Betrieben
 - [ ] Fahrzeuggrenze wirklich sperren, sobald ein Zahlungsweg existiert: `vehicleLimit` meldet heute nur, solange
       `VITE_BILLING_ENABLED=true` gesetzt ist; ohne Kaufweg wäre eine Sperre bloss ein Ärgernis
+- [ ] Logo und Icons: `index.html` zeigt noch `vite.svg` als Favicon, das Manifest verlangt `pwa-192x192.png` und
+      `pwa-512x512.png`, die in `public/` fehlen (Installation als App ohne Icon). Danach das Logo im OSS Directory nachtragen
 - [ ] Fällt der Health-Workflow durch, ohne dass etwas kaputt ist (Wartungsfenster, kurzer Netzaussetzer), die
       Schwelle anheben: erst nach zwei Fehlläufen hintereinander mailen
 

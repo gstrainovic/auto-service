@@ -48,6 +48,8 @@ tmp/
 # Screenshots and temp files
 *.png
 !e2e/fixtures/*.png
+!public/pwa-*.png
+!public/apple-touch-icon.png
 installer.sh
 .opencode/
 .vercel

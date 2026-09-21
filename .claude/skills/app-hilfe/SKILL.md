@@ -44,6 +44,10 @@ AGB, Datenschutz und Impressum gehören in keinen Index (sie ziehen Abmahnanwäl
 `llms.txt`, Caddy schickt dort `X-Robots-Tag: noindex, nofollow`.
 Google Search Console: Domain-Property `wartungsheft.ch`, verifiziert per TXT-Eintrag im Infomaniak-Manager
 (DNS-Zone). Neue Seiten dort über die URL-Prüfung zur Indexierung anmelden.
+IndexNow für Bing (und damit ChatGPT), Yandex, Seznam, Naver, Yep, Internet Archive und Amazonbot; Google macht
+nicht mit. Schlüssel in `src/services/indexnow.ts`, Schlüsseldatei `public/<Schlüssel>.txt`. Nach einem Deploy,
+der öffentliche Seiten ändert oder hinzufügt: `npm run indexnow` (meldet alle URLs aus `public/sitemap.xml`,
+`-- --dry-run` zeigt nur den JSON-Körper). Nicht bei jedem Deploy, wiederholte Meldungen unveränderter Seiten gelten als Spam.
 
 ## Werbefilme
 

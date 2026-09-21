@@ -38,8 +38,8 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
 Text, Metadaten, `robots.txt`, `sitemap.xml` und `llms.txt` stehen (CLAUDE.md «Hilfe und Auffindbarkeit»).
 Was noch fehlt, braucht ein Konto und damit den Nutzer:
 
-- [ ] Bing Webmaster Tools und IndexNow (Schlüsseldatei im Wurzelverzeichnis, ein Ping pro neuer URL):
-      ChatGPT sucht über den Bing-Index
+- [ ] Bing Webmaster Tools: Konto anlegen, Site aus der Google Search Console importieren (verifiziert ohne
+      DNS-Eintrag), Sitemap prüfen. IndexNow läuft schon (`npm run indexnow`)
 - [ ] Messen, ob es wirkt: ChatGPT, Claude, Perplexity und Googles KI-Übersicht nach «Was ist wartungsheft.ch?»
       fragen und die Antworten notieren. Richtig wäre: Serviceheft mit Rechnungen pro Fahrzeug, Schweiz,
       25 CHF privat / 36 CHF pro Fahrzeug im Betrieb, 30 Tage gratis

@@ -11,6 +11,7 @@
     "build:reminders": "esbuild scripts/reminders.ts --bundle --platform=node --target=node24 --format=esm --outfile=deploy/reminders.mjs",
     "build:billing": "esbuild scripts/billing.ts --bundle --platform=node --target=node24 --format=esm --outfile=deploy/billing.mjs",
     "deploy": "bash scripts/deploy.sh",
+    "indexnow": "esbuild scripts/indexnow.ts --bundle --platform=node --target=node24 --format=esm --log-level=warning | node --input-type=module -",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

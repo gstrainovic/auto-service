@@ -39,7 +39,7 @@ Forenbeiträge; niemand wird angeschrieben.
 Text, Metadaten, `robots.txt`, `sitemap.xml` und `llms.txt` stehen (CLAUDE.md «Hilfe und Auffindbarkeit»).
 Google über die Search Console, Bing über IndexNow (`npm run indexnow`), search.ch per Add-URL.
 
-- [ ] Einträge in Verzeichnissen und Launch-Plattformen (`business-plan/verzeichnisse.md`): Nutzer meldet sich je
+- [ ] Einträge in Schweizer Verzeichnissen (`business-plan/verzeichnisse.md`): Nutzer meldet sich je
       Plattform an, Claude füllt das Formular aus den fertigen Texten und sendet nach Freigabe ab
 - [ ] Messen, ob es wirkt: ChatGPT, Claude, Perplexity und Googles KI-Übersicht nach «Was ist wartungsheft.ch?»
       fragen und die Antworten notieren. Richtig wäre: Serviceheft mit Rechnungen pro Fahrzeug, Schweiz,

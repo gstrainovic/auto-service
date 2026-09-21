@@ -1,5 +1,7 @@
 # Wartungsheft (Repo auto-service)
 
+@AGENTS.md
+
 Die App läuft unter https://wartungsheft.ch (Landing Pages `/betrieb` und `/privathalter`, Login mit Magic Code, AI-Proxy unter `ai.`, InstantDB unter `api.`/`dash.`/`files.`). Betrieb und Befehle: README «Produktion», CLAUDE.md «Produktion».
 
 Produktname «Wartungsheft» (wartungsheft.ch) in allen Texten, Titeln, Manifest und Chat-Prompts; «auto-service» bleibt nur als Repo-, Paket- und Pfadname.

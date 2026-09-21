@@ -42,6 +42,9 @@ tmp/
 *.traineddata
 .serena/
 
+# Private Claude-Code-Einstellungen (Plugin-Auswahl u. a.), projektweite stehen in .claude/settings.json
+.claude/settings.local.json
+
 # Screenshots and temp files
 *.png
 !e2e/fixtures/*.png

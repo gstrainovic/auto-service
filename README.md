@@ -1,4 +1,4 @@
-# Wartungsheft (Repo auto-service)
+# Wartungsheft
 
 Offline-fähige PWA zur Verwaltung von Fahrzeugen, Wartungen und Werkstattrechnungen — mit KI-gestütztem Dokumenten-Scanner und Chat-Assistent.
 
@@ -285,7 +285,7 @@ Datenbank leer sein.
 - AI-Proxy: `curl -fsS https://ai.wartungsheft.ch/health` → `{"ok":true}`
 - Automatisch alle 15 Minuten von aussen: GitHub-Actions-Workflow `.github/workflows/health.yml` prüft Website,
   AI-Proxy und InstantDB und mailt bei einem Ausfall über Resend an `info@wartungsheft.ch`. Nötig ist einmalig das
-  Repository-Secret: `gh secret set RESEND_TOKEN --repo gstrainovic/auto-service` (Wert aus `/opt/instant/.env`).
+  Repository-Secret: `gh secret set RESEND_TOKEN --repo gstrainovic/wartungsheft` (Wert aus `/opt/instant/.env`).
   Ohne Secret läuft die Prüfung weiter, meldet aber nur im Lauf. GitHub schaltet geplante Läufe nach 60 Tagen ohne
   Aktivität im Repository ab; `workflow_dispatch` startet sie von Hand.
 - Besucher der Landing Pages: Caddy-Zugriffslog im Volume `instant_caddy_data` unter `/data/access-app.log` (JSON),

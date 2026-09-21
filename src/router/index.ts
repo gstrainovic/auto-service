@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { applyMetaToDocument } from '../lib/page-meta-document'
 
 const routes = [
   { path: '/', component: () => import('../pages/LandingPage.vue'), meta: { public: true } },
@@ -44,5 +45,8 @@ router.beforeEach(async (to) => {
 
   return true
 })
+
+// Titel, Beschreibung und kanonische Adresse pro Seite (src/lib/page-meta.ts)
+router.afterEach(to => applyMetaToDocument(document, to.path))
 
 export default router

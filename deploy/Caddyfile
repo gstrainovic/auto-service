@@ -5,7 +5,8 @@
 {$APP_DOMAIN} {
 	root * /srv/app
 	encode gzip
-	try_files {path} /index.html
+	# {path}/index.html: eigener Kopf pro öffentlicher Seite (src/lib/page-meta.ts), alles andere fällt auf die SPA zurück
+	try_files {path} {path}/index.html /index.html
 	file_server
 	header {
 		# PWA: Service Worker und Manifest nicht aggressiv cachen

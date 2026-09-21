@@ -36,7 +36,13 @@ die häufigen Fragen; dieselben Fragen stehen als `FAQPage` im Kopf des Dokument
 veralten mit jeder Änderung der Oberfläche. Steht ein Schritt nur in der Hilfe und nicht in der App, ist das
 eine Lücke in der Oberfläche, kein fehlendes Handbuch.
 
-Für Suchmaschinen und KI-Antworten: `index.html` trägt die Beschreibung und `SoftwareApplication` mit beiden
+Titel, Beschreibung, `og:*` und `canonical` pro öffentlicher Seite stehen nur in `src/lib/page-meta.ts` (Test
+`page-meta.test.ts`, E2E LP-006): der Router setzt sie im Browser, das Vite-Plugin `page-meta` in `vite.config.ts`
+schreibt beim Build `dist/<pfad>/index.html` mit demselben Kopf, Caddy liefert sie über `try_files {path}/index.html`,
+damit Crawler ohne JavaScript (search.ch, GPTBot) pro Seite den richtigen Titel sehen. Neue öffentliche Seite: Eintrag
+dort und in `public/sitemap.xml`. Wortwahl nach Suchhäufigkeit in der Schweiz: «Serviceheft» (nicht «Wartungsheft» als
+Gattungswort, nicht «Scheckheft»), «Werkstattrechnung» (nicht «Garagenrechnung», die sucht niemand).
+Für Suchmaschinen und KI-Antworten: `index.html` trägt `SoftwareApplication` mit beiden
 Preisen (aus `plans.ts` gespiegelt, bei Preisänderungen mitziehen), `public/robots.txt` erlaubt GPTBot,
 ClaudeBot, PerplexityBot und Google-Extended ausdrücklich und nennt die Sitemap, `public/sitemap.xml` führt die
 öffentlichen Seiten, `public/llms.txt` fasst Produkt, Preise, Grenzen und Seiten zusammen.

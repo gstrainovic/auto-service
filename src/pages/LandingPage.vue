@@ -22,10 +22,10 @@ const { label, go } = useAuthEntry()
       <div class="landing-container hero-inner">
         <div class="hero-grid">
           <div class="hero-copy">
-            <h1>Rechnung fotografieren. Den Rest erledigt Wartungsheft.</h1>
+            <h1>Das digitale Serviceheft fürs Auto</h1>
             <p class="hero-subtitle">
-              Serviceheft, Fälligkeiten und Kosten pro Fahrzeug — ohne Abtippen.
-              Für ein Auto oder die ganze Flotte.
+              Werkstattrechnung fotografieren, den Rest erledigt Wartungsheft: Service, MFK und Kosten pro
+              Fahrzeug, ohne Abtippen. Für ein Auto oder die ganze Flotte.
             </p>
             <div class="hero-actions">
               <Button

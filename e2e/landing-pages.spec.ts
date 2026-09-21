@@ -1,3 +1,4 @@
+import { PAGE_META, SITE_URL } from '../src/lib/page-meta'
 import { expect, test } from './fixtures/test-fixtures'
 
 // Landing Pages für die Validierung (business-plan/09-validierung.md, M2):
@@ -60,6 +61,16 @@ test.describe('Landing Pages', () => {
     await expect(page.getByRole('main').getByRole('button', { name: '30 Tage gratis testen' })).toBeVisible()
     await expect(page.getByRole('banner').getByRole('button', { name: '30 Tage gratis testen' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'info@wartungsheft.ch' })).toBeVisible()
+  })
+
+  test('LP-006: jede Einstiegsseite hat eigenen Titel, kanonische Adresse und «Serviceheft» in der Hauptüberschrift', async ({ page }) => {
+    for (const path of ['/', '/privathalter', '/betrieb', '/hilfe']) {
+      await page.goto(path)
+      await expect(page).toHaveTitle(PAGE_META[path]!.title)
+      await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', PAGE_META[path]!.description)
+      await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `${SITE_URL}${path}`)
+      await expect(page.getByRole('heading', { level: 1 })).toContainText('Serviceheft')
+    }
   })
 
   test('LP-004: der Film steht auf Startseite und Angebotsseiten, stumm und erst auf Klick', async ({ page }) => {

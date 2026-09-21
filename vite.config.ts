@@ -12,7 +12,7 @@ export default defineConfig({
         name: 'Wartungsheft',
         short_name: 'Wartungsheft',
         description: 'Werkstattrechnung fotografieren, Service und MFK im Blick',
-        theme_color: '#1976D2',
+        theme_color: '#059669',
         background_color: '#ffffff',
         display: 'standalone',
         icons: [

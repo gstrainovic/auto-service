@@ -6,6 +6,8 @@ in `.claude/skills/` und werden bei Bedarf geladen — Übersicht am Ende unter 
 Die App läuft unter https://wartungsheft.ch (Landing Pages `/betrieb` und `/privathalter`, Login mit Magic Code, AI-Proxy unter `ai.`, InstantDB unter `api.`/`dash.`/`files.`). Betrieb und Befehle: README «Produktion», Skill `instantdb-betrieb` «Produktion».
 
 Produktname «Wartungsheft» (wartungsheft.ch) in allen Texten, Titeln, Manifest und Chat-Prompts; «auto-service» bleibt nur als Repo-, Paket- und Pfadname.
+Logo ist `public/favicon.svg` (Serviceheft mit Haken, `#059669`), in Seiten nur über `AppLogo.vue`; PWA-Icons daraus mit
+`resvg` rendern. `pi pi-car` steht für Fahrzeuge, nie für die Marke.
 
 Produktgrenze (business-plan/03-produkt.md «Abgrenzung»): Serviceheft mit Rechnungen, pro Fahrzeug. Kein Tankbuch, kein Fahrtenbuch,
 keine Buchhaltung, keine Übernahme-Checklisten, keine Fahrer-Fahrzeug-Zuordnung oder Rollen, kein Aufpreis für Betriebe.

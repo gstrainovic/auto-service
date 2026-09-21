@@ -3,6 +3,7 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import { ref } from 'vue'
+import AppLogo from '../components/AppLogo.vue'
 import LandingFooter from '../components/LandingFooter.vue'
 import { useAuth } from '../composables/useAuth'
 
@@ -63,7 +64,7 @@ function handleBack() {
   <div class="login-container">
     <div class="login-card">
       <router-link to="/" class="login-header">
-        <i class="pi pi-car" />
+        <AppLogo size="3.5rem" class="login-logo" />
         <h1>Wartungsheft</h1>
       </router-link>
       <p v-if="knownEmail" class="login-tagline">
@@ -217,9 +218,8 @@ function handleBack() {
   border-top: 1px solid var(--p-surface-border);
 }
 
-.login-header i {
-  font-size: 3rem;
-  color: var(--p-primary-color);
+.login-logo {
+  margin: 0 auto;
 }
 
 .login-header h1 {

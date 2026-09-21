@@ -2,6 +2,7 @@
 import type { LandingSegment } from '../stores/events'
 import Button from 'primevue/button'
 import { useAuthEntry } from '../composables/useAuthEntry'
+import AppLogo from './AppLogo.vue'
 
 // Ein Kopf für alle öffentlichen Seiten (/, /betrieb, /privathalter, /impressum, /datenschutz):
 // Logo, Menü mit Ankern auf die Startseite, «Anmelden» und der Knopf in die Testzeit. Auf Handy bleiben
@@ -18,7 +19,7 @@ const { entry, label, go } = useAuthEntry(props.segment)
   <header class="landing-header">
     <div class="landing-header-inner">
       <router-link to="/" class="landing-logo" aria-label="Wartungsheft">
-        <i class="pi pi-car" />
+        <AppLogo size="1.75rem" />
         <span class="landing-logo-text">Wartungsheft</span>
       </router-link>
       <nav class="landing-nav">
@@ -84,10 +85,6 @@ const { entry, label, go } = useAuthEntry(props.segment)
   font-weight: 600;
   color: var(--p-primary-color);
   text-decoration: none;
-}
-
-.landing-logo i {
-  font-size: 1.5rem;
 }
 
 .landing-nav {

@@ -4,6 +4,7 @@ import Drawer from 'primevue/drawer'
 import Toast from 'primevue/toast'
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import AppLogo from './components/AppLogo.vue'
 import ChatDrawer from './components/ChatDrawer.vue'
 import FeedbackDialog from './components/FeedbackDialog.vue'
 import { useAuth } from './composables/useAuth'
@@ -64,6 +65,7 @@ function handleSignOut() {
             aria-label="Menu"
             @click="drawer = !drawer"
           />
+          <AppLogo size="1.75rem" />
           <span class="app-title">Wartungsheft</span>
         </div>
       </header>

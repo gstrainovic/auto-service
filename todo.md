@@ -39,13 +39,16 @@ Google über die Search Console, Bing über IndexNow (`npm run indexnow`), searc
 
 - [ ] Einträge in Schweizer Verzeichnissen (`business-plan/verzeichnisse.md`): Nutzer meldet sich je
       Plattform an, Claude füllt das Formular aus den fertigen Texten und sendet nach Freigabe ab
-- [ ] Messen, ob es wirkt: ChatGPT, Claude, Perplexity und Googles KI-Übersicht nach «Was ist wartungsheft.ch?»
-      fragen und die Antworten notieren. Richtig wäre: Serviceheft mit Rechnungen pro Fahrzeug, Schweiz,
-      25 CHF privat / 36 CHF pro Fahrzeug im Betrieb, 30 Tage gratis
+- [ ] Bing Webmaster Tools: Website per Import aus der Search Console anlegen (Nutzer gibt die Google-Freigabe),
+      danach Indexstand dort prüfen statt raten
+- [ ] Landing Pages vorrendern: `/`, `/privathalter`, `/betrieb`, `/hilfe` liefern ohne JavaScript nur den Kopf, keinen
+      Text; Crawler ohne JavaScript (search.ch, GPTBot) sehen fast nichts. Ratgeber zeigt den Weg (fertiges HTML)
+- [ ] Weitere Ratgeber-Artikel aus `business-plan/05-go-to-market.md` Kanal 1, je Aussage eine Quelle
 
 ### Messen, nebenbei
 - [ ] Wöchentlich Zahlen ziehen (Caddy-Log, `events`, Anmeldungen, Bestellungen, Postfach, README Abschnitt 6) und in
-      Kapitel 9 notieren; nach drei Monaten Auswertung gegen die Abbruchkriterien
+      Kapitel 9 notieren, dazu die Tabelle Suchmaschinen und KI-Antworten («Was ist wartungsheft.ch?»); nach drei
+      Monaten Auswertung gegen die Abbruchkriterien
 - [ ] Beobachten (M1) ergänzen: Schweizer KMU-Stimmen (Gewerbeverbände, LinkedIn-Gruppen); Erstfassung steht in
       `business-plan/beobachtungen.md`
 

@@ -102,7 +102,7 @@ export function buildTrialReminders(input: {
         `Abo bestellen: ${APP_URL}/settings`,
         '',
         'Privat kostet Wartungsheft 25 Franken im Jahr für bis zu fünf Fahrzeuge, Betriebe zahlen 36 Franken pro',
-        'Fahrzeug und Jahr und bekommen die Rechnung auf die Firma. Bezahlt wird per QR-Rechnung, zahlbar in 30 Tagen.',
+        'Fahrzeug und Jahr und bekommen die Rechnung auf die Firma. Die Rechnung kommt per Mail, zahlbar in 30 Tagen.',
         '',
         `Fragen? Einfach auf diese Mail antworten. Keine Erinnerungen mehr: ${APP_URL}/settings, Abschnitt «Erinnerungen».`,
         '',

@@ -19,7 +19,7 @@ const CONTACT_EMAIL = 'info@wartungsheft.ch'
     <main class="legal-container legal-content">
       <h1>Allgemeine Geschäftsbedingungen</h1>
       <p class="legal-meta">
-        Stand: 19. September 2026
+        Stand: 22. September 2026
       </p>
 
       <h2>1. Anbieter und Geltungsbereich</h2>
@@ -90,8 +90,8 @@ const CONTACT_EMAIL = 'info@wartungsheft.ch'
 
       <h2>6. Rechnung und Zahlung</h2>
       <p>
-        Das Abo wird im Voraus für ein Jahr in Rechnung gestellt. Die Rechnung kommt als PDF mit Schweizer QR-Zahlteil
-        per E-Mail und ist innert 30 Tagen zahlbar. Nach der Bestellung kannst du sofort weiterarbeiten.
+        Das Abo wird im Voraus für ein Jahr in Rechnung gestellt. Die Rechnung kommt per E-Mail und ist innert 30 Tagen
+        zahlbar. Nach der Bestellung kannst du sofort weiterarbeiten.
         Bestellst du während der Testzeit, beginnt das bezahlte Jahr erst an deren Ende.
       </p>
       <p>

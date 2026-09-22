@@ -23,7 +23,7 @@ Forenbeiträge; niemand wird angeschrieben.
       Schwelle anheben: erst nach zwei Fehlläufen hintereinander mailen
 
 ### Ab 25.09.2026
-- [ ] Kleininserat mit `/tcs`: `business-plan/05-go-to-market.md` «Versuch: Kleininserat im TCS-Magazin»
+- [ ] Kleininserat buchen (`/tcs` steht): `business-plan/05-go-to-market.md` «Versuch: Kleininserat im TCS-Magazin»
 
 ### Google Play
 - [ ] App in Google Play: `business-plan/05-go-to-market.md` «Kanal: Google Play»

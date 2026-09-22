@@ -289,7 +289,9 @@ Datenbank leer sein.
   Ohne Secret läuft die Prüfung weiter, meldet aber nur im Lauf. GitHub schaltet geplante Läufe nach 60 Tagen ohne
   Aktivität im Repository ab; `workflow_dispatch` startet sie von Hand.
 - Besucher der Landing Pages: Caddy-Zugriffslog im Volume `instant_caddy_data` unter `/data/access-app.log` (JSON),
-  Klicks (`events`) über die Admin-API mit dem Token aus `deploy/.env`, Fragen landen im Postfach `info@wartungsheft.ch`:
+  Klicks (`events`) über die Admin-API mit dem Token aus `deploy/.env`, Fragen landen im Postfach `info@wartungsheft.ch`.
+  Inserat-Adressen wie `/tcs` (`CAMPAIGNS` in `src/stores/events.ts`) schreiben `name: 'visit'` mit `campaign`
+  und leiten weiter; der Testklick danach trägt dieselbe `campaign`:
 
 ```bash
 set -a; . /opt/auto-service/deploy/.env; set +a

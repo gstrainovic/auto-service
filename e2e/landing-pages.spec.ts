@@ -73,6 +73,34 @@ test.describe('Landing Pages', () => {
     }
   })
 
+  test('LP-007: /tcs aus dem Inserat zählt den Besuch, zeigt die Privathalter-Seite und markiert den Testklick', async ({ page }) => {
+    // Events darf der Client nicht lesen, darum zählt der Test über die Admin-API
+    async function countEvents(match: Record<string, string>) {
+      const res = await fetch(`${process.env.INSTANT_API_URI}/admin/query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'App-Id': process.env.INSTANT_APP_ID!,
+          'Authorization': `Bearer ${process.env.INSTANT_ADMIN_TOKEN}`,
+        },
+        body: JSON.stringify({ query: { events: {} } }),
+      })
+      const { events } = await res.json() as { events: Record<string, string>[] }
+      return events.filter(e => Object.entries(match).every(([k, v]) => e[k] === v)).length
+    }
+    const visits = await countEvents({ name: 'visit', campaign: 'tcs' })
+    const clicks = await countEvents({ name: 'cta_click', segment: 'privathalter', campaign: 'tcs' })
+
+    await page.goto('/tcs')
+    await expect(page).toHaveURL(/\/privathalter$/)
+    await expect(page.getByText('25 CHF im Jahr, bis 5 Fahrzeuge')).toBeVisible()
+    await expect.poll(() => countEvents({ name: 'visit', campaign: 'tcs' })).toBe(visits + 1)
+
+    await page.getByRole('main').getByRole('button', { name: '30 Tage gratis testen' }).click()
+    await expect(page).toHaveURL(/\/login$/)
+    await expect.poll(() => countEvents({ name: 'cta_click', segment: 'privathalter', campaign: 'tcs' })).toBe(clicks + 1)
+  })
+
   test('LP-004: der Film steht auf Startseite und Angebotsseiten, stumm und erst auf Klick', async ({ page }) => {
     // Breiter Bildschirm: die im Desktop-Layout aufgenommene Fassung
     await page.setViewportSize({ width: 1280, height: 900 })

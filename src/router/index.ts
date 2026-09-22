@@ -1,6 +1,8 @@
+import type { Campaign } from '../stores/events'
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { applyMetaToDocument } from '../lib/page-meta-document'
+import { CAMPAIGNS, useEventsStore } from '../stores/events'
 
 const routes = [
   { path: '/', component: () => import('../pages/LandingPage.vue'), meta: { public: true } },
@@ -11,6 +13,14 @@ const routes = [
   { path: '/hilfe', component: () => import('../pages/HilfePage.vue'), meta: { public: true } },
   { path: '/betrieb', component: () => import('../pages/BetriebPage.vue'), meta: { public: true } },
   { path: '/privathalter', component: () => import('../pages/PrivathalterPage.vue'), meta: { public: true } },
+  // Inserat-Adressen: Besuch zählen, dann auf die passende Landing Page
+  ...Object.entries(CAMPAIGNS).map(([name, target]) => ({
+    path: `/${name}`,
+    redirect: () => {
+      useEventsStore().trackVisit(name as Campaign)
+      return target
+    },
+  })),
   { path: '/dashboard', component: () => import('../pages/DashboardPage.vue') },
   { path: '/vehicles', component: () => import('../pages/VehiclesPage.vue') },
   { path: '/vehicles/:id', component: () => import('../pages/VehicleDetailPage.vue') },

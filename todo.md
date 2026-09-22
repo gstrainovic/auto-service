@@ -40,7 +40,6 @@ eingereicht) und IndexNow (`npm run indexnow`), search.ch per Add-URL. Einstiegs
 
 - [ ] Einträge in Schweizer Verzeichnissen (`business-plan/verzeichnisse.md`): Nutzer meldet sich je
       Plattform an, Claude füllt das Formular aus den fertigen Texten und sendet nach Freigabe ab
-- [ ] Weitere Ratgeber-Artikel aus `business-plan/05-go-to-market.md` Kanal 1, je Aussage eine Quelle
 
 ### Messen, nebenbei
 - [ ] Wöchentlich Zahlen ziehen (Caddy-Log, `events`, Anmeldungen, Bestellungen, Postfach, README Abschnitt 6) und in

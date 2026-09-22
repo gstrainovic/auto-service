@@ -66,7 +66,7 @@ Aus der früheren CLAUDE.md hierher verschoben (21.09.2026), Wortlaut unverände
 - Login-Seite: Link «Mit Google anmelden» aus `db.auth.createAuthorizationURL({ clientName: 'google-web', redirectURL })`
   (`useAuth().googleAuthUrl()`), führt auf `https://api.wartungsheft.ch/runtime/oauth/start`, das Backend legt die Session an
   und leitet auf `/dashboard`. Gleiche E-Mail wie beim Magic Code ergibt denselben Nutzer.
-- Google Cloud: Projekt `auto-service` (`gen-lang-client-0650867108`, dasselbe wie der Gemini-Key), OAuth-Client
+- Google Cloud: Projekt `auto-service` (`gen-lang-client-0650867108`), OAuth-Client
   «Wartungsheft Web» (Typ Webanwendung, JavaScript-Quelle `https://wartungsheft.ch`, Redirect-URI
   `https://api.wartungsheft.ch/runtime/oauth/callback`), Zustimmungsbildschirm «Wartungsheft», Zielgruppe Extern,
   Status **In Produktion** (nur Scopes email/openid, darum keine Google-Prüfung nötig). Konsole: console.cloud.google.com/auth.

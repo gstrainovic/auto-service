@@ -52,8 +52,13 @@ Google Search Console: Domain-Property `wartungsheft.ch`, verifiziert per TXT-Ei
 (DNS-Zone). Neue Seiten dort über die URL-Prüfung zur Indexierung anmelden.
 IndexNow für Bing (und damit ChatGPT), Yandex, Seznam, Naver, Yep, Internet Archive und Amazonbot; Google macht
 nicht mit. Schlüssel in `src/services/indexnow.ts`, Schlüsseldatei `public/<Schlüssel>.txt`. Nach einem Deploy,
-der öffentliche Seiten ändert oder hinzufügt: `npm run indexnow` (meldet alle URLs aus `public/sitemap.xml`,
+der öffentliche Seiten ändert oder hinzufügt: `npm run indexnow` (meldet alle URLs der ausgelieferten Sitemap,
 `-- --dry-run` zeigt nur den JSON-Körper). Nicht bei jedem Deploy, wiederholte Meldungen unveränderter Seiten gelten als Spam.
+Ratgeber: ein Artikel = `content/ratgeber/<adresse>.md` mit Kopf `title`, `description`, `date`; das Vite-Plugin
+`ratgeber` (`src/lib/ratgeber.ts`) schreibt fertiges HTML ohne JavaScript nach `dist/ratgeber/` und trägt die Seiten in
+die ausgelieferte Sitemap ein (nicht in `public/sitemap.xml`). Jede Aussage mit Quelle verlinkt, keine Zahlen ohne Beleg.
+Der Knopf führt über `/ratgeber-test` (`CAMPAIGNS`) in die Testzeit. Nach dem Deploy `npm run indexnow` und die neuen
+Adressen in der Search Console zur Indexierung anmelden.
 
 ## Werbefilme
 

@@ -3,26 +3,30 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { clearInstantDB, expect, test, waitForInstantDB } from './fixtures/test-fixtures'
 
-// Beleg-Scan im Formular mit ECHTEM Mistral über den lokalen AI-Proxy und echten Fotos aus tmp/ (gitignored).
+// Beleg-Scan im Formular mit ECHTEM Mistral über den lokalen AI-Proxy. Die Dateien aus testdateien/ liegen im Repo
+// und laufen auf jedem Rechner mit .env; echte Fotos aus tmp/ (gitignored, Personendaten) nur dort, wo es sie gibt.
 // Kostet OCR-Seiten, darum nur im Projekt ai-soft: npx playwright test e2e/invoice-scan-real.spec.ts --project=ai-soft
 // Geprüft wird der Endzustand der Felder, nicht der genaue Wortlaut der KI.
 
 const TMP = path.join(import.meta.dirname, '..', 'tmp')
+const TESTDATEIEN = path.join(import.meta.dirname, '..', 'testdateien')
 const photos = fs.existsSync(path.join(TMP, 'test-images'))
   ? fs.readdirSync(path.join(TMP, 'test-images')).filter(f => f.endsWith('.jpg')).sort().slice(0, 3)
   : []
 const pdf = path.join(TMP, 'test-images-9pages.pdf')
 
-async function openInvoiceForm(page: Page): Promise<void> {
+const PORSCHE = { make: 'Porsche', model: 'Cayenne', year: 2008, mileage: 231457, licensePlate: 'SG 218574' }
+
+async function openInvoiceForm(page: Page, vehicle: Record<string, unknown> = PORSCHE): Promise<void> {
   await page.goto('/')
   await waitForInstantDB(page)
-  const vehicleId = await page.evaluate(async () => {
+  const vehicleId = await page.evaluate(async (data) => {
     const { db, tx, id: genId } = (window as any).__instantdb
     const v = genId()
     const now = new Date().toISOString()
-    await db.transact([tx.vehicles[v].update({ make: 'Porsche', model: 'Cayenne', year: 2008, mileage: 231457, licensePlate: 'SG 218574', createdAt: now, updatedAt: now })])
+    await db.transact([tx.vehicles[v].update({ ...data, createdAt: now, updatedAt: now })])
     return v as string
-  })
+  }, vehicle)
   await page.goto(`/vehicles/${vehicleId}`)
   await page.getByRole('tab', { name: 'Rechnungen' }).click()
   await page.getByRole('button', { name: /rechnung.*hinzufügen/i }).click()
@@ -38,7 +42,8 @@ async function readForm(page: Page) {
     currency: (await dialog.getByRole('button', { pressed: true }).first().textContent())?.trim(),
     mileage: await dialog.locator('#invoice-mileage input').inputValue(),
     items: await dialog.locator('.scan-item').allTextContents(),
-    preview: await dialog.locator('.image-preview img').evaluate((img: HTMLImageElement) => `${img.naturalWidth}x${img.naturalHeight}`).catch(() => '-'),
+    // PDF hat keine Vorschau: kurz warten statt bis zum Test-Timeout
+    preview: await dialog.locator('.image-preview img').evaluate((img: HTMLImageElement) => `${img.naturalWidth}x${img.naturalHeight}`, undefined, { timeout: 3000 }).catch(() => '-'),
   }
 }
 
@@ -149,5 +154,65 @@ test.describe('Beleg-Scan mit echtem Mistral @soft', () => {
     console.log('[real-scan] pdf', message, JSON.stringify(rows, null, 1))
     expect(message).toMatch(/\d+ Rechnungen erkannt/)
     expect(rows.length).toBeGreaterThan(1)
+  })
+})
+
+// Sollwerte stehen in e2e/generate-fixture.ts, Übersicht in testdateien/README.md
+test.describe('Testdateien mit echtem Mistral @soft', () => {
+  test.setTimeout(360_000)
+
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
+
+  const SKODA = { make: 'Skoda', model: 'Octavia Combi', year: 2020, mileage: 80000, licensePlate: 'ZH 123456' }
+  const GOLF = { make: 'VW', model: 'Golf VIII', year: 2021, mileage: 38500, licensePlate: 'BE 98765' }
+
+  for (const file of ['test-rechnung-ch.png', 'test-rechnung-ch.pdf']) {
+    test(`Schweizer Rechnung ${file}: Werkstatt, Datum, Total brutto, Kilometer, Positionen netto @soft`, async ({ page }) => {
+      await openInvoiceForm(page, SKODA)
+      const dialog = page.locator('[data-pc-name="dialog"]')
+      await dialog.locator('input[type="file"]').setInputFiles(path.join(TESTDATEIEN, file))
+      await expect(dialog.locator('.scan-message')).toBeVisible({ timeout: 200_000 })
+      const form = await readForm(page)
+      // eslint-disable-next-line no-console
+      console.log(`[real-scan] ${file}`, JSON.stringify(form))
+      expect(form.message).toContain('Felder aus der Rechnung ausgefüllt')
+      expect(form.workshop).toMatch(/Garage Meier/)
+      expect(form.date).toBe('2025-03-03')
+      // Total ist der Rechnungsbetrag inkl. MWST, nicht «Total netto»
+      expect(form.amount).toMatch(/606\.45/)
+      expect(form.currency).toBe('CHF')
+      expect(form.mileage).toBe('92’300 km')
+      // Fünf Arbeits- und Materialzeilen; weder Zwischentotal noch MWST als Position
+      const joined = form.items.join(' | ')
+      for (const amount of ['310.00', '98.70', '24.80', '85.00', '42.50'])
+        expect(joined).toContain(amount)
+      expect(joined).not.toMatch(/561\.00|45\.45|606\.45/)
+      // Positionen ergeben nicht mehr als das Total: kein Hinweis im Formular
+      await expect(dialog.getByRole('alert')).toHaveCount(0)
+    })
+  }
+
+  test('Sammel-PDF: zwei Rechnungen, Fortsetzungsseite gehört zur zweiten, Reparaturdatum zählt @soft', async ({ page }) => {
+    await openInvoiceForm(page, GOLF)
+    const dialog = page.locator('[data-pc-name="dialog"]')
+    await dialog.locator('input[type="file"]').setInputFiles(path.join(TESTDATEIEN, 'test-rechnungen-sammel.pdf'))
+    await expect(dialog.locator('.scan-message')).toBeVisible({ timeout: 220_000 })
+    const message = (await dialog.locator('.scan-message').textContent())?.trim()
+    const rows = await dialog.getByLabel('Erkannte Rechnungen').locator('.batch-row').allTextContents()
+    // eslint-disable-next-line no-console
+    console.log('[real-scan] sammel-pdf', message, JSON.stringify(rows, null, 1))
+    expect(message).toMatch(/^2 Rechnungen erkannt/)
+    expect(rows).toHaveLength(2)
+    const keller = rows.find(r => /Keller/.test(r))!
+    const berger = rows.find(r => /Berger/.test(r))!
+    expect(keller).toContain('28.10.2024')
+    expect(keller).toMatch(/148\.00/)
+    expect(keller).toContain('Seite 1')
+    // Rechnung 88213 über zwei Seiten, Total erst auf der Fortsetzung; Reparaturdatum statt Rechnungsdatum
+    expect(berger).toMatch(/1.395\.55/)
+    expect(berger).toContain('Seite 2–3')
+    expect(berger).toContain('14.04.2025')
   })
 })

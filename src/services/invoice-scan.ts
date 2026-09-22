@@ -66,17 +66,31 @@ export type PageKind = 'rechnung' | 'fortsetzung' | 'andere'
 /**
  * PDF-Seiten einzeln ausgewertet → Rechnungen. Eine Seite mit eigenem Rechnungskopf beginnt eine Rechnung,
  * eine Fortsetzung (Übertrag, Abrechnungsdetails) ergänzt die vorherige, andere Seiten (AGB, leer) fallen weg.
+ * Das Total steht am Schluss: nennt eine Fortsetzung eines, gilt es, auch wenn die erste Seite schon einen Betrag
+ * hatte. Mistral setzt auf einer Kopfseite ohne Total gern die Summe der Positionen dieser Seite ein
+ * (testdateien/test-rechnungen-sammel.pdf: 561.00 statt 1'395.55).
+ * Hält Mistral eine Fortsetzung für eine neue Rechnung, trägt sie oft Werkstatt und Datum der Vorseite: gleiche
+ * Werkstatt und gleiches Datum wie die direkt vorherige Seite gelten darum als Fortsetzung, ausser der Betrag ist
+ * auch gleich (doppelt eingescannte Seite). Umgekehrt beginnt eine «Fortsetzung» mit anderer Werkstatt eine neue
+ * Rechnung; auch das kam im Sammel-PDF vor.
  */
 export function mergePdfPages(pages: { page: number, kind: PageKind, parsed: ParsedInvoice }[]): (ParsedInvoice & { pages: number[] })[] {
   const result: (ParsedInvoice & { pages: number[] })[] = []
+  const same = (a?: string, b?: string) => !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase()
   for (const { page, kind, parsed } of pages) {
     if (kind === 'andere')
       continue
     const prev = result[result.length - 1]
-    if (kind === 'fortsetzung' && prev) {
+    const repeatsPrev = kind === 'rechnung' && !!prev && prev.pages[prev.pages.length - 1] === page - 1
+      && same(parsed.workshopName, prev.workshopName) && same(parsed.date, prev.date)
+      // gleicher Betrag: dieselbe Rechnung doppelt eingescannt, das meldet buildBatch als «doppelt im Beleg»
+      && parsed.totalAmount !== prev.totalAmount
+    // umgekehrt: eine «Fortsetzung» mit anderer Werkstatt als die Vorseite ist eine neue Rechnung
+    const otherWorkshop = !!parsed.workshopName?.trim() && !!prev?.workshopName?.trim() && !same(parsed.workshopName, prev.workshopName)
+    if (((kind === 'fortsetzung' && !otherWorkshop) || repeatsPrev) && prev) {
       prev.pages.push(page)
       prev.items = [...prev.items, ...(parsed.items ?? [])]
-      if (!prev.totalAmount && parsed.totalAmount)
+      if (parsed.totalAmount)
         prev.totalAmount = parsed.totalAmount
       if (!prev.date && parsed.date)
         prev.date = parsed.date

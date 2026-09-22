@@ -305,6 +305,7 @@ WICHTIG — Positionen extrahieren:
   → EINE Position: description "Arbeit: Auspuff reparieren, Auto auf Oelverlust kontrollieren", amount 195.00.
   Den Betrag NIE auf jede Beschreibungszeile wiederholen.
 - "Summe Arbeiten" und "Summe Teile" sind Zwischensummen — KEINE eigenen Positionen
+- Ebenso KEINE Positionen: "Total netto", "Zwischentotal", "MWST"/"MwSt." mit Satz, "Rundung", "Total CHF", "Übertrag"
 - Klein- & Reinigungs-Material und Lieferspesen sind eigene Positionen
 - Kontrolliere: Die Summe aller Positions-Beträge muss ungefähr dem Netto-Gesamtbetrag (vor MwSt.) entsprechen
 
@@ -353,7 +354,7 @@ export async function parseInvoiceFromSpeech(
 
 const invoicePageSchema = invoiceSchema.extend({
   kind: z.enum(['rechnung', 'fortsetzung', 'andere']).describe(
-    'rechnung: Seite mit eigenem Rechnungskopf (Werkstatt, Rechnungsnummer oder Datum). fortsetzung: setzt die Rechnung der vorherigen Seite fort (Übertrag, Seite 2, Abrechnungsdetails derselben Werkstatt). andere: keine Rechnung (AGB, leere Seite, Werbung).',
+    'rechnung: Seite mit eigenem Rechnungskopf (Werkstatt mit Adresse, Rechnungsnummer, Datum). fortsetzung: setzt die Rechnung der vorherigen Seite fort (Übertrag, "Seite 2/2", Positionen und Total ohne eigenen Kopf, Abrechnungsdetails derselben Werkstatt) — auch wenn die Rechnungsnummer in einer Kopfzeile wiederholt wird. andere: keine Rechnung (AGB, leere Seite, Werbung).',
   ),
 })
 
@@ -363,6 +364,7 @@ const INVOICE_PAGE_PROMPT = `Dies ist EINE Seite aus einem PDF, das EINE oder ME
 Werte NUR diese Seite aus. Werkstatt, Datum und Betrag stammen ausschliesslich von dieser Seite, nie von der vorherigen.
 Die vorherige Seite ist nur als Hilfe angegeben, um zu entscheiden, ob diese Seite eine Fortsetzung ist.
 Fehlt auf einer Fortsetzungsseite ein Wert (Datum, Werkstatt, Gesamtbetrag), leeren Text bzw. 0 angeben.
+Steht auf dieser Seite kein Total (z. B. "Fortsetzung nächste Seite"), Gesamtbetrag 0 angeben — nie die Summe der Positionen einsetzen.
 
 ${INVOICE_PROMPT}`
 

@@ -27,6 +27,50 @@ describe('mergePdfPages', () => {
     expect(merged[0]!.items.map(i => i.description)).toEqual(['Service', 'Öl'])
   })
 
+  it('das Total der Fortsetzung gilt, auch wenn die Kopfseite schon eine Zwischensumme als Betrag hatte', () => {
+    const merged = mergePdfPages([
+      { page: 2, kind: 'rechnung', parsed: inv({ workshopName: 'Autohaus Berger AG', totalAmount: 561 }) },
+      { page: 3, kind: 'fortsetzung', parsed: inv({ workshopName: '', date: '', totalAmount: 1395.55 }) },
+    ])
+    expect(merged[0]!.totalAmount).toBe(1395.55)
+    // Fortsetzung ohne Total lässt den Betrag der Kopfseite stehen
+    const ohne = mergePdfPages([
+      { page: 1, kind: 'rechnung', parsed: inv({ totalAmount: 280.4 }) },
+      { page: 2, kind: 'fortsetzung', parsed: inv({ totalAmount: 0 }) },
+    ])
+    expect(ohne[0]!.totalAmount).toBe(280.4)
+  })
+
+  it('eine Folgeseite mit gleicher Werkstatt und gleichem Datum ist eine Fortsetzung, auch als «rechnung» erkannt', () => {
+    const merged = mergePdfPages([
+      { page: 1, kind: 'rechnung', parsed: inv({ workshopName: 'Reifen Keller GmbH', date: '2024-10-28', totalAmount: 148 }) },
+      { page: 2, kind: 'rechnung', parsed: inv({ workshopName: 'Autohaus Berger AG', date: '2025-04-14', totalAmount: 561 }) },
+      { page: 3, kind: 'rechnung', parsed: inv({ workshopName: 'Autohaus Berger AG', date: '2025-04-14', totalAmount: 1395.55 }) },
+    ])
+    expect(merged.map(m => [m.pages, m.totalAmount])).toEqual([[[1], 148], [[2, 3], 1395.55]])
+    // Nicht direkt aufeinander oder anderes Datum: zwei Rechnungen
+    const zwei = mergePdfPages([
+      { page: 1, kind: 'rechnung', parsed: inv({ workshopName: 'Seestern', date: '2024-01-05' }) },
+      { page: 2, kind: 'rechnung', parsed: inv({ workshopName: 'Seestern', date: '2025-05-15' }) },
+    ])
+    expect(zwei).toHaveLength(2)
+    // Dieselbe Seite doppelt eingescannt: bleibt zwei Einträge, buildBatch meldet das Duplikat
+    const doppelt = mergePdfPages([
+      { page: 1, kind: 'rechnung', parsed: inv({ workshopName: 'Seestern', date: '2024-01-05', totalAmount: 280.4 }) },
+      { page: 2, kind: 'rechnung', parsed: inv({ workshopName: 'Seestern', date: '2024-01-05', totalAmount: 280.4 }) },
+    ])
+    expect(doppelt).toHaveLength(2)
+  })
+
+  it('eine «Fortsetzung» mit anderer Werkstatt beginnt eine neue Rechnung', () => {
+    const merged = mergePdfPages([
+      { page: 1, kind: 'rechnung', parsed: inv({ workshopName: 'Reifen Keller GmbH', totalAmount: 148 }) },
+      { page: 2, kind: 'fortsetzung', parsed: inv({ workshopName: 'Autohaus Berger AG', totalAmount: 0 }) },
+      { page: 3, kind: 'fortsetzung', parsed: inv({ workshopName: '', totalAmount: 1395.55 }) },
+    ])
+    expect(merged.map(m => [m.pages, m.workshopName, m.totalAmount])).toEqual([[[1], 'Reifen Keller GmbH', 148], [[2, 3], 'Autohaus Berger AG', 1395.55]])
+  })
+
   it('behandelt eine Fortsetzung ohne vorherige Rechnung als eigene Rechnung', () => {
     const merged = mergePdfPages([{ page: 1, kind: 'fortsetzung', parsed: inv({}) }])
     expect(merged.map(m => m.pages)).toEqual([[1]])

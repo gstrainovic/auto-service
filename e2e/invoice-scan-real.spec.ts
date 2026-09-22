@@ -79,7 +79,7 @@ test.describe('Beleg-Scan mit echtem Mistral @soft', () => {
   test('Fahrzeugausweis (Wikimedia, gemeinfrei) füllt das Fahrzeugformular @soft', async ({ page }) => {
     await page.goto('/vehicles?action=add')
     const dialog = page.locator('[data-pc-name="dialog"]')
-    await dialog.locator('input[type="file"]').setInputFiles(path.join(import.meta.dirname, 'fixtures', 'fahrzeugausweis-schweiz.jpg'))
+    await dialog.locator('input[type="file"]').setInputFiles(path.join(import.meta.dirname, '..', 'testdateien', 'fahrzeugausweis-schweiz.jpg'))
     await expect(dialog.getByText(/Felder aus dem Dokument ausgefüllt|Felder bitte selbst ausfüllen|keine Fahrzeugdaten/)).toBeVisible({ timeout: 150_000 })
     const values = {
       make: await dialog.getByLabel('Marke').inputValue(),

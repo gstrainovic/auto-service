@@ -4,7 +4,7 @@ import { clearInstantDB, countEntities, expect, test, waitForEntity } from './fi
 
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
 
-const fixturesDir = path.join(import.meta.dirname, 'fixtures')
+const fixturesDir = path.join(import.meta.dirname, '..', 'testdateien')
 
 test.describe('Chat Flow', () => {
   test.setTimeout(120_000)

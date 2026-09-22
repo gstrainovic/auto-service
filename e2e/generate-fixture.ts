@@ -2,7 +2,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { chromium } from 'playwright'
 
-const dir = path.join(import.meta.dirname, 'fixtures')
+const dir = path.join(import.meta.dirname, '..', 'testdateien')
 
 async function generatePage(html: string, filename: string, height = 1000) {
   const browser = await chromium.launch()

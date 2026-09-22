@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
-const fixturesDir = path.join(import.meta.dirname, 'fixtures')
+const fixturesDir = path.join(import.meta.dirname, '..', 'testdateien')
 
 test.describe('Chat Image Auto-Rotation', () => {
   test.beforeEach(async ({ page }) => {

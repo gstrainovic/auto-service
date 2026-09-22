@@ -4,7 +4,7 @@ import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
 const AI_API_KEY = process.env.VITE_AI_API_KEY || ''
 
-const fixturesDir = path.join(import.meta.dirname, 'fixtures')
+const fixturesDir = path.join(import.meta.dirname, '..', 'testdateien')
 
 test.describe('Schedule Flow', () => {
   test.setTimeout(120_000)

@@ -2,9 +2,9 @@ import path from 'node:path'
 import { clearInstantDB, expect, mockInvoiceScan, test, waitForInstantDB } from './fixtures/test-fixtures'
 
 // «Neues Fahrzeug» per Fahrzeugausweis: Foto lesen, leere Felder füllen, speichern.
-// Bild: gemeinfreier Beispiel-Fahrzeugausweis von Wikimedia Commons (e2e/fixtures/LIZENZEN.md). Mistral gemockt.
+// Bild: gemeinfreier Beispiel-Fahrzeugausweis von Wikimedia Commons (testdateien/README.md). Mistral gemockt.
 
-const ausweis = path.join(import.meta.dirname, 'fixtures', 'fahrzeugausweis-schweiz.jpg')
+const ausweis = path.join(import.meta.dirname, '..', 'testdateien', 'fahrzeugausweis-schweiz.jpg')
 
 test.describe('Fahrzeug per Fahrzeugausweis', () => {
   test.beforeEach(async ({ page }) => {

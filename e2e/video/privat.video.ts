@@ -46,7 +46,7 @@ test.describe('Werbeclips Privathalter', () => {
 
     // Foto der Rechnung: der Scan füllt Werkstatt, Datum, Betrag, Kilometerstand und die Positionen.
     // InputNumber verknüpft sein Label über input-id, darum hier die IDs statt getByLabel.
-    await page.setInputFiles('input[type="file"]', 'e2e/fixtures/test-invoice.png')
+    await page.setInputFiles('input[type="file"]', 'testdateien/test-invoice.png')
     await expect(page.locator('#invoice-workshop')).toHaveValue(/Hubmann/, { timeout: 20_000 })
     await beat(page, 2)
 

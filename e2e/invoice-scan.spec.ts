@@ -23,7 +23,7 @@ async function openInvoiceForm(page: Page): Promise<string> {
   return vehicleId
 }
 
-const fixture = (name: string) => path.join(import.meta.dirname, 'fixtures', name)
+const fixture = (name: string) => path.join(import.meta.dirname, '..', 'testdateien', name)
 
 /** Aufrecht heisst: der Rechnungskopf (viel dunkle Schrift) liegt im oberen Drittel der Vorschau, unten ist fast leer */
 async function headerOnTop(page: Page): Promise<boolean> {

@@ -62,7 +62,7 @@ test.describe('Werbeclips Betrieb', () => {
     await slowClick(page, page.getByRole('tab', { name: 'Rechnungen' }))
     await slowClick(page, page.getByRole('button', { name: /Rechnung hinzufügen/ }))
 
-    await page.setInputFiles('input[type="file"]', 'e2e/fixtures/test-invoice.png')
+    await page.setInputFiles('input[type="file"]', 'testdateien/test-invoice.png')
     await expect(page.locator('#invoice-workshop')).toHaveValue(/Brunner/, { timeout: 20_000 })
     await beat(page, 2)
     await page.locator('.scan-items').scrollIntoViewIfNeeded()

@@ -78,4 +78,4 @@ prüfen, ob jeder Einstieg (Dashboard, Fahrzeugliste, Fahrzeugseite, Formular, C
 9. Betrieb: über alle Fahrzeuge sehen, was fällig ist
 
 KI-Funktionen zusätzlich mit echtem Material testen, nicht nur mit Mocks: Fotos und PDF in `tmp/` (lokal),
-Fahrzeugausweis in `e2e/fixtures/`, `npx playwright test e2e/invoice-scan-real.spec.ts --project=ai-soft`.
+Fahrzeugausweis in `testdateien/`, `npx playwright test e2e/invoice-scan-real.spec.ts --project=ai-soft`.

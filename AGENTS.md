@@ -57,7 +57,8 @@ src/
                   # plans.ts (Frontend importiert '@strainovic/ai-proxy/plans'), stores/ (memory, instant), Dockerfile
 deploy/           # docker-compose.yml (ai-proxy + caddy für PWA), Caddyfile, .env.example
   composables/    # useImageResize (client-side 1540px resize), useImageUpload, useFormValidation
-e2e/              # Playwright tests + fixtures/
+e2e/              # Playwright tests + fixtures/ (Code)
+testdateien/      # Testbilder für E2E und manuelles Ausprobieren, Übersicht und Lizenzen in README.md
 scripts/          # dev.sh (Vite + InstantDB), test-9-images.ts (manueller OCR-Pipeline-Test)
 tmp/              # Testbilder + 9-Seiten-PDF für manuelle Tests (gitignored, NICHT löschen)
 
@@ -255,7 +256,7 @@ Grenzen, Rate-Limits und Datenschutz von Mistral: Skill `mistral-limits`.
 - Fahrzeugausweis-Scan im Formular «Neues Fahrzeug» (`src/composables/useVehicleScan.ts`, Bereinigung in
   `src/services/vehicle-scan.ts`): Foto nicht pauschal hochkant drehen (`expectPortrait: false`, der Ausweis liegt quer),
   Prompt kennt die nummerierten Felder des Schweizer Ausweises (15 Schild, 21 Marke und Typ, 23 Fahrgestell-Nr.,
-  36 1. Inverkehrsetzung). Test-Bild ist der gemeinfreie Ausweis von Wikimedia (`e2e/fixtures/LIZENZEN.md`).
+  36 1. Inverkehrsetzung). Test-Bild ist der gemeinfreie Ausweis von Wikimedia (`testdateien/README.md`).
 - Nachkontrolle der Positionen (`src/services/invoice-items.ts`), für Chat, Formular und Sammel-PDF: ergeben die
   Positionen mehr als das Total, werden aufeinanderfolgende Positionen mit gleichem Betrag zusammengefasst (typisch:
   mehrere Beschreibungszeilen unter einer Arbeitszeile), nur wenn die Summe danach passt. Bleibt die Summe zu hoch,

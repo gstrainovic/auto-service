@@ -5,7 +5,7 @@ import { clearInstantDB, countEntities, expect, mockInvoiceScan, test, waitForIn
 // Serviceheft ohne Chat: Seite fotografieren, Intervalle und Stempel prüfen, speichern. Mistral gemockt
 // (SCAN_SERVICE_BOOK), das Bild ist nur Träger für den Upload.
 
-const photo = path.join(import.meta.dirname, 'fixtures', 'fahrzeugausweis-schweiz.jpg')
+const photo = path.join(import.meta.dirname, '..', 'testdateien', 'fahrzeugausweis-schweiz.jpg')
 
 async function seedVehicle(page: Page, opts: { maintenance?: { type: string, doneAt: string } } = {}): Promise<string> {
   await page.goto('/')

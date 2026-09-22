@@ -25,9 +25,7 @@ deploy/billing.mjs
 *.sln
 *.sw?
 
-# Generated test fixtures
-e2e/fixtures/*.png
-e2e/fixtures/export-test.json
+# Test results
 test-results/
 
 # Environment (contains API keys)
@@ -47,7 +45,7 @@ tmp/
 
 # Screenshots and temp files
 *.png
-!e2e/fixtures/*.png
+!testdateien/*.png
 !public/pwa-*.png
 !public/apple-touch-icon.png
 installer.sh

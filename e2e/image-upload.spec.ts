@@ -31,7 +31,7 @@ test.describe('Image Upload', () => {
     // Upload test image
     const fileInput = dialog.locator('input[type="file"]')
     await fileInput.setInputFiles(
-      path.join(import.meta.dirname, 'fixtures', 'test-invoice.png'),
+      path.join(import.meta.dirname, '..', 'testdateien', 'test-invoice.png'),
     )
 
     // Should show image preview
@@ -52,7 +52,7 @@ test.describe('Image Upload', () => {
     // Upload image
     const fileInput = dialog.locator('input[type="file"]')
     await fileInput.setInputFiles(
-      path.join(import.meta.dirname, 'fixtures', 'test-invoice.png'),
+      path.join(import.meta.dirname, '..', 'testdateien', 'test-invoice.png'),
     )
     await expect(dialog.locator('.image-preview img')).toBeVisible({ timeout: 5000 })
 

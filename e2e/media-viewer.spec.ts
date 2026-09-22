@@ -29,7 +29,7 @@ test.describe('MediaViewer', () => {
 
     // Attach image and send
     const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]').first()
-    await fileInput.setInputFiles(path.join(import.meta.dirname, 'fixtures', 'test-invoice.png'))
+    await fileInput.setInputFiles(path.join(import.meta.dirname, '..', 'testdateien', 'test-invoice.png'))
     await expect(page.locator('[data-pc-name="chip"]')).toHaveCount(1, { timeout: 10_000 })
 
     const input = page.locator('[placeholder="Nachricht..."]')

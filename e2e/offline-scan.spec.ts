@@ -4,7 +4,7 @@ import { clearInstantDB, expect, mockInvoiceScan, SCAN_INVOICE, test } from './f
 // Offline fotografierter Beleg: kein Scan, aber gespeichert. Sobald wieder Verbindung besteht, holt die App
 // den Scan nach und füllt die leeren Felder.
 
-const photo = path.join(import.meta.dirname, 'fixtures', 'test-invoice.png')
+const photo = path.join(import.meta.dirname, '..', 'testdateien', 'test-invoice.png')
 
 test.describe('Beleg ohne Verbindung', () => {
   test.beforeEach(async ({ page }) => {

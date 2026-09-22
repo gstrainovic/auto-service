@@ -3,9 +3,10 @@ import { db, id, tx } from '../lib/instantdb'
 
 export type LandingSegment = 'betrieb' | 'privathalter'
 
-/** Eigene Adressen aus gedruckten Inseraten: Kampagne und die Seite, auf die sie führt. */
+/** Eigene Adressen aus Inseraten und Anzeigen: Kampagne und die Seite, auf die sie führt. */
 export const CAMPAIGNS = {
   tcs: '/privathalter',
+  google: '/betrieb',
 } as const satisfies Record<string, string>
 
 export type Campaign = keyof typeof CAMPAIGNS

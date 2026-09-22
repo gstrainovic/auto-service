@@ -15,13 +15,14 @@ export const SITE_URL = 'https://wartungsheft.ch'
 
 export const PAGE_META: Record<string, PageMeta> = {
   '/': {
-    title: 'Wartungsheft: digitales Serviceheft fürs Auto in der Schweiz',
-    // Ein Satz, der «Was ist wartungsheft.ch?» beantwortet: Suchmaschinen und KI-Antworten zitieren ihn
-    description: 'Wartungsheft ist das digitale Serviceheft aus der Schweiz: Werkstattrechnung fotografieren, Service und MFK im Blick. Privat 25, Betrieb 36 CHF pro Fahrzeug.',
+    title: 'Wartungsheft: digitales Serviceheft und Servicebuch fürs Auto',
+    // Ein Satz, der «Was ist wartungsheft.ch?» beantwortet: Suchmaschinen und KI-Antworten zitieren ihn.
+    // «Servicebuch» sucht die Schweiz zwanzigmal häufiger als «Serviceheft» (business-plan/ads/keyword-analyse.md)
+    description: 'Wartungsheft ist das digitale Servicebuch aus der Schweiz: Werkstattrechnung fotografieren, Serviceheft, Service und MFK im Blick. Ab 25 CHF im Jahr.',
   },
   '/privathalter': {
-    title: 'Serviceheft-App fürs Auto: Rechnung fotografieren | Wartungsheft',
-    description: 'Dein Serviceheft auf dem Handy: Werkstattrechnung fotografieren, Erinnerung vor Service und MFK, lückenlose Historie beim Verkauf. 25 CHF im Jahr.',
+    title: 'Servicebuch und Serviceheft fürs Auto als App | Wartungsheft',
+    description: 'Dein Servicebuch auf dem Handy: Werkstattrechnung fotografieren, Serviceheft lückenlos, Erinnerung vor Service und MFK. 25 CHF im Jahr.',
   },
   '/betrieb': {
     title: 'Fuhrpark-App: Serviceheft pro Firmenfahrzeug | Wartungsheft',

@@ -13,7 +13,7 @@ const benefits = [
   <HypothesisPage
     segment="privathalter"
     title="Dein Serviceheft fürs Auto, gepflegt vom Handy aus"
-    problem="Rechnungen in der Schublade und im Handschuhfach, der Service vergessen, und beim Verkauf fehlt die Hälfte der Historie."
+    problem="Das Servicebuch im Handschuhfach, die Rechnungen in der Schublade, der Service vergessen, und beim Verkauf fehlt die Hälfte der Historie."
     :benefits="benefits"
     price="25 CHF im Jahr, bis 5 Fahrzeuge"
     price-note="30 Tage gratis mit allen Funktionen, danach entscheidest du. Anmelden mit E-Mail, kein Passwort, keine Kreditkarte."

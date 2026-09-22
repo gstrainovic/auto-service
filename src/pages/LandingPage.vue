@@ -120,8 +120,8 @@ const { label, go } = useAuthEntry()
             <div class="feature-icon">
               <i class="pi pi-file-pdf" />
             </div>
-            <h3>Digitales Serviceheft</h3>
-            <p>Lückenlose Wartungshistorie. Beim Autoverkauf den Wert steigern — alles digital belegt.</p>
+            <h3>Digitales Serviceheft und Servicebuch</h3>
+            <p>Lückenlose Wartungshistorie statt Servicebuch im Handschuhfach. Beim Autoverkauf den Wert steigern — alles digital belegt.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">

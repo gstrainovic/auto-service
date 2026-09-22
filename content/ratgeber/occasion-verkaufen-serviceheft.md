@@ -6,8 +6,8 @@ date: 2026-09-23
 
 In der Schweiz wechseln jedes Jahr rund 750'000 Occasionen den Besitzer
 ([TCS](https://www.tcs.ch/de/testberichte-ratgeber/ratgeber/fahrzeug-kaufen-verkaufen/tipps-occasion-autos.php)).
-Wer sein Auto verkauft, konkurriert mit vielen ähnlichen Inseraten. Ein sauber geführtes Serviceheft ist eines der
-wenigen Argumente, die ein Käufer nachprüfen kann.
+Wer sein Auto verkauft, konkurriert mit vielen ähnlichen Inseraten. Ein sauber geführtes Serviceheft (oder
+Servicebuch) ist eines der wenigen Argumente, die ein Käufer nachprüfen kann.
 
 ## Was das Serviceheft beim Verkauf bringt
 

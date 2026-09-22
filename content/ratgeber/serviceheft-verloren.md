@@ -1,10 +1,10 @@
 ---
-title: Serviceheft verloren: So baust du die Historie wieder auf
+title: Serviceheft oder Servicebuch verloren: So baust du die Historie wieder auf
 description: Duplikat bei der Markengarage, digitales Serviceheft des Herstellers, Rechnungen und MFK-Berichte: So holst du die Wartungshistorie deines Autos in der Schweiz zurück.
 date: 2026-09-23
 ---
 
-Das Serviceheft ist weg, verloren beim Umzug, nie vom Vorbesitzer übergeben oder im Handschuhfach eines
+Das Serviceheft, oft auch Servicebuch genannt, ist weg, verloren beim Umzug, nie vom Vorbesitzer übergeben oder im Handschuhfach eines
 verkauften Autos vergessen. Das ist ärgerlich, denn beim Verkauf und bei Garantieansprüchen zählt der Nachweis
 der Wartung. Die gute Nachricht: Ein grosser Teil der Historie lässt sich meistens wiederherstellen.
 

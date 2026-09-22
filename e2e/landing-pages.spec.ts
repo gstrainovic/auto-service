@@ -116,6 +116,14 @@ test.describe('Landing Pages', () => {
     await expect.poll(() => countEvents({ name: 'cta_click', segment: 'betrieb', campaign: 'google' })).toBe(clicks + 1)
   })
 
+  test('LP-009: /google-privat aus der Anzeige für Privathalter zählt den Besuch und zeigt die Privathalter-Seite', async ({ page }) => {
+    const visits = await countEvents({ name: 'visit', campaign: 'google-privat' })
+    await page.goto('/google-privat')
+    await expect(page).toHaveURL(/\/privathalter$/)
+    await expect(page.getByTestId('price-privat')).toBeVisible()
+    await expect.poll(() => countEvents({ name: 'visit', campaign: 'google-privat' })).toBe(visits + 1)
+  })
+
   test('LP-004: der Film steht auf Startseite und Angebotsseiten, stumm und erst auf Klick', async ({ page }) => {
     // Breiter Bildschirm: die im Desktop-Layout aufgenommene Fassung
     await page.setViewportSize({ width: 1280, height: 900 })

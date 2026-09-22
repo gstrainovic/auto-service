@@ -20,6 +20,13 @@ describe('pageMeta', () => {
     }
   })
 
+  it('nennt auf Startseite und Privathalter-Seite «Servicebuch», das in der Schweiz meistgesuchte Wort', () => {
+    for (const path of ['/', '/privathalter']) {
+      expect(PAGE_META[path]!.title, path).toMatch(/Servicebuch/)
+      expect(PAGE_META[path]!.description, path).toMatch(/Servicebuch/)
+    }
+  })
+
   it('hält Titel und Beschreibung in der Länge, die Google anzeigt', () => {
     for (const [path, meta] of Object.entries(PAGE_META)) {
       expect(meta.title.length, path).toBeLessThanOrEqual(65)

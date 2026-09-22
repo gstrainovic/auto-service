@@ -7,17 +7,17 @@ Forenbeiträge; niemand wird angeschrieben.
 ## Jetzt: produktiv gehen
 
 ### Vom Nutzer
-- [ ] Mistral: monatliches Ausgabenlimit über das 10-$-Kontingent hinaus (heute 0 $) auf z. B. 20 $ setzen, sobald ein
-      Betrieb scannt; sonst stoppt die API bis zum Monatsersten
 - [ ] Auslöser für den nächsten Punkt ist die erste Anmeldung (Mail «Wartungsheft: neue Anmeldung» an
       info@wartungsheft.ch, täglich 07:00 UTC)
 - [ ] Geschäftskonto mit QR-IBAN und camt.054 eröffnen: `../business/geschaeftskonten-vergleich.md`. IBAN danach in
       die `.env` des AI-Proxys auf der Instanz, nicht ins Repo
 
 ### Von Claude
-- [ ] Jahresabo Betrieb live schalten, sobald die IBAN da ist: `deploy/.env` auf der Instanz um `INVOICE_*`,
-      `RESEND_TOKEN` und `AI_PROXY_INTERNAL_TOKEN` ergänzen, Proxy neu bauen, Cron `wartungsheft-billing` anlegen
-      (README «8.»), Testbestellung mit eigener Adresse, PDF gegen den SIX-Validator prüfen, danach stornieren
+- [ ] Vor der ersten Bestellung: `AI_PROXY_INTERNAL_TOKEN` in `deploy/.env` auf der Instanz setzen (fehlt, ohne ihn
+      gehen `paid` und die Verlängerung nicht), Proxy neu starten, Cron `wartungsheft-billing` anlegen (README «8.»).
+      Bestellen geht schon ohne IBAN, die Rechnung schreibt der Betreiber von Hand
+- [ ] QR-Rechnung einschalten, sobald die IBAN da ist: `deploy/.env` um `INVOICE_IBAN` und die übrigen `INVOICE_*`
+      ergänzen, Proxy neu bauen, Testbestellung mit eigener Adresse, PDF gegen den SIX-Validator prüfen, danach stornieren
 - [ ] Tagescheck um `billing.mjs open` ergänzen: überfällige Rechnungen melden, Zahlungseingänge mit
       `camt <datei.xml>` aus dem heruntergeladenen camt.054 buchen
 - [ ] Fahrzeuggrenze wirklich sperren, sobald ein Zahlungsweg existiert: `vehicleLimit` meldet heute nur, solange

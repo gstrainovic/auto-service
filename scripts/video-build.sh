@@ -186,8 +186,8 @@ kurzfassungen() {
   bauen "$CLIPS/social-betrieb.webm" "${SOCIAL_BETRIEB[@]}"
   bauen "$CLIPS/bumper.webm" "${SOCIAL_BUMPER[@]}"
   # Meta und YouTube nehmen MP4 (H.264/AAC) am zuverlässigsten
-  # -t 6: YouTube nimmt Bumper nur bis 6 s, die Überblendung am Ende darf abgeschnitten werden
-  ffmpeg -loglevel error -y -i "$CLIPS/bumper.webm" -t 6 -c:v libopenh264 -pix_fmt yuv420p -b:v 2M -c:a aac -b:a 128k \
+  # -t 5.95: YouTube nimmt Bumper nur bis 6 s (6.001 zählt schon als länger), das Ende der Blende darf weg
+  ffmpeg -loglevel error -y -i "$CLIPS/bumper.webm" -t 5.95 -c:v libopenh264 -pix_fmt yuv420p -b:v 2M -c:a aac -b:a 128k \
     -movflags +faststart "$CLIPS/bumper.mp4"
   echo "$CLIPS/bumper.mp4 ($(dauer_von "$CLIPS/bumper.mp4" | cut -d. -f1) s)"
 }

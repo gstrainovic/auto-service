@@ -41,7 +41,7 @@ fi
 PRIVAT=(
   "szene-privat-kaeufer-fragt-nach-dem-serviceheft|0.8|7.0|Du willst dein Auto verkaufen. Der Käufer fragt: Gibt es ein Serwis-Heft?|Du verkaufst dein Auto. Der Käufer fragt: «Gibt es ein Serviceheft?»"
   "szene-privat-zettelwirtschaft-in-der-schachtel|1.4|5.0|Und du suchst."
-  "szene-2-rechnung-fotografieren-felder-fuellen-sich|6.0|8.5|Ab heute nicht mehr: Rechnung fotografieren genügt. Werkstatt, Datum, Betrag und Arbeiten stehen drin."
+  "szene-2-rechnung-fotografieren-felder-fuellen-sich|8.5|8.5|Ab heute nicht mehr: Rechnung fotografieren genügt. Werkstatt, Datum, Betrag und Arbeiten stehen drin."
   "szene-3-faelligkeit-auf-dem-dashboard-und-erledigt-eintragen|1.5|7.5|Wartungsheft meldet sich, bevor die nächste Arbeit fällig ist."
   "szene-4-kosten-und-pdf-dossier-fuer-den-verkauf|4.0|7.0|Und beim Verkauf liegt alles auf dem Tisch: das vollständige Serwis-Heft als PDF.|Und beim Verkauf liegt alles auf dem Tisch: das vollständige Serviceheft als PDF."
   "szene-privat-kaeufer-bekommt-die-antwort|0.8|5.5|Alles da.|«Alles da.»"
@@ -60,7 +60,7 @@ BETRIEB=(
 # Kurzfassungen für Social: Problem, Beweis, Angebot
 SOCIAL_PRIVAT=(
   "szene-privat-zettelwirtschaft-in-der-schachtel|1.2|3.0|Wo ist die letzte Werkstattrechnung?"
-  "szene-2-rechnung-fotografieren-felder-fuellen-sich|6.5|6.0|Fotografieren genügt. Alles steht drin."
+  "szene-2-rechnung-fotografieren-felder-fuellen-sich|9.0|6.0|Fotografieren genügt. Alles steht drin."
   "titel-6-abspann|0.6|3.5|Dreissig Tage gratis testen, auf wartungsheft punkt c h."
 )
 
@@ -68,13 +68,6 @@ SOCIAL_BETRIEB=(
   "szene-betrieb-montagmorgen-welcher-muss-zum-service|0.8|3.5|Welcher Lieferwagen muss zum Service?"
   "szene-2-fuhrpark-auf-einen-blick-was-ist-faellig|2.0|5.0|Ein Blick auf die Übersicht, und du weisst es."
   "titel-5-preis-betrieb|0.6|3.5|Sechsunddreissig Franken pro Fahrzeug und Jahr."
-)
-
-# Bumper für YouTube (höchstens 6 s, nicht überspringbar) und Instagram/Facebook: nur der Moment, in dem
-# sich die Felder aus der fotografierten Rechnung füllen, dann die Abschlusskarte
-SOCIAL_BUMPER=(
-  "szene-2-rechnung-fotografieren-felder-fuellen-sich|9.8|3.8|Rechnung fotografieren. Fertig."
-  "titel-6-abspann|0.6|1.8|Dreissig Tage gratis."
 )
 
 dauer_von() {
@@ -184,15 +177,15 @@ bauen() {
 kurzfassungen() {
   bauen "$CLIPS/social-privat.webm" "${SOCIAL_PRIVAT[@]}"
   bauen "$CLIPS/social-betrieb.webm" "${SOCIAL_BETRIEB[@]}"
-  bauen "$CLIPS/bumper.webm" "${SOCIAL_BUMPER[@]}"
-  # Meta und YouTube nehmen MP4 (H.264/AAC) am zuverlässigsten
-  # -t 5.95: YouTube nimmt Bumper nur bis 6 s (6.001 zählt schon als länger), das Ende der Blende darf weg
-  ffmpeg -loglevel error -y -i "$CLIPS/bumper.webm" -t 5.95 -c:v libopenh264 -pix_fmt yuv420p -b:v 2M -c:a aac -b:a 128k \
-    -movflags +faststart "$CLIPS/bumper.mp4"
-  echo "$CLIPS/bumper.mp4 ($(dauer_von "$CLIPS/bumper.mp4" | cut -d. -f1) s)"
+  # Meta und YouTube nehmen MP4 (H.264/AAC) am zuverlässigsten; Fedora-ffmpeg hat libopenh264 statt libx264
+  local f
+  for f in social-privat social-betrieb; do
+    ffmpeg -loglevel error -y -i "$CLIPS/$f.webm" -c:v libopenh264 -pix_fmt yuv420p -b:v 2M -c:a aac -b:a 128k \
+      -movflags +faststart "$CLIPS/$f.mp4"
+  done
 }
 
-# NUR_KURZ=1: nur Kurzfassungen und Bumper, ohne die langen Filme (Sekunden statt Minuten)
+# NUR_KURZ=1: nur die Kurzfassungen, ohne die langen Filme (Sekunden statt Minuten)
 if [ "${NUR_KURZ:-0}" = 1 ]; then
   kurzfassungen
   exit 0

@@ -4,9 +4,11 @@
  * Jede Szene ist ein eigener Clip, damit der Schnitt sie einzeln kürzen und umstellen kann.
  */
 import { clearInstantDB, expect, mockInvoiceScan, test, waitForInstantDB } from '../fixtures/test-fixtures'
-import { beat, clipSpeichern, daysAgo, seed, showPointer, slowClick } from './szenen'
+import { beat, clipSpeichern, daysAgo, musterRechnungFoto, seed, showPointer, slowClick } from './szenen'
 
 const GOLF = { make: 'VW', model: 'Golf 7', year: 2016, mileage: 118_400, licensePlate: 'SG 248 901' }
+// Erfundener Name: im Film darf keine echte Werkstatt vorkommen
+const WERKSTATT = 'Muster-Garage AG'
 
 test.describe('Werbeclips Privathalter', () => {
   test.beforeEach(async ({ page }) => {
@@ -17,11 +19,21 @@ test.describe('Werbeclips Privathalter', () => {
     await clipSpeichern(page, testInfo)
   })
 
-  test('Szene 2: Rechnung fotografieren, Felder füllen sich', async ({ page }) => {
+  test('Szene 2: Rechnung fotografieren, Felder füllen sich', async ({ page, browser }, testInfo) => {
     await seed(page, { vehicles: [GOLF] })
+    // Bild und Scan-Ergebnis zeigen dasselbe: erfundene Muster-Garage, derselbe Wagen, dieselben Beträge
+    const foto = await musterRechnungFoto(browser, testInfo, {
+      werkstatt: WERKSTATT,
+      adresse: 'Musterstrasse 12, 9999 Musterhausen',
+      datum: daysAgo(3),
+      fahrzeug: 'VW Golf 7',
+      kontrollschild: GOLF.licensePlate,
+      kilometer: 118_400,
+      positionen: [{ text: 'Motoröl und Ölfilter', betrag: 189 }, { text: 'Bremsbeläge vorne', betrag: 297.5 }],
+    })
     await mockInvoiceScan(page, {
       photos: [{
-        workshopName: 'Garage Hubmann, Rorschach',
+        workshopName: WERKSTATT,
         date: daysAgo(3),
         totalAmount: 486.5,
         currency: 'CHF',
@@ -46,8 +58,8 @@ test.describe('Werbeclips Privathalter', () => {
 
     // Foto der Rechnung: der Scan füllt Werkstatt, Datum, Betrag, Kilometerstand und die Positionen.
     // InputNumber verknüpft sein Label über input-id, darum hier die IDs statt getByLabel.
-    await page.setInputFiles('input[type="file"]', 'testdateien/test-invoice.png')
-    await expect(page.locator('#invoice-workshop')).toHaveValue(/Hubmann/, { timeout: 20_000 })
+    await page.setInputFiles('input[type="file"]', foto)
+    await expect(page.locator('#invoice-workshop')).toHaveValue(WERKSTATT, { timeout: 20_000 })
     await beat(page, 2)
 
     await page.locator('#invoice-amount').scrollIntoViewIfNeeded()
@@ -85,9 +97,9 @@ test.describe('Werbeclips Privathalter', () => {
     await seed(page, {
       vehicles: [GOLF],
       invoices: [
-        { vehicleIndex: 0, workshopName: 'Garage Hubmann, Rorschach', date: daysAgo(30), totalAmount: 486.5, mileageAtService: 118_400, items: [{ description: 'Motoröl und Ölfilter', category: 'oelwechsel', amount: 189 }, { description: 'Bremsbeläge vorne', category: 'bremsen', amount: 297.5 }] },
-        { vehicleIndex: 0, workshopName: 'Pneuhaus Egger', date: daysAgo(210), totalAmount: 612, mileageAtService: 112_800, items: [{ description: 'Winterreifen montiert', category: 'reifen', amount: 612 }] },
-        { vehicleIndex: 0, workshopName: 'Garage Hubmann, Rorschach', date: daysAgo(400), totalAmount: 1240.8, mileageAtService: 104_500, items: [{ description: 'Grosser Service', category: 'inspektion', amount: 890 }, { description: 'Zündkerzen', category: 'zuendung', amount: 350.8 }] },
+        { vehicleIndex: 0, workshopName: WERKSTATT, date: daysAgo(30), totalAmount: 486.5, mileageAtService: 118_400, items: [{ description: 'Motoröl und Ölfilter', category: 'oelwechsel', amount: 189 }, { description: 'Bremsbeläge vorne', category: 'bremsen', amount: 297.5 }] },
+        { vehicleIndex: 0, workshopName: 'Muster-Pneu GmbH', date: daysAgo(210), totalAmount: 612, mileageAtService: 112_800, items: [{ description: 'Winterreifen montiert', category: 'reifen', amount: 612 }] },
+        { vehicleIndex: 0, workshopName: WERKSTATT, date: daysAgo(400), totalAmount: 1240.8, mileageAtService: 104_500, items: [{ description: 'Grosser Service', category: 'inspektion', amount: 890 }, { description: 'Zündkerzen', category: 'zuendung', amount: 350.8 }] },
       ],
     })
     await page.goto('/vehicles')

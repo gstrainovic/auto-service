@@ -21,9 +21,12 @@ Danach liegen bereit:
 | `public/film-*-desktop.webm` | Desktopfassung, 16:9, ab 760 px Bildschirmbreite |
 | `public/film-*-poster.jpg` | Standbild vor dem Start |
 | `video-out/social-*.webm` | Kurzfassungen für Social und Anzeigen |
-| `video-out/bumper.webm`, `bumper.mp4` | 6 s: Rechnung erscheint, Felder füllen sich, «30 Tage gratis»; MP4 (H.264 über `libopenh264`, Fedora hat kein `libx264`) für YouTube-Bumper und Meta |
+| `video-out/social-*.mp4` | Dieselben Kurzfassungen als MP4 (H.264 über `libopenh264`, Fedora hat kein `libx264`) für Meta und YouTube |
 
-Nur Kurzfassungen und Bumper neu montieren (Sekunden statt Minuten): `NUR_KURZ=1 scripts/video-build.sh`.
+Nur die Kurzfassungen neu montieren (Sekunden statt Minuten): `NUR_KURZ=1 scripts/video-build.sh`.
+
+Rechnungen im Film: `musterRechnungFoto` (`e2e/video/szenen.ts`) rendert zur Aufnahmezeit ein Rechnungsbild mit genau
+den Angaben, die der gemockte Scan einfüllt. Werkstätten heissen «Muster-…», nie wie eine echte Firma.
 
 Ausliefern wie der Rest der App: `npm run deploy` (die Filme liegen in `public/` und wandern mit ins `dist/`).
 

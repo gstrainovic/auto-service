@@ -3,7 +3,7 @@
  * Aufnahme: `npm run video -- e2e/video/betrieb.video.ts`, Ergebnis unter test-results/…/video.webm.
  */
 import { clearInstantDB, expect, mockInvoiceScan, test } from '../fixtures/test-fixtures'
-import { beat, clipSpeichern, daysAgo, seed, showPointer, slowClick } from './szenen'
+import { beat, clipSpeichern, daysAgo, musterRechnungFoto, seed, showPointer, slowClick } from './szenen'
 
 const FLEET = [
   { make: 'Fiat', model: 'Ducato', year: 2019, mileage: 184_300, licensePlate: 'SG 41 220' },
@@ -40,11 +40,21 @@ test.describe('Werbeclips Betrieb', () => {
     await beat(page, 2)
   })
 
-  test('Szene 3: Rechnung vom Fahrer, ein Foto genügt', async ({ page }) => {
+  test('Szene 3: Rechnung vom Fahrer, ein Foto genügt', async ({ page, browser }, testInfo) => {
     await seed(page, { vehicles: FLEET })
+    // Bild und Scan-Ergebnis zeigen dasselbe (erfundene Werkstatt, Fiat Ducato SG 41 220)
+    const foto = await musterRechnungFoto(browser, testInfo, {
+      werkstatt: 'Muster-Nutzfahrzeuge AG',
+      adresse: 'Musterweg 3, 9999 Musterhausen',
+      datum: daysAgo(1),
+      fahrzeug: 'Fiat Ducato',
+      kontrollschild: FLEET[0]!.licensePlate,
+      kilometer: 184_300,
+      positionen: [{ text: 'Service 180 000 km', betrag: 740 }, { text: 'Bremsbeläge hinten', betrag: 547.4 }],
+    })
     await mockInvoiceScan(page, {
       photos: [{
-        workshopName: 'Nutzfahrzeuge Brunner AG',
+        workshopName: 'Muster-Nutzfahrzeuge AG',
         date: daysAgo(1),
         totalAmount: 1287.4,
         currency: 'CHF',
@@ -62,8 +72,8 @@ test.describe('Werbeclips Betrieb', () => {
     await slowClick(page, page.getByRole('tab', { name: 'Rechnungen' }))
     await slowClick(page, page.getByRole('button', { name: /Rechnung hinzufügen/ }))
 
-    await page.setInputFiles('input[type="file"]', 'testdateien/test-invoice.png')
-    await expect(page.locator('#invoice-workshop')).toHaveValue(/Brunner/, { timeout: 20_000 })
+    await page.setInputFiles('input[type="file"]', foto)
+    await expect(page.locator('#invoice-workshop')).toHaveValue(/Muster-Nutzfahrzeuge/, { timeout: 20_000 })
     await beat(page, 2)
     await page.locator('.scan-items').scrollIntoViewIfNeeded()
     await beat(page, 3)
@@ -80,10 +90,10 @@ test.describe('Werbeclips Betrieb', () => {
         { vehicleIndex: 3, type: 'inspektion', description: 'Service nach Plan', doneAt: daysAgo(60), mileageAtService: 58_000 },
       ],
       invoices: [
-        { vehicleIndex: 0, workshopName: 'Nutzfahrzeuge Brunner AG', date: daysAgo(20), totalAmount: 1287.4, mileageAtService: 184_300, items: [{ description: 'Service 180 000 km', category: 'inspektion', amount: 740 }, { description: 'Bremsbeläge hinten', category: 'bremsen', amount: 547.4 }] },
-        { vehicleIndex: 1, workshopName: 'Garage Hubmann, Rorschach', date: daysAgo(70), totalAmount: 468.9, mileageAtService: 94_100, items: [{ description: 'Ölservice', category: 'oelwechsel', amount: 468.9 }] },
-        { vehicleIndex: 2, workshopName: 'Pneuhaus Egger', date: daysAgo(140), totalAmount: 1980, mileageAtService: 238_000, items: [{ description: 'Vier Reifen', category: 'reifen', amount: 1980 }] },
-        { vehicleIndex: 3, workshopName: 'Nutzfahrzeuge Brunner AG', date: daysAgo(310), totalAmount: 655.2, mileageAtService: 52_400, items: [{ description: 'Erster Service', category: 'inspektion', amount: 655.2 }] },
+        { vehicleIndex: 0, workshopName: 'Muster-Nutzfahrzeuge AG', date: daysAgo(20), totalAmount: 1287.4, mileageAtService: 184_300, items: [{ description: 'Service 180 000 km', category: 'inspektion', amount: 740 }, { description: 'Bremsbeläge hinten', category: 'bremsen', amount: 547.4 }] },
+        { vehicleIndex: 1, workshopName: 'Muster-Garage AG', date: daysAgo(70), totalAmount: 468.9, mileageAtService: 94_100, items: [{ description: 'Ölservice', category: 'oelwechsel', amount: 468.9 }] },
+        { vehicleIndex: 2, workshopName: 'Muster-Pneu GmbH', date: daysAgo(140), totalAmount: 1980, mileageAtService: 238_000, items: [{ description: 'Vier Reifen', category: 'reifen', amount: 1980 }] },
+        { vehicleIndex: 3, workshopName: 'Muster-Nutzfahrzeuge AG', date: daysAgo(310), totalAmount: 655.2, mileageAtService: 52_400, items: [{ description: 'Erster Service', category: 'inspektion', amount: 655.2 }] },
       ],
     })
     await page.goto('/dashboard')

@@ -185,7 +185,7 @@ function handleCancel() {
         <div class="ansage">
           <DictateButton label="Rechnung ansagen" size="small" @text="ansageUebernehmen" @fehler="ansageFehler" />
           <small class="field-hint">
-            Oder ansagen: «Garage Hubmann, 14. September, 486.50, 118'400 Kilometer, Ölwechsel und Bremsbeläge vorne.»
+            Oder ansagen: «Muster-Garage, 14. September, 486.50, 118'400 Kilometer, Ölwechsel und Bremsbeläge vorne.»
           </small>
         </div>
         <div v-if="ansageLaeuft" class="scan-status" role="status">

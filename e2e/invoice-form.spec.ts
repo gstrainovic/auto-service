@@ -39,6 +39,9 @@ test.describe('Invoice Form', () => {
 
     // Should show validation errors
     await expect(dialog.getByText(/datum.*erforderlich/i)).toBeVisible()
+
+    // Das Beispiel zum Ansagen nennt eine erfundene Werkstatt, keine echte Firma (steht auch in den Werbefilmen)
+    await expect(dialog.getByText(/Oder ansagen: «Muster-Garage,/)).toBeVisible()
   })
 
   test('IF-002: submit creates invoice', async ({ page }) => {

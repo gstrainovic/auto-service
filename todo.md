@@ -56,7 +56,6 @@ Heute sind Währung (CHF), Zahlenformat (de-CH, `src/lib/locale.ts`) und Sprache
 - [ ] Nutzer-Einstellungen im Profil: eigene Währung, Sprache und Formate überschreiben die Deploy-Standards; Rechnungen behalten ihre Original-Währung
 - [ ] Texte über i18n (vue-i18n oder gleichwertig), DE zuerst, EN als zweite Sprache; Landing Pages und Datenschutz je Sprache
 - [ ] Preise und Pläne pro Land (`plans.ts`): Währung, MWST-Hinweis, Zahlungsanbieter je Region (Kapitel 4 und 6 im Businessplan: EU-Privatkunden nur mit OSS-Registrierung oder Merchant of Record)
-- [ ] Anleitung zum Selbsthosten (InstantDB, ai-proxy, eigener Mistral-Key, `docker-compose.yml`), Voraussetzung für r/selfhosted (`business-plan/verzeichnisse.md`)
 
 ## Nach dem Entscheid
 

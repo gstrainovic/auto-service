@@ -5,7 +5,8 @@
 
 type KeyValueStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
-const KEY = 'auth:knownEmail'
+export const KNOWN_ACCOUNT_KEY = 'auth:knownEmail'
+const KEY = KNOWN_ACCOUNT_KEY
 
 /** Was der Einstieg auf öffentlichen Seiten anbietet: in die App, Anmelden oder die Testzeit */
 export type AuthEntry = 'app' | 'login' | 'trial'

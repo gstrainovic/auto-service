@@ -54,6 +54,12 @@ IndexNow für Bing (und damit ChatGPT), Yandex, Seznam, Naver, Yep, Internet Arc
 nicht mit. Schlüssel in `src/services/indexnow.ts`, Schlüsseldatei `public/<Schlüssel>.txt`. Nach einem Deploy,
 der öffentliche Seiten ändert oder hinzufügt: `npm run indexnow` (meldet alle URLs der ausgelieferten Sitemap,
 `-- --dry-run` zeigt nur den JSON-Körper). Nicht bei jedem Deploy, wiederholte Meldungen unveränderter Seiten gelten als Spam.
+Vorgerendert: KI-Crawler (GPTBot, ClaudeBot, PerplexityBot) führen kein JavaScript aus. Darum rendert
+`npm run prerender` (im Deploy nach dem Build, `scripts/prerender.ts`) die Seiten aus `PAGE_META` in Chromium und
+schreibt das fertige HTML nach `dist/`, markiert mit `<meta name="prerendered-path">`. Ein Inline-Skript im Kopf
+(Regel `hidePrerendered` in `src/lib/prerender.ts`) versteckt den Inhalt bis zum Start der App, wenn `index.html` als
+Rückfall für eine andere Adresse dient oder ein bekanntes Konto auf `/` gleich weitergeleitet wird. `vite preview`
+liefert `/privathalter` aus dem Rückfall, erst Caddy nimmt `privathalter/index.html`; live mit `curl` prüfen.
 Ratgeber: ein Artikel = `content/ratgeber/<adresse>.md` mit Kopf `title`, `description`, `date`; das Vite-Plugin
 `ratgeber` (`src/lib/ratgeber.ts`) schreibt fertiges HTML ohne JavaScript nach `dist/ratgeber/` und trägt die Seiten in
 die ausgelieferte Sitemap ein (nicht in `public/sitemap.xml`). Jede Aussage mit Quelle verlinkt, keine Zahlen ohne Beleg.

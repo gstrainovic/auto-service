@@ -8,6 +8,7 @@ HOST=debian@195.15.207.47
 TARGET=/opt/auto-service
 
 npm run build
+npm run prerender
 npm run build:reminders
 npm run build:billing
 rsync -az --delete dist/ "$HOST:$TARGET/deploy/dist/"

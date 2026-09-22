@@ -4,8 +4,19 @@ import { join } from 'node:path'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { KNOWN_ACCOUNT_KEY } from './src/lib/known-account.ts'
 import { applyMetaToHtml, PAGE_META } from './src/lib/page-meta.ts'
+import { hidePrerendered } from './src/lib/prerender.ts'
 import { parseArticle, renderArticlePage, renderIndexPage, sitemapWithArticles } from './src/lib/ratgeber.ts'
+
+// Vorgerenderter Inhalt (scripts/prerender.ts) bleibt bis zum Mount versteckt, wenn er nicht zur Adresse passt;
+// main.ts nimmt die Klasse nach dem Mount weg. Die Regel steht einmal in src/lib/prerender.ts.
+const PRERENDER_BOOT = `    <style>.prerender-hidden #app { visibility: hidden; }</style>
+    <script>(function () { try {
+      var m = document.querySelector('meta[name="prerendered-path"]'); var k = false;
+      try { k = !!localStorage.getItem('${KNOWN_ACCOUNT_KEY}') } catch (e) {}
+      if ((${hidePrerendered.toString()})(m && m.content, location.pathname, k)) document.documentElement.classList.add('prerender-hidden')
+    } catch (e) {} })()</script>`
 
 // Kopf der Startseite in index.html, dazu dist/<pfad>/index.html pro öffentlicher Seite, damit Crawler ohne
 // JavaScript den richtigen Titel sehen; Caddy liefert sie über `try_files {path}/index.html` aus.
@@ -16,7 +27,7 @@ function pageMetaPlugin(): Plugin {
     configResolved(config) {
       outDir = config.build.outDir
     },
-    transformIndexHtml: html => applyMetaToHtml(html, '/'),
+    transformIndexHtml: html => applyMetaToHtml(html, '/').replace('</head>', `${PRERENDER_BOOT}\n  </head>`),
     closeBundle() {
       const index = readFileSync(join(outDir, 'index.html'), 'utf8')
       for (const path of Object.keys(PAGE_META).filter(p => p !== '/')) {

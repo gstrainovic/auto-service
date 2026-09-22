@@ -39,3 +39,5 @@ app.use(ToastService)
 app.use(ConfirmationService)
 
 app.mount('#app')
+// Vorgerenderter Inhalt ist jetzt ersetzt (src/lib/prerender.ts), die Seite darf wieder sichtbar sein
+void router.isReady().then(() => document.documentElement.classList.remove('prerender-hidden'))

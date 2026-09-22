@@ -21,6 +21,9 @@ Danach liegen bereit:
 | `public/film-*-desktop.webm` | Desktopfassung, 16:9, ab 760 px Bildschirmbreite |
 | `public/film-*-poster.jpg` | Standbild vor dem Start |
 | `video-out/social-*.webm` | Kurzfassungen für Social und Anzeigen |
+| `video-out/bumper.webm`, `bumper.mp4` | 6 s: Rechnung erscheint, Felder füllen sich, «30 Tage gratis»; MP4 (H.264 über `libopenh264`, Fedora hat kein `libx264`) für YouTube-Bumper und Meta |
+
+Nur Kurzfassungen und Bumper neu montieren (Sekunden statt Minuten): `NUR_KURZ=1 scripts/video-build.sh`.
 
 Ausliefern wie der Rest der App: `npm run deploy` (die Filme liegen in `public/` und wandern mit ins `dist/`).
 

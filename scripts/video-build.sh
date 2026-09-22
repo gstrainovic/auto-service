@@ -70,6 +70,13 @@ SOCIAL_BETRIEB=(
   "titel-5-preis-betrieb|0.6|3.5|Sechsunddreissig Franken pro Fahrzeug und Jahr."
 )
 
+# Bumper für YouTube (höchstens 6 s, nicht überspringbar) und Instagram/Facebook: nur der Moment, in dem
+# sich die Felder aus der fotografierten Rechnung füllen, dann die Abschlusskarte
+SOCIAL_BUMPER=(
+  "szene-2-rechnung-fotografieren-felder-fuellen-sich|9.8|3.8|Rechnung fotografieren. Fertig."
+  "titel-6-abspann|0.6|1.8|Dreissig Tage gratis."
+)
+
 dauer_von() {
   ffprobe -v error -show_entries format=duration -of csv=p=0 "$1" | cut -d. -f1-2
 }
@@ -174,6 +181,23 @@ bauen() {
   echo "$ziel ($(du -h "$ziel" | cut -f1), $(dauer_von "$ziel" | cut -d. -f1) s)"
 }
 
+kurzfassungen() {
+  bauen "$CLIPS/social-privat.webm" "${SOCIAL_PRIVAT[@]}"
+  bauen "$CLIPS/social-betrieb.webm" "${SOCIAL_BETRIEB[@]}"
+  bauen "$CLIPS/bumper.webm" "${SOCIAL_BUMPER[@]}"
+  # Meta und YouTube nehmen MP4 (H.264/AAC) am zuverlässigsten
+  # -t 6: YouTube nimmt Bumper nur bis 6 s, die Überblendung am Ende darf abgeschnitten werden
+  ffmpeg -loglevel error -y -i "$CLIPS/bumper.webm" -t 6 -c:v libopenh264 -pix_fmt yuv420p -b:v 2M -c:a aac -b:a 128k \
+    -movflags +faststart "$CLIPS/bumper.mp4"
+  echo "$CLIPS/bumper.mp4 ($(dauer_von "$CLIPS/bumper.mp4" | cut -d. -f1) s)"
+}
+
+# NUR_KURZ=1: nur Kurzfassungen und Bumper, ohne die langen Filme (Sekunden statt Minuten)
+if [ "${NUR_KURZ:-0}" = 1 ]; then
+  kurzfassungen
+  exit 0
+fi
+
 bauen "$OUT/film-privat.webm" "${PRIVAT[@]}"
 bauen "$OUT/film-betrieb.webm" "${BETRIEB[@]}"
 # Dieselben Abschnitte aus den Desktop-Aufnahmen: Clipname plus -desktop
@@ -190,8 +214,7 @@ desktop_liste() {
 BREITE_DESKTOP=1280
 HOEHE_DESKTOP=720
 
-bauen "$CLIPS/social-privat.webm" "${SOCIAL_PRIVAT[@]}"
-bauen "$CLIPS/social-betrieb.webm" "${SOCIAL_BETRIEB[@]}"
+kurzfassungen
 
 # Standbild als Poster, sonst zeigt der Player vor dem Start eine schwarze Fläche
 poster() {

@@ -124,6 +124,16 @@ test.describe('Landing Pages', () => {
     await expect.poll(() => countEvents({ name: 'visit', campaign: 'google-privat' })).toBe(visits + 1)
   })
 
+  for (const [path, target] of [['/bing', /\/betrieb$/], ['/bing-privat', /\/privathalter$/]] as const) {
+    test(`LP-010: ${path} aus der Bing-Anzeige zählt den Besuch getrennt von Google`, async ({ page }) => {
+      const campaign = path.slice(1)
+      const visits = await countEvents({ name: 'visit', campaign })
+      await page.goto(path)
+      await expect(page).toHaveURL(target)
+      await expect.poll(() => countEvents({ name: 'visit', campaign })).toBe(visits + 1)
+    })
+  }
+
   test('LP-004: der Film steht auf Startseite und Angebotsseiten, stumm und erst auf Klick', async ({ page }) => {
     // Breiter Bildschirm: die im Desktop-Layout aufgenommene Fassung
     await page.setViewportSize({ width: 1280, height: 900 })

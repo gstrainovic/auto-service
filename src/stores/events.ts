@@ -8,6 +8,8 @@ export const CAMPAIGNS = {
   'tcs': '/privathalter',
   'google': '/betrieb',
   'google-privat': '/privathalter',
+  'bing': '/betrieb',
+  'bing-privat': '/privathalter',
   // Knopf unter jedem Ratgeber-Artikel (src/lib/ratgeber.ts)
   'ratgeber-test': '/privathalter',
 } as const satisfies Record<string, string>

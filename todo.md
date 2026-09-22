@@ -35,14 +35,11 @@ Forenbeiträge; niemand wird angeschrieben.
 ### Auffindbar, wenn jemand eine KI fragt
 
 Text, Metadaten, `robots.txt`, `sitemap.xml` und `llms.txt` stehen (CLAUDE.md «Hilfe und Auffindbarkeit»).
-Google über die Search Console, Bing über IndexNow (`npm run indexnow`), search.ch per Add-URL.
+Google über die Search Console, Bing über die Bing Webmaster Tools (Import aus der Search Console, Sitemap
+eingereicht) und IndexNow (`npm run indexnow`), search.ch per Add-URL. Einstiegsseiten und Ratgeber sind fertiges HTML.
 
 - [ ] Einträge in Schweizer Verzeichnissen (`business-plan/verzeichnisse.md`): Nutzer meldet sich je
       Plattform an, Claude füllt das Formular aus den fertigen Texten und sendet nach Freigabe ab
-- [ ] Bing Webmaster Tools: Website per Import aus der Search Console anlegen (Nutzer gibt die Google-Freigabe),
-      danach Indexstand dort prüfen statt raten
-- [ ] Landing Pages vorrendern: `/`, `/privathalter`, `/betrieb`, `/hilfe` liefern ohne JavaScript nur den Kopf, keinen
-      Text; Crawler ohne JavaScript (search.ch, GPTBot) sehen fast nichts. Ratgeber zeigt den Weg (fertiges HTML)
 - [ ] Weitere Ratgeber-Artikel aus `business-plan/05-go-to-market.md` Kanal 1, je Aussage eine Quelle
 
 ### Messen, nebenbei

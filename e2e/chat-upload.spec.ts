@@ -1,4 +1,3 @@
-import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { clearInstantDB, expect, test } from './fixtures/test-fixtures'
 
@@ -145,28 +144,18 @@ test.describe('Chat Upload Enhancements', () => {
     await page.locator('.chat-fab').click()
     await expect(page.getByText('KI-Assistent')).toBeVisible()
 
-    // Create two small test PDFs using base64
     // Use the file input (first one, not the camera input) to attach multiple PDFs
     const fileInput = page.locator('[data-pc-name="drawer"] input[type="file"]').first()
 
-    // Create minimal PDF files for testing
-    const pdfContent = Buffer.from('%PDF-1.0\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R>>endobj\nxref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n190\n%%EOF')
-
-    const pdf1Path = '/tmp/claude-1000/-home-g-auto-service/5d80a6b2-57a9-4f25-86e7-65de87e1881a/scratchpad/test1.pdf'
-    const pdf2Path = '/tmp/claude-1000/-home-g-auto-service/5d80a6b2-57a9-4f25-86e7-65de87e1881a/scratchpad/test2.pdf'
-
-    // Use fs to create temp PDF files
-    const fs = await import('node:fs')
-    fs.mkdirSync(path.dirname(pdf1Path), { recursive: true })
-    fs.writeFileSync(pdf1Path, pdfContent)
-    fs.writeFileSync(pdf2Path, pdfContent)
-
-    await fileInput.setInputFiles([pdf1Path, pdf2Path])
+    await fileInput.setInputFiles([
+      path.join(fixturesDir, 'test-rechnung-ch.pdf'),
+      path.join(fixturesDir, 'test-rechnungen-sammel.pdf'),
+    ])
 
     // Both PDF chips should appear (not just 1)
     await expect(page.locator('[data-pc-name="chip"]')).toHaveCount(2)
-    await expect(page.getByText('test1.pdf')).toBeVisible()
-    await expect(page.getByText('test2.pdf')).toBeVisible()
+    await expect(page.getByText('test-rechnung-ch.pdf')).toBeVisible()
+    await expect(page.getByText('test-rechnungen-sammel.pdf')).toBeVisible()
   })
 
   test('CU-009: chat shows welcome suggestions on first open', async ({ page }) => {

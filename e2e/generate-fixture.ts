@@ -15,6 +15,92 @@ async function generatePage(html: string, filename: string, height = 1000) {
   console.log(`Created: ${outputPath}`)
 }
 
+async function generatePdf(html: string, filename: string) {
+  const browser = await chromium.launch()
+  const page = await browser.newPage()
+  await page.setContent(html)
+  const outputPath = path.join(dir, filename)
+  await page.pdf({ path: outputPath, format: 'A4', printBackground: true })
+  await browser.close()
+  // eslint-disable-next-line no-console
+  console.log(`Created: ${outputPath}`)
+}
+
+// Schweizer Werkstattrechnung: Positionen netto, MWST 8.1 % separat, Total brutto (Kategorie «Nicht zugeordnet / MwSt.»)
+const SWISS_INVOICE = `
+  <div style="font-family: Arial; padding: 40px; max-width: 640px; background: white;">
+    <h1 style="margin-top:0">Garage Meier AG</h1>
+    <p>Industriestrasse 12, 8604 Volketswil · MWST-Nr. CHE-123.456.789 MWST</p>
+    <hr>
+    <p><strong>Rechnung Nr.:</strong> 25-1182 &nbsp; <strong>Datum:</strong> 03.03.2025</p>
+    <p><strong>Kunde:</strong> Anna Muster, Seestrasse 5, 8700 Küsnacht</p>
+    <p><strong>Fahrzeug:</strong> Skoda Octavia Combi 2.0 TDI · Kontrollschild ZH 123456</p>
+    <p><strong>Fahrgestellnummer:</strong> TMBJJ7NE5L0123456 &nbsp; <strong>Kilometerstand:</strong> 92'300 km</p>
+    <hr>
+    <table style="width: 100%; border-collapse: collapse;">
+      <tr style="border-bottom: 1px solid #ccc;">
+        <th style="text-align: left; padding: 6px;">Position</th>
+        <th style="text-align: right; padding: 6px;">CHF</th>
+      </tr>
+      <tr style="border-bottom: 1px solid #eee;"><td style="padding: 6px;">Service nach Herstellervorgabe</td><td style="text-align: right; padding: 6px;">310.00</td></tr>
+      <tr style="border-bottom: 1px solid #eee;"><td style="padding: 6px;">Motoröl 5W-30, 4.7 l</td><td style="text-align: right; padding: 6px;">98.70</td></tr>
+      <tr style="border-bottom: 1px solid #eee;"><td style="padding: 6px;">Ölfilter</td><td style="text-align: right; padding: 6px;">24.80</td></tr>
+      <tr style="border-bottom: 1px solid #eee;"><td style="padding: 6px;">Bremsflüssigkeit ersetzen</td><td style="text-align: right; padding: 6px;">85.00</td></tr>
+      <tr style="border-bottom: 1px solid #eee;"><td style="padding: 6px;">Wischerblätter vorne</td><td style="text-align: right; padding: 6px;">42.50</td></tr>
+      <tr style="border-top: 1px solid #000;"><td style="padding: 6px;">Total netto</td><td style="text-align: right; padding: 6px;">561.00</td></tr>
+      <tr><td style="padding: 6px;">MWST 8.1 %</td><td style="text-align: right; padding: 6px;">45.45</td></tr>
+      <tr style="font-weight: bold; border-top: 2px solid #000;"><td style="padding: 6px;">Total CHF</td><td style="text-align: right; padding: 6px;">606.45</td></tr>
+    </table>
+    <hr>
+    <p style="font-size: 12px;">Zahlbar innert 30 Tagen netto.</p>
+  </div>
+`
+
+// Sammel-PDF: zwei Rechnungen, die zweite über zwei Seiten (Fortsetzung ohne Kopf, Total erst auf Seite 3)
+const PAGE_BREAK = '<div style="page-break-after: always;"></div>'
+const COLLECTIVE_PDF = `
+  <div style="font-family: Arial; padding: 40px; font-size: 14px;">
+    <h1 style="margin-top:0">Reifen Keller GmbH</h1>
+    <p>Bernstrasse 80, 3072 Ostermundigen</p>
+    <hr>
+    <p><strong>Rechnung Nr.:</strong> R-4471 &nbsp; <strong>Datum:</strong> 28.10.2024</p>
+    <p><strong>Fahrzeug:</strong> VW Golf VIII · BE 98765 &nbsp; <strong>km-Stand:</strong> 41'200</p>
+    <table style="width: 100%; border-collapse: collapse;">
+      <tr><td style="padding: 6px;">Radwechsel Sommer/Winter</td><td style="text-align: right; padding: 6px;">60.00</td></tr>
+      <tr><td style="padding: 6px;">Einlagerung Sommerräder</td><td style="text-align: right; padding: 6px;">40.00</td></tr>
+      <tr><td style="padding: 6px;">Auswuchten 4 Räder</td><td style="text-align: right; padding: 6px;">48.00</td></tr>
+      <tr style="font-weight: bold; border-top: 2px solid #000;"><td style="padding: 6px;">Total CHF inkl. MWST</td><td style="text-align: right; padding: 6px;">148.00</td></tr>
+    </table>
+  </div>
+  ${PAGE_BREAK}
+  <div style="font-family: Arial; padding: 40px; font-size: 14px;">
+    <h1 style="margin-top:0">Autohaus Berger AG</h1>
+    <p>Zürichstrasse 21, 3052 Zollikofen</p>
+    <hr>
+    <p><strong>Rechnung Nr.:</strong> 88213 &nbsp; <strong>Rechnungsdatum:</strong> 17.04.2025 &nbsp; <strong>Reparaturdatum:</strong> 14.04.2025</p>
+    <p><strong>Fahrzeug:</strong> VW Golf VIII · BE 98765 &nbsp; <strong>km-Stand:</strong> 49'850</p>
+    <table style="width: 100%; border-collapse: collapse;">
+      <tr><td style="padding: 6px;">Inspektion 60'000 km</td><td style="text-align: right; padding: 6px;">380.00</td></tr>
+      <tr><td style="padding: 6px;">Motoröl 0W-20, 4.3 l</td><td style="text-align: right; padding: 6px;">86.00</td></tr>
+      <tr><td style="padding: 6px;">Ölfilter</td><td style="text-align: right; padding: 6px;">21.50</td></tr>
+      <tr><td style="padding: 6px;">Luftfilter</td><td style="text-align: right; padding: 6px;">38.90</td></tr>
+      <tr><td style="padding: 6px;">Pollenfilter</td><td style="text-align: right; padding: 6px;">34.60</td></tr>
+    </table>
+    <p style="text-align: right; font-size: 12px;">Seite 1/2 – Fortsetzung nächste Seite</p>
+  </div>
+  ${PAGE_BREAK}
+  <div style="font-family: Arial; padding: 40px; font-size: 14px;">
+    <p style="font-size: 12px;">Rechnung 88213 · Seite 2/2</p>
+    <table style="width: 100%; border-collapse: collapse;">
+      <tr><td style="padding: 6px;">Bremsscheiben und Beläge vorne</td><td style="text-align: right; padding: 6px;">520.00</td></tr>
+      <tr><td style="padding: 6px;">Arbeit Bremsen 1.5 Std.</td><td style="text-align: right; padding: 6px;">210.00</td></tr>
+      <tr style="border-top: 1px solid #000;"><td style="padding: 6px;">Total netto</td><td style="text-align: right; padding: 6px;">1291.00</td></tr>
+      <tr><td style="padding: 6px;">MWST 8.1 %</td><td style="text-align: right; padding: 6px;">104.55</td></tr>
+      <tr style="font-weight: bold; border-top: 2px solid #000;"><td style="padding: 6px;">Total CHF</td><td style="text-align: right; padding: 6px;">1395.55</td></tr>
+    </table>
+  </div>
+`
+
 async function main() {
   fs.mkdirSync(dir, { recursive: true })
 
@@ -201,6 +287,13 @@ async function main() {
   await browser.close()
   // eslint-disable-next-line no-console
   console.log(`Created: ${path.join(dir, 'test-invoice-landscape.png')}`)
+
+  // 5. Schweizer Rechnung als Foto (PNG) und als PDF aus dem Mail-Postfach
+  await generatePage(SWISS_INVOICE, 'test-rechnung-ch.png', 1000)
+  await generatePdf(SWISS_INVOICE, 'test-rechnung-ch.pdf')
+
+  // 6. Sammel-PDF mit zwei Rechnungen auf drei Seiten
+  await generatePdf(COLLECTIVE_PDF, 'test-rechnungen-sammel.pdf')
 }
 
 main()

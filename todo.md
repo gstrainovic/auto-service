@@ -13,9 +13,6 @@ Forenbeiträge; niemand wird angeschrieben.
       die `.env` des AI-Proxys auf der Instanz, nicht ins Repo
 
 ### Von Claude
-- [ ] Vor der ersten Bestellung: `AI_PROXY_INTERNAL_TOKEN` in `deploy/.env` auf der Instanz setzen (fehlt, ohne ihn
-      gehen `paid` und die Verlängerung nicht), Proxy neu starten, Cron `wartungsheft-billing` anlegen (README «8.»).
-      Bestellen geht schon ohne IBAN, die Rechnung schreibt der Betreiber von Hand
 - [ ] QR-Rechnung einschalten, sobald die IBAN da ist: `deploy/.env` um `INVOICE_IBAN` und die übrigen `INVOICE_*`
       ergänzen, Proxy neu bauen, Testbestellung mit eigener Adresse, PDF gegen den SIX-Validator prüfen, danach stornieren
 - [ ] Tagescheck um `billing.mjs open` ergänzen: überfällige Rechnungen melden, Zahlungseingänge mit

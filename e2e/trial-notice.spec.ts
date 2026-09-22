@@ -35,7 +35,7 @@ test.describe('Hinweis vor Ende der Testzeit', () => {
 
   test('TN-003: ohne Kaufweg im Proxy weder Hinweis noch Bestellknopf', async ({ page }) => {
     await seedTrial(page, 25)
-    // Der lokale Proxy hat eine Test-IBAN; ohne sie meldet er `ordering: false`
+    // Der lokale Proxy nimmt Bestellungen an (Rechnung von Hand an INVOICE_EMAIL); ohne IBAN und Postfach meldet er `ordering: false`
     await page.route('**/me/usage', async (route) => {
       const res = await route.fetch()
       const body = await res.json()

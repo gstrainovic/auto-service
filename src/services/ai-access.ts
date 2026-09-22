@@ -125,8 +125,11 @@ async function billingPost<T>(path: string, payload: unknown = {}): Promise<T> {
   return body
 }
 
-/** Jahresabo Betrieb auf Rechnung bestellen; die Rechnung kommt per Mail an die Rechnungs-E-Mail */
-export function orderBusinessPlan(order: BusinessOrder): Promise<{ invoice: { number: string, amount: number, dueAt: string }, mailed: boolean }> {
+/**
+ * Jahresabo auf Rechnung bestellen; die Rechnung kommt per Mail an die Rechnungs-E-Mail. `manual`: der Proxy hat
+ * keine IBAN und schickt den Auftrag an den Betreiber, der die Rechnung von Hand schreibt (`mailed` gilt dann dafür).
+ */
+export function orderBusinessPlan(order: BusinessOrder): Promise<{ invoice: { number: string, amount: number, dueAt: string }, mailed: boolean, manual?: boolean }> {
   return billingPost('/billing/order', order)
 }
 

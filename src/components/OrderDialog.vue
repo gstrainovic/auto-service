@@ -2,7 +2,8 @@
 /**
  * Jahresabo auf Rechnung bestellen, privat oder für einen Betrieb: Rechnungsadresse, Fahrzeugzahl (vorbelegt mit
  * den aktiven Fahrzeugen), Zustimmung zu Verlängerung und Kündigung. Der AI-Proxy legt das Abo an und schickt die
- * QR-Rechnung per Mail (ai-proxy `invoice-subscription.ts`). Privat zahlt einen Preis fürs Konto, Betriebe pro
+ * QR-Rechnung per Mail (ai-proxy `invoice-subscription.ts`), ohne IBAN den Auftrag an info@wartungsheft.ch, die
+ * Rechnung von Hand zu schreiben (ai-proxy `invoice-request.ts`). Privat zahlt einen Preis fürs Konto, Betriebe pro
  * Fahrzeug und bekommen die Rechnung auf die Firma.
  */
 import type { Audience } from '@strainovic/ai-proxy/plans'
@@ -26,7 +27,7 @@ const props = defineProps<{
   /** Ende der Testzeit (ISO), solange sie läuft; das bezahlte Jahr beginnt danach */
   trialEndsAt?: string | null
 }>()
-const emit = defineEmits<{ close: [], ordered: [result: { number: string, mailed: boolean }] }>()
+const emit = defineEmits<{ close: [], ordered: [result: { number: string, mailed: boolean, manual: boolean }] }>()
 
 const AUDIENCES = [
   { label: 'Privat', value: 'privat' as Audience },
@@ -76,7 +77,7 @@ async function submit(): Promise<void> {
   saving.value = true
   try {
     const result = await orderBusinessPlan({ ...parsed.order, acceptTerms: true })
-    emit('ordered', { number: result.invoice.number, mailed: result.mailed })
+    emit('ordered', { number: result.invoice.number, mailed: result.mailed, manual: !!result.manual })
     emit('close')
   }
   catch (e) {
@@ -117,7 +118,7 @@ async function submit(): Promise<void> {
       <template v-else>
         {{ formatCurrency(PRIVATE_YEARLY_CHF) }} im Jahr für bis zu {{ PRIVATE_MAX_VEHICLES }} Fahrzeuge.
       </template>
-      Du kannst sofort weiterarbeiten, die QR-Rechnung kommt per Mail und ist in 30 Tagen zahlbar.
+      Du kannst sofort weiterarbeiten, die Rechnung kommt per Mail und ist in 30 Tagen zahlbar.
       <template v-if="trialEndsAt">
         Das bezahlte Jahr beginnt nach deiner Testzeit am {{ formatDate(trialEndsAt) }}.
       </template>

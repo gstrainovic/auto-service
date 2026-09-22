@@ -33,14 +33,8 @@ export default defineConfig({
         INSTANT_API_URI: envFile.INSTANT_API_URI ?? 'http://localhost:8888',
         INSTANT_APP_ID: envFile.INSTANT_APP_ID ?? '',
         INSTANT_ADMIN_TOKEN: envFile.INSTANT_ADMIN_TOKEN ?? '',
-        // Jahresrechnung mit Beispiel-IBAN; ohne RESEND_TOKEN wird nichts verschickt, nur protokolliert
-        INVOICE_IBAN: 'CH93 0076 2011 6238 5295 7',
-        INVOICE_CREDITOR_NAME: 'Goran Strainovic',
-        INVOICE_TRADE_NAME: 'Strainovic IT',
-        INVOICE_BRAND: 'Wartungsheft',
-        INVOICE_STREET: 'Bahnstrasse 9b',
-        INVOICE_ZIP: '9323',
-        INVOICE_CITY: 'Steinach',
+        // Jahresrechnung wie in Produktion ohne IBAN: Rechnung von Hand, der Auftrag geht an INVOICE_EMAIL.
+        // Ohne RESEND_TOKEN wird nichts verschickt, nur protokolliert. Die QR-Rechnung prüfen die Unit-Tests im ai-proxy.
         INVOICE_EMAIL: 'info@wartungsheft.ch',
         RESEND_TOKEN: '',
       },

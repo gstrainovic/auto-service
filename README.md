@@ -343,6 +343,12 @@ sofort, zahlbar in 30 Tagen; das bezahlte Jahr beginnt nach der Testzeit. Kündi
 Ablauf ohne Frist; eine offene Rechnung für ein noch nicht begonnenes Jahr wird dabei storniert. Voraussetzung:
 `INVOICE_*`, `RESEND_TOKEN` und `AI_PROXY_INTERNAL_TOKEN` in `deploy/.env` (Vorlage `.env.example`).
 
+Ohne `INVOICE_IBAN` (kein Geschäftskonto) läuft die Bestellung genauso, aber statt der QR-Rechnung an den Kunden geht
+an `INVOICE_EMAIL` bzw. `FEEDBACK_TO` die Mail «Wartungsheft: Rechnung schreiben» mit Nummer, SCOR-Referenz, Betrag,
+Fälligkeit und Rechnungsadresse. Die Rechnung dann von Hand mit dieser Nummer und Referenz schreiben und dem Kunden
+schicken; die Zahlung trägt `paid <Referenz>` ein. Kündigt der Kunde vor Beginn des Jahres, kommt «Rechnung
+stornieren».
+
 Täglich läuft der Container `billing` (Profil `jobs`, Skript `deploy/billing.mjs` = Bündel von `scripts/billing.ts`):
 30 Tage vor Ablauf zählt er die aktiven Fahrzeuge und lässt den Proxy die Verlängerungsrechnung schicken
 (`/billing/renew`), danach listet er offene Rechnungen, überfällige markiert. Zahlungseingänge kommen als camt.054

@@ -66,14 +66,16 @@ const orderOpen = ref(false)
 const businessBusy = ref(false)
 const business = computed(() => usage.value?.billing ?? null)
 const activeVehicleCount = computed(() => activeVehicles(vehiclesStore.vehicles).length)
-// Bestellen nur, wenn der Proxy Rechnungen ausstellen kann: ohne IBAN wäre der Knopf eine Sackgasse
+// Bestellen, sobald der Proxy Rechnungen ausstellt: mit IBAN als QR-Rechnung, ohne von Hand (Auftrag per Mail)
 const canOrderBusiness = computed(() => !!usage.value?.ordering && !business.value && usage.value.plan === 'free')
 
-function onOrdered(result: { number: string, mailed: boolean }): void {
+function onOrdered(result: { number: string, mailed: boolean, manual: boolean }): void {
   toast.add({
     severity: 'success',
     summary: `Jahresabo bestellt, Rechnung ${result.number}`,
-    detail: result.mailed ? 'Die QR-Rechnung ist per Mail unterwegs.' : `Die Rechnung kommt in Kürze. Fragen an ${CONTACT_EMAIL}.`,
+    detail: result.mailed && !result.manual
+      ? 'Die QR-Rechnung ist per Mail unterwegs.'
+      : `Die Rechnung kommt in den nächsten Tagen per Mail. Fragen an ${CONTACT_EMAIL}.`,
     life: 6000,
   })
   refreshUsage()
@@ -360,7 +362,7 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
             </div>
             <div v-if="business.openInvoice" class="open-invoice">
               Rechnung {{ business.openInvoice.number }} über {{ formatCurrency(business.openInvoice.amount) }},
-              zahlbar bis {{ formatDate(business.openInvoice.dueAt) }}. Die QR-Rechnung kam per Mail; fehlt sie, schreib an
+              zahlbar bis {{ formatDate(business.openInvoice.dueAt) }}. Die Rechnung kommt per Mail; fehlt sie, schreib an
               <a :href="`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(`Rechnung ${business.openInvoice.number}`)}`">{{ CONTACT_EMAIL }}</a>.
             </div>
             <Button

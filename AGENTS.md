@@ -182,8 +182,12 @@ Grenzen, Rate-Limits und Datenschutz von Mistral: Skill `mistral-limits`.
   ersten Aufruf, Subscription mit `status: 'trial'`); danach antworten Scan und Chat mit 402 `trial_expired`, Lesen,
   Erfassen von Hand und Exporte bleiben frei. Preise in `yearlyPriceChf(n, audience)` (privat 25 CHF bis 5 Fahrzeuge, Betrieb
   36 CHF pro Fahrzeug), `PriceTable.vue` mit Umschalter Privat/Betrieb rechnet damit; Fair-Use-Bremse 20 Anfragen pro Minute im Proxy (`rate-limit.ts`).
-- Kaufweg nur mit Rechnungsstellung: `/me/usage` meldet `ordering` (der Proxy hat IBAN und Versand). Ohne das zeigt
-  die App weder den Bestellknopf noch den Testzeit-Hinweis, sonst führte beides ins Leere.
+- Kaufweg: `/me/usage` meldet `ordering`, sobald der Proxy Rechnungen ausstellt. Mit `INVOICE_IBAN` erzeugt und
+  verschickt er die QR-Rechnung selbst; ohne IBAN, aber mit Postfach (`INVOICE_EMAIL`, ersatzweise `FEEDBACK_TO`),
+  legt er das Abo gleich an (Nummer, SCOR-Referenz) und schickt nur den Auftrag «Rechnung schreiben» an
+  `info@wartungsheft.ch` (ai-proxy `invoice-request.ts`, Antwort `manual: true`); Verlängerung und Storno ebenso.
+  So läuft die Produktion, bis das Geschäftskonto da ist, und so laufen die E2E-Tests. Ohne beides zeigt die App
+  weder Bestellknopf noch Testzeit-Hinweis.
 - Jahresabo auf Rechnung, privat und für Betriebe: `OrderDialog.vue` in den Einstellungen mit Umschalter Privat/Betrieb
   (privat ohne Firmenfeld, `Order.audience` steuert Pflichtfelder, Preis, Plan und die Texte auf Rechnung und Mail;
   die Zielgruppe steht am Abo und gilt bei jeder Verlängerung; Prüfung mit `parseOrder` aus
@@ -265,10 +269,16 @@ Grenzen, Rate-Limits und Datenschutz von Mistral: Skill `mistral-limits`.
   (`autoRotateForDocument`, Regel in `src/lib/orientation.ts`: Querformat immer drehen, Hochformat nur ab
   OSD-Sicherheit 2), dann `parseInvoice`. PDF über `parseInvoicesPdf`: OCR aller Seiten, dann **jede Seite einzeln**
   auswerten (Art rechnung/fortsetzung/andere) und mit `mergePdfPages` zusammenführen; ein Aufruf fürs ganze PDF liess
-  Rechnungen aus und übertrug die Werkstatt. Eine Rechnung füllt nur leere Formularfelder (`fillEmptyFields`), mehrere
+  Rechnungen aus und übertrug die Werkstatt. Mistral ordnet die Seitenart nicht stabil zu, darum feste Regeln in
+  `mergePdfPages`: das Total einer Fortsetzung gilt (Kopfseiten ohne Total bekommen sonst die Summe ihrer Positionen),
+  gleiche Werkstatt und gleiches Datum wie die Vorseite bei anderem Betrag = Fortsetzung, andere Werkstatt = neue Rechnung.
+  Eine Rechnung füllt nur leere Formularfelder (`fillEmptyFields`), mehrere
   (Sammel-PDF oder mehrere Fotos) erscheinen als Prüfliste (`buildBatch`): Duplikat = gleicher Betrag und Datum höchstens
   14 Tage auseinander. Datum der Rechnung ist das Reparaturdatum, falls vorhanden. E2E: Mistral mit `mockInvoiceScan`
-  abfangen; echter Test mit Fotos und 9-Seiten-PDF aus `tmp/`: `npx playwright test e2e/invoice-scan-real.spec.ts --project=ai-soft`.
+  abfangen. Echter Test gegen Mistral mit den Sollwerten aus `testdateien/` (Schweizer Rechnung als PNG und PDF,
+  Sammel-PDF; läuft überall mit `.env`) und zusätzlich mit Fotos und 9-Seiten-PDF aus `tmp/`, wo vorhanden:
+  `npx playwright test e2e/invoice-scan-real.spec.ts --project=ai-soft`. Nach Änderungen an Prompts oder
+  `mergePdfPages` mit `--repeat-each=3` laufen lassen, ein einzelner grüner Lauf beweist bei Mistral wenig.
 - PDF-Upload: max 50 MB, OCR pro Seite, Duplikat-Erkennung bei identischen Seiten
 - `scan_document` Tool wird ausgeblendet wenn Bilder im Message sind (Modell sieht Bilder direkt)
 - `add_maintenance` Tool: Wartung OHNE Rechnung eintragen (z.B. manuell berichtete Arbeiten)

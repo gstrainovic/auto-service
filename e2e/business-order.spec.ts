@@ -2,8 +2,9 @@ import type { Page } from '@playwright/test'
 import { clearInstantDB, expect, test, waitForInstantDB } from './fixtures/test-fixtures'
 
 // Jahresabo auf Rechnung, privat oder für einen Betrieb: Bestellung in den Einstellungen mit Rechnungsadresse,
-// Fahrzeugzahl vorbelegt mit den aktiven Fahrzeugen, QR-Rechnung zahlbar in 30 Tagen, kündbar bis zum Ablauf.
-// Der lokale Proxy läuft mit Test-IBAN und ohne RESEND_TOKEN: die Rechnung wird nur protokolliert.
+// Fahrzeugzahl vorbelegt mit den aktiven Fahrzeugen, Rechnung zahlbar in 30 Tagen, kündbar bis zum Ablauf.
+// Der lokale Proxy läuft wie die Produktion ohne IBAN und ohne RESEND_TOKEN: Rechnung von Hand, der Auftrag an
+// info@wartungsheft.ch wird nur protokolliert.
 
 async function seedVehicles(page: Page) {
   await page.goto('/')
@@ -57,6 +58,8 @@ test.describe('Jahresabo auf Rechnung', () => {
     await dialog.getByLabel(/verlängert sich jährlich/).check()
     await dialog.getByRole('button', { name: 'Kostenpflichtig bestellen' }).click()
     await expect(dialog).not.toBeVisible()
+    // Ohne IBAN schreibt der Betreiber die Rechnung von Hand: kein Versprechen einer QR-Rechnung, die schon unterwegs ist
+    await expect(page.getByText('Die Rechnung kommt in den nächsten Tagen per Mail.', { exact: false })).toBeVisible()
 
     const status = card.getByTestId('business-subscription')
     await expect(status).toContainText('Jahresabo Betrieb')

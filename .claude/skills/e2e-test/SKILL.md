@@ -32,8 +32,11 @@ Aus der früheren CLAUDE.md hierher verschoben (21.09.2026), Wortlaut unverände
   InstantDB (podman-compose) und den AI-Proxy (`npm run dev:proxy` im Auth-Bypass, Key aus `.env` explizit per `env`,
   `AI_PROXY_BURST_LIMIT=10000`, weil alle Tests einen Nutzer teilen und die Fair-Use-Bremse sonst 429 liefert)
 - Läuft der Proxy schon (Playwright nimmt den bestehenden Port 8787), muss er selbst mit `AI_PROXY_BURST_LIMIT=10000`
-  und den `INVOICE_*`-Werten aus `playwright.config.ts` gestartet sein, sonst fallen Chat-Tests mit «429 (Too Many
-  Requests)» und die Bestell-Tests mit 501. Der Proxy lädt Code nicht neu: nach Änderungen im ai-proxy beenden.
+  und `INVOICE_EMAIL=info@wartungsheft.ch` (wie in `playwright.config.ts`, ohne IBAN wie die Produktion) gestartet
+  sein, sonst fallen Chat-Tests mit «429 (Too Many Requests)» und die Bestell-Tests, weil der Bestellknopf fehlt.
+  `npm run dev` startet ihn ohne diese Werte. Der Proxy lädt Code nicht neu: nach Änderungen im ai-proxy beenden.
+  Auf Windows scheitert der Vite-Befehl aus `playwright.config.ts` unter cmd.exe (Bash-Syntax): Vite und Proxy vorher
+  aus der Git-Bash mit denselben Variablen starten.
 
 ### Offline-Testing
 Die `simulateOffline` Fixture blockiert alle Requests zu `localhost:8888` (InstantDB-Server).

@@ -20,7 +20,7 @@ services:
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       STRIPE_PRICE_BASIC: ${STRIPE_PRICE_BASIC:-}
       STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO:-}
-      # Jahresrechnung für Betriebe (QR-Rechnung per Resend); ohne INVOICE_IBAN antworten /billing/order usw. mit 501
+      # Jahresrechnung für Betriebe (QR-Rechnung per Resend); ohne INVOICE_IBAN Rechnung von Hand (Auftrag an INVOICE_EMAIL bzw. FEEDBACK_TO)
       INVOICE_IBAN: ${INVOICE_IBAN:-}
       INVOICE_CREDITOR_NAME: ${INVOICE_CREDITOR_NAME:-}
       INVOICE_TRADE_NAME: ${INVOICE_TRADE_NAME:-}

@@ -37,6 +37,7 @@ Server in der Schweiz. Das Auslesen der Rechnungen läuft über Mistral in Frank
 - [Für Privathalter](https://wartungsheft.ch/privathalter)
 - [Für Betriebe](https://wartungsheft.ch/betrieb)
 - [Hilfe: die neun Abläufe und häufige Fragen](https://wartungsheft.ch/hilfe)
+- [Ratgeber: Serviceheft führen, Occasion verkaufen, Historie wieder aufbauen](https://wartungsheft.ch/ratgeber)
 
 ## Kontakt
 

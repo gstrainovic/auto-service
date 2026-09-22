@@ -5,8 +5,10 @@ export type LandingSegment = 'betrieb' | 'privathalter'
 
 /** Eigene Adressen aus Inseraten und Anzeigen: Kampagne und die Seite, auf die sie führt. */
 export const CAMPAIGNS = {
-  tcs: '/privathalter',
-  google: '/betrieb',
+  'tcs': '/privathalter',
+  'google': '/betrieb',
+  // Knopf unter jedem Ratgeber-Artikel (src/lib/ratgeber.ts)
+  'ratgeber-test': '/privathalter',
 } as const satisfies Record<string, string>
 
 export type Campaign = keyof typeof CAMPAIGNS

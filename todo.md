@@ -4,6 +4,24 @@ Reihenfolge, nicht Themen. Erst produktiv verkaufen (Bestellung und Rechnung fü
 (business-plan/09-validierung.md), dann alles andere. Keine Kaltakquise per E-Mail, keine Umfrage-Mails, keine
 Forenbeiträge; niemand wird angeschrieben.
 
+## Zuerst: mit echten Menschen testen
+
+Bisher hat niemand ausser dem Entwickler die App benutzt. Werbung bleibt pausiert (Google, Bing), bis die groben
+Stolperstellen behoben sind; sonst kosten Klicks Geld, die an der App scheitern.
+
+### Von Claude
+- [ ] Leitfaden für Nutzertests schreiben (`../business/auto-service/nutzertest.md`): drei Aufgaben (Fahrzeug erfassen,
+      Rechnung fotografieren, herausfinden was fällig ist), Einstiegsfragen, Beobachtungsbogen, Auswertung nach Schwere
+
+### Vom Nutzer
+- [ ] Fünf Nutzertests mit Leuten aus dem Umfeld (drei Privathalter, zwei mit Firmenfahrzeugen), je rund 20 Minuten:
+      lautes Denken, Bildschirm aufnehmen, nicht helfen. Persönlich fragen, niemand wird angeschrieben
+
+### Danach
+- [ ] Befunde nach Schwere ordnen und beheben, die schweren vor jeder Werbung
+- [ ] UX- oder Design-Profi nur, wenn die Tests zeigen, dass Optik oder Aufbau bremsen, dann gezielt für diese Stellen
+- [ ] Werbung wieder einschalten (`ads enable`, `bing enable`, IDs in `business-plan/05-go-to-market.md` Kanal 5)
+
 ## Jetzt: produktiv gehen
 
 ### Vom Nutzer

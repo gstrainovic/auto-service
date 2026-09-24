@@ -20,6 +20,9 @@ const CONTACT_EMAIL = 'info@wartungsheft.ch'
         <router-link to="/hilfe">
           Hilfe
         </router-link>
+        <router-link to="/ratgeber">
+          Ratgeber
+        </router-link>
         <router-link to="/impressum">
           Impressum
         </router-link>

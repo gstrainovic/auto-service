@@ -47,6 +47,14 @@ test.describe('Public Pages', () => {
     await expect(page.getByRole('heading', { name: 'Impressum' })).toBeVisible()
   })
 
+  test('PP-009: Fuss der Landing Pages verlinkt den Ratgeber (Google findet ihn sonst nur über die Sitemap)', async ({ page }) => {
+    // «/» leitet im lokalen Modus mit bekanntem Konto sofort aufs Dashboard, darum die beiden Zielgruppenseiten
+    for (const pfad of ['/betrieb', '/privathalter']) {
+      await page.goto(pfad)
+      await expect(page.getByRole('contentinfo').getByRole('link', { name: 'Ratgeber' })).toHaveAttribute('href', '/ratgeber')
+    }
+  })
+
   test('PP-005: AGB nennen Anbieter, Testzeit, Preise, Verlängerung und Kündigung', async ({ page }) => {
     await page.goto('/impressum')
     await page.getByRole('contentinfo').getByRole('link', { name: 'AGB' }).click()

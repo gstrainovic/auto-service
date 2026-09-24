@@ -49,7 +49,11 @@ ClaudeBot, PerplexityBot und Google-Extended ausdrücklich und nennt die Sitemap
 AGB, Datenschutz und Impressum gehören in keinen Index (sie ziehen Abmahnanwälte an): nicht in Sitemap und
 `llms.txt`, Caddy schickt dort `X-Robots-Tag: noindex, nofollow`.
 Google Search Console: Domain-Property `wartungsheft.ch`, verifiziert per TXT-Eintrag im Infomaniak-Manager
-(DNS-Zone). Neue Seiten dort über die URL-Prüfung zur Indexierung anmelden.
+(DNS-Zone). Neue Seiten dort über die URL-Prüfung zur Indexierung anmelden (nur in der Oberfläche, die API kennt
+keinen Indexierungsantrag). Lesen per API mit `gsc` (`~/projects/tools/gsc.py`): `gsc coverage` prüft jede URL der
+ausgelieferten Sitemap (Urteil, Abdeckung, letzter Crawl), `gsc inspect URL --json` liefert die ganze Antwort,
+`gsc queries` die Suchanfragen. Jede öffentliche Seite braucht einen Link von einer Landing Page (Fuss
+`LandingFooter.vue`); nur über die Sitemap gefundene Seiten bleiben «Gecrawlt – zurzeit nicht indexiert».
 IndexNow für Bing (und damit ChatGPT), Yandex, Seznam, Naver, Yep, Internet Archive und Amazonbot; Google macht
 nicht mit. Schlüssel in `src/services/indexnow.ts`, Schlüsseldatei `public/<Schlüssel>.txt`. Nach einem Deploy,
 der öffentliche Seiten ändert oder hinzufügt: `npm run indexnow` (meldet alle URLs der ausgelieferten Sitemap,

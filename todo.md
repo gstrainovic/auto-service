@@ -9,12 +9,9 @@ Forenbeiträge; niemand wird angeschrieben.
 Bisher hat niemand ausser dem Entwickler die App benutzt. Werbung bleibt pausiert (Google, Bing), bis die groben
 Stolperstellen behoben sind; sonst kosten Klicks Geld, die an der App scheitern.
 
-### Von Claude
-- [ ] Leitfaden für Nutzertests schreiben (`../business/auto-service/nutzertest.md`): drei Aufgaben (Fahrzeug erfassen,
-      Rechnung fotografieren, herausfinden was fällig ist), Einstiegsfragen, Beobachtungsbogen, Auswertung nach Schwere
-
 ### Vom Nutzer
-- [ ] Fünf Nutzertests mit Leuten aus dem Umfeld (drei Privathalter, zwei mit Firmenfahrzeugen), je rund 20 Minuten:
+- [ ] Fünf Nutzertests nach `../business/auto-service/nutzertest.md` mit Leuten aus dem Umfeld (drei Privathalter,
+      zwei mit Firmenfahrzeugen), je rund 20 Minuten:
       lautes Denken, Bildschirm aufnehmen, nicht helfen. Persönlich fragen, niemand wird angeschrieben
 
 ### Danach

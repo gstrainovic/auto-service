@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { clearInstantDB, expect, test, waitForInstantDB } from './fixtures/test-fixtures'
+import { clearInstantDB, countEntities, expect, test, waitForInstantDB } from './fixtures/test-fixtures'
 
 async function serverHasEmailReminders(page: Page, expected: boolean): Promise<void> {
   await expect.poll(() => page.evaluate(async () => {
@@ -155,5 +155,45 @@ test.describe('Settings Flow', () => {
       const { db, tx } = (window as any).__instantdb
       await db.transact([tx.vehicles[vId].delete()])
     }, testVehicleId)
+  })
+})
+
+test.describe('Konto löschen', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearInstantDB(page)
+  })
+
+  test('SE-006: Konto löschen entfernt alle Daten, meldet ab, und ein neues Login startet leer', async ({ page }) => {
+    await page.goto('/vehicles')
+    await page.getByRole('button', { name: 'Hinzufügen' }).click()
+    await page.getByLabel('Marke').fill('VW')
+    await page.getByLabel('Modell').fill('Golf')
+    await page.getByRole('button', { name: 'Speichern' }).click()
+    await page.waitForURL(/\/vehicles\/.+/)
+    expect(await countEntities(page, 'vehicles')).toBe(1)
+
+    await page.goto('/settings')
+    const card = page.locator('.settings-card', { hasText: 'Deine Daten gehören dir' })
+    await card.getByRole('button', { name: 'Konto löschen' }).click()
+    const dialog = page.locator('[data-pc-name="dialog"]')
+    await expect(dialog.getByText('Konto löschen?')).toBeVisible()
+    await expect(dialog).toContainText('Alle Fahrzeuge, Rechnungen und Wartungen')
+    await dialog.getByRole('button', { name: 'Endgültig löschen' }).click()
+
+    // Abgemeldet auf der Startseite, das Gerät kennt das Konto nicht mehr
+    await page.waitForURL(/\/$/)
+    await expect(page.getByRole('banner').getByRole('button', { name: '30 Tage gratis testen' })).toBeVisible()
+    expect(await page.evaluate(() => localStorage.getItem('auth:knownEmail'))).toBeNull()
+
+    // Neues Login: nichts mehr da
+    await page.goto('/login')
+    await page.getByPlaceholder('E-Mail-Adresse').fill('kunde@example.ch')
+    await page.getByRole('button', { name: 'Code senden' }).click()
+    await page.getByPlaceholder('6-stelliger Code').fill('123456')
+    await page.getByRole('button', { name: 'Anmelden' }).click()
+    await page.waitForURL(/\/dashboard/)
+    await waitForInstantDB(page)
+    expect(await countEntities(page, 'vehicles')).toBe(0)
+    await expect(page.getByText('VW Golf')).toHaveCount(0)
   })
 })

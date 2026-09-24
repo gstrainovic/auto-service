@@ -3,16 +3,20 @@ import type { LimitKind, Plan } from '@strainovic/ai-proxy/plans'
 import { BUSINESS_VEHICLE_YEARLY_CHF, PLANS, PRIVATE_MAX_VEHICLES, PRIVATE_YEARLY_CHF } from '@strainovic/ai-proxy/plans'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
+import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
 import ProgressBar from 'primevue/progressbar'
 import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import OrderDialog from '../components/OrderDialog.vue'
+import { useAuth } from '../composables/useAuth'
 import { userMessage } from '../lib/errors'
 import { db, tx } from '../lib/instantdb'
 import { formatCurrency, formatDate, formatMonth, formatNumber } from '../lib/locale'
+import { deleteWholeAccount } from '../services/account-delete'
 import { cancelBusinessPlan, fetchUsage, resumeBusinessPlan, startCheckout } from '../services/ai-access'
 import { exportDatabase, importDatabase } from '../services/db-export'
 import { activeVehicles } from '../services/vehicle-status'
@@ -43,6 +47,31 @@ const CONTACT_EMAIL = 'info@wartungsheft.ch'
 const settings = useSettingsStore()
 const reminders = useRemindersStore()
 const toast = useToast()
+const router = useRouter()
+const { user, signOut, forgetKnownAccount } = useAuth()
+
+// Kontolöschung (AGB): eigene Daten über den Client, Verbrauch und Login über den Proxy, dann abmelden
+const confirmDeleteAccount = ref(false)
+const deletingAccount = ref(false)
+async function handleDeleteAccount(): Promise<void> {
+  deletingAccount.value = true
+  try {
+    await deleteWholeAccount()
+    confirmDeleteAccount.value = false
+    signOut()
+    forgetKnownAccount()
+    // App.vue leitet beim Abmelden auf /login; erst dessen Watcher laufen lassen, dann auf die Startseite
+    await nextTick()
+    await router.replace('/')
+    toast.add({ severity: 'success', summary: 'Konto gelöscht', detail: 'Alle Daten sind weg. Danke fürs Ausprobieren.', life: 5000 })
+  }
+  catch (err) {
+    toast.add({ severity: 'error', summary: 'Konto nicht gelöscht', detail: userMessage(err), life: 6000 })
+  }
+  finally {
+    deletingAccount.value = false
+  }
+}
 
 async function toggleEmailReminders(enabled: boolean): Promise<void> {
   try {
@@ -200,6 +229,9 @@ async function refreshCacheCount(): Promise<void> {
 }
 
 onMounted(() => {
+  // Nach dem Abmelden (Konto gelöscht) mountet App.vue die Seite kurz im öffentlichen Layout neu: nichts laden
+  if (!user.value)
+    return
   refreshCacheCount()
   refreshUsage()
   vehiclesStore.load()
@@ -484,10 +516,42 @@ const currencyOptions = HOME_CURRENCIES.map(c => ({ label: c, value: c }))
         </template>
       </template>
     </Card>
+
+    <Card class="settings-card">
+      <template #title>
+        Konto
+      </template>
+      <template #content>
+        <p class="account-note">
+          Deine Daten gehören dir. Löschst du das Konto, sind Fahrzeuge, Rechnungen, Wartungen und Chat sofort weg,
+          und du bist abgemeldet. Vorher lohnt sich «Daten exportieren». Rechnungen, die wir dir gestellt haben,
+          bewahren wir auf, so lange das Gesetz es verlangt.
+        </p>
+        <Button
+          label="Konto löschen"
+          icon="pi pi-user-minus"
+          outlined
+          severity="danger"
+          @click="confirmDeleteAccount = true"
+        />
+      </template>
+    </Card>
+
+    <Dialog v-model:visible="confirmDeleteAccount" modal header="Konto löschen?" :style="{ width: 'min(28rem, 92vw)' }">
+      <p>Alle Fahrzeuge, Rechnungen und Wartungen werden gelöscht, das Login dazu. Das lässt sich nicht rückgängig machen.</p>
+      <template #footer>
+        <Button label="Abbrechen" text :disabled="deletingAccount" @click="confirmDeleteAccount = false" />
+        <Button label="Endgültig löschen" severity="danger" :loading="deletingAccount" @click="handleDeleteAccount" />
+      </template>
+    </Dialog>
   </main>
 </template>
 
 <style scoped>
+.account-note {
+  margin: 0 0 1rem;
+  color: var(--p-text-muted-color);
+}
 .plan-line {
   display: flex;
   justify-content: space-between;

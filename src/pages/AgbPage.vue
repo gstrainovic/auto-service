@@ -129,8 +129,9 @@ const CONTACT_EMAIL = 'info@wartungsheft.ch'
         solltest du trotzdem selbst aufbewahren, etwa als Export oder als Original.
       </p>
       <p>
-        Möchtest du dein Konto löschen, schreib an <a :href="`mailto:${CONTACT_EMAIL}`">{{ CONTACT_EMAIL }}</a>. Wir
-        löschen es mit allen Fahrzeugen, Rechnungen und Belegen. Rechnungen, die wir dir gestellt haben, bewahren wir
+        Dein Konto löschst du selbst in den Einstellungen («Konto löschen»), mit allen Fahrzeugen, Rechnungen und
+        Belegen, sofort und endgültig; oder du schreibst an <a :href="`mailto:${CONTACT_EMAIL}`">{{ CONTACT_EMAIL }}</a>,
+        dann erledigen wir es. Rechnungen, die wir dir gestellt haben, bewahren wir
         so lange auf, wie das Gesetz es verlangt. Wie wir mit Personendaten umgehen, steht in der
         <router-link to="/datenschutz">
           Datenschutzerklärung

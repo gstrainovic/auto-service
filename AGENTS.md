@@ -236,6 +236,11 @@ Grenzen, Rate-Limits und Datenschutz von Mistral: Skill `mistral-limits`.
   `settings.signupNoticeAt`).
 - Löschen kaskadiert: Fahrzeug über `vehiclesStore.removeWithRelated` (Rechnungen und Wartungen mit), Rechnung löscht
   ihre Wartungen über `invoiceId`; Wartungen aus `add_invoice` tragen die `invoiceId`.
+- Konto löschen (Einstellungen, Karte «Konto», AGB Ziffer «Deine Daten»): `deleteWholeAccount` in
+  `src/services/account-delete.ts` löscht erst die eigenen Entitäten (`OWNED_ENTITIES`) über den Client, dann ruft
+  `deleteAccount` den Proxy `POST /me/delete` (Verbrauch, Testzeit, Login per Admin-SDK; ein Abo mit gestellten
+  Rechnungen bleibt gekündigt als Beleg, `retireSubscription`). Reihenfolge fest: nach dem Login wäre keine
+  Transaktion mehr möglich. Danach `signOut`, `forgetKnownAccount`, Startseite. Nur online.
 - Kostentabelle: `total` ist der Rechnungsbetrag (brutto), Positionen sind oft netto; die Differenz erscheint als Kategorie
   `nicht_zugeordnet` («Nicht zugeordnet / MwSt.»), damit die Zeilen zur Total-Zeile addieren.
 - Auswertungen und Exporte: `src/services/report.ts` (Kosten pro Jahr und Kategorie, Fuhrpark pro Fahrzeug und Jahr, CSV mit

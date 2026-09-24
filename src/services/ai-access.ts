@@ -142,6 +142,11 @@ export function resumeBusinessPlan(): Promise<{ billing: BusinessBilling }> {
   return billingPost('/billing/resume')
 }
 
+/** Kontolöschung beim Proxy: Verbrauch, Testzeit und Login; ein Abo mit Rechnungen bleibt gekündigt als Beleg */
+export function deleteAccount(): Promise<{ ok: true }> {
+  return billingPost('/me/delete')
+}
+
 /**
  * Rückmeldung an den Betreiber: Text, Sprachnachricht oder beides. Der Proxy transkribiert die Aufnahme und
  * schickt beides per Mail; `transcript` kommt zurück, damit die App zeigen kann, was verstanden wurde.

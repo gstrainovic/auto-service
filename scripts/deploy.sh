@@ -11,6 +11,9 @@ npm run build
 npm run prerender
 npm run build:reminders
 npm run build:billing
+# Testdateien für Nutzertests unter /nutzertest (Anleitung in public/nutzertest/index.html, Passwort im Caddyfile)
+cp testdateien/fahrzeugausweis-schweiz.jpg testdateien/test-rechnung-ch.png testdateien/test-rechnung-ch.pdf \
+   testdateien/test-service-heft.png testdateien/test-rechnungen-sammel.pdf dist/nutzertest/
 rsync -az --delete dist/ "$HOST:$TARGET/deploy/dist/"
 rsync -az deploy/reminders.mjs deploy/billing.mjs "$HOST:$TARGET/deploy/"
 ssh "$HOST" "cd $TARGET && git pull -q && git log --oneline -n 1"

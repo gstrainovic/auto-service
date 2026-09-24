@@ -17,6 +17,13 @@
 	# Rechtsseiten nicht in Suchmaschinen: niemand sucht sie, und indexiert ziehen sie Abmahnanwälte an
 	@legal path /agb /datenschutz /impressum
 	header @legal X-Robots-Tag "noindex, nofollow"
+	# Testdateien und Anleitung für Nutzertests (business/auto-service/nutzertest.md): Passwort gegen Crawler,
+	# Hash in NUTZERTEST_HASH aus /opt/instant/docker-compose.override.yml (Caddy-Umgebung)
+	@nutzertest path /nutzertest /nutzertest/*
+	basic_auth @nutzertest {
+		test {$NUTZERTEST_HASH}
+	}
+	header @nutzertest X-Robots-Tag "noindex, nofollow"
 	# Besucherzahlen für die Validierung (business-plan/09, M2), kein Analytics-Dienst, keine Cookies.
 	# 30 Tage Aufbewahrung wie in der Datenschutzerklärung: rotierte Dateien löscht Caddy (roll_keep_for),
 	# die aktive Datei kürzt /opt/backup/backup.sh täglich, weil Caddy nur nach Grösse rotiert.

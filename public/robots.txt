@@ -8,6 +8,7 @@ Disallow: /dashboard
 Disallow: /vehicles
 Disallow: /settings
 Disallow: /login
+Disallow: /nutzertest
 
 # Antwortmaschinen ausdrücklich erlaubt: ohne diese Zeilen fehlt die Seite in ihren Antworten
 User-agent: GPTBot

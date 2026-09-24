@@ -8,7 +8,8 @@ const CONTACT_EMAIL = 'info@wartungsheft.ch'
   <footer class="landing-footer">
     <div class="landing-footer-inner">
       <p class="footer-note">
-        Schweizer Server, KI in der EU. Fragen? <a :href="`mailto:${CONTACT_EMAIL}`">{{ CONTACT_EMAIL }}</a>
+        Schweizer Server, KI in der EU. Deine Daten gehören dir: jederzeit exportieren, auf Wunsch löschen wir das Konto.
+        Fragen? <a :href="`mailto:${CONTACT_EMAIL}`">{{ CONTACT_EMAIL }}</a>
       </p>
       <nav class="footer-links">
         <router-link to="/betrieb">

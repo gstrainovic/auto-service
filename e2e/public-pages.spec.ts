@@ -52,6 +52,8 @@ test.describe('Public Pages', () => {
     for (const pfad of ['/betrieb', '/privathalter']) {
       await page.goto(pfad)
       await expect(page.getByRole('contentinfo').getByRole('link', { name: 'Ratgeber' })).toHaveAttribute('href', '/ratgeber')
+      // Datenhoheit als Verkaufsargument gegen die Servicehefte der Hersteller (business-plan/02, beobachtungen.md)
+      await expect(page.getByRole('contentinfo')).toContainText('Deine Daten gehören dir')
     }
   })
 

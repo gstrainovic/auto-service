@@ -184,6 +184,9 @@ curl -fsS https://ai.wartungsheft.ch/health   # {"ok":true}
 
 Nach Änderungen an `deploy/Caddyfile` den Caddy des InstantDB-Stacks neu laden:
 `cd /opt/instant && docker compose -f docker-compose.with-caddy.yml -f docker-compose.override.yml --env-file .env restart caddy`.
+Die Caddy-Umgebung (`APP_DOMAIN`, `AI_PROXY_DOMAIN`, `NUTZERTEST_HASH` für das Passwort von `/nutzertest`, bcrypt aus
+`caddy hash-password`, im YAML mit `$$`) steht in `/opt/instant/docker-compose.override.yml`; nach einer Änderung dort
+`up -d caddy` statt `restart`, sonst bleibt die alte Umgebung.
 
 Der Proxy (Repo `ai-proxy`, Hono auf Node 24) hält den Mistral-Key, prüft das InstantDB-Refresh-Token des
 Nutzers per Admin-SDK, reicht `/v1/chat/completions` und `/v1/ocr` durch, zählt Tokens und OCR-Seiten
